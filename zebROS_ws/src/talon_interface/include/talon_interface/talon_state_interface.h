@@ -193,7 +193,7 @@ struct CustomProfileStatus
 	bool outOfPoints;
 	CustomProfileStatus():
 		running(false),
-		slotRunning(0),
+		slotRunning(-1),
 		remainingTime(0.0),
 		outOfPoints(false)
 	{

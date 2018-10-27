@@ -193,9 +193,7 @@ class TalonHWCommand
 			custom_profile_disable_(false),
 			custom_profile_run_(false),
 			custom_profile_slot_(0),
-			custom_profile_next_slot_mutex_ptr_(std::make_shared<std::mutex>()),
 			custom_profile_hz_(50.0),
-			custom_profile_vectors_mutex_ptr_(std::make_shared<std::mutex>()),
 
 			enable_read_thread_(true),
 			enable_read_thread_changed_(false)
@@ -1444,7 +1442,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfileNextSlot)");
 				return std::vector<int>();
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_next_slot_mutex_ptr_);
 			return custom_profile_next_slot_;
 		}
 		void setCustomProfileNextSlot(const std::vector<int> &next_slot)
@@ -1454,7 +1451,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (setCustomProfileNextSlot)");
 				return;
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_next_slot_mutex_ptr_);
 			custom_profile_next_slot_ = next_slot;
 		}
 		double getCustomProfileHz(void) const
@@ -1522,8 +1518,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (pushCustomProfilePoint)");
 				return;
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
-
 			// Make sure there are enough slots allocated to
 			// hold the point about to be added
 			if (custom_profile_points_.size() <= slot)
@@ -1555,8 +1549,6 @@ class TalonHWCommand
 
 			if (!points.size())
 				return;
-
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 			// Make sure there are enough slots allocated to
 			// hold the point about to be added
@@ -1592,7 +1584,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (overwriteCustomProfilePoints)");
 				return;
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 #if 0
 			for(size_t i = 0; i < custom_profile_points_changed_.size(); i++)
@@ -1635,7 +1626,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfilePoints)");
 				return std::vector<CustomProfilePoint>();
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 			if (slot >= custom_profile_points_.size())
 				return std::vector<CustomProfilePoint>();
@@ -1650,7 +1640,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfilePointsTimesChanged)");
 				return std::vector<bool>();
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 			std::vector<bool> returner = custom_profile_points_changed_;
 
 			bool args_resized = false;
@@ -1690,7 +1679,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfileTime)");
 				return std::vector<double>();
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 			if (slot >= custom_profile_total_time_.size())
 				return std::vector<double>();
@@ -1704,7 +1692,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfileEndTime)");
 				return -1;
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 			if (slot >= custom_profile_total_time_.size())
 				return -1;
@@ -1720,7 +1707,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfileTimeCount)");
 				return 0;
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 			if (slot >= custom_profile_points_.size())
 				return 0;
@@ -1734,7 +1720,6 @@ class TalonHWCommand
 				ROS_ERROR("Custom profile disabled via param (getCustomProfileCount)");
 				return 0;
 			}
-			std::lock_guard<std::mutex> l(*custom_profile_vectors_mutex_ptr_);
 
 			if (slot >= custom_profile_points_.size())
 				return 0;
@@ -1872,21 +1857,12 @@ class TalonHWCommand
 		double conversion_factor_;
 		bool   conversion_factor_changed_;
 
-		// TODO : do these need atomic or mutex protection?
 		bool custom_profile_disable_;
 		bool custom_profile_run_;
 		int custom_profile_slot_;
-		std::shared_ptr<std::mutex> custom_profile_next_slot_mutex_ptr_;
 		std::vector<int> custom_profile_next_slot_;
 		double custom_profile_hz_;
 
-		// Mutex protecting the following 3 arrays. Access to all of them
-		// needs to be atomic - changes to 1 must match changes to the
-		// rest otherwise a get() method could potentially read
-		// inconsistent state. The mutex locks access so only 1
-		// thread can be in a method which accesses them at
-		// any given point
-		std::shared_ptr<std::mutex> custom_profile_vectors_mutex_ptr_;
 		std::vector<std::vector<CustomProfilePoint>> custom_profile_points_;
 		std::vector<std::vector<double>> custom_profile_total_time_;
 

@@ -165,43 +165,25 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::RemoteImuSensorInterface imu_remote_interface_;
 
 		hardware_interface::RobotControllerStateInterface robot_controller_state_interface_;
+		// Make me a class?
+		std::vector<double> profile_time_start_;
+		std::vector<int> profile_iteration_count_;
+		std::vector<hardware_interface::CustomProfileStatus> profile_status_;
+		std::vector<int> profile_points_run_;
+		std::vector<std::vector<std::vector<hardware_interface::CustomProfilePoint>>> profile_saved_points_;
+		std::vector<std::vector<std::vector<double>>> profile_saved_times_;
 
-		void custom_profile_thread(int joint_id);
+		std::vector<int> profile_slot_last_;
+
+
+		void custom_profile_write(int joint_id);
 		void custom_profile_set_talon(hardware_interface::TalonMode mode, double setpoint, double fTerm, int joint_id, int pidSlot, bool zeroPos, double start_run, int &pid_slot);
 
-		// These are overridden in hw_interface to actually
-		// write to talon HW
-		virtual void customProfileSetMode(int /*joint_id*/,
-										  hardware_interface::TalonMode /*mode*/,
-										  double /*setpoint*/,
-										  hardware_interface::DemandType /*demandtype*/,
-										  double /*demandvalue*/)
-		{
-		}
-
-		virtual void customProfileSetSensorPosition(int /*joint_id*/, double /*position*/)
-		{
-		}
-		virtual void customProfileSetPIDF(int    /*joint_id*/,
-										  int    /*pid_slot*/,
-										  double /*p*/,
-										  double /*i*/,
-										  double /*d*/,
-										  double /*f*/,
-										  int    /*iz*/,
-										  int    /*allowable_closed_loop_error*/,
-										  double /*max_integral_accumulator*/,
-										  double /*closed_loop_peak_output*/,
-										  int    /*closed_loop_period*/)
-		{
-		}
 		void readJointLocalParams(XmlRpc::XmlRpcValue joint_params,
 								  const bool local,
 								  const bool saw_local_keyword,
 								  bool &local_update,
 								  bool &local_hardware);
-
-		std::vector<std::thread> custom_profile_threads_;
 
 		// Configuration
 		std::vector<std::string> can_talon_srx_names_;
