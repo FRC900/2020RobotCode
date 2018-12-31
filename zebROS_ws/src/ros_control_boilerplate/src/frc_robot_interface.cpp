@@ -905,10 +905,8 @@ void FRCRobotInterface::init()
 	ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface Ready.");
 }
 
-void FRCRobotInterface::custom_profile_set_talon(hardware_interface::TalonMode mode, double setpoint, double fTerm, int joint_id, int pidSlot, bool zeroPos, double start_run, int &slot_last)
+void FRCRobotInterface::custom_profile_set_talon(hardware_interface::TalonMode mode, double setpoint, double fTerm, int joint_id, int pidSlot, bool zeroPos)
 {
-	// TODO : really consider a mutex for each talon.  Add lock guards here,
-	// and at the start of accessing each in read() and write()?
 	auto &tc = talon_command_[joint_id];
 	if(zeroPos)
 	{
@@ -989,11 +987,11 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 		cps.time_start_= ros::Time::now().toSec();
 	}
 	ps.slotRunning = slot;
-	static int fail_flag = 0;
 	if(run)
 	{
 		if(prof_pts[slot].size() == 0)
 		{
+			static int fail_flag = 0;
 			if(fail_flag % 100 == 0)
 			{
 				ROS_ERROR("Tried to run custom profile with no points buffered");
@@ -1004,12 +1002,10 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 			return;
 		}
 
-		int start = cps.points_run_ - 1;
-		if(start < 0) start = 0;
 		int end;
 		ps.outOfPoints = true;
 		double time_since_start = ros::Time::now().toSec() - cps.time_start_;
-		for(; start < prof_pts[slot].size(); start++)
+		for(int start = std::min(cps.points_run_ - 1, 0); start < prof_pts[slot].size(); start++)
 		{
 			//Find the point just greater than time since start
 			if(prof_times[slot][start] > time_since_start)
@@ -1033,7 +1029,7 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 			auto back = prof_pts[slot].back();
 
 			//If all points have been exhausted, just use the last point
-			custom_profile_set_talon(back.mode, back.setpoint, back.fTerm, joint_id, back.pidSlot, back.zeroPos, cps.time_start_, cps.slot_last_);
+			custom_profile_set_talon(back.mode, back.setpoint, back.fTerm, joint_id, back.pidSlot, back.zeroPos);
 			if (next_slot.size() > 0)
 			{
 				tc.setCustomProfileSlot(next_slot[0]);
@@ -1045,7 +1041,7 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 		{
 			auto m = prof_pts[slot][0];
 			//If we are still on the first point,just use the first point
-			custom_profile_set_talon(m.mode, m.setpoint, m.fTerm, joint_id, m.pidSlot, m.zeroPos, cps.time_start_, cps.slot_last_);
+			custom_profile_set_talon(m.mode, m.setpoint, m.fTerm, joint_id, m.pidSlot, m.zeroPos);
 		}
 		else
 		{
@@ -1055,7 +1051,7 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 			if(endp.mode != prof_pts[slot][end-1].mode)
 			{
 				ROS_WARN("mid profile mode flip. If intendped, Cooooooooollllll. If not, fix the code");
-				custom_profile_set_talon(endp.mode, endp.setpoint, endp.fTerm, joint_id, endp.pidSlot, endp.zeroPos, cps.time_start_, cps.slot_last_);
+				custom_profile_set_talon(endp.mode, endp.setpoint, endp.fTerm, joint_id, endp.pidSlot, endp.zeroPos);
 				// consider adding a check to see which is closer
 			}
 			else
@@ -1067,7 +1063,7 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 				const double setpoint = endpm1.setpoint + (endp.setpoint - endpm1.setpoint) / time_div;
 
 				const double fTerm = endpm1.fTerm + (endp.fTerm - endpm1.fTerm) / time_div;
-				custom_profile_set_talon(endp.mode, setpoint, fTerm, joint_id, endp.pidSlot, endpm1.zeroPos, cps.time_start_, cps.slot_last_);
+				custom_profile_set_talon(endp.mode, setpoint, fTerm, joint_id, endp.pidSlot, endpm1.zeroPos);
 			}
 		}
 	}

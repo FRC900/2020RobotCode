@@ -83,14 +83,12 @@ class CustomProfileState
 			: time_start_(ros::Time::now().toSec())
 			, iteration_count_(0)
 			, points_run_(0)
-			, slot_last_(-1)
 	{
 	}
 
 	double time_start_;
 	int iteration_count_;
 	int points_run_;
-	int slot_last_;
 	hardware_interface::CustomProfileStatus status_;
 	std::vector<std::vector<hardware_interface::CustomProfilePoint>> saved_points_;
 	std::vector<std::vector<double>> saved_times_;
@@ -189,7 +187,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<CustomProfileState> custom_profile_state_;
 
 		void custom_profile_write(int joint_id);
-		void custom_profile_set_talon(hardware_interface::TalonMode mode, double setpoint, double fTerm, int joint_id, int pidSlot, bool zeroPos, double start_run, int &pid_slot);
+		void custom_profile_set_talon(hardware_interface::TalonMode mode, double setpoint, double fTerm, int joint_id, int pidSlot, bool zeroPos);
 
 		void readJointLocalParams(XmlRpc::XmlRpcValue joint_params,
 								  const bool local,
