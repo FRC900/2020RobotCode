@@ -735,10 +735,6 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 		auto &ts = talon_state_[joint_id];
 		auto &tc = talon_command_[joint_id];
 
-		if(talon_command_[joint_id].getCustomProfileRun())
-		{
-			can_talon_srx_run_profile_stop_time_[joint_id] = ros::Time::now().toSec();
-		}
 		// If commanded mode changes, copy it over
 		// to current state
 		hardware_interface::TalonMode new_mode = tc.getMode();
@@ -825,7 +821,7 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 			double max_integral_accumulator;
 			double closed_loop_peak_output;
 			int    closed_loop_period;
-			if (tc.pidfChanged(p, i, d, f, iz, allowable_closed_loop_error, max_integral_accumulator, closed_loop_peak_output, closed_loop_period, slot) ||  ros::Time::now().toSec()- can_talon_srx_run_profile_stop_time_[joint_id] < .2)
+			if (tc.pidfChanged(p, i, d, f, iz, allowable_closed_loop_error, max_integral_accumulator, closed_loop_peak_output, closed_loop_period, slot))
 			{
 				ROS_INFO_STREAM("Updated joint " << joint_id << "=" << can_talon_srx_names_[joint_id] <<" PIDF slot " << slot << " config values");
 				ts.setPidfP(p, slot);

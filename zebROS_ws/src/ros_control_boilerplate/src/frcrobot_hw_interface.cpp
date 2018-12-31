@@ -1931,11 +1931,6 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 		if (tc.enableReadThreadChanged(enable_read_thread))
 			ts.setEnableReadThread(enable_read_thread);
 
-		if (tc.getCustomProfileRun())
-		{
-			can_talon_srx_run_profile_stop_time_[joint_id] = ros::Time::now().toSec();
-		}
-
 		hardware_interface::FeedbackDevice internal_feedback_device;
 		double feedback_coefficient;
 
@@ -2010,7 +2005,7 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 			double closed_loop_peak_output;
 			int    closed_loop_period;
 
-			if (tc.pidfChanged(p, i, d, f, iz, allowable_closed_loop_error, max_integral_accumulator, closed_loop_peak_output, closed_loop_period, slot) || ros::Time::now().toSec() - can_talon_srx_run_profile_stop_time_[joint_id] < .2)
+			if (tc.pidfChanged(p, i, d, f, iz, allowable_closed_loop_error, max_integral_accumulator, closed_loop_peak_output, closed_loop_period, slot))
 			{
 				ROS_INFO_STREAM("Updated joint " << joint_id << "=" << can_talon_srx_names_[joint_id] <<" PIDF slot " << slot << " config values");
 				safeTalonCall(talon->Config_kP(slot, p, timeoutMs),"Config_kP");
@@ -2467,7 +2462,7 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 
 			// TODO : unconditionally use the 4-param version of Set()
 			//ROS_INFO_STREAM("b1 = " << b1 << " b2 = " << b2 << " b3 = " << b3);
-			if (b1 || b2 || b3 || ros::Time::now().toSec() - can_talon_srx_run_profile_stop_time_[joint_id] < .2)
+			if (b1 || b2 || b3)
 			{
 				ctre::phoenix::motorcontrol::ControlMode out_mode;
 				if (convertControlMode(in_mode, out_mode))
