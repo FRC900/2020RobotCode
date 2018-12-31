@@ -165,6 +165,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::RemoteImuSensorInterface imu_remote_interface_;
 
 		hardware_interface::RobotControllerStateInterface robot_controller_state_interface_;
+
 		// Make me a class?
 		std::vector<double> profile_time_start_;
 		std::vector<int> profile_iteration_count_;

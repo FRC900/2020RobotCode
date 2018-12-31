@@ -915,19 +915,6 @@ void FRCRobotInterface::init()
 }
 
 
-// Note - there are two commented-out can_talon calls here.  If
-// they're put back in, make customProfileFoo() methods which
-// are virtual in the frc_robot_interface def.  For a Set()
-// call, make the virtual one do nothing (like the other
-// calls already). Then in the hw_interface, override it
-// with a method which makes the actual talon call
-// For get, not sure what to do exactly?  The hw one is obvious-
-// get the value from the talon. For sim, maybe grab it from state?
-//
-// TODO - when changing the thread below to a call to write,
-// simplify this code greatly.  It should just set talon_command
-// via set calls. No calls to actually write the HW, no resetting
-// the talon_command stuff by calling *Changed, etc.
 void FRCRobotInterface::custom_profile_set_talon(hardware_interface::TalonMode mode, double setpoint, double fTerm, int joint_id, int pidSlot, bool zeroPos, double start_run, int &slot_last)
 {
 	// TODO : really consider a mutex for each talon.  Add lock guards here,
