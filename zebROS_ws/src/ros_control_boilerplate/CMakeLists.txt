@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   talon_interface
   trajectory_msgs
   urdf
+  spark_max_interface
 )
 
 add_service_files (
@@ -52,6 +53,7 @@ catkin_package(
 	talon_interface
 	trajectory_msgs
 	message_runtime
+	spark_max_interface
   LIBRARIES
 )
 
@@ -60,7 +62,7 @@ catkin_package(
 ###########
 
 include_directories(
-  include/
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -131,6 +133,7 @@ set (WPI_BASE_LIB_DIR ${WPI_SYSROOT}/lib/wpilib/linux)
 # Rio-only code
 if ("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/athena/static)
+	set (REV_LIB_DIR ${WPI_SYSROOT}/lib/rev/linux/athena/static)
 
 	# Link against wpi user libraries for CAN talon and navX-MXP code and
 	# wpilib for HAL, driver station, and so on
@@ -155,10 +158,13 @@ if ("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	)
 elseif ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "arm-linux-gnueabihf") # Jetson TK1
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/raspbian/static)    # Who knows if this will work
+	set (REV_LIB_DIR ${WPI_SYSROOT}/lib/rev/linux/raspbian/static)
 elseif ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") # Jetson TX1/TX2
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/jetsontx/static)
+	set (REV_LIB_DIR ${WPI_SYSROOT}/lib/rev/linux/aarch64bionic/static)
 else() # x86-64, hopefully. First person to try and build native on a Mac gets kicked off the team
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/x86-64/static)
+	set (REV_LIB_DIR ${WPI_SYSROOT}/lib/rev/linux/x86-64/static)
 endif()
   
 # All platforms need these, they just live
@@ -168,6 +174,10 @@ set (CTRE_USER_LIBS
 	${CTRE_LIB_DIR}/libCTRE_PhoenixCCI.a
 	${CTRE_LIB_DIR}/libCTRE_PhoenixCore.a
 	${CTRE_LIB_DIR}/libCTRE_PhoenixDiagnostics.a
+)
+set (REV_USER_LIBS
+	${REV_LIB_DIR}/libSparkMax.a
+	${REV_LIB_DIR}/../shared/libSparkMaxDriver.so
 )
 
 set (ALLWPILIB ../../../allwpilib)
@@ -208,6 +218,10 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallVector.cpp
 		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
 		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Twine.cpp
+
+		#${ALLWPILIB}/hal/src/main/native/athena/CAN.cpp
+		#${ALLWPILIB}/hal/src/main/native/athena/Notifier.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
 	)
 
 	file(GLOB
@@ -219,6 +233,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
     # Don't build sim code for Jetson TK or TX architectures
 	# Also won't be built for the Rio because of the outer if-block
 	# surrounds all of this code
+if (0)
 	if (NOT (("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "arm-linux-gnueabihf") OR
 		      "${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu"))  
 		add_executable(frcrobot_phoenixsim_main
@@ -334,6 +349,12 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
 			${ntcore_native_src}
+			#${SPARK_MAX}/src/CANDigitalInput.cpp
+			#${SPARK_MAX}/src/CANEncoder.cpp
+			#${SPARK_MAX}/src/CANPIDController.cpp
+			#${SPARK_MAX}/src/CANSparkMax.cpp
+			#${SPARK_MAX}/src/CANSparkMaxLowLevel.cpp
+			#${SPARK_MAX}/src/SparkMax.cpp
 		)
 
 	    # Everything but Platform_socketcan.a
@@ -363,6 +384,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 		  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 		)
 	endif()
+endif()
 
 endif()
 
@@ -374,6 +396,7 @@ target_link_libraries(frcrobot_hw_main
 	${catkin_LIBRARIES}
 	${PLATFORM_SPECIFIC_LIBS}
 	${CTRE_USER_LIBS}
+	${REV_USER_LIBS}
 	frc_robot_interface
 )
 

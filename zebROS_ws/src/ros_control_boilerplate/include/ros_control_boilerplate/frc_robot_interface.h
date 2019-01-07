@@ -53,6 +53,7 @@
 #include "frc_interfaces/match_data_interface.h"
 #include "frc_interfaces/remote_joint_interface.h"
 #include "frc_interfaces/robot_controller_interface.h"
+#include "spark_max_interface/spark_max_command_interface.h"
 #include "talon_interface/cancoder_command_interface.h"
 #include "talon_interface/canifier_command_interface.h"
 #include "talon_interface/talon_command_interface.h"
@@ -166,6 +167,8 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::canifier::RemoteCANifierStateInterface canifier_remote_state_interface_;
 		hardware_interface::cancoder::CANCoderStateInterface   cancoder_state_interface_;
 		hardware_interface::cancoder::RemoteCANCoderStateInterface cancoder_remote_state_interface_;
+		hardware_interface::SparkMaxStateInterface             spark_max_state_interface_;
+		hardware_interface::RemoteSparkMaxStateInterface       spark_max_remote_state_interface_;
 		hardware_interface::PDPStateInterface	               pdp_state_interface_;
 		hardware_interface::RemotePDPStateInterface	           pdp_remote_state_interface_;
 		hardware_interface::PCMStateInterface	               pcm_state_interface_;
@@ -183,6 +186,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::TalonCommandInterface          talon_command_interface_;
 		hardware_interface::canifier::CANifierCommandInterface canifier_command_interface_;
 		hardware_interface::cancoder::CANCoderCommandInterface cancoder_command_interface_;
+		hardware_interface::SparkMaxCommandInterface       spark_max_command_interface_;
 		hardware_interface::as726x::AS726xCommandInterface as726x_command_interface_;
 		hardware_interface::ImuSensorInterface             imu_interface_;
 		hardware_interface::RemoteImuSensorInterface       imu_remote_interface_;
@@ -220,6 +224,14 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<bool>        cancoder_local_updates_;
 		std::vector<bool>        cancoder_local_hardwares_;
 		std::size_t              num_cancoders_;
+
+		// Configuration
+		std::vector<std::string>                   spark_max_names_;
+		std::vector<int>                           spark_max_can_ids_;
+		std::vector<hardware_interface::MotorType> spark_max_motor_types_;
+		std::vector<bool>                          spark_max_local_updates_;
+		std::vector<bool>                          spark_max_local_hardwares_;
+		std::size_t                                num_spark_maxs_;
 
 		std::vector<std::string> nidec_brushless_names_;
 		std::vector<int>         nidec_brushless_pwm_channels_;
@@ -326,6 +338,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<hardware_interface::TalonHWState> talon_state_;
 		std::vector<hardware_interface::canifier::CANifierHWState> canifier_state_;
 		std::vector<hardware_interface::cancoder::CANCoderHWState> cancoder_state_;
+		std::vector<hardware_interface::SparkMaxHWState> spark_max_state_;
 		std::vector<double> brushless_vel_;
 
 		std::vector<double> digital_input_state_;
@@ -357,6 +370,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<hardware_interface::TalonHWCommand> talon_command_;
 		std::vector<hardware_interface::canifier::CANifierHWCommand> canifier_command_;
 		std::vector<hardware_interface::cancoder::CANCoderHWCommand> cancoder_command_;
+		std::vector<hardware_interface::SparkMaxHWCommand> spark_max_command_;
 		std::vector<double> brushless_command_;
 		std::vector<double> digital_output_command_;
 		std::vector<double> pwm_command_;

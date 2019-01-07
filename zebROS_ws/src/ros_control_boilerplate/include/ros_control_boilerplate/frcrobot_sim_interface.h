@@ -39,6 +39,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include <ros_control_boilerplate/frc_robot_interface.h>
 #include <atomic>
 #include <thread>

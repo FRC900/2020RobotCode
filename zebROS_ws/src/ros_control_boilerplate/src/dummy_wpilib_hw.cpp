@@ -1,6 +1,8 @@
 #include <ctre/phoenix/platform/Platform.h>
 #include <ros/ros.h>
 #include <chrono>
+
+#include <hal/CAN.h>
 extern "C"
 {
 	static uint32_t GetPacketBaseTime() {
@@ -20,6 +22,42 @@ extern "C"
 		// For some reason, CANAPI uses a weird timeStamp. Emulate it here
 		*timeStamp = GetPacketBaseTime();
 	}
+
+	void HAL_CAN_OpenStreamSession(uint32_t* sessionHandle, uint32_t messageID,
+                               uint32_t messageIDMask, uint32_t maxMessages,
+                               int32_t* status) {
+		ctre::phoenix::platform::can::CANComm_OpenStreamSession(
+				sessionHandle, messageID, messageIDMask, maxMessages, status);
+	}
+	void HAL_CAN_CloseStreamSession(uint32_t sessionHandle) {
+		ctre::phoenix::platform::can::CANComm_CloseStreamSession(sessionHandle);
+	}
+	void HAL_CAN_ReadStreamSession(uint32_t sessionHandle,
+			struct HAL_CANStreamMessage* messages,
+			uint32_t messagesToRead, uint32_t* messagesRead,
+			int32_t* status) {
+		ctre::phoenix::platform::can::canframe_t localMessages[messagesToRead];
+		ctre::phoenix::platform::can::CANComm_ReadStreamSession(
+				sessionHandle, localMessages,
+				messagesToRead, messagesRead, status);
+		for (uint32_t i = 0; i < *messagesRead; i++)
+		{
+			messages[i].messageID = localMessages[i].arbID;
+			messages[i].timeStamp = localMessages[i].timeStampUs;
+			memcpy(messages[i].data, localMessages[i].data, sizeof(localMessages[i].data));
+			messages[i].dataSize = localMessages[i].dlc;
+		}
+	}
+#if 0
+	void HAL_CAN_GetCANStatus(float* percentBusUtilization, uint32_t* busOffCount,
+			uint32_t* txFullCount, uint32_t* receiveErrorCount,
+			uint32_t* transmitErrorCount, int32_t* status) {
+		FRC_NetworkCommunication_CANSessionMux_getCANStatus(
+				percentBusUtilization, busOffCount, txFullCount, receiveErrorCount,
+				transmitErrorCount, status);
+	}
+#endif
+
 }
 
 #include <frc/AnalogInput.h>
@@ -416,6 +454,7 @@ void frc::InterruptableSensorBase::AllocateInterrupts(bool)
 frc::InterruptableSensorBase::~InterruptableSensorBase()
 {
 }
+
 
 #include <frc/Watchdog.h>
 
@@ -877,6 +916,44 @@ const char* HAL_GetErrorMessage(int32_t code) {
       return "Unknown error status";
   }
 }
+int32_t HAL_SendError(HAL_Bool isError, int32_t errorCode, HAL_Bool isLVCode,
+                      const char* details, const char* location,
+                      const char* callStack, HAL_Bool printMsg)
+{
+	ROS_ERROR_STREAM("HAL_SendError : errorCode=" << errorCode
+			<< " : " << HAL_GetErrorMessage(errorCode)
+			<< " : " << details
+			<< " : " << location
+			<< " : " << callStack);
+	return 0;
+}
 
 } // extern "C"
+
+#include "hal/Notifier.h"
+HAL_NotifierHandle HAL_InitializeNotifier(int32_t* status) {
+	*status = 0;
+	return 1;
+}
+void HAL_StopNotifier(HAL_NotifierHandle notifierHandle, int32_t* status) {
+	(void)notifierHandle;
+	*status = 0;
+}
+
+void HAL_CleanNotifier(HAL_NotifierHandle notifierHandle, int32_t* status) {
+	(void)notifierHandle;
+	*status = 0;
+}
+void HAL_UpdateNotifierAlarm(HAL_NotifierHandle notifierHandle,
+                             uint64_t triggerTime, int32_t* status) {
+	(void)notifierHandle;
+	(void)triggerTime;
+	*status = 0;
+}
+uint64_t HAL_WaitForNotifierAlarm(HAL_NotifierHandle notifierHandle,
+                                  int32_t* status) {
+	(void)notifierHandle;
+	*status = 0;
+	return 1;
+}
 

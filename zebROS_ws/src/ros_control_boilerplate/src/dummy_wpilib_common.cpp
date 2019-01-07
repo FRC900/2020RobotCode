@@ -7,7 +7,6 @@ const char* GetWPILibVersion(void)
 	return "900.2020";
 }
 
-
 #include <AHRS.h>
 AHRS::AHRS(frc::SPI::Port)
 {
@@ -648,3 +647,124 @@ bool frc::I2C::Read(int registerAddress, int count, uint8_t* buffer)
 }
 
 
+#include <frc/PWMSpeedController.h>
+void frc::PWMSpeedController::Set(double value)
+{
+	(void)value;
+	ROS_ERROR("Called frc::PWMSpeedController::Set(double value) on unsupported platform");
+}
+double frc::PWMSpeedController::Get() const
+{
+	ROS_ERROR("Called frc::PWMSpeedController::Get() on unsupported platform");
+	return 900.0;
+}
+
+void frc::PWMSpeedController::SetInverted(bool isInverted)
+{
+	(void)isInverted;
+	ROS_ERROR("Called frc::PWMSpeedController::SetInverted(bool isInverted) on unsupported platform");
+}
+
+bool frc::PWMSpeedController::GetInverted() const
+{
+	ROS_ERROR("Called frc::PWMSpeedController::GetInverted() on unsupported platform");
+	return false;
+}
+
+void frc::PWMSpeedController::Disable()
+{
+	ROS_ERROR("Called frc::PWMSpeedController::Disable() on unsupported platform");
+}
+
+void frc::PWMSpeedController::StopMotor()
+{
+	ROS_ERROR("Called frc::PWMSpeedController::StopMotor() on unsupported platform");
+}
+
+void frc::PWMSpeedController::PIDWrite(double output)
+{
+	(void) output;
+	ROS_ERROR("Called frc::PWMSpeedController::PIDWrite(double output) on unsupported platform");
+}
+
+void frc::PWMSpeedController::InitSendable(frc::SendableBuilder&)
+{
+	ROS_ERROR("Called frc::PWMSpeedController::InitSendable(SendableBuilder &) on unsupported platform");
+}
+
+#if 0
+#include <rev/CANSparkMaxLowLevel.h>
+
+rev::CANSparkMaxLowLevel::CANSparkMaxLowLevel(int deviceID, rev::CANSparkMaxLowLevel::MotorType type)
+	: m_motorType(type)
+	, m_deviceID(deviceID)
+{
+	ROS_ERROR("Called CANSparkMaxLowLevel(int deviceID, MotorType type) on unsupported platform");
+}
+rev::CANSparkMaxLowLevel::~CANSparkMaxLowLevel()
+{
+	ROS_ERROR("Called CANSparkMaxLowLevel::CANSparkMaxLowLevel() on unsupported platform");
+}
+
+
+#include <rev/CANSparkMax.h>
+rev::CANSparkMax::CANSparkMax(int deviceID, rev::CANSparkMaxLowLevel::MotorType type)
+	: CANSparkMaxLowLevel(deviceID, type)
+{
+	ROS_ERROR("And also called CANSparkMax::CANSparkMax(int deviceID, MotorType type) on unsupported platform");
+}
+
+void rev::CANSparkMax::Set(double speed)
+{
+	(void)speed;
+	ROS_ERROR("Called CANSparkMax::Set(double speed) on unsupported platform");
+}
+
+double rev::CANSparkMax::Get(void) const
+{
+	ROS_ERROR("Called CANSparkMax::Get() on unsupported platform");
+	return 900;
+}
+
+void rev::CANSparkMax::SetInverted(bool isInverted)
+{
+	(void)isInverted;
+	ROS_ERROR("Called CANSparkMax::SetInverted(bool isInverted) on unsupported platform");
+}
+bool rev::CANSparkMax::GetInverted() const
+{
+	ROS_ERROR("Called CANSparkMax::GetInverted() on unsupported platform");
+	return false;
+}
+void rev::CANSparkMax::Disable()
+{
+	ROS_ERROR("Called CANSparkMax::Disable() on unsupported platform");
+}
+void rev::CANSparkMax::StopMotor()
+{
+	ROS_ERROR("Called CANSparkMax::StopMotor() on unsupported platform");
+}
+void rev::CANSparkMax::PIDWrite(double output)
+{
+	(void)output;
+	ROS_ERROR("Called CANSparkMax::PIDWrite() on unsupported platform");
+}
+
+bool rev::CANSparkMax::IsFollower()
+{
+	ROS_ERROR("Called CANSparkMax::IsFollower() on unsupported platform");
+	return false;
+}
+
+uint16_t rev::CANSparkMax::GetFaults()
+{
+	ROS_ERROR("Called CANSparkMax::GetFaults() on unsupported platform");
+	return 0xFFFF;
+}
+
+uint16_t rev::CANSparkMax::GetStickyFaults()
+{
+	ROS_ERROR("Called CANSparkMax::GetStickyFaults() on unsupported platform");
+	return 0xFFFF;
+}
+#endif
