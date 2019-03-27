@@ -212,7 +212,15 @@ class ClimbAction {
 					goal.raise_intake_after_success = true;
 					//send the goal
 					ae_.sendGoal(goal);
-					const bool finished_before_timeout = ae_.waitForResult(ros::Duration(elevator_deploy_timeout)); //wait until the action finishes, whether it succeeds, times out, or is preempted
+					 //wait until the action finishes, whether it succeeds, times out, or is preempted
+			while(!success && !timed_out && !preempted && ros::ok()){
+				timed_out = (ros::Time::now().toSec()-start_time) > elevator_deploy_timeout;
+				if(as_.isPreemptRequested() || !ros::ok()) {
+					ROS_WARN(" %s: Preempted", action_name_.c_str());
+					preempted = true;
+				}
+			}
+
 					if(!finished_before_timeout){
 						ROS_ERROR("climber server step 0: first elevator raise timed out");
 						timed_out = true;

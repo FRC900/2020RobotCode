@@ -87,7 +87,13 @@ class IntakeHatchPanelAction
 			ac_elevator_.sendGoal(elev_goal);
 
 			const double start_time = ros::Time::now().toSec();
-			bool finished_before_timeout = ac_elevator_.waitForResult(ros::Duration(elevator_timeout - (ros::Time::now().toSec() - start_time)));
+			while(ros::ok() && !preempted && !timed_out) {
+				timed_out = (ros::Time::now().toSec()-start_time) > elevator_timeout;
+				if(as_.isPreemptRequested() || !ros::ok()) {
+					ROS_WARN(" %s: Preempted", action_name_.c_str());
+					preempt = true;
+				}
+			}
 			if(finished_before_timeout) {
 				actionlib::SimpleClientGoalState state = ac_elevator_.getState();
 				if(state.toString() != "SUCCEEDED") {

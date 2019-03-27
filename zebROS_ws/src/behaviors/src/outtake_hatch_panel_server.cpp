@@ -130,7 +130,15 @@ class OuttakeHatchPanelAction
 
 			cmd_vel_forward_speed_ = -0.3;
 
-			bool finished_before_timeout = ac_elevator_.waitForResult(ros::Duration(std::max(elevator_timeout - (ros::Time::now().toSec() - start_time), 0.001)));
+			while(ros::ok() && !preempted && !timed_out0 {
+				timed_out = (ros::Time::now().toSec()-start_time) > elevator_timeout;
+				if(as_.isPreemptRequested() || !ros::ok()) {
+					ROS_WARN(" %s: Preempted", action_name_.c_str());
+					preempted = true;
+				}
+
+
+			}
 			if(finished_before_timeout && !ac_elevator_.getResult()->timed_out) {
 				actionlib::SimpleClientGoalState state = ac_elevator_.getState();
 				if(state.toString() != "SUCCEEDED") {
