@@ -130,7 +130,7 @@ class OuttakeHatchPanelAction
 
 			cmd_vel_forward_speed_ = -0.3;
 
-			while(ros::ok() && !preempted && !timed_out0 {
+			while(ros::ok() && !preempted && !timed_out) {
 				timed_out = (ros::Time::now().toSec()-start_time) > elevator_timeout;
 				if(as_.isPreemptRequested() || !ros::ok()) {
 					ROS_WARN(" %s: Preempted", action_name_.c_str());
@@ -186,7 +186,15 @@ class OuttakeHatchPanelAction
 
 				//pause for a bit
 				ros::Duration(pause_time_after_extend).sleep();
+				while(!timed_out && !preempted && ros::ok())
+					{
+					timed_out = (ros::Time::now().toSec()-start_time) > pause_time_between_pistons;
 
+					if(as_.isPreemptRequested() || !ros::ok()) {
+						ROS_WARN(" %s: Preempted", action_name_.c_str());
+						preempted = true;
+					}
+					}
 				//release the panel - we can reuse the srv variable
 				srv.request.claw_release = true;
 				srv.request.push_extend = true;
@@ -200,8 +208,15 @@ class OuttakeHatchPanelAction
 
 
 				//pause for a bit
-				ros::Duration(pause_time_after_release).sleep();
+				while(!timed_out && !preempted && ros::ok())
+					{
+					timed_out = (ros::Time::now().toSec()-start_time) > pause_time_after_release;
 
+					if(as_.isPreemptRequested() || !ros::ok()) {
+						ROS_WARN(" %s: Preempted", action_name_.c_str());
+						preempted = true;
+					}
+					}
 				//retract the panel mechanism; we can reuse the srv variable
 				srv.request.claw_release = true;
 				srv.request.push_extend = false;
@@ -214,9 +229,15 @@ class OuttakeHatchPanelAction
 				ros::spinOnce(); //update everything
 
 			}
+			while(!timed_out && !preempted && ros::ok())
+				{
+					timed_out = (ros::Time::now().toSec()-start_time) > 1;
 
-			ros::Duration(1).sleep();
-
+					if(as_.isPreemptRequested() || !ros::ok()) {
+						ROS_WARN(" %s: Preempted", action_name_.c_str());
+						preempted = true;
+					}
+				}
 			//lower elevator
 			elev_goal.setpoint_index = goal->end_setpoint_index;
 			elev_goal.place_cargo = false;

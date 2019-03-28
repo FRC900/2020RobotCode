@@ -266,8 +266,15 @@ class ClimbAction {
 
                                         // delay to make sure that we engaged properly
                                         // TODO - if we need to spin, spin in a loop here for 1 second here?
-                                        ros::Duration(1).sleep();
-				}
+			while(!timed_out && !preempted && ros::ok())
+					{
+						timed_out = (ros::Time::now().toSec()-start_time) > engage_check_time;
+						if(as_.isPreemptRequested() || !ros::ok()) {
+							ROS_WARN(" %s: Preempted", action_name_.c_str());
+							preempted = true;
+						}
+					}
+					}
 
 				cmd_vel_forward_speed_ = drive_forward_speed;
 
@@ -608,7 +615,11 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Could not read drive_forward_speed in climber_server");
 		drive_forward_speed = 0.2;
 	}
-
+	if (!n_climb_params.getParam("engage_check_time", engage_check_timeout))
+	{
+		ROS_ERROR("Could not read engage_check_time in climber server");
+		engage_check_time = 0.25
+	}
 	ros::spin();
 	return 0;
 }

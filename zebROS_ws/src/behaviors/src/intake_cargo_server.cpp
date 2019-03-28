@@ -163,7 +163,6 @@ class CargoIntakeAction {
 
 			return;
 		}
-
 		// Function to be called whenever the subscriber for the joint states topic receives a message
 		// Grabs various info from hw_interface using
 		// dummy joint position values

@@ -9,7 +9,6 @@
 #include "std_srvs/SetBool.h"
 #include "std_msgs/Bool.h"
 #include <atomic>
-#include <thread>
 
 //TODO: not global. namespace?
 double elevator_position_deadzone;
@@ -22,7 +21,7 @@ class ElevatorAction {
         actionlib::SimpleActionServer<behaviors::ElevatorAction> as_;
         std::string action_name_;
 
-		ros::Publisher level_two_publisher_; //publish whether level 2 or level 3 //level two is 1, level 3 is 0
+		ros::Publisher level_two_publisher_; //publish whether level 2 or level 3: 1 = level 2, 0 = level 3
 
 		//Define service client to control elevator
 		ros::ServiceClient elevator_client_;
@@ -35,6 +34,7 @@ class ElevatorAction {
         double elevator_cur_setpoint_; //stores actual setpoint value to go to, not index
 		double cur_position_; //Variable used to store current elevator position
 		
+		std::atomic<bool> stopped_;
 
     public:
 		// Make these std::arrays instead
@@ -46,8 +46,6 @@ class ElevatorAction {
 		std::vector<double> climb_locations_; //vector of everything at and after min_climb_idx in enumerated elevator indices, except for max index at the end
 
 		double timeout_;
-
-		std::atomic<bool> stopped;
 
         ElevatorAction(const std::string &name) :
             as_(nh_, name, boost::bind(&ElevatorAction::executeCB, this, _1), false),
@@ -74,22 +72,21 @@ class ElevatorAction {
 			hatch_locations_.resize(ELEVATOR_MAX_INDEX);
 			cargo_locations_.resize(ELEVATOR_MAX_INDEX);
 			climb_locations_.resize(ELEVATOR_MAX_INDEX - min_climb_idx);
-			climb_locations_level_three_.resize(ELEVATOR_MAX_INDEX - min_climb_idx);
-			climb_locations_level_two_.resize(ELEVATOR_MAX_INDEX - min_climb_idx);
         }
 
         ~ElevatorAction(void) {}
 		
 		void climbLevelCallback()
 		{
+			ROS_INFO_STREAM("the callback is being called");
 			std_msgs::Bool level_two_msg;
-			stopped = false;
+			stopped_ = false;
 
 			ros::Rate r(20);
 
-			while(ros::ok() && !stopped)
+			while(ros::ok() && !stopped_)
 			{
-				level_two_msg.data = climb_locations_ == climb_locations_level_two_;
+				level_two_msg.data = climb_locations_ == climb_locations_level_two_; 
 				
 				level_two_publisher_.publish(level_two_msg);
 				r.sleep();
@@ -100,6 +97,9 @@ class ElevatorAction {
 									std_srvs::SetBool::Response &res)
 		{
 			climb_locations_ = level_two_climb.data ? climb_locations_level_two_ : climb_locations_level_three_;
+			ROS_WARN_STREAM("Level two climb = " << level_two_climb.data);
+			return true;
+		}
 			ROS_WARN_STREAM("Level two climb = " << static_cast<bool>(level_two_climb.data));
 			res.success = true;
 			return true;
@@ -420,25 +420,10 @@ int main(int argc, char** argv)
 	double climb_raise_position;
 	if (!n_params.getParam("climber2/climb_raise_position", climb_raise_position))
 	{
-		ROS_ERROR_STREAM("Could not read climb_low_position");
-		climb_raise_position = -1; //signals to server to preempt
-	}
-	elevator_action.climb_locations_level_two_[ELEVATOR_RAISE - min_climb_idx] = climb_raise_position;
-
-	if (!n_params.getParam("climber3/climb_raise_position", climb_raise_position))
-	{
-		ROS_ERROR_STREAM("Could not read climb_low_position");
 		climb_raise_position = -1; //signals to server to preempt
 	}
 	elevator_action.climb_locations_level_three_[ELEVATOR_RAISE - min_climb_idx] = climb_raise_position;
 
-	elevator_action.climb_locations_ = elevator_action.climb_locations_level_three_;
-
-	std::thread publishLvlThread(std::bind(&ElevatorAction::climbLevelCallback, &elevator_action));
-
 	ros::spin();
-
-	elevator_action.stopped = true;
-	publishLvlThread.join();
 	return 0;
 }

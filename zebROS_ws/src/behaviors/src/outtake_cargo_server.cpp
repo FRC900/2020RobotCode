@@ -142,7 +142,16 @@ int linebreak_false_count = 0;
 					ROS_ERROR("Cargo outtake server: could not move arm before launching");
 					preempted = true;
 				}
-				ros::Duration(pause_time_between_pistons).sleep();
+			while(!timed_out && !preempted && ros::ok())
+			{
+				timed_out = (ros::Time::now().toSec()-start_time) > pause_time_between_pistons;
+
+				if(as_.isPreemptRequested() || !ros::ok()) {
+					ROS_WARN(" %s: Preempted", action_name_.c_str());
+					preempted = true;
+				}
+			}
+
 			}
 
 			//send command to launch cargo ----
