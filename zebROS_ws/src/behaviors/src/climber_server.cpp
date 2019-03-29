@@ -25,6 +25,8 @@ double elevator_climb_low_timeout;
 double match_time_lock;
 double wait_for_server_timeout;
 double drive_forward_speed;
+double engage_check_time;
+double start_time;
 
 class ClimbAction {
 	protected:
@@ -213,7 +215,7 @@ class ClimbAction {
 					//send the goal
 					ae_.sendGoal(goal);
 					 //wait until the action finishes, whether it succeeds, times out, or is preempted
-			while(!success && !timed_out && !preempted && ros::ok()){
+			while(!timed_out && !preempted && ros::ok()){
 				timed_out = (ros::Time::now().toSec()-start_time) > elevator_deploy_timeout;
 				if(as_.isPreemptRequested() || !ros::ok()) {
 					ROS_WARN(" %s: Preempted", action_name_.c_str());
@@ -615,10 +617,15 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Could not read drive_forward_speed in climber_server");
 		drive_forward_speed = 0.2;
 	}
-	if (!n_climb_params.getParam("engage_check_time", engage_check_timeout))
+	if (!n_climb_params.getParam("engage_check_time", engage_check_time))
 	{
 		ROS_ERROR("Could not read engage_check_time in climber server");
 		engage_check_time = 0.25
+	}
+	if (!n_climb_params.getParam("start_time", start_time))
+	{
+		ROS_ERROR("Could not read start_time in climber server");
+		start_time = 0.25
 	}
 	ros::spin();
 	return 0;
