@@ -9,6 +9,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}")
 add_definitions(-std=c++11 -DZED_SUPPORT -Wall -ftrack-macro-expansion=0)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -flto=4 -fno-finite-math-only -march=native -mtune=native")
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -Ofast -flto=4 -fno-finite-math-only -march=native -mtune=native")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O -g -fno-finite-math-only -march=native -mtune=native")
+#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -O -g -fno-finite-math-only -march=native -mtune=native")
 find_package(OpenCV REQUIRED)
 find_package(ZED REQUIRED)
 find_package(CUDA REQUIRED)
@@ -23,9 +25,9 @@ include_directories(
 	${CUDA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIR}
 	${PCL_INCLUDE_DIRS}
-	../common
 	../navXTimeSync
-	..)
+	../zebROS_ws/src/ros_control_boilerplate/include/ros_control_boilerplate
+	)
 
 link_directories(${ZED_LIBRARY_DIR} ${PCL_LIBRARY_DIRS} /usr/local/cuda/lib64/stubs)
 

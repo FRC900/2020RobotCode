@@ -2,12 +2,20 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "GoalDetector.hpp"
 #include "Utilities.hpp"
+#include "tracer.h"
 
 using namespace std;
 using namespace cv;
 
-#define VERBOSE
-#define VERBOSE_BOILER
+//#define VERBOSE
+//#define VERBOSE_BOILER
+
+Tracer tracer("GoalDetection");
+Tracer tracer_fb("GoalDetection findBoilers");
+Tracer tracer_sub("GoalDetection submodules");
+Tracer tracer_gc("GoalDetection getContours");
+Tracer tracer_gi("GoalDetection getInfo");
+Tracer tracer_thresh("GoalDetection generateThreshold");
 
 GoalDetector::GoalDetector(const cv::Point2f &fov_size, const cv::Size &frame_size, bool gui) :
 	_fov_size(fov_size),
@@ -27,6 +35,16 @@ GoalDetector::GoalDetector(const cv::Point2f &fov_size, const cv::Size &frame_si
 		createTrackbar("Otsu Threshold","Goal Detect Adjustments", &_otsu_threshold, 255);
 		createTrackbar("Camera Angle","Goal Detect Adjustments", &_camera_angle, 900);
 	}
+}
+
+GoalDetector::~GoalDetector()
+{
+	std::cout << tracer.report();
+	std::cout << tracer_fb.report();
+	std::cout << tracer_gc.report();
+	std::cout << tracer_gi.report();
+	std::cout << tracer_sub.report();
+	std::cout << tracer_thresh.report();
 }
 
 // Compute a confidence score for an actual measurement given
@@ -60,23 +78,40 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
 }
 
 void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
+	tracer.start_unique("findBoilers");
 	clear();
+	tracer_fb.start_unique("getContours");
 	const vector<vector<Point>> goal_contours = getContours(image);
 	if (goal_contours.size() == 0)
+	{
+		tracer.stop();
+		tracer_fb.stop();
 		return;
+	}
+	tracer_fb.start_unique("getDepths");
 	const vector<DepthInfo> goal_depths = getDepths(depth,goal_contours, LEFT_CARGO_2019, ObjectType(LEFT_CARGO_2019).real_height());
 
 	//compute confidences for both the left piece of
 	//tape and the right piece of tape
+	tracer_fb.start_unique("getInfo");
 	const vector<GoalInfo> left_info = getInfo(goal_contours,goal_depths,LEFT_CARGO_2019);
 	if(left_info.size() == 0)
+	{
+		tracer.stop();
+		tracer_fb.stop();
 		return;
+	}
 	const vector<GoalInfo> right_info = getInfo(goal_contours,goal_depths,RIGHT_CARGO_2019);
 	if(right_info.size() == 0)
+	{
+		tracer.stop();
+		tracer_fb.stop();
 		return;
+	}
 #ifdef VERBOSE
 	cout << left_info.size() << " left goals found and " << right_info.size() << " right"  << endl;
 #endif
+	tracer_fb.stop();
 
 	//loop through every combination of left and right goal and check for the following conditions:
 	//left is actually to the left of right
@@ -266,7 +301,9 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 							  intersection_point) ||
 					(intersection_point.y > std::max(left_info[i].com.y, right_info[j].com.y)))
 			{
+#ifdef VERBOSE
 				cout << i << " " << j << " intersection point below com of contours : " << intersection_point << endl;
+#endif
 				continue;
 			}
 
@@ -404,6 +441,7 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 				}
 				_isValid = true;
 
+#ifdef VERBOSE_BOILER
 				cout << "Number of goals: " << _return_found.size() << endl;
 				for(size_t n = 0; n < _return_found.size(); n++)
 				{
@@ -411,6 +449,7 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 						_return_found[n].right_contour_index << " pos: " << _return_found[n].pos <<
 						" distance: " << _return_found[n].distance << " angle: " << _return_found[n].angle << endl;
 				}
+#endif
 			}
 			else
 			{
@@ -421,6 +460,7 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 			}
 		}
 	}
+	tracer.stop();
 }
 
 // Reset previous detection vars
@@ -431,6 +471,8 @@ void GoalDetector::clear()
 }
 
 const vector< vector < Point > > GoalDetector::getContours(const Mat& image) {
+	tracer_sub.start_unique("getContours");
+	tracer_gc.start_unique("generateThresh");
 	// Look for parts the the image which are within the
 	// expected bright green color range
 	Mat threshold_image;
@@ -439,6 +481,8 @@ const vector< vector < Point > > GoalDetector::getContours(const Mat& image) {
 	{
 		_isValid = false;
 		//_pastRects.push_back(SmartRect(Rect()));
+		tracer_gc.stop();
+		tracer_sub.stop();
 		return return_contours;
 	}
 
@@ -446,13 +490,18 @@ const vector< vector < Point > > GoalDetector::getContours(const Mat& image) {
 	// of green to check later on to see how well they match the
 	// expected shape of the goal
 	// Note : findContours modifies the input mat
+	tracer_gc.start_unique("findContours");
 	vector<Vec4i> hierarchy;
 	findContours(threshold_image.clone(), return_contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
+	tracer_sub.stop();
+	tracer_gc.stop();
 	return return_contours;
 }
 
 const vector<DepthInfo> GoalDetector::getDepths(const Mat &depth, const vector< vector< Point > > &contours, const ObjectNum &objtype, float expected_height) {
+
+	tracer_sub.start_unique("getDepths");
 	// Use to mask the contour off from the rest of the
 	// image - used when grabbing depth data for the contour
 	Mat contour_mask(_frame_size, CV_8UC1, Scalar(0));
@@ -492,10 +541,13 @@ const vector<DepthInfo> GoalDetector::getDepths(const Mat &depth, const vector< 
 
 		return_vec.push_back(depthInfo);
 	}
+	tracer_sub.stop();
 	return return_vec;
 }
 
 const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contours, const vector<DepthInfo> &depth_maxs, ObjectNum objtype) {
+	tracer_sub.start_unique("getInfo");
+	tracer_gi.start_unique("init");
 	const ObjectType goal_shape(objtype);
 	vector<GoalInfo> return_info;
 	// Create some target stats based on our idealized goal model
@@ -511,6 +563,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 
 	for (size_t i = 0; i < contours.size(); i++)
 	{
+	tracer_gi.start_unique("bounding rect");
 		// ObjectType computes a ton of useful properties so create
 		// one for what we're looking at
 		const Rect br(boundingRect(contours[i]));
@@ -524,6 +577,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 			continue;
 		}
 
+	tracer_gi.start_unique("actualRatio");
 		//width to height ratio
 		// Use rotated rect to get a more accurate guess at the real
 		// height and width of the contour
@@ -548,6 +602,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 			continue;
 		}
 #endif
+	tracer_gi.start_unique("fitline");
 		// Fit a line to the countor, calculate the start and end points on screen
 		// for the line.
 		Vec4f fit_line;
@@ -570,6 +625,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		const Point2f start_line(_frame_size.width - 1, rightY);
 		const Point2f end_line(0, leftY);
 
+	tracer_gi.start_unique("ObjectType");
 		//create a trackedobject to get various statistics
 		//including area and x,y,z position of the goal
 		ObjectType goal_actual(contours[i], "Actual Goal", 0);
@@ -614,6 +670,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		//taking the standard deviation of a bunch of values from the goal
 		//confidence is near 0.5 when value is near the mean
 		//confidence is small or large when value is not near mean
+	tracer_gi.start_unique("createConfidence");
 		const float confidence_height      = createConfidence(goal_shape.real_height(), 0.2, goal_tracked_obj.getPosition().z - goal_shape.height() / 2.0);
 		const float confidence_com_x       = createConfidence(com_percent_expected.x, 0.125,  com_percent_actual.x);
 		const float confidence_com_y       = createConfidence(com_percent_expected.y, 0.125,  com_percent_actual.y);
@@ -624,6 +681,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		// higher is better
 		const float confidence = (confidence_height + confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
 
+	tracer_gi.start_unique("printing");
 #ifdef VERBOSE
 		cout << "-------------------------------------------" << endl;
 		cout << "Contour " << i << endl;
@@ -648,6 +706,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		cout << "-------------------------------------------" << endl;
 #endif
 
+	tracer_gi.start_unique("goalinfo");
 		GoalInfo goal_info;
 
 		// This goal passes the threshold required for us to consider it a goal
@@ -667,6 +726,8 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		return_info.push_back(goal_info);
 
 	}
+	tracer_sub.stop();
+	tracer_gi.stop();
 	return return_info;
 }
 
@@ -685,18 +746,23 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 // show up in the output grayscale
 bool GoalDetector::generateThresholdAddSubtract(const Mat& imageIn, Mat& imageOut)
 {
+	tracer_thresh.start_unique("split");
     vector<Mat> splitImage;
     Mat         bluePlusRed;
 
     split(imageIn, splitImage);
+	tracer_thresh.start_unique("add_weighted");
 	addWeighted(splitImage[0], _blue_scale / 100.0,
 			    splitImage[2], _red_scale / 100.0, 0.0,
 				bluePlusRed);
+	tracer_thresh.start_unique("subtract");
 	subtract(splitImage[1], bluePlusRed, imageOut);
 
+	tracer_thresh.start_unique("erode");
     static const Mat erodeElement(getStructuringElement(MORPH_RECT, Size(3, 3)));
     static const Mat dilateElement(getStructuringElement(MORPH_RECT, Size(3, 3)));
 	erode(imageOut, imageOut, erodeElement, Point(-1, -1), 1);
+	tracer_thresh.start_unique("dilate");
 	dilate(imageOut, imageOut, dilateElement, Point(-1, -1), 1);
 
 	// Use Ostu adaptive thresholding.  This will turn
@@ -706,13 +772,20 @@ bool GoalDetector::generateThresholdAddSubtract(const Mat& imageIn, Mat& imageOu
 	// from the function.  If this value is too low, it means the image is
 	// really dark and the returned threshold image will be mostly noise.
 	// In that case, skip processing it entirely.
+	tracer_thresh.start_unique("otsu");
 	const double otsuThreshold = threshold(imageOut, imageOut, 0., 255., CV_THRESH_BINARY | CV_THRESH_OTSU);
+	//const double otsuThreshold = threshold(imageOut, imageOut, 10., 255., CV_THRESH_BINARY );
 #ifdef VERBOSE
 	cout << "OTSU THRESHOLD " << otsuThreshold << endl;
 #endif
+	tracer_thresh.stop();
 	if (otsuThreshold < _otsu_threshold)
 		return false;
-    return countNonZero(imageOut) != 0;
+	tracer_thresh.start_unique("countNonZero");
+    const bool non_zero = countNonZero(imageOut) != 0;
+	tracer_thresh.stop();
+
+	return non_zero;
 }
 
 // Use the camera FOV, a known target size and the apparent size to
@@ -768,6 +841,7 @@ bool GoalDetector::Valid(void) const
 // a different color
 void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours) const
 {
+	tracer_sub.start_unique("drawOnFrame");
 
 	for (size_t i = 0; i < contours.size(); i++)
 	{

@@ -55,6 +55,7 @@ class GoalDetector
 {
 	public:
 		GoalDetector(const cv::Point2f &fov_size, const cv::Size &frame_size, bool gui = false);
+		~GoalDetector();
 
 		std::vector< GoalFound > return_found(void) const;
 
@@ -95,5 +96,8 @@ class GoalDetector
 		void isValid();
 		const std::vector<DepthInfo> getDepths(const cv::Mat &depth, const std::vector< std::vector< cv::Point > > &contours, const ObjectNum &objtype, float expected_height);
 		const std::vector< GoalInfo > getInfo(const std::vector< std::vector< cv::Point > > &contours, const std::vector<DepthInfo> &depth_maxs, ObjectNum objtype);
+
+		std::vector<cv::Mat> _splitImage;
+		cv::Mat _bluePlusRed;
 };
 

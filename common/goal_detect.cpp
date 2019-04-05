@@ -26,7 +26,7 @@ int main(int argc, char **argv)
 
 	GoalDetector gd(Point2f(cap->getCameraParams().fov.x,
 				            cap->getCameraParams().fov.y),
-			        Size(cap->width(),cap->height()), true);
+			        Size(cap->width(),cap->height()), false);
 	Mat image;
 	Mat depth;
 	Rect bound;
@@ -45,15 +45,17 @@ int main(int argc, char **argv)
 		frameTicker.mark();
 
 		gd.findBoilers(image, depth);
-		gd.drawOnFrame(image, gd.getContours(image));
+		//gd.drawOnFrame(image, gd.getContours(image));
 
 		stringstream ss;
 		ss << fixed << setprecision(2) << cap->FPS() << " C:" << frameTicker.getFPS() << " GD FPS" << cap->frameNumber() << " FrameNum:";
+		std::cout << ss.str() << std::endl;
+#if 0
 		putText(image, ss.str(), Point(image.cols - 15 * ss.str().length(), 50), FONT_HERSHEY_PLAIN, 1.5, Scalar(0,0,255));
 		//rectangle(image, gd.goal_rect(), Scalar(255,0,0), 2);
 		imshow ("Image", image);
 
-		switch((uchar)waitKey(5))
+		switch((uchar)waitKey(1))
 		{
 			case ' ':
 				paused = !paused;
@@ -65,6 +67,7 @@ int main(int argc, char **argv)
 			case 27: // ESC
 				return 0;
 		}
+#endif
 	}
 	return 0;
 }

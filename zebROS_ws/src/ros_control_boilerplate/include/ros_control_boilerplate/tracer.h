@@ -47,13 +47,13 @@ class Tracer
 
 			if (entry == map_.end())
 			{
-				ROS_ERROR_STREAM("Tracer::start : failed to insert label " << label);
+				//ROS_ERROR_STREAM("Tracer::start : failed to insert label " << label);
 				return;
 			}
 
 			if (entry->second.started_)
 			{
-				ROS_WARN_STREAM("Tracer::start : start called on already started label " << label);
+				//ROS_WARN_STREAM("Tracer::start : start called on already started label " << label);
 				return;
 			}
 			entry->second.start_time_ = std::chrono::high_resolution_clock::now();
@@ -75,13 +75,13 @@ class Tracer
 			// If not found, create a new entry for this label
 			if (entry == map_.end())
 			{
-				ROS_ERROR_STREAM("Tracer::stop : couldn't find label " << label);
+				//ROS_ERROR_STREAM("Tracer::stop : couldn't find label " << label);
 				return;
 			}
 
 			if (!entry->second.started_)
 			{
-				ROS_WARN_STREAM("Tracer::stop : label " << label << " not started");
+				//ROS_WARN_STREAM("Tracer::stop : label " << label << " not started");
 				return;
 			}
 			entry->second.total_time_ += std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - entry->second.start_time_);
@@ -104,7 +104,7 @@ class Tracer
 			// If not found, create a new entry for this label
 			if (entry == map_.end())
 			{
-				ROS_ERROR_STREAM("Tracer::report : couldn't find label " << label);
+				//ROS_ERROR_STREAM("Tracer::report : couldn't find label " << label);
 				return std::string();
 			}
 			if (auto_stop && entry->second.started_)
