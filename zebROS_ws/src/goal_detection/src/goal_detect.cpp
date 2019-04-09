@@ -72,8 +72,12 @@ namespace goal_detection
 				else
 				{
 					ROS_INFO("starting goal detection using webcam");
-					rgb_sub_ = std::make_unique<image_transport::Subscriber>(it.subscribe("/c920_camera/image_raw", sub_rate, &GoalDetect::callback_no_depth, this));
-					terabee_sub_ = nh_.subscribe("/multiflex_1/ranges_raw", 1, &GoalDetect::multiflexCB, this);
+					frame_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/c920_camera/image_raw", sub_rate);
+					terabee_sub_ = std::make_unique<message_filters::Subscriber<teraranger_array::RangeArray>>(nh_, "multiflex_1/ranges_raw", sub_rate);
+					rgb_terabee_sync_ = std::make_unique<message_filters::Synchronizer<RGBTerabeeSyncPolicy>>(RGBTerabeeSyncPolicy(10), *frame_sub_, *terabee_sub_);
+					rgb_terabee_sync_->registerCallback(boost::bind(&GoalDetect::callback_no_depth, this, _1, _2));
+					//rgb_sub_ = std::make_unique<image_transport::Subscriber>(it.subscribe("/c920_camera/image_raw", sub_rate, &GoalDetect::callback_no_depth, this));
+					//terabee_sub_ = nh_.subscribe("/multiflex_1/ranges_raw", 1, &GoalDetect::multiflexCB, this);
 				}
 
 				// Set up publisher
@@ -197,41 +201,38 @@ namespace goal_detection
 				*/
 			}
 
-			void multiflexCB(const teraranger_array::RangeArray& msg)
+			void callback_no_depth(const sensor_msgs::ImageConstPtr &frameMsg, const teraranger_array::RangeArrayConstPtr &msg)
 			{
 				double min_dist = std::numeric_limits<double>::max();
-				distance_from_terabee_ = -1;
 				for(int i = 0; i < 2; i++)
 				{
-					const double range = static_cast<double>(msg.ranges[i].range);
+					const double range = static_cast<double>(msg->ranges[i].range);
 					if(!std::isnan(range))
 						min_dist = std::min(min_dist, range);
 				}
-				if (min_dist != std::numeric_limits<double>::max())
-					distance_from_terabee_ = min_dist;
-			}
-
-			void callback_no_depth(const sensor_msgs::ImageConstPtr &frameMsg)
-			{
+				if (min_dist == std::numeric_limits<double>::max())
+					min_dist = -1;
 				cv_bridge::CvImageConstPtr cvFrame = cv_bridge::toCvShare(frameMsg, sensor_msgs::image_encodings::BGR8);
-				cv::Mat depthMat(cvFrame->image.size(), CV_32FC1, cv::Scalar(distance_from_terabee_));
+				cv::Mat depthMat(cvFrame->image.size(), CV_32FC1, cv::Scalar(min_dist));
 				callback(frameMsg, cv_bridge::CvImage(std_msgs::Header(), "32FC1", depthMat).toImageMsg());
 			}
 			typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> RGBDSyncPolicy;
+			typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, teraranger_array::RangeArray> RGBTerabeeSyncPolicy;
 
-			ros::NodeHandle                                                nh_;
-			std::unique_ptr<image_transport::SubscriberFilter>             frame_sub_;
-			std::unique_ptr<image_transport::SubscriberFilter>             depth_sub_;
-			std::unique_ptr<image_transport::Subscriber>                   rgb_sub_;
-			std::unique_ptr<message_filters::Synchronizer<RGBDSyncPolicy>> rgbd_sync_;
-			ros::Subscriber                                                terabee_sub_;
-			ros::Publisher                                                 pub_;
-			GoalDetector                                                  *gd_                    = NULL;
-			bool                                                           batch_                 = true;
-			bool                                                           down_sample_           = false;
-			double                                                         hFov_                  = 105.;
-			double                                                         camera_angle_          = -25.0;
-			double                                                         distance_from_terabee_ = -1;
+			ros::NodeHandle                                                            nh_;
+			std::unique_ptr<image_transport::SubscriberFilter>                         frame_sub_;
+			std::unique_ptr<image_transport::SubscriberFilter>                         depth_sub_;
+			std::unique_ptr<message_filters::Synchronizer<RGBDSyncPolicy>>             rgbd_sync_;
+
+			std::unique_ptr<message_filters::Subscriber<teraranger_array::RangeArray>> terabee_sub_;
+			std::unique_ptr<message_filters::Synchronizer<RGBTerabeeSyncPolicy>>       rgb_terabee_sync_;
+
+			ros::Publisher  pub_;
+			GoalDetector   *gd_                    = NULL;
+			bool            batch_                 = true;
+			bool            down_sample_           = false;
+			double          hFov_                  = 105.;
+			double          camera_angle_          = -25.0;
 	};
 } // namspace
 
