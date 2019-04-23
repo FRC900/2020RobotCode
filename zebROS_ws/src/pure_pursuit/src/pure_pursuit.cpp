@@ -56,26 +56,38 @@
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
 #include <string>
+//tf stuff
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/message_filter.h"
+#include "message_filters/subscriber.h"
+#include "geometry_msgs/PointStamped.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+
 
 class PurePursuit
 {
 public:
-  PurePursuit(ros::NodeHandle nh, nav_msgs::Path path);
+  PurePursuit(ros::NodeHandle nh)
+  {
+      nh_ = nh;
+  }
 
-  // Runs whenever an odometry message is received, contains the main control loop
-  void callback(nav_msgs::Odometry odom);
+  void setup();
+
+  void loadPath(nav_msgs::Path path);
+
+  // Runs whenever an odometry message is received
+  void odomCallback(nav_msgs::Odometry odom);
   
   // Helper founction for computing euclidian distances in the x-y plane.
-  double dist(geometry_msgs::Point32 pt1, geometry_msgs::Point32 pt2)
+  template<typename T1, typename T2>
+  double dist(T1 pt1, T2 pt2)
   {
     return sqrt(pow(pt1.x - pt2.x,2) + pow(pt1.y - pt2.y,2));
   }
 
-  // Run the controller
-  void run()
-  {
-      ros::spin();
-  }
+  // contains the main control loop
+  void run();
   
 private:
   nav_msgs::Path path_;
@@ -84,76 +96,103 @@ private:
   
   // ROS infrastructure
   ros::NodeHandle nh_;
-  ros::Subscriber sub_odom_;
-  ros::Publisher pub_vel_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-  std::string map_frame_id_, robot_frame_id_;
+  ros::Publisher cmd_vel_pub_;
+  tf2_ros::Buffer buffer_;
+  std::string target_frame_;
   double lookahead_distance_;
   std::string odometry_topic_;
   double max_velocity_, max_accel_;
   double pos_tol_;
+  nav_msgs::Odometry odom_msg_;
+  geometry_msgs::PoseStamped next_waypoint_;
+
+  std::shared_ptr<tf2_ros::TransformListener> tf2_;
+  std::shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> odom_sub_;
+  std::shared_ptr<tf2_ros::MessageFilter<nav_msgs::Odometry>> tf2_filter_;
 };
 
-PurePursuit::PurePursuit(ros::NodeHandle nh, nav_msgs::Path path)
+void PurePursuit::setup()
 {
     // Read config values
-    nh.getParam("lookahead_distance", lookahead_distance_);
-    nh.getParam("odometry_topic", odometry_topic_);
-    nh.getParam("max_velocity", max_velocity_);
-    nh.getParam("max_accel", max_accel_);
-    nh.getParam("robot_frame", robot_frame_id_);
-    nh.getParam("map_frame", map_frame_id_);
-
-    // Read in path
-    path_ = path;
+    nh_.getParam("lookahead_distance", lookahead_distance_);
+    nh_.getParam("odometry_topic", odometry_topic_);
+    nh_.getParam("max_velocity", max_velocity_);
+    nh_.getParam("max_accel", max_accel_);
+    nh_.getParam("target_frame", target_frame_); //position of the robot at the beginning of the path
+    nh_.getParam("pos_tol", pos_tol_);
 
     // Set up publishers, subscribers
-    odom_sub_.subcribe(odometry_topic, 1, callback);
-    cmd_vel_pub_.advertise("swerve_drive_controller/cmd_vel", 1);
+    cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
+
+    // Subscribing to odometry/odom transforms
+    odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::Odometry>>(nh_, "pointstamped_goal_msg", 1);
+    tf2_ = std::make_shared<tf2_ros::TransformListener>(buffer_);
+    tf2_filter_ = std::make_shared<tf2_ros::MessageFilter<nav_msgs::Odometry>>(*odom_sub_, buffer_, target_frame_, 10, 0);
+    tf2_filter_->registerCallback(odomCallback);
 }
 
-PurePursuit::callback(nav_msgs::Odometry odom)
+void PurePursuit::loadPath(nav_msgs::Path path)
 {
+    path_ = path;
+}
+
+void PurePursuit::odomCallback(nav_msgs::Odometry odom)
+{
+    try
+    {
+        buffer_.transform(odom, odom_msg_, target_frame_);
+    }
+    catch (tf2::TransformException &ex)
+    {
+        ROS_WARN("Failed %s\n", ex.what());
+    }
+}
+
+void PurePursuit::run()
+{
+      ros::spinOnce();
+
       // Find point in path closest to odometry reading
       double minimum_distance = std::numeric_limits<double>::max();
       size_t minimum_idx = std::numeric_limits<size_t>::max();
       for(int i = 0; i < path_.poses.size(); i++)
       {
-          if(dist(path.poses[i], odom.pose.position) < minimum_distance)
+          if(dist(path_.poses[i].pose.position, odom_msg_.pose.pose.position) < minimum_distance)
           {
-              minimum_distance = dist(path.poses[i], odom.pose.position);
-              minumum_idx = i;
+              minimum_distance = dist(path_.poses[i].pose.position, odom_msg_.pose.pose.position);
+              minimum_idx = i;
           }
       }
       
       // Find the closest point on the path within the lookahead distance and use that as our next waypoint
-      if(minimum_distance > pos_tol)
+      if(minimum_distance > pos_tol_)
       {
           for(int i = 0; i < path_.poses.size(); i++)
           {
-              if(dist(path_.poses[i], odom.position.pose) > lookahead_distance)
+              if(dist(path_.poses[i].pose.position, odom_msg_.pose.pose.position) > lookahead_distance_)
               {
-                  next_waypoint = path_.poses[i - 1];
+                  next_waypoint_ = path_.poses[i - 1];
                   break;
               }
           }
       }
       else // if we are close enough
       {
-          next_waypoint = path.poses[minimum_idx + 1];
+          next_waypoint_ = path_.poses[minimum_idx + 1];
       }
 
       // Set the angle of the velocity
       geometry_msgs::Point32 base_link_waypoint;
-      tf.tranform();//something here to make the next_waypoint be in the frame of odometry
-      mag = sqrt(pow(base_link_waypoint.x, 2) + pow(base_link_waypoint.y, 2));
-      cmd_vel_.linear.x = max_speed * base_link_waypoint.x / mag;
-      cmd_vel_.linear.y = max_speed * base_link_waypoint.y / mag;
+      //tf.tranform();//something here to make the next_waypoint be in the frame of odometry
+      base_link_waypoint.x = next_waypoint_.pose.position.x - odom_msg_.pose.pose.position.x;
+      base_link_waypoint.y = next_waypoint_.pose.position.y - odom_msg_.pose.pose.position.y;
+      double mag = sqrt(pow(base_link_waypoint.x, 2) + pow(base_link_waypoint.y, 2));
+      cmd_vel_.linear.x = max_velocity_ * base_link_waypoint.x / mag;
+      cmd_vel_.linear.y = max_velocity_ * base_link_waypoint.y / mag;
       cmd_vel_.linear.z = 0;
       cmd_vel_.angular.x = 0;
       cmd_vel_.angular.y = 0;
       cmd_vel_.angular.z = 0;
 
-      cmd_vel_pub_.publish(cmd_vel);
+      cmd_vel_pub_.publish(cmd_vel_);
 }
