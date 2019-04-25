@@ -77,7 +77,7 @@ public:
   void loadPath(nav_msgs::Path path);
 
   // Runs whenever an odometry message is received
-  void odomCallback(nav_msgs::Odometry odom);
+  void odomCallback(nav_msgs::OdometryConstPtr odom);
   
   // Helper founction for computing euclidian distances in the x-y plane.
   // TODO : use hypot() function
@@ -128,8 +128,8 @@ void PurePursuit::setup()
     // Subscribing to odometry/odom transforms
     odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::Odometry>>(nh_, "pointstamped_goal_msg", 1);
     tf2_ = std::make_shared<tf2_ros::TransformListener>(buffer_);
-    tf2_filter_ = std::make_shared<tf2_ros::MessageFilter<nav_msgs::Odometry>>(*odom_sub_, buffer_, target_frame_, 10, 0);
-    tf2_filter_->registerCallback(odomCallback);
+    tf2_filter_ = std::make_shared<tf2_ros::MessageFilter<nav_msgs::Odometry>>(buffer_, target_frame_, 10, nh_);
+    tf2_filter_->registerCallback(boost::bind(&PurePursuit::odomCallback, this, _1));
 }
 
 // TODO : for large function parameters, making them const T & is more efficient
@@ -138,11 +138,11 @@ void PurePursuit::loadPath(nav_msgs::Path path)
     path_ = path;
 }
 
-void PurePursuit::odomCallback(nav_msgs::Odometry odom)
+void PurePursuit::odomCallback(nav_msgs::OdometryConstPtr odom)
 {
     try
     {
-        buffer_.transform(odom, odom_msg_, target_frame_);
+        buffer_.transform(*odom, odom_msg_, target_frame_);
     }
     catch (tf2::TransformException &ex)
     {
