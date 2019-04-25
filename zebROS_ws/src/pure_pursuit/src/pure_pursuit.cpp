@@ -80,6 +80,7 @@ public:
   void odomCallback(nav_msgs::Odometry odom);
   
   // Helper founction for computing euclidian distances in the x-y plane.
+  // TODO : use hypot() function
   template<typename T1, typename T2>
   double dist(T1 pt1, T2 pt2)
   {
@@ -104,7 +105,7 @@ private:
   double max_velocity_, max_accel_;
   double pos_tol_;
   nav_msgs::Odometry odom_msg_;
-  geometry_msgs::PoseStamped next_waypoint_;
+  geometry_msgs::PoseStamped next_waypoint_; // TODO : make a local var
 
   std::shared_ptr<tf2_ros::TransformListener> tf2_;
   std::shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> odom_sub_;
@@ -131,6 +132,7 @@ void PurePursuit::setup()
     tf2_filter_->registerCallback(odomCallback);
 }
 
+// TODO : for large function parameters, making them const T & is more efficient
 void PurePursuit::loadPath(nav_msgs::Path path)
 {
     path_ = path;
@@ -148,6 +150,12 @@ void PurePursuit::odomCallback(nav_msgs::Odometry odom)
     }
 }
 
+// TODO : try to decouple PurePursuit from specific topics
+// The idea would be to have other code be responsible for getting current
+// position and passing it in to run. run would then return a Twist (or just x,y
+// velocity) and whoever called run would be responsible for sending that
+// where it needs to go.
+//
 void PurePursuit::run()
 {
       ros::spinOnce();
@@ -186,7 +194,7 @@ void PurePursuit::run()
       //tf.tranform();//something here to make the next_waypoint be in the frame of odometry
       base_link_waypoint.x = next_waypoint_.pose.position.x - odom_msg_.pose.pose.position.x;
       base_link_waypoint.y = next_waypoint_.pose.position.y - odom_msg_.pose.pose.position.y;
-      double mag = sqrt(pow(base_link_waypoint.x, 2) + pow(base_link_waypoint.y, 2));
+      double mag = sqrt(pow(base_link_waypoint.x, 2) + pow(base_link_waypoint.y, 2)); // TODO : use hypot()
       cmd_vel_.linear.x = max_velocity_ * base_link_waypoint.x / mag;
       cmd_vel_.linear.y = max_velocity_ * base_link_waypoint.y / mag;
       cmd_vel_.linear.z = 0;
