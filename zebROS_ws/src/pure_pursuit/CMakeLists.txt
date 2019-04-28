@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   tf2
   tf2_ros
+  actionlib_msgs
+  nav_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -71,10 +73,12 @@ add_action_files(
 )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  actionlib_msgs
+  geometry_msgs
+  nav_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,10 +110,10 @@ add_action_files(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES pure_pursuit
-#  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs tf2 tf2_ros
-#  DEPENDS system_lib
+  INCLUDE_DIRS include
+  LIBRARIES pure_pursuit
+  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs
+  DEPENDS system_lib
 )
 
 ###########
@@ -119,7 +123,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -134,11 +138,11 @@ add_library(${PROJECT_NAME}
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-#add_executable(pure_pursuit_server src/pure_pursuit_server.cpp)
-#add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#target_link_libraries(pure_pursuit_server
-#  ${catkin_LIBRARIES}
-#)
+add_executable(pure_pursuit_server src/pure_pursuit_server.cpp)
+add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pure_pursuit_server
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
