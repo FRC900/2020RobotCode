@@ -8,10 +8,10 @@
 void PurePursuit::setup()
 {
     // Read config values
-    nh_.getParam("lookahead_distance", lookahead_distance_);
-    nh_.getParam("max_velocity", max_velocity_);
-    nh_.getParam("max_accel", max_accel_);
-    nh_.getParam("pos_tol", pos_tol_);
+    nh_.getParam("/pure_pursuit/lookahead_distance", lookahead_distance_);
+    nh_.getParam("/swerve_drive_controller/max_speed", max_velocity_);
+    nh_.getParam("/swerve_drive_controller/max_accel", max_accel_);
+    nh_.getParam("/pure_pursuit/pos_tol", pos_tol_);
 
 }
 

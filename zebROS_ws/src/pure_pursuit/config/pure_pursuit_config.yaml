@@ -1,0 +1,5 @@
+pure_pursuit:
+    lookahead_distance: 1
+    pos_tol: 0.05 # position tolerance
+    odometry_topic: "/robot_odom"
+    target_frame: "initial_pose"

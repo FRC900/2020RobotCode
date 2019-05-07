@@ -52,8 +52,8 @@ class PurePursuitAction
 		tf2_filter_ = std::make_shared<tf2_ros::MessageFilter<nav_msgs::Odometry>>(buffer_, target_frame_, 10, nh_);
 		tf2_filter_->registerCallback(boost::bind(&PurePursuitAction::odomCallback, this, _1));
 
-		nh_.getParam("odometry_topic", odometry_topic_);
-		nh_.getParam("target_frame", target_frame_); //position of the robot at the beginning of the path
+		nh_.getParam("/pure_pursuit/odometry_topic", odometry_topic_);
+		nh_.getParam("/pure_pursuit/target_frame", target_frame_); //position of the robot at the beginning of the path
 
 		// Initialize the object. We'll see how this goes
 		pure_pursuit_controller_ = std::make_shared<PurePursuit>(nh_);
@@ -63,14 +63,7 @@ class PurePursuitAction
 
 		void odomCallback(nav_msgs::OdometryConstPtr odom)
 		{
-			try
-			{
-				buffer_.transform(*odom, odom_msg_, target_frame_);
-			}
-			catch (tf2::TransformException &ex)
-			{
-				ROS_WARN("Failed %s\n", ex.what());
-			}
+			odom_msg_ = *odom;
 		}
 
 
@@ -91,12 +84,34 @@ class PurePursuitAction
 
 			pure_pursuit_controller_->loadPath(goal->path);
 
-			pure_pursuit_controller_->publishCurrentTransform();
+			//publish the current location, relative to the starting location of the robot, as a dynamic transform
+			tf2_ros::TransformBroadcaster br;
+			geometry_msgs::TransformStamped transform;
+			transform.header.stamp = ros::Time::now();
+			transform.header.frame_id = "initial_pose";
+			transform.child_frame_id = "base_link";
+			transform.transform.translation.x = odom_msg_.pose.pose.position.x;
+			transform.transform.translation.y = odom_msg_.pose.pose.position.y;
+			transform.transform.translation.z = 0.0;
+			transform.transform.rotation.x = odom_msg_.pose.pose.orientation.x;
+			transform.transform.rotation.y = odom_msg_.pose.pose.orientation.y;
+			transform.transform.rotation.z = odom_msg_.pose.pose.orientation.z;
+			transform.transform.rotation.w = odom_msg_.pose.pose.orientation.w;
+			br.sendTransform(transform);
 
 			geometry_msgs::Twist cmd_vel;
+			nav_msgs::Odometry transformed_odom;
 			while(ros::ok() && !timed_out && !preempted && !success)
 			{
-				cmd_vel = pure_pursuit_controller_->run(odom_msg_);
+				try
+				{
+					buffer_.transform(odom_msg_, transformed_odom, target_frame_);
+				}
+				catch (tf2::TransformException &ex)
+				{
+					ROS_WARN("Failed %s\n", ex.what());
+				}
+				cmd_vel = pure_pursuit_controller_->run(transformed_odom);
 				cmd_vel_pub_.publish(cmd_vel);
 
 				preempted = as_.isPreemptRequested();
