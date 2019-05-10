@@ -32,31 +32,29 @@ class PurePursuitAction
 		ros::Publisher cmd_vel_pub_;
 
 		//tf stuff
-		std::shared_ptr<tf2_ros::TransformListener> tf2_;
-		std::shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> odom_sub_;
-		std::shared_ptr<tf2_ros::MessageFilter<nav_msgs::Odometry>> tf2_filter_;
+		tf2_ros::TransformListener tf2_;
+		message_filters::Subscriber<nav_msgs::Odometry> odom_sub_;
+		tf2_ros::MessageFilter<nav_msgs::Odometry> tf2_filter_;
 		
-		std::shared_ptr<PurePursuit> pure_pursuit_controller_;
+		PurePursuit pure_pursuit_controller_;
 	public:
 		PurePursuitAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&PurePursuitAction::executeCB, this, _1), false),
-			action_name_(name)
+			action_name_(name),
+			pure_pursuit_controller_(nh_),
+			odom_sub_(nh_, "pointstamped_goal_msg", 1),
+			tf2_(buffer_),
+			tf2_filter_(buffer_, target_frame_, 10, nh_)
 	{
 		as_.start();
 
 		// Subscribing to odometry/odom transforms
-		odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::Odometry>>(nh_, "pointstamped_goal_msg", 1);
 		cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 
-		tf2_ = std::make_shared<tf2_ros::TransformListener>(buffer_);
-		tf2_filter_ = std::make_shared<tf2_ros::MessageFilter<nav_msgs::Odometry>>(buffer_, target_frame_, 10, nh_);
-		tf2_filter_->registerCallback(boost::bind(&PurePursuitAction::odomCallback, this, _1));
+		tf2_filter_.registerCallback(boost::bind(&PurePursuitAction::odomCallback, this, _1));
 
 		nh_.getParam("/pure_pursuit/odometry_topic", odometry_topic_);
 		nh_.getParam("/pure_pursuit/target_frame", target_frame_); //position of the robot at the beginning of the path
-
-		// Initialize the object. We'll see how this goes
-		pure_pursuit_controller_ = std::make_shared<PurePursuit>(nh_);
 	}
 
 		~PurePursuitAction(void) {}
@@ -80,9 +78,9 @@ class PurePursuitAction
 
 			const double start_time = ros::Time::now().toSec();
 
-			pure_pursuit_controller_->setup();
+			pure_pursuit_controller_.setup();
 
-			pure_pursuit_controller_->loadPath(goal->path);
+			pure_pursuit_controller_.loadPath(goal->path);
 
 			//publish the current location, relative to the starting location of the robot, as a dynamic transform
 			tf2_ros::TransformBroadcaster br;
@@ -111,7 +109,7 @@ class PurePursuitAction
 				{
 					ROS_WARN("Failed %s\n", ex.what());
 				}
-				cmd_vel = pure_pursuit_controller_->run(transformed_odom);
+				cmd_vel = pure_pursuit_controller_.run(transformed_odom);
 				cmd_vel_pub_.publish(cmd_vel);
 
 				preempted = as_.isPreemptRequested();
