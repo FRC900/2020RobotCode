@@ -18,6 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   actionlib_msgs
   nav_msgs
+  behaviors
+  swerve_point_generator
 )
 
 ## System dependencies are found with CMake's conventions
@@ -113,7 +115,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   # LIBRARIES pure_pursuit
-  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters
+  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters swerve_point_generator
   DEPENDS system_lib
 )
 
@@ -141,6 +143,12 @@ include_directories(
 add_executable(pure_pursuit_server src/pure_pursuit_server.cpp src/pure_pursuit.cpp)
 add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pure_pursuit_server
+  ${catkin_LIBRARIES}
+)
+
+add_executable(pure_pursuit_test_client src/test_client.cpp)
+add_dependencies(pure_pursuit_test_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pure_pursuit_test_client
   ${catkin_LIBRARIES}
 )
 

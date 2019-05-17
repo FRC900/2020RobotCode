@@ -649,7 +649,21 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 		odom_yaw += command.ang * delta_t;
 		orientation = tf::createQuaternionMsgFromYaw(odom_yaw);
 
+		//first, we'll publish the transform over tf
+		geometry_msgs::TransformStamped odom_trans;
+		odom_trans.header.stamp = time;
+		odom_trans.header.frame_id = "odom";
+		odom_trans.child_frame_id = "base_link";
 
+		odom_trans.transform.translation.x += command.lin[0] * delta_t;
+		odom_trans.transform.translation.y += command.lin[1] * delta_t;
+		odom_trans.transform.translation.z = 0.0;
+		odom_trans.transform.rotation = orientation;
+
+		//send the transform
+		odom_tf_.sendTransform(odom_trans);
+
+		//then, publish the odometry message
 		odom_pub_.msg_.header.stamp = time;
 		odom_pub_.msg_.pose.pose.position.x += command.lin[0] * delta_t;
 		odom_pub_.msg_.pose.pose.position.y += command.lin[1] * delta_t;
@@ -659,6 +673,7 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 		odom_pub_.msg_.twist.twist.angular.x = command.ang;
 
 		odom_pub_.unlockAndPublish();
+
 		last_odom_pub_time_ = time;
 	}
 }
