@@ -8,9 +8,10 @@
 #include <geometry_msgs/Point32.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
+#include <pure_pursuit/spline.h>
 //tf stuff
 #include <tf2_ros/transform_listener.h>
-#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/message_filter.h"
 #include "message_filters/subscriber.h"
@@ -30,10 +31,10 @@ class PurePursuitAction
 		std::string target_frame_;
 		std::string odometry_topic_;
 		ros::Publisher cmd_vel_pub_;
+		ros::Subscriber odom_sub_;
 
 		//tf stuff
 		tf2_ros::TransformListener tf2_;
-		message_filters::Subscriber<nav_msgs::Odometry> odom_sub_;
 		tf2_ros::MessageFilter<nav_msgs::Odometry> tf2_filter_;
 		
 		PurePursuit pure_pursuit_controller_;
@@ -42,7 +43,6 @@ class PurePursuitAction
 			as_(nh_, name, boost::bind(&PurePursuitAction::executeCB, this, _1), false),
 			action_name_(name),
 			pure_pursuit_controller_(nh_),
-			odom_sub_(nh_, "pointstamped_goal_msg", 1),
 			tf2_(buffer_),
 			tf2_filter_(buffer_, target_frame_, 10, nh_)
 	{
@@ -50,11 +50,12 @@ class PurePursuitAction
 
 		// Subscribing to odometry/odom transforms
 		cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
+		odom_sub_ = nh_.subscribe("/frcrobot_jetson/swerve_drive_controller/odom", 1, &PurePursuitAction::odomCallback, this);
 
 		tf2_filter_.registerCallback(boost::bind(&PurePursuitAction::odomCallback, this, _1));
 
 		nh_.getParam("/pure_pursuit/odometry_topic", odometry_topic_);
-		nh_.getParam("/pure_pursuit/target_frame", target_frame_); //position of the robot at the beginning of the path
+		nh_.getParam("pure_pursuit/target_frame", target_frame_); //position of the robot at the beginning of the path
 	}
 
 		~PurePursuitAction(void) {}
@@ -64,15 +65,14 @@ class PurePursuitAction
 			odom_msg_ = *odom;
 		}
 
-
 		void executeCB(const pure_pursuit::PurePursuitGoalConstPtr &goal)
 		{
-			ROS_INFO("Hatch Panel PurePursuit Server Running");
+			ROS_INFO("PurePursuit Server Running");
 
 			ros::Rate r(50);
 
 			bool preempted = false;
-			bool timed_out = false; 
+			bool timed_out = false;
 			bool success = false;
 			double percent_complete = 0;
 
@@ -83,10 +83,10 @@ class PurePursuitAction
 			pure_pursuit_controller_.loadPath(goal->path);
 
 			//publish the current location, relative to the starting location of the robot, as a dynamic transform
-			tf2_ros::TransformBroadcaster br;
+			tf2_ros::StaticTransformBroadcaster br;
 			geometry_msgs::TransformStamped transform;
-			transform.header.stamp = ros::Time::now();
 			transform.header.frame_id = "initial_pose";
+			transform.header.stamp = ros::Time::now();
 			transform.child_frame_id = "base_link";
 			transform.transform.translation.x = odom_msg_.pose.pose.position.x;
 			transform.transform.translation.y = odom_msg_.pose.pose.position.y;
@@ -103,7 +103,7 @@ class PurePursuitAction
 			{
 				try
 				{
-					buffer_.transform(odom_msg_, transformed_odom, target_frame_);
+					buffer_.transform(odom_msg_, transformed_odom, "initial_pose");
 				}
 				catch (tf2::TransformException &ex)
 				{
@@ -114,6 +114,7 @@ class PurePursuitAction
 
 				preempted = as_.isPreemptRequested();
 				timed_out = (start_time - ros::Time::now().toSec() > time_to_path);
+				r.sleep();
 			}
 
 			pure_pursuit::PurePursuitResult result;
