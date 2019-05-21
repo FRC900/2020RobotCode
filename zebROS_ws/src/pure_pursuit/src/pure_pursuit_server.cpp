@@ -11,7 +11,7 @@
 #include <pure_pursuit/spline.h>
 //tf stuff
 #include <tf2_ros/transform_listener.h>
-#include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/message_filter.h"
 #include "message_filters/subscriber.h"
@@ -65,6 +65,11 @@ class PurePursuitAction
 			odom_msg_ = *odom;
 		}
 
+		bool isCmdVelZero(geometry_msgs::Twist cmd_vel)
+		{
+			return (cmd_vel.linear.x == 0 && cmd_vel.linear.y == 0 && cmd_vel.angular.z == 0);
+		}
+
 		void executeCB(const pure_pursuit::PurePursuitGoalConstPtr &goal)
 		{
 			ROS_INFO("PurePursuit Server Running");
@@ -83,34 +88,37 @@ class PurePursuitAction
 			pure_pursuit_controller_.loadPath(goal->path);
 
 			//publish the current location, relative to the starting location of the robot, as a dynamic transform
-			tf2_ros::StaticTransformBroadcaster br;
+			tf2_ros::TransformBroadcaster br;
 			geometry_msgs::TransformStamped transform;
 			transform.header.frame_id = "initial_pose";
-			transform.header.stamp = ros::Time::now();
-			transform.child_frame_id = "base_link";
-			transform.transform.translation.x = odom_msg_.pose.pose.position.x;
-			transform.transform.translation.y = odom_msg_.pose.pose.position.y;
+			transform.child_frame_id = "odom";
+			transform.transform.translation.x = -odom_msg_.pose.pose.position.x;
+			transform.transform.translation.y = -odom_msg_.pose.pose.position.y;
 			transform.transform.translation.z = 0.0;
 			transform.transform.rotation.x = odom_msg_.pose.pose.orientation.x;
 			transform.transform.rotation.y = odom_msg_.pose.pose.orientation.y;
 			transform.transform.rotation.z = odom_msg_.pose.pose.orientation.z;
-			transform.transform.rotation.w = odom_msg_.pose.pose.orientation.w;
+			transform.transform.rotation.w = -odom_msg_.pose.pose.orientation.w;
+			transform.header.stamp = ros::Time::now();
 			br.sendTransform(transform);
 
 			geometry_msgs::Twist cmd_vel;
 			nav_msgs::Odometry transformed_odom;
 			while(ros::ok() && !timed_out && !preempted && !success)
 			{
+				//TODO: things are not working with initial_pose
 				try
 				{
-					buffer_.transform(odom_msg_, transformed_odom, "initial_pose");
+					tf2::doTransform(odom_msg_, transformed_odom, transform);
 				}
 				catch (tf2::TransformException &ex)
 				{
 					ROS_WARN("Failed %s\n", ex.what());
 				}
+				//transformed_odom = odom_msg_;
 				cmd_vel = pure_pursuit_controller_.run(transformed_odom);
 				cmd_vel_pub_.publish(cmd_vel);
+				success = isCmdVelZero(cmd_vel);
 
 				preempted = as_.isPreemptRequested();
 				timed_out = (start_time - ros::Time::now().toSec() > time_to_path);
