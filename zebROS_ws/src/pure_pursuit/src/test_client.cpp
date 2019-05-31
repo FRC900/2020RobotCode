@@ -70,48 +70,49 @@ tk::spline parametrize_spline(const std::vector<spline_coefs> &x_splines_first_d
 		std::vector<double> &dtds_by_spline,
 		std::vector<double> &arc_length_by_spline)
 {
-	ROS_INFO_STREAM("line = " << __LINE__);
-	ROS_INFO_STREAM("endpoints size = " << end_points.size());
 	total_arc_length = 0;
-	double spline_points = 1000.;
+	double spline_points = 16.;
 	double period_t = (end_points[0] - 0.0) / spline_points;
 	double start = 0;
 	double arc_before = 0;
+	double a_val = 0;
 	double b_val = 0;
 	std::vector<double> t_vals;
 	std::vector<double> s_vals;
 	t_vals.reserve(x_splines_first_deriv.size() * (static_cast<size_t>(spline_points) + 1));
 	s_vals.reserve(x_splines_first_deriv.size() * (static_cast<size_t>(spline_points) + 1));
-	ROS_INFO_STREAM("line = " << __LINE__);
 
 	for (size_t i = 0; i < x_splines_first_deriv.size(); i++)
 	{
-		ROS_INFO_STREAM("line = " << __LINE__);
 		if (i != 0)
 		{
-			ROS_INFO_STREAM("line = " << __LINE__);
+			ROS_INFO_STREAM("parametrizing spline " << i+1);
 			period_t = (end_points[i] - end_points[i - 1]) / spline_points;
-			start = end_points[i - 1];
+			//start = end_points[i - 1];
+		}
+		else
+		{
+			ROS_INFO_STREAM("parametrizing first spline");
 		}
 		if (i > 1)
 		{
-			ROS_INFO_STREAM("line = " << __LINE__);
 			dtds_by_spline.push_back((end_points[i - 1] - end_points[i - 2]) /  (total_arc_length
 									 - arc_before));
-		ROS_INFO_STREAM("dtds by spline:" << dtds_by_spline[i]);
+	ROS_INFO_STREAM("dtds by spline:" << dtds_by_spline[i]);
 		}
 		else if (i == 1)
 		{
 			dtds_by_spline.push_back((end_points[0] - 0) /  (total_arc_length - arc_before));
-		ROS_INFO_STREAM("dtds by spline:" << dtds_by_spline[i]);
+	ROS_INFO_STREAM("dtds by spline:" << dtds_by_spline[i]);
 		}
-		ROS_INFO_STREAM("line = " << __LINE__);
+
 		arc_before = total_arc_length;
 		ROS_INFO_STREAM("arc_before: " << arc_before);
 		for (size_t k = 0; k < static_cast<size_t>(spline_points); k++)
 		{
-			const double a_val = k * period_t + start;
+			a_val = k * period_t + start;
 			b_val = (k + 1) * period_t + start;
+			ROS_INFO_STREAM("a_val = " << a_val << " b_val = " << b_val << " total arc = " << total_arc_length);
 			t_vals.push_back(a_val);
 			s_vals.push_back(total_arc_length);
 			//TODO: improve efficiency here
@@ -163,7 +164,6 @@ tk::spline parametrize_spline(const std::vector<spline_coefs> &x_splines_first_d
 	for (size_t i = 0; i < t_vals.size(); i++)
 	{
 		ROS_INFO_STREAM("t_val = " << t_vals[i] << " s vals = " << s_vals[i]);
-		//ROS_INFO_STREAM("s_vale = " << s_vals[i] << " s vals = " << s(s_vals[i]));
 	}
 	ROS_INFO_STREAM("successful parametrize spline");
 	return s;
@@ -178,32 +178,20 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 
 	//x-movement
 	srvBaseTrajectory.request.points[0].positions.push_back(1);
-	srvBaseTrajectory.request.points[0].velocities.push_back(0);
-	srvBaseTrajectory.request.points[0].accelerations.push_back(0);
 	//y-movement
 	srvBaseTrajectory.request.points[0].positions.push_back(2);
-	srvBaseTrajectory.request.points[0].velocities.push_back(0);
-	srvBaseTrajectory.request.points[0].accelerations.push_back(0);
 	//z-rotation
 	double rotation = 0;
 	srvBaseTrajectory.request.points[0].positions.push_back(rotation);
-	srvBaseTrajectory.request.points[0].velocities.push_back(0); //velocity at the end point
-	srvBaseTrajectory.request.points[0].accelerations.push_back(0); //acceleration at the end point
 	//time for profile to run
 	srvBaseTrajectory.request.points[0].time_from_start = ros::Duration(10);
 
 	//x-movement
 	srvBaseTrajectory.request.points[1].positions.push_back(0);
-	srvBaseTrajectory.request.points[1].velocities.push_back(0);
-	srvBaseTrajectory.request.points[1].accelerations.push_back(0);
 	//y-movement
 	srvBaseTrajectory.request.points[1].positions.push_back(4);
-	srvBaseTrajectory.request.points[1].velocities.push_back(0);
-	srvBaseTrajectory.request.points[1].accelerations.push_back(0);
 	//z-rotation
 	srvBaseTrajectory.request.points[1].positions.push_back(rotation);
-	srvBaseTrajectory.request.points[1].velocities.push_back(0); //velocity at the end point
-	srvBaseTrajectory.request.points[1].accelerations.push_back(0); //acceleration at the end point
 	//time for profile to run
 	srvBaseTrajectory.request.points[1].time_from_start = ros::Duration(20);
 
@@ -217,6 +205,7 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 	traj.request.x_coefs.resize(2);
 	traj.request.y_coefs.resize(2);
 	traj.request.end_points.resize(2);
+	traj.request.spline_groups.push_back(2);
 
 	for(size_t i = 0; i < srvBaseTrajectory.response.orient_coefs[0].spline.size(); i++)
 	{
@@ -226,26 +215,22 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 	}
 	for(size_t i = 0; i < srvBaseTrajectory.response.orient_coefs[1].spline.size(); i++)
 	{
-		traj.request.orient_coefs[0].spline.push_back(srvBaseTrajectory.response.orient_coefs[2].spline[i]);
-		traj.request.x_coefs[0].spline.push_back(srvBaseTrajectory.response.x_coefs[2].spline[i]);
-		traj.request.y_coefs[0].spline.push_back(srvBaseTrajectory.response.y_coefs[2].spline[i]);
+		traj.request.orient_coefs[1].spline.push_back(srvBaseTrajectory.response.orient_coefs[2].spline[i]);
+		traj.request.x_coefs[1].spline.push_back(srvBaseTrajectory.response.x_coefs[2].spline[i]);
+		traj.request.y_coefs[1].spline.push_back(srvBaseTrajectory.response.y_coefs[2].spline[i]);
 	}
 
-	traj.request.spline_groups.push_back(1);
-	traj.request.wait_before_group.push_back(.16);
+	traj.request.wait_before_group.push_back(0);
 	traj.request.t_shift.push_back(0);
 	traj.request.flip.push_back(false);
-	traj.request.end_points.push_back(1);
 	traj.request.end_points[0] = srvBaseTrajectory.response.end_points[1];
 	traj.request.initial_v = 0;
 	traj.request.final_v = 0;
 	traj.request.x_invert.push_back(0);
 
-	traj.request.spline_groups.push_back(1);
 	traj.request.wait_before_group.push_back(.16);
 	traj.request.t_shift.push_back(0);
 	traj.request.flip.push_back(false);
-	traj.request.end_points.push_back(1);
 	traj.request.end_points[1] = srvBaseTrajectory.response.end_points[2];
 	traj.request.initial_v = 0;
 	traj.request.final_v = 0;
@@ -253,34 +238,24 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 
 	nav_msgs::Path path;
 	double last_time = 0;
-	/*** ITERATE THROUGH SPLINES ***/
-	ROS_ERROR_STREAM("Iterating through splines in pure pursuit test client");
-	for (size_t s = 0; s < traj.request.spline_groups.size(); s++)
-	{
-		//I don't know what priv_num is
-		int priv_num = 0;
-		if (s > 0)
-		{
-			priv_num = traj.request.spline_groups[s - 1];
-		}
 
-		const int n = round(traj.request.wait_before_group[s] / defined_dt);
 		std::vector<spline_coefs> x_splines;
 		std::vector<spline_coefs> y_splines;
 		std::vector<spline_coefs> orient_splines;
+		std::vector<spline_coefs> x_splines_first_deriv;
+		std::vector<spline_coefs> y_splines_first_deriv;
+		std::vector<spline_coefs> orient_splines_first_deriv;
+		std::vector<spline_coefs> x_splines_second_deriv;
+		std::vector<spline_coefs> y_splines_second_deriv;
+		std::vector<spline_coefs> orient_splines_second_deriv;
 
-		const int neg_x = traj.request.x_invert[s] ? -1 : 1;
+		const int neg_x = traj.request.x_invert[0] ? -1 : 1;
 		std::vector<double> end_points_holder;
 
-		//I also don't know what shift_by does
-		double shift_by = 0;
-		if (s != 0)
-		{
-			shift_by = traj.request.end_points[priv_num - 1];
-		}
-
 		// Make the splines from traj into spline_coefs format. TODO remove traj middleman
-		for (int i = priv_num; i < traj.request.spline_groups[s]; i++)
+	/*** ITERATE THROUGH SPLINES ***/
+	ROS_ERROR_STREAM("Iterating through splines in pure pursuit test client");
+		for (int i = 0; i < traj.request.spline_groups[0]; i++)
 		{
 			ROS_INFO_STREAM("orient_coefs[" << i << "].spline=" << traj.request.orient_coefs[i].spline[0] << " " <<
 							traj.request.orient_coefs[i].spline[1] << " " <<
@@ -330,22 +305,7 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 									traj.request.y_coefs[i].spline[5]));
 			//ROS_INFO_STREAM("y_coefs[" << i << "].spline=" << y_splines.back());
 
-			ROS_INFO_STREAM("hrer: " << traj.request.end_points[i] - shift_by << " r_s: " <<  traj.request.spline_groups[s] <<  " s: " << s);
-			end_points_holder.push_back(traj.request.end_points[i] - shift_by);
-		}
-
-		const double t_shift = traj.request.t_shift[s];
-		const bool flip_dirc = traj.request.flip[s];
-
-		//Take derivatives of splines
-		std::vector<spline_coefs> x_splines_first_deriv;
-		std::vector<spline_coefs> y_splines_first_deriv;
-		std::vector<spline_coefs> orient_splines_first_deriv;
-		std::vector<spline_coefs> x_splines_second_deriv;
-		std::vector<spline_coefs> y_splines_second_deriv;
-		std::vector<spline_coefs> orient_splines_second_deriv;
-		for (size_t i = 0; i < x_splines.size(); i++)
-		{
+			//Take derivatives of splines
 			//ROS_INFO_STREAM("x splines[" << i << "] " << x_splines[i]);
 			x_splines_first_deriv.push_back(x_splines[i].first_derivative());
 			//ROS_INFO_STREAM("x splines[" << i << "] first deriv " << x_splines_first_deriv[i]);
@@ -366,7 +326,13 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 
 			orient_splines_second_deriv.push_back(orient_splines_first_deriv[i].first_derivative());
 			//ROS_INFO_STREAM("orient splines[" << i << "] second deriv " << orient_splines_second_deriv[i]);
+
+			ROS_INFO_STREAM("hrer: " << traj.request.end_points[i] << " r_s: " <<  traj.request.spline_groups[0] );
+			end_points_holder.push_back(traj.request.end_points[i] );
 		}
+
+		const double t_shift = traj.request.t_shift[0];
+		const bool flip_dirc = traj.request.flip[0];
 
 		/*** PARAMETRIZE SPLINE ***/
 		ROS_ERROR_STREAM("parametrizing spline in pure pursuit test client");
@@ -377,6 +343,10 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 		//This turns the x,y linear positions into a single linear-path-position vs. time curve
 		tk::spline spline = parametrize_spline(x_splines_first_deriv, y_splines_first_deriv, end_points_holder,
 				total_arc, dtds_for_spline, arc_length_for_spline);
+		for(int i = 0; i < arc_length_for_spline.size(); i++)
+		{
+			ROS_INFO_STREAM("arc length for spline " << i << " is " << arc_length_for_spline[i]);
+		}
 
 		/*** TRANSFER INTO nav_msgs::Path FORMAT***/
 		ROS_ERROR_STREAM("transfering into path format in pure pursuit test client");
@@ -385,14 +355,14 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 		for(double current_spline_position = 0; current_spline_position < total_arc; current_spline_position += iteration_length)
 		{
 			geometry_msgs::PoseStamped pose;
-			double current_time = current_spline_position * dtds_for_spline[s] + last_time;
+			double current_time = spline(current_spline_position);
 
 			double x_position;
 			double y_position;
 			double yaw;
-			calc_point(x_splines[s], current_time, x_position);
-			calc_point(y_splines[s], current_time, y_position);
-			calc_point(orient_splines[s], current_time, yaw);
+			calc_point(x_splines[0], current_time, x_position);
+			calc_point(y_splines[0], current_time, y_position);
+			calc_point(orient_splines[0], current_time, yaw);
 
 			geometry_msgs::Quaternion orientation;
 			tf2::Quaternion tf_orientation;
@@ -416,8 +386,6 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 				last_time = current_time;
 		}
 		ROS_INFO_STREAM("number of points in path = " << path.poses.size());
-
-	}
 
 	/*** SEND GOAL TO ACTION SERVER ***/
 	ROS_ERROR_STREAM("Sending goal to action server in pure pursuit test client");
