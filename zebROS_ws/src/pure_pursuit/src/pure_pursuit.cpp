@@ -30,9 +30,8 @@ void PurePursuit::loadPath(nav_msgs::Path path)
 geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 {
 	ROS_INFO_STREAM("----------------------------------------------");
-	ROS_INFO_STREAM("current_position = " << odom.pose.pose.position.x 
+	ROS_INFO_STREAM("current_position = " << odom.pose.pose.position.x
 			<< " " << odom.pose.pose.position.y);
-
 
 	geometry_msgs::PoseStamped next_waypoint;
 
@@ -51,10 +50,12 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 	}
 	ROS_INFO_STREAM("minimum_distance = " << minimum_distance);
 
-	next_waypoint = path_.poses[std::min(num_waypoints_ - 1, minimum_idx+2)];
+	next_waypoint = path_.poses[std::min(num_waypoints_ - 1, minimum_idx+1)];
+
+	if(minimum_idx == num_waypoints_ - 1)
 
 	ROS_INFO_STREAM("x-error: " << fabs(odom.pose.pose.position.x - next_waypoint.pose.position.x) << " y-error: " << fabs(odom.pose.pose.position.y - next_waypoint.pose.position.y) << " final_pos_tol: " << final_pos_tol_);
-	if(fabs(odom.pose.pose.position.x - path_.poses[num_waypoints_ - 1].pose.position.x) < final_pos_tol_ && fabs(odom.pose.pose.position.y - path_.poses[num_waypoints_ - 1].pose.position.y) < final_pos_tol_)
+	if(minimum_idx == num_waypoints_ - 1 && fabs(odom.pose.pose.position.x - path_.poses[num_waypoints_ - 1].pose.position.x) < final_pos_tol_ && fabs(odom.pose.pose.position.y - path_.poses[num_waypoints_ - 1].pose.position.y) < final_pos_tol_)
 	{
 		cmd_vel_.linear.x = 0;
 		cmd_vel_.linear.y = 0;

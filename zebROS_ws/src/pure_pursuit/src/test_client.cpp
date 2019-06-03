@@ -65,22 +65,27 @@ void calc_point(const spline_coefs &spline, double t, double &returner)
 }
 
 tk::spline parametrize_spline(const std::vector<spline_coefs> &x_splines_first_deriv,
-		const std::vector<spline_coefs> &y_splines_first_deriv,
+		const std::vector<spline_coefs> &y_splines_first_deriv, 
+		const std::vector<spline_coefs> &x_splines, const std::vector<spline_coefs> &y_splines, const std::vector<spline_coefs> &orient_splines,
 		const std::vector<double> &end_points, double &total_arc_length,
 		std::vector<double> &dtds_by_spline,
-		std::vector<double> &arc_length_by_spline)
+		std::vector<double> &arc_length_by_spline,
+		nav_msgs::Path &path)
 {
 	total_arc_length = 0;
-	double spline_points = 16.;
+	double spline_points = 1000.;
 	double period_t = (end_points[0] - 0.0) / spline_points;
 	double start = 0;
 	double arc_before = 0;
 	double a_val = 0;
 	double b_val = 0;
+	int seq = 0;
 	std::vector<double> t_vals;
 	std::vector<double> s_vals;
 	t_vals.reserve(x_splines_first_deriv.size() * (static_cast<size_t>(spline_points) + 1));
 	s_vals.reserve(x_splines_first_deriv.size() * (static_cast<size_t>(spline_points) + 1));
+
+	double last_waypoint_position = 0;
 
 	for (size_t i = 0; i < x_splines_first_deriv.size(); i++)
 	{
@@ -112,7 +117,7 @@ tk::spline parametrize_spline(const std::vector<spline_coefs> &x_splines_first_d
 		{
 			a_val = k * period_t + start;
 			b_val = (k + 1) * period_t + start;
-			ROS_INFO_STREAM("a_val = " << a_val << " b_val = " << b_val << " total arc = " << total_arc_length);
+			//ROS_INFO_STREAM("a_val = " << a_val << " b_val = " << b_val << " total arc = " << total_arc_length);
 			t_vals.push_back(a_val);
 			s_vals.push_back(total_arc_length);
 			//TODO: improve efficiency here
@@ -129,14 +134,43 @@ tk::spline parametrize_spline(const std::vector<spline_coefs> &x_splines_first_d
 			calc_point(x_splines_first_deriv[i], (a_val + b_val) / 2, x_at_avg);
 			calc_point(y_splines_first_deriv[i], (a_val + b_val) / 2, y_at_avg);
 
-			//f(t) = sqrt((dx/dt)^2 + (dy/dt)^2)
+			//delete me, debug only
 
-			//ROS_INFO_STREAM("period_t: " << period_t);
-			//ROS_INFO_STREAM("idek: " << hypot(x_at_a, y_at_a) + 4 * hypot(x_at_avg, y_at_avg) + hypot(x_at_b, y_at_b));
-			total_arc_length += period_t / 6. * (hypot(x_at_a, y_at_a) + 4. * hypot(x_at_avg, y_at_avg) + hypot(x_at_b, y_at_b));
-			//ROS_INFO_STREAM("arc_now: " << total_arc_length);
 			//Simpsons rule
-			//ROS_INFO_STREAM("Spline: " << i << " t_val: " << a_val <<"  arc_length: " << total_arc_length);
+			total_arc_length += period_t / 6. * (hypot(x_at_a, y_at_a) + 4. * hypot(x_at_avg, y_at_avg) + hypot(x_at_b, y_at_b));
+
+			if(total_arc_length - last_waypoint_position > iteration_length)
+			{
+				last_waypoint_position = total_arc_length;
+				geometry_msgs::PoseStamped pose;
+				double current_time = a_val; //meaningless
+
+				double x_position;
+				double y_position;
+				double yaw;
+				calc_point(x_splines[i], current_time, x_position);
+				calc_point(y_splines[i], current_time, y_position);
+				calc_point(orient_splines[i], current_time, yaw);
+
+				geometry_msgs::Quaternion orientation;
+				tf2::Quaternion tf_orientation;
+				tf_orientation.setRPY(0, 0, yaw);
+				orientation.x = tf_orientation.getX();
+				orientation.y = tf_orientation.getY();
+				orientation.z = tf_orientation.getZ();
+				orientation.w = tf_orientation.getW();
+
+				pose.header.seq = seq;
+				pose.header.stamp = ros::Time(current_time);
+				pose.header.frame_id = "initial_pose";
+				pose.pose.position.x = x_position;
+				pose.pose.position.y = y_position;
+				pose.pose.orientation = orientation;
+
+				path.poses.push_back(pose);
+
+				seq++;
+			}
 		}
 		arc_length_by_spline.push_back(total_arc_length);
 	}
@@ -237,7 +271,6 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 	traj.request.x_invert.push_back(0);
 
 	nav_msgs::Path path;
-	double last_time = 0;
 
 		std::vector<spline_coefs> x_splines;
 		std::vector<spline_coefs> y_splines;
@@ -341,28 +374,44 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 		double total_arc;
 		//Run spline parametrizing code - also gets dtds and arc lengths
 		//This turns the x,y linear positions into a single linear-path-position vs. time curve
-		tk::spline spline = parametrize_spline(x_splines_first_deriv, y_splines_first_deriv, end_points_holder,
-				total_arc, dtds_for_spline, arc_length_for_spline);
+		tk::spline spline = parametrize_spline(x_splines_first_deriv, y_splines_first_deriv, x_splines, y_splines, orient_splines, end_points_holder,
+				total_arc, dtds_for_spline, arc_length_for_spline, path);
 		for(int i = 0; i < arc_length_for_spline.size(); i++)
 		{
 			ROS_INFO_STREAM("arc length for spline " << i << " is " << arc_length_for_spline[i]);
 		}
 
 		/*** TRANSFER INTO nav_msgs::Path FORMAT***/
-		ROS_ERROR_STREAM("transfering into path format in pure pursuit test client");
-		int num_spline_points = 1000;
+		/*ROS_ERROR_STREAM("transfering into path format in pure pursuit test client");
 		double seq = 0;
+		int spline_num = 0;
 		for(double current_spline_position = 0; current_spline_position < total_arc; current_spline_position += iteration_length)
 		{
+			if(current_spline_position == 0)
+			{
+				spline_num = 0;
+			}
+			else
+			{
+				for(int i = 0; i < x_splines_first_deriv.size(); i++)
+				{
+					if(current_spline_position > arc_length_for_spline[i])
+					{
+						spline_num = i;
+						break;
+					}
+				}
+			}
+			ROS_INFO_STREAM("spline_num");
 			geometry_msgs::PoseStamped pose;
 			double current_time = spline(current_spline_position);
 
 			double x_position;
 			double y_position;
 			double yaw;
-			calc_point(x_splines[0], current_time, x_position);
-			calc_point(y_splines[0], current_time, y_position);
-			calc_point(orient_splines[0], current_time, yaw);
+			calc_point(x_splines[spline_num], current_time, x_position);
+			calc_point(y_splines[spline_num], current_time, y_position);
+			calc_point(orient_splines[spline_num], current_time, yaw);
 
 			geometry_msgs::Quaternion orientation;
 			tf2::Quaternion tf_orientation;
@@ -382,9 +431,7 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 			path.poses.push_back(pose);
 
 			seq++;
-			if(total_arc - current_spline_position < iteration_length)
-				last_time = current_time;
-		}
+		}*/
 		ROS_INFO_STREAM("number of points in path = " << path.poses.size());
 
 	/*** SEND GOAL TO ACTION SERVER ***/
