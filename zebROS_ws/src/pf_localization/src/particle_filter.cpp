@@ -1,147 +1,140 @@
+#include <chrono>
+#include <random>
 
-class DistanceAndBearing
+#include <Eigen/Dense>
+
+#include <pf_localization/particle_filter.hpp>
+
+
+ParticleFilter::ParticleFilter(double NP, double min_x, double max_x, double min_y, double max_y,
+			const FieldMap &fieldMap, const FMatrix &F, const BMatrix &B,
+			const Eigen::Matrix2d &Q, const Eigen::Matrix3d &R)
+	: NP_(NP) // num particles
+	, NTh_(NP/2.0) // threshold for resampling
+	, fieldMap_(fieldMap) // map of the field - includes both beacons and walls
+	, B_(B)
+	, F_(F)
+	, Q_(Q) // sensor covariance matrix
+	, R_(R) // robot state covariance matrix
+	  , randomGen_(std::chrono::system_clock::now().time_since_epoch().count())
 {
-	public:
-		DistanceAndBearing(const double distance, const double bearing)
-			: distance_(distance)
-			, bearing_(bearing)
-		{
-		}
+	// Create initial particle state - randomly distributed over the
+	// entire rectangle ((min_x,min_y), (max_x, max_y))
+	// Theta will be updated almost immediately from IMU data -
+	// or maybe a TODO is to init this with an IMU heading?
+	std::uniform_real_distribution<double> x_distribution(min_x, max_x);
+	std::uniform_real_distribution<double> y_distribution(min_y, max_y);
 
-		distance(void) const
-		{
-			return distance_;
-		}
-		bearing(void) const
-		{
-			return bearing_;
-		}
-	private:
-		double distance_;
-		double bearing_;
-};
+	for (size_t i = 0; i < NP_; ++i)
+	{
+		ParticleState ps;
+		ps << x_distribution(randomGen_), y_distribution(randomGen_), 0,0,0,0;
+		particleStates_.push_back(ps);
+		particleWeights_.push_back(1./NP);
+	}
+}
 
-class BeaconCoord
+// B matrix holds DT for the timestep to move the robot
+// the correct amount for the commanded velocity.
+// Since the timestep isn't guaranteed to be constant, allow
+// it to be set here.
+// Might make more sense to just make dt a parameter to moveParticles?
+void ParticleFilter::setB(const BMatrix &B)
 {
-	public:
-		BeaconCoord(const double x, const double y, const double angle)
-			: x_(x)
-			, y_(y)
-			, angle_(angle)
-		{
-		}
+	B_ = B;
+}
 
-		double x(void)     const { return x_; }
-		double y(void)     const { return y_; }
-		double angle(void) const { return angle_; }
-
-	private:
-		double x_;
-		double y_;
-		double angle_;
-};
-
-// Beacon - holds field-centric x,y,angle coordinates
-//         of targets on the field
-class Beacon
+// Move each particle given the commanded input
+// vector (x', y', theta')
+// TODO - special case for robot not commanded to move at all?
+//        There, we won't be randomly drifting most of the time, so
+//        maybe don't add noise in that case and just make sure the state
+//        matrix ends up with the correct velocity.
+//        Then again, there is a little bit of drift after setting
+//        0 velocity, and we can also be rammed and moved so who knows?
+void ParticleFilter::moveParticles(const Eigen::Vector3d &u)
 {
-	public:
-		Beacon(const BeaconCoord &state)
-			: coord_(state)
-		{
-		}
+	std::uniform_real_distribution<double> randn(0.0, 1.0);
+	for (auto &ps : particleStates_)
+	{
+		// Add a small amount of random noise to the
+		// velocity given to each particle
+		Eigen::Vector3d ud
+		(
+			u(0) + randn(randomGen_) * R_(0,0),
+			u(1) + randn(randomGen_) * R_(1,1),
+			u(2) + randn(randomGen_) * R_(2,2)
+		);
+		ps = motionModel(ps, ud);
+	}
+}
 
-		const BeaconCoord &Get(void) const
-		{
-			return coord_;
-		}
-
-		DistanceAndBearing distance(const Coord &coord, bool reverse_angle = false) const
-		{
-			double dx = coord_.x() - coord.x();
-			double dy = coord_.y() - coord.y();
-			if (reverse_angle)
-			{
-				dx = -dx;
-				dy = -dy;
-			}
-			const double distance = hypot(dx, dy);
-			const double bearing  = angles::normalize_angle(atan2(dy, dx));
-			return DistanceAndBearing(distance, bearing);
-		}
-
-		double robotBearing(const double angle) const
-		{
-			const double abs_bearing = M_PI - angle;
-			const double rel_bearing = abs_bearing - coord_.angle();
-			return angles::normalize_angle(rel_bearing);
-		}
-	private:
-		BeaconCoord coord_;
-};
-
-class Beacons
+// Since we have a trusted angle measurement, simply
+// set all particles to the desired angle plus
+// some noise
+void ParticleFilter::rotateParticles(double angle)
 {
-	public:
-		Beacons(const std::vector<Beacons> &beacons)
-			: beacons_(beacons)
-		{
-		}
+	std::uniform_real_distribution<double> randn(0.0, 1.0);
+	for (auto &ps : particleStates_)
+		ps(2) = angle + randn(randomGen_) * R_(2,2);
+}
 
-		void append(const Beacon &beacon)
-		{
-			beacons_.push_back(beacon);
-		}
+// The estimated state is just the weighted sum
+// of all the particles
+void ParticleFilter::getEstimate(ParticleState &estimate) const
+{
+	estimate = ParticleState::Zero();
+	for (size_t i = 0; i < NP_; ++i)
+		estimate += particleStates_[i] * particleWeights_[i];
+}
 
-		bool at(size_t i, Beacon &beacon) const
-		{
-			if (i < beacons_.size())
-			{
-				beacon = beacons_[i];
-				return true;
-			}
-			return false;
-		}
-		constexpr double invalidCost = 1e6;
-		constexpr double maxDetectionDistance = 7.0; //meters
+// Main localization function - given the dietections passed in
+// update weights and reample to get to new state
+void ParticleFilter::localize(Detections &detections)
+{
+	double sumOfWeights = 0.0;
+	for (size_t i = 0; i < NP_; ++i)
+	{
+		particleWeights_[i] = detections.weights(particleStates_[i], fieldMap_, Q_);
+		sumOfWeights += particleWeights_[i];
+	}
 
-		std::vector<double> getCosts(const Coord &robotLoc, const Detection &detection)
-		{
-			std::vector<double> costs;
-			costs.resize(beacons_.size());
+	// Normalize weights so they sum to 1
+	if (sumOfWeights != 0)
+		for (auto &w: particleWeights_)
+			w /= sumOfWeights;
 
-			auto beaconDistanceAndAngle = detection.distanceAndAngle();
-			for (size_t i = 0; i < beacons_.size(); i++)
-			{
-				auto robotDistanceAndAngle = beacons_[i].distance(robotLoc);
-				if (robotDistanceAndAngle > maxDetectionDistance)
-				{
-					costs[i] = invalidCost;
-					continue;
-				}
-				if (fabs(angles::normalize_angle(robotDistanceAndAngle.angle() - robotLoc.angle())) > 0.85)
-				{
-					costs[i] = invalidCost;
-					continue;
-				}
-				const double deltaRange = fabs(beaconDistanceAndAngle.distance() - robotDistanceAndAngle.distance());
-				const double deltaAngle = fabs(beaconDistanceAndAngle.angle() - robotDistanceAndAngle.angle());
+	resample();
+}
 
-
-				// Check that angle from target to robot is
-				// between +/- pi/2. This is a quick way to rule
-				// out cases where it would be looking through
-				// a wall to see the target
-				reverseAngle = fabs(beacons_[i].robotBearing(beaconDistanceAndAngle.angle()));
-				if (reverseAngle >= (M_PI / 2.0))
-				{
-					costs[i] = invalidCost;
-					continue;
-				}
-			}
-
-		}
-
-	private:
-		std::vector<Beacon> beacons_;
+// Given the current state plus commanded velocity, compute the
+// next state of a particle
+// x is the current robot state.
+// u is the commanded velocity in x, y, theta
+// F_ and B_ control how the state plus velocity inputs
+// lead to the next state
+ParticleState ParticleFilter::motionModel(const ParticleState &x, const Eigen::Vector3d &u) const
+{
+	return F_ * x + B_ * u;
+}
+// update the current set of particles to a new one
+// Do so by picking from the current set of particles
+// The chance of each particle being picked is its weight
+void ParticleFilter::resample(void)
+{
+	// TODO - check Nth to see if resampling is needed
+	std::discrete_distribution<size_t> index(particleWeights_.begin(), particleWeights_.end());
+	std::vector<ParticleState> resampledStates;
+	for (size_t i = 0; i < NP_; ++i)
+	{
+				// j is the index of the particle selected from the old state
+		size_t j = index(randomGen_);
+		// TODO - add to me.  
+		// Look at code in https://github.com/mithi/particle-filter-prototype/blob/master/kidnapped-vehicle/src/particle_filter.cpp, resample() for an example
+		// Add that particle from the set of old particles to the
+		// list of the new ones
+		// Reset the weight of the new particle to 1/NP_
+	}
+	// copy the newly created particle array - resamplesStates
+	// to particleWeights_;
 }

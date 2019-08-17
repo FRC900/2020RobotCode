@@ -412,8 +412,8 @@ void TrackedObjectList::processDetect(const vector<Rect> &detectedRects,
 
 		// Solving assignment problem (find minimum-cost assignment
 		// between tracks and previously-predicted positions)
-		AssignmentProblemSolver APS;
-		APS.Solve(Cost, assignment, AssignmentProblemSolver::optimal);
+		AssignmentProblemSolver<double> APS;
+		APS.Solve(Cost, assignment, AssignmentProblemSolver<double>::optimal);
 
 #ifdef VERBOSE_TRACK
 		// assignment[i] holds the index of the detection assigned
