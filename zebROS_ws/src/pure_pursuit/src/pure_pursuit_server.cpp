@@ -36,7 +36,7 @@ class PurePursuitAction
 		//tf stuff
 		tf2_ros::TransformListener tf2_;
 		tf2_ros::MessageFilter<nav_msgs::Odometry> tf2_filter_;
-		
+
 		PurePursuit pure_pursuit_controller_;
 	public:
 		PurePursuitAction(const std::string &name) :
@@ -65,6 +65,7 @@ class PurePursuitAction
 			odom_msg_ = *odom;
 		}
 
+		// TODO : check that fabs() < small number instead?
 		bool isCmdVelZero(geometry_msgs::Twist cmd_vel)
 		{
 			return (cmd_vel.linear.x == 0 && cmd_vel.linear.y == 0 && cmd_vel.angular.z == 0);
@@ -79,6 +80,8 @@ class PurePursuitAction
 			bool preempted = false;
 			bool timed_out = false;
 			bool success = false;
+			// TODO : needs to be hooked up to something, but
+			// good diagnostic to have
 			double percent_complete = 0;
 
 			const double start_time = ros::Time::now().toSec();
