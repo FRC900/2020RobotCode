@@ -7,6 +7,8 @@
 
 void PurePursuit::setup()
 {
+	// TODO (KCJ) - move these reads to the calling code, pass in just the values
+	// No reason for this class to know anything about ROS
 	// Read config values
 	nh_.getParam("/frcrobot_jetson/pure_pursuit/lookahead_distance", lookahead_distance_);
 	nh_.getParam("/frcrobot_jetson/swerve_drive_controller/max_speed", max_velocity_);
@@ -36,6 +38,17 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 	geometry_msgs::PoseStamped next_waypoint;
 
 	// Find point in path closest to odometry reading
+	// TODO (KCJ) - another possibility here is looking to see which segment between two wayponints
+	// the current position is normal to.  That is, if it is off track, assume it is off track to the left
+	// or right of the desired path, and check to see which segment it is on if the point were projected
+	// perpendicular back to the correct track.
+	// See e.g. https://stackoverflow.com/questions/17581738/check-if-a-point-projected-on-a-line-segment-is-not-outside-it
+	// It could hit multiple segments, though, so maybe the minimum distance of segments it is normal to, using
+	// the right angle distance to the closest point along each segment
+	// http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+	// This would also potentially give a location between two segments as the current
+	// location, which makes the next lookahead point also somewhere
+	// between two waypoints.
 	double minimum_distance = std::numeric_limits<double>::max();
 	size_t minimum_idx = 0;
 	for(int i = 0; i < num_waypoints_; i++)
@@ -57,6 +70,8 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 	ROS_INFO_STREAM("x-error: " << fabs(odom.pose.pose.position.x - next_waypoint.pose.position.x) << " y-error: " << fabs(odom.pose.pose.position.y - next_waypoint.pose.position.y) << " final_pos_tol: " << final_pos_tol_);
 	if(minimum_idx == num_waypoints_ - 1 && fabs(odom.pose.pose.position.x - path_.poses[num_waypoints_ - 1].pose.position.x) < final_pos_tol_ && fabs(odom.pose.pose.position.y - path_.poses[num_waypoints_ - 1].pose.position.y) < final_pos_tol_)
 	{
+		// TODO : no reason for cmd_vel_ to be a member var, it can
+		// be a local instead.
 		cmd_vel_.linear.x = 0;
 		cmd_vel_.linear.y = 0;
 		cmd_vel_.linear.z = 0;
