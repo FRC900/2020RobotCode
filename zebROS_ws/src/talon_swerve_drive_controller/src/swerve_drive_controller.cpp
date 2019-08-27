@@ -564,7 +564,7 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 		const double new_wheel_rot = speed_joints_[k].getPosition();
 		const double delta_rot = new_wheel_rot - last_wheel_rot_[k];
 		//int inverterD = (k%2==0) ? -1 : 1;
-		const double dist = -delta_rot * wheel_radius_ * driveRatios_.encodertoRotations; //* inverterD;
+		const double dist = -delta_rot * wheel_radius_ * driveRatios_.encodertoRotations; // * inverterD;
 		//NOTE: below is a hack, TODO: REMOVE
 
 		const double steer_angle = swerveC_->getWheelAngle(k, steer_angles[k]);
@@ -683,7 +683,6 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 	const double delta_t = period.toSec();
 	const double inv_delta_t = 1 / delta_t;
 
-#if 0
 	// Grab current steering angle, store it
 	// for other code to use
 	std::array<double, WHEELCOUNT> steer_angles;
@@ -696,6 +695,7 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 		steer_angles_ = steer_angles;
 	}
 
+#if 0
 	if (comp_odom_) compOdometry(time, inv_delta_t);
 #endif
 
