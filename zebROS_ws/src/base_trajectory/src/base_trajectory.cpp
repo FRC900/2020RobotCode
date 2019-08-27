@@ -17,6 +17,7 @@
 #include <trajectory_msgs/JointTrajectory.h>
 #include <boost/assign.hpp>
 #include <base_trajectory/GenerateSpline.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 #include <angles/angles.h>
 
@@ -704,9 +705,88 @@ bool getPathSegLength(std::vector<ArclengthAndTime> &arcLengthAndTime,
 	return true;
 }
 
+// Given a trajectory, find time values which generate
+// increasing, equally spaced lengths along
+// that trajectory
+bool subdivideLength(std::vector<double> &equalLengthTimes,
+		const Trajectory &trajectory,
+		const double distanceBetweenLengths,
+		const double distanceEpsilon)
+{
+	equalLengthTimes.clear();
+	equalLengthTimes.push_back(0); // start at t==0
+	constexpr double midTimeInflation = 1.25;
+
+	// For each cumulative distance
+	// start = prev found time, end = last time
+	// Binary seh to get sample[] within tolerance of desired cumulative disance
+	// Push that result onto equalLengthTimes
+	double start = 0.0;
+
+	// since we're looking for more or less monotonincally increasing values
+	// keep track of the jump to get from one location to another. Use
+	// this as a starting guess for the next length increment
+	double prevStart = 0.0;
+	const double endTime = trajectory[0].back().endTime();
+	double prevTimeDelta = endTime / 2.0;
+
+	static Segment::State state;
+	sample(trajectory[0], endTime, state);
+	const double totalLength = state.position[0];
+
+	size_t iterCount = 0;
+	for (double currDistance = distanceBetweenLengths; currDistance <= totalLength; currDistance += distanceBetweenLengths)
+	{
+		double end = endTime;
+		double mid = start + prevTimeDelta;
+		while((end - mid) > 0.001) // Quit if time delta gets too small
+		{
+			TrajectoryPerJoint::const_iterator trajIt = sample(trajectory[0], mid, state);
+			if (trajIt == trajectory[0].cend())
+			{
+				ROS_ERROR_STREAM("base_trajectory : could not sample mid state at time " << mid);
+				return false;
+			}
+			iterCount += 1;
+			const double delta = currDistance - state.position[0];
+			//ROS_INFO_STREAM_FILTER(&messageFilter, "currDistance = " << currDistance << " start=" << start << " mid=" << mid << " end=" << end << " position[0]=" << state.position[0] << " delta=" << delta);
+			if (fabs(delta) < distanceEpsilon)
+			{
+				break;
+			}
+			else if (delta > 0)
+			{
+				start = mid;
+			}
+			else
+			{
+				end = mid;
+			}
+			mid = (start + end) / 2.0;
+		}
+
+		if (mid > endTime)
+		{
+			equalLengthTimes.push_back(endTime);
+			break;
+		}
+
+		equalLengthTimes.push_back(mid);
+		start = mid;
+		// Use starting "midpoint" guess of of start time plus
+		// the previous time jump, plus a little bit extra to
+		// make sure we don't undershoot. Undershooting would require a
+		// binary seh of basically the entire distance between
+		// mid and end, and since mid is very close to the start,
+		// it is basically a binary seh of the entire range.
+		prevTimeDelta = (start - prevStart) * midTimeInflation;
+		prevStart = start;
+	}
+	ROS_INFO_STREAM_FILTER(&messageFilter, "iterCount = " << iterCount);
+	return true;
+}
+
 bool getPathLength(Trajectory &arcLengthTrajectory,
-				   std::vector<double> &equalArcLengthTimes,
-				   double &totalLength,
 				   const Trajectory &trajectory)
 {
 	static Segment::State xState;
@@ -747,7 +827,7 @@ bool getPathLength(Trajectory &arcLengthTrajectory,
 	const double endXdot = xState.velocity[0];
 	const double endYdot = yState.velocity[0];
 
-	totalLength = 0.0;
+	double totalLength = 0.0;
 
 	// Generate a list of time -> arclength pairs stored
 	// in arcLengthAndTime
@@ -775,78 +855,6 @@ bool getPathLength(Trajectory &arcLengthTrajectory,
 	if (!initSpline(arcLengthTrajectory, jointNames, points))
 		return false;
 
-	// Then construct the inverse, a vector of times which correspond to roughly equal
-	// sized arc-length intervals along the entire path
-	equalArcLengthTimes.clear();
-	equalArcLengthTimes.push_back(0); // start at t==0
-	constexpr double distBetweenArcLengths = 0.03; // 3 cm
-	constexpr double distanceEpsilon = 0.005; // 2.5 mm
-	constexpr double midTimeInflation = 1.25;
-
-	// For each cumulative distance
-	// start = prev found time, end = last time
-	// Binary search to get sample[] within tolerance of desired cumulative disance
-	// Push that result onto equalArcLengthTimes
-	//
-	double start = 0.0;
-
-	// since we're looking for more or less monotonincally increasing values
-	// keep track of the jump to get from one location to another. Use
-	// this as a starting guess for the next arclength increment
-	double prevStart = 0.0;
-	double prevTimeDelta = endTime / 2.0;
-
-	size_t iterCount = 0;
-	static Segment::State state;
-	for (double currDistance = distBetweenArcLengths; currDistance <= totalLength; currDistance += distBetweenArcLengths)
-	{
-		double end = endTime;
-		double mid = start + prevTimeDelta;
-		while((end - mid) > 0.001) // Quit if time delta gets too small
-		{
-			TrajectoryPerJoint::const_iterator trajIt = sample(arcLengthTrajectory[0], mid, state);
-			if (trajIt == trajectory[0].cend())
-			{
-				ROS_ERROR_STREAM("base_trajectory : could not sample mid state at time " << mid);
-				return false;
-			}
-			iterCount += 1;
-			const double delta = currDistance - state.position[0];
-			//ROS_INFO_STREAM_FILTER(&messageFilter, "currDistance = " << currDistance << " start=" << start << " mid=" << mid << " end=" << end << " position[0]=" << state.position[0] << " delta=" << delta);
-			if (fabs(delta) < distanceEpsilon)
-			{
-				break;
-			}
-			else if (delta > 0)
-			{
-				start = mid;
-			}
-			else
-			{
-				end = mid;
-			}
-			mid = (start + end) / 2.0;
-		}
-
-		if (mid > endTime)
-		{
-			equalArcLengthTimes.push_back(endTime);
-			break;
-		}
-
-		equalArcLengthTimes.push_back(mid);
-		start = mid;
-		// Use starting "midpoint" guess of of start time plus
-		// the previous time jump, plus a little bit extra to
-		// make sure we don't undershoot. Undershooting would require a
-		// binary search of basically the entire distance between
-		// mid and end, and since mid is very close to the start,
-		// it is basically a binary search of the entire range.
-		prevTimeDelta = (start - prevStart) * midTimeInflation;
-		prevStart = start;
-	}
-	ROS_INFO_STREAM_FILTER(&messageFilter, "iterCount = " << iterCount);
-
 	return true;
 }
 
@@ -865,16 +873,23 @@ bool evaluateSpline(double &cost,
 	// arcLengthTrajectory takes in a time and returns the x-y distance
 	// traveled up to that time.
 	Trajectory arcLengthTrajectory;
-	// equalArcLengthTimes is a vector of times. Each entry is the time
-	// of an equally-spaced sample from arcLengthTrajectory. That is
-	// sample i is arclength (approx) d away from sample i-1 and i+1 for all i.
-	std::vector<double> equalArcLengthTimes;
-	double totalLength;
-	if (!getPathLength(arcLengthTrajectory, equalArcLengthTimes, totalLength, trajectory))
+	if (!getPathLength(arcLengthTrajectory, trajectory))
 	{
 		ROS_ERROR("base_trajectory_node : getPathLength() failed");
 		return false;
 	}
+	// equalArcLengthTimes will contain times that are
+	// spaced equidistant along the arc length passed in
+	std::vector<double> equalArcLengthTimes;
+	constexpr double distanceBetweenArcLengths = 0.03; // 3 cm spacing
+	constexpr double distanceEpsilon = 0.005; // 2.5 mm error tolerance in spacing
+	if (!subdivideLength(equalArcLengthTimes, arcLengthTrajectory,
+						 distanceBetweenArcLengths, distanceEpsilon))
+		return false;
+
+	// equalArcLengthTimes is a vector of times. Each entry is the time
+	// of an equally-spaced sample from arcLengthTrajectory. That is
+	// sample i is arclength (approx) d away from sample i-1 and i+1 for all i.
 
 	// Starting at arclength 0
 	double prevArcLength = 0;
@@ -1008,6 +1023,7 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 	out_msg.orient_coefs.resize(trajectory[0].size());
 	out_msg.x_coefs.resize(trajectory[0].size());
 	out_msg.y_coefs.resize(trajectory[0].size());
+	out_msg.end_points.clear();
 
 	const size_t n_joints = jointNames.size();
 	for (size_t seg = 0; seg < trajectory[0].size(); seg++)
@@ -1048,6 +1064,68 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 
 		// All splines in a waypoint end at the same time?
 		out_msg.end_points.push_back(trajectory[0][seg].endTime());
+	}
+	Trajectory arcLengthTrajectory;
+	if (!getPathLength(arcLengthTrajectory, trajectory))
+	{
+		ROS_ERROR("base_trajectory_node trajectoryToSplineResponseMsg : getPathLength() failed");
+		return;
+	}
+	// equalArcLengthTimes will contain times that are
+	// spaced equidistant along the arc length passed in
+	std::vector<double> equalArcLengthTimes;
+	constexpr double distanceBetweenArcLengths = 0.30; // 30 cm spacing
+	constexpr double distanceEpsilon = 0.01; // 1cm error tolerance in spacing
+	if (!subdivideLength(equalArcLengthTimes, arcLengthTrajectory,
+						 distanceBetweenArcLengths, distanceEpsilon))
+	{
+		ROS_ERROR("base_trajectory_node trajectoryToSplineResponseMsg : subdivideLength() failed");
+		return;
+	}
+	out_msg.path.poses.clear();
+	const auto current_time = ros::Time::now();
+	out_msg.path.header.stamp = current_time;
+	out_msg.path.header.frame_id = "initial_pose";
+	static Segment::State state;
+	for (const auto t: equalArcLengthTimes)
+	{
+		geometry_msgs::PoseStamped pose;
+		pose.header.stamp = current_time + ros::Duration(t);
+		pose.header.frame_id = "initial_pose";
+
+		TrajectoryPerJoint::const_iterator xIt = sample(trajectory[0], t, state);
+		if (xIt == trajectory[0].cend())
+		{
+			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample xState at time " << t);
+			return;
+		}
+		pose.pose.position.x = state.position[0];
+
+		TrajectoryPerJoint::const_iterator yIt = sample(trajectory[1], t, state);
+		if (yIt == trajectory[1].cend())
+		{
+			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample yState at time " << t);
+			return;
+		}
+		pose.pose.position.y = state.position[0];
+		pose.pose.position.z = 0;
+
+		TrajectoryPerJoint::const_iterator orientationIt = sample(trajectory[2], t, state);
+		if (orientationIt == trajectory[2].cend())
+		{
+			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample orientationState at time " << t);
+			return;
+		}
+		geometry_msgs::Quaternion orientation;
+		tf2::Quaternion tf_orientation;
+		tf_orientation.setRPY(0, 0, state.position[0]);
+		orientation.x = tf_orientation.getX();
+		orientation.y = tf_orientation.getY();
+		orientation.z = tf_orientation.getZ();
+		orientation.w = tf_orientation.getW();
+
+		pose.pose.orientation = orientation;
+		out_msg.path.poses.push_back(pose);
 	}
 }
 
