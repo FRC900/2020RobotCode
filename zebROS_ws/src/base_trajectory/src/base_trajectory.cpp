@@ -1279,6 +1279,12 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 		ROS_DEBUG("Empty trajectory command, stopping.");
 		return false;
 	}
+
+	// Splines segments are each 1 arbitrary unit long.
+	// This later gets mapped to actual wall-clock times
+	for (size_t i = 0; i < msg.points.size(); ++i)
+		msg.points[i].time_from_start = ros::Duration(static_cast<double>(i));
+
 	// TODO - operate in two modes
 	// 1 - if velocity and accelerations are empty, run a full optimization
 	// 2 - if both are set, just generate a spline based on them, then
