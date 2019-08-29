@@ -68,7 +68,7 @@ class TeleopJointsKeyboard
 };
 
 /// \brief Hardware interface for a robot
-class FRCRobotSimInterface : public virtual ros_control_boilerplate::FRCRobotInterface
+class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 {
 	public:
 		/**

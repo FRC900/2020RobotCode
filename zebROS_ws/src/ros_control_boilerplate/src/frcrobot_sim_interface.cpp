@@ -436,11 +436,10 @@ void FRCRobotSimInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 {
 	// Do base class init. This loads common interface info
 	// used by both the real and sim interfaces
-	ROS_WARN("Passes");
+	ROS_WARN_STREAM(__FILE__ << ":" << __LINE__ << ":" << "Passes");
 	FRCRobotInterface::init(nh, urdf_model);
-	ROS_WARN("Passes");
+	ROS_WARN_STREAM(__FILE__ << ":" << __LINE__ << ":" << "Passes");
 
-	ROS_WARN("fails here?1");
 	// Loop through the list of joint names
 	// specified as params for the hardware_interface.
 	// For each of them, create a Talon object. This
@@ -460,10 +459,9 @@ void FRCRobotSimInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 							  " as " << (can_ctre_mc_is_talon_[i] ? "TalonSRX" : "VictorSPX")
 							  << " CAN id " << can_ctre_mc_can_ids_[i]);
 
-		ROS_WARN_STREAM("fails here? 56789: " << i);
 		// Loop through the list of joint names
 	}
-		ROS_WARN_STREAM("fails here? ~");
+	ROS_WARN_STREAM(__FILE__ << ":" << __LINE__ << ":" << "Passes");
 	// TODO : assert nidec_brushles_names_.size() == nidec_brushles_xxx_channels_.size()
 	for (size_t i = 0; i < nidec_brushless_names_.size(); i++)
 		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
@@ -497,7 +495,6 @@ void FRCRobotSimInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 							  " as PWM " << pwm_pwm_channels_[i] <<
 							  " invert " << pwm_inverts_[i]);
 
-	ROS_WARN("fails here?5");
 	for (size_t i = 0; i < num_solenoids_; i++)
 		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
 							  "Loading joint " << i << "=" << solenoid_names_[i] <<
@@ -510,7 +507,7 @@ void FRCRobotSimInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 							  "Loading joint " << i << "=" << double_solenoid_names_[i] <<
 							  (double_solenoid_local_updates_[i] ? " local" : " remote") << " update, " <<
 							  (double_solenoid_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as Double Solenoid  forward " << double_solenoid_forward_ids_[i] <<
+							  " as Double Solenoid forward " << double_solenoid_forward_ids_[i] <<
 							  " reverse " << double_solenoid_reverse_ids_[i]);
 
 	for(size_t i = 0; i < num_navX_; i++)
@@ -1057,7 +1054,7 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 			double_solenoid_state_[i] = setpoint;
 			ROS_INFO_STREAM("Double solenoid " << double_solenoid_names_[i] <<
 					" at forward id " << double_solenoid_forward_ids_[i] <<
-					"/ reverse id " << double_solenoid_reverse_ids_[i] <<
+					" / reverse id " << double_solenoid_reverse_ids_[i] <<
 					" / pcm " << double_solenoid_pcms_[i] <<
 					" = " << setpoint);
 		}
@@ -1073,8 +1070,8 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 			rumble_state_[i] = rumble_command_[i];
 
 			ROS_INFO_STREAM("Joystick at port " << rumble_ports_[i] <<
-				" left rumble = " << std::dec << left_rumble << "(" << std::hex << left_rumble <<
-				") right rumble = " << std::dec << right_rumble << "(" << std::hex << right_rumble <<  ")" << std::dec);
+				" left rumble = " << std::dec << left_rumble << "(0x" << std::hex << left_rumble <<
+				") right rumble = " << std::dec << right_rumble << "(0x" << std::hex << right_rumble <<  ")" << std::dec);
 		}
 	}
 

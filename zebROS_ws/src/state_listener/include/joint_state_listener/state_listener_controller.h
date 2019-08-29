@@ -72,7 +72,7 @@ class JointStateListenerController :
 				return false;
 			}
 
-			// Might wantt to make message type a template
+			// Might want to make message type a template
 			// parameter as well?
 			sub_command_ = n.subscribe<sensor_msgs::JointState>(topic, 1, &JointStateListenerController::commandCB, this);
 			return true;

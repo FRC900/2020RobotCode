@@ -13,7 +13,7 @@ namespace frcrobot_control
 		for (size_t i = 0; i < can_ctre_mc_names_.size(); i++)
 		{
 			ROS_INFO_STREAM_NAMED("frcrobot_gazebosim_interface",
-								  "Loading joint " << i << "=" << can_ctre_mc_names_[i] <<
+								  "Connecting to gazebo : CTRE MC joint" << i << "=" << can_ctre_mc_names_[i] <<
 								  (can_ctre_mc_local_updates_[i] ? " local" : " remote") << " update, " <<
 								  (can_ctre_mc_local_hardwares_[i] ? "local" : "remote") << " hardware" <<
 								  " as " << (can_ctre_mc_is_talon_[i] ? "TalonSRX" : "VictorSPX")
@@ -22,9 +22,8 @@ namespace frcrobot_control
 			gazebo::physics::JointPtr joint = parent_model->GetJoint(can_ctre_mc_names_[i]);
 			if (!joint)
 			{
-				ROS_ERROR_STREAM_NAMED("frcrobot_gazebosim_interface", "This robot has a joint named \"" << can_ctre_mc_names_[i]
+				ROS_WARN_STREAM_NAMED("frcrobot_gazebosim_interface", "This robot has a joint named \"" << can_ctre_mc_names_[i]
 						<< "\" which is not in the gazebo model.");
-				return false;
 			}
 			sim_joints_.push_back(joint);
 		}
@@ -40,6 +39,8 @@ namespace frcrobot_control
 			ROS_WARN_STREAM_NAMED("frcrobot_gazebosim_interface", "No physics type found.");
 		}
 
+		ROS_INFO("FRCRobotGazeboSim Ready.");
+
 		return true;
 	}
 
@@ -47,7 +48,7 @@ namespace frcrobot_control
 	{
 		for (size_t i = 0; i < num_can_ctre_mcs_; i++)
 		{
-			if (can_ctre_mc_local_hardwares_[i])
+			if (sim_joints_[i] && can_ctre_mc_local_hardwares_[i])
 			{
 				// Gazebo has an interesting API...
 #if GAZEBO_MAJOR_VERSION >= 8
@@ -80,7 +81,7 @@ namespace frcrobot_control
 		FRCRobotSimInterface::write(period);
 		for (size_t i = 0; i < num_can_ctre_mcs_; i++)
 		{
-			if (can_ctre_mc_local_hardwares_[i])
+			if (sim_joints_[i] && can_ctre_mc_local_hardwares_[i])
 			{
 				auto &ts = talon_state_[i];
 				hardware_interface::TalonMode simulate_mode = ts.getTalonMode();

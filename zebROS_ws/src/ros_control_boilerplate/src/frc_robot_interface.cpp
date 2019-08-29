@@ -78,6 +78,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 {
 	nh_ = nh;
 	name_ = std::string("generic_hardware_interface");
+	nh_ = nh;
 	num_can_ctre_mcs_ = 0;
 	num_nidec_brushlesses_ = 0;
 	num_digital_inputs_ = 0;
@@ -732,7 +733,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	brushless_vel_.resize(num_nidec_brushlesses_);
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << nidec_brushless_names_[i] << " at PWM channel " << nidec_brushless_pwm_channels_[i] << " / DIO channel " << nidec_brushless_dio_channels_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << nidec_brushless_names_[i] << " at PWM channel " << nidec_brushless_pwm_channels_[i] << " / DIO channel " << nidec_brushless_dio_channels_[i]);
 
 		brushless_command_[i] = 0;
 
@@ -754,7 +755,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	digital_input_state_.resize(num_digital_inputs_);
 	for (size_t i = 0; i < num_digital_inputs_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << digital_input_names_[i] << " at DIO channel " << digital_input_dio_channels_[i] << " / invert " << digital_input_inverts_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << digital_input_names_[i] << " at DIO channel " << digital_input_dio_channels_[i] << " / invert " << digital_input_inverts_[i]);
 		// Create state interface for the given digital input
 		// and point it to the data stored in the
 		// corresponding brushless_state array entry
@@ -775,7 +776,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 		digital_output_state_[i] = std::numeric_limits<double>::max();
 		digital_output_command_[i] = 0;
 
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << digital_output_names_[i] << " at DIO channel " << digital_output_dio_channels_[i] << " / invert " << digital_output_inverts_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << digital_output_names_[i] << " at DIO channel " << digital_output_dio_channels_[i] << " / invert " << digital_output_inverts_[i]);
 
 		hardware_interface::JointStateHandle dosh(digital_output_names_[i], &digital_output_state_[i], &digital_output_state_[i], &digital_output_state_[i]);
 		joint_state_interface_.registerHandle(dosh);
@@ -793,7 +794,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	pwm_command_.resize(num_pwms_);
 	for (size_t i = 0; i < num_pwms_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << pwm_names_[i] << " at PWM channel " << pwm_pwm_channels_[i] << " / invert " << pwm_inverts_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << pwm_names_[i] << " at PWM channel " << pwm_pwm_channels_[i] << " / invert " << pwm_inverts_[i]);
 		pwm_state_[i] = std::numeric_limits<double>::max();
 		pwm_command_[i] = 0;
 
@@ -810,7 +811,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	solenoid_command_.resize(num_solenoids_);
 	for (size_t i = 0; i < num_solenoids_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << solenoid_names_[i] << " at id " << solenoid_ids_[i]<< " at pcm " << solenoid_pcms_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << solenoid_names_[i] << " at id " << solenoid_ids_[i]<< " at pcm " << solenoid_pcms_[i]);
 
 		solenoid_state_[i] = std::numeric_limits<double>::max();
 		solenoid_command_[i] = 0;
@@ -829,7 +830,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	double_solenoid_command_.resize(num_double_solenoids_);
 	for (size_t i = 0; i < num_double_solenoids_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << double_solenoid_names_[i] << " at forward id " << double_solenoid_forward_ids_[i] << " at reverse id " << double_solenoid_reverse_ids_[i] << " at pcm " << double_solenoid_pcms_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << double_solenoid_names_[i] << " at forward id " << double_solenoid_forward_ids_[i] << " at reverse id " << double_solenoid_reverse_ids_[i] << " at pcm " << double_solenoid_pcms_[i]);
 
 		double_solenoid_state_[i] = std::numeric_limits<double>::max();
 		double_solenoid_command_[i] = 0;
@@ -847,7 +848,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	rumble_command_.resize(num_rumbles_);
 	for (size_t i = 0; i < num_rumbles_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << rumble_names_[i] << " at port " << rumble_ports_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for " << rumble_names_[i] << " at port " << rumble_ports_[i]);
 
 		rumble_state_[i] = std::numeric_limits<double>::max();
 		rumble_command_[i] = 0;
@@ -877,7 +878,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 
 	for (size_t i = 0; i < num_navX_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering navX interface for : " << navX_names_[i] << " at id " << navX_ids_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering navX interface for " << navX_names_[i] << " at id " << navX_ids_[i]);
 
 		// Create state interface for the given IMU
 		// and point it to the data stored in the
@@ -943,7 +944,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 		pcm_state_.push_back(hardware_interface::PCMState(compressor_pcm_ids_[i]));
 	for (size_t i = 0; i < num_compressors_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for compressor / PCM : " << compressor_names_[i] << " at pcm_id " << compressor_pcm_ids_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for compressor / PCM " << compressor_names_[i] << " at pcm_id " << compressor_pcm_ids_[i]);
 
 		// Default compressors to running
 		compressor_command_[i] = 1;
@@ -970,7 +971,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	pdp_state_.resize(num_pdps_);
 	for (size_t i = 0; i < num_pdps_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for PDP : " << pdp_names_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for PDP " << pdp_names_[i]);
 
 		hardware_interface::PDPStateHandle csh(pdp_names_[i], &pdp_state_[i]);
 		pdp_state_interface_.registerHandle(csh);
@@ -988,7 +989,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	dummy_joint_command_.resize(num_dummy_joints_);
 	for (size_t i = 0; i < num_dummy_joints_; i++)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for dummy joint : " << dummy_joint_names_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for dummy joint " << dummy_joint_names_[i]);
 
 		dummy_joint_command_[i] = 0;
 		dummy_joint_position_[i] = 0;
@@ -1012,7 +1013,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	{
 		// Add a flag which indicates we should signal
 		// the driver station that robot code is initialized
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for ready signal : " << ready_signal_names_[i]);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for ready signal " << ready_signal_names_[i]);
 		hardware_interface::JointStateHandle sh(ready_signal_names_[i], &robot_ready_signals_[i],&robot_ready_signals_[i],&robot_ready_signals_[i]);
 		joint_state_interface_.registerHandle(sh);
 
@@ -1027,7 +1028,7 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 	auto dummy_joints = getDummyJoints();
 	for (auto d : dummy_joints)
 	{
-		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for DummyVar: " << d.name_);
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for DummyVar " << d.name_);
 
 		*d.address_ = 0;
 
@@ -1061,11 +1062,6 @@ void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 		robot_controller_state_interface_.registerHandle(rcsh);
 	}
 
-	// Publish various FRC-specific data using generic joint state for now
-	// For simple things this might be OK, but for more complex state
-	// (e.g. joystick) it probably makes more sense to write a
-	// RealtimePublisher() for the data coming in from
-	// the DS
 	registerInterface(&talon_state_interface_);
 	registerInterface(&talon_remote_state_interface_);
 	registerInterface(&joint_state_interface_);

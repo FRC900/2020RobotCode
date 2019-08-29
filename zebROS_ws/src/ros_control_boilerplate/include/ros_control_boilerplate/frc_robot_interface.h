@@ -94,7 +94,7 @@ class CustomProfileState
 };
 
 /// \brief Hardware interface for a robot
-class FRCRobotInterface : public virtual hardware_interface::RobotHW
+class FRCRobotInterface : public hardware_interface::RobotHW
 {
 	public:
 		/**
