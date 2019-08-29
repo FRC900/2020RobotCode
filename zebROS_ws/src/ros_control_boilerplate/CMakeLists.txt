@@ -4,30 +4,48 @@ project(ros_control_boilerplate)
 include ("../cmake_modules/CMakeOpt.cmake")
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(catkin REQUIRED COMPONENTS
-  cmake_modules
-  realtime_tools
-  hardware_interface
-  controller_manager
-  roscpp
-  control_msgs
-  trajectory_msgs
-  actionlib
-  urdf
-  std_msgs
-  sensor_msgs
-  rosparam_shortcuts
-  talon_interface
-  message_generation
-  frc_msgs
-  frc_interfaces
-)
+if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
+	     ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "arm-linux-gnueabihf") OR
+		 ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") )) 
+	find_package(catkin REQUIRED COMPONENTS
+	  realtime_tools
+	  hardware_interface
+	  controller_manager
+	  roscpp
+	  control_msgs
+	  trajectory_msgs
+	  urdf
+	  std_msgs
+	  rosparam_shortcuts
+	  talon_interface
+	  message_generation
+	  frc_msgs
+	  frc_interfaces
+	  gazebo_dev
+	  pluginlib
+	)
+else()
+	find_package(catkin REQUIRED COMPONENTS
+	  realtime_tools
+	  hardware_interface
+	  controller_manager
+	  roscpp
+	  control_msgs
+	  trajectory_msgs
+	  urdf
+	  std_msgs
+	  rosparam_shortcuts
+	  talon_interface
+	  message_generation
+	  frc_msgs
+	  frc_interfaces
+	)
 
-add_message_files (
-  FILES
-  AutoMode.msg
-  AutoModeStatus.msg
-)
+endif()
+
+#add_message_files (
+#  FILES
+#)
 
 add_service_files (
   FILES
@@ -51,7 +69,6 @@ catkin_package(
 	controller_manager
 	control_msgs
 	trajectory_msgs
-	actionlib
 	urdf
 	std_msgs
 	frc_msgs
@@ -104,8 +121,27 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
 		${catkin_EXPORTED_TARGETS}
 	)
 
+	add_library(frcrobot_gazebosim
+		src/frcrobot_gazebosim_interface.cpp
+		src/frcrobot_sim_interface.cpp
+		src/frc_robot_interface.cpp
+	)
+
+	target_link_libraries(frcrobot_gazebosim
+		${catkin_LIBRARIES}
+	)
+
+    # Forces messages to be generated before
+    # the target which uses them
+	add_dependencies(frcrobot_gazebosim
+		${${PROJECT_NAME}_EXPORTED_TARGETS}
+		${catkin_EXPORTED_TARGETS}
+	)
+
+    # Install executables
 	install(TARGETS
 	  frcrobot_sim_main
+	  frcrobot_gazebosim
 	  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 	)
@@ -406,7 +442,7 @@ add_dependencies(q_to_rpy
 
 # Install executables
 install(TARGETS
-  frcrobot_hw_main
+  frcrobot_hw_main q_to_rpy
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -478,4 +514,8 @@ install(DIRECTORY
 	DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 	PATTERN *~ EXCLUDE
 	PATTERN *.sw? EXCLUDE
+)
+
+install(FILES frcrobot_gazebosim_plugins.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

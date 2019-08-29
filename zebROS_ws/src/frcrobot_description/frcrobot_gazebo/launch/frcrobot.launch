@@ -1,12 +1,36 @@
 <?xml version="1.0"?>
 
 <launch>
-	<param name="robot_description" command="$(find xacro)/xacro $(find frcrobot_description)/urdf/frcrobot.xacro" />
+  <param name="robot_description" command="$(find xacro)/xacro $(find frcrobot_description)/urdf/frcrobot.xacro" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
+
+  <group ns="frcrobot_jetson">
+	  <rosparam file="$(find ros_control_boilerplate)/config/2019_compbot_base_jetson.yaml" command="load"/>
+	  <rosparam file="$(find ros_control_boilerplate)/config/2019_swerve_drive.yaml" command="load"/>
+	  <rosparam file="$(find ros_control_boilerplate)/config/2019_compbot_offsets.yaml" command="load"/>
+	  <rosparam file="$(find ros_control_boilerplate)/config/2019_elevator_params.yaml" command="load"/>
+	  <rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller_jetson.yaml" command="load"/>
+
+	  <node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false"
+		  output="screen" args="spawn joint_state_controller joint_state_listener_controller talon_state_controller match_state_listener_controller swerve_drive_controller robot_code_ready_controller" />
+  </group>
+
+  <!--
+  <param name="field_description" command="$(find xacro)/xacro $(find field_description)/urdf/field2019_textured.urdf" />
+  <param name="props_description" command="$(find xacro)/xacro $(find field_description)/urdf/field_props_2019.urdf" />
+  <node name="props_state_publisher" pkg="robot_state_publisher" type="state_publisher" >
+    <remap from="robot_description" to="props_description" />
+  </node>
+  -->
 
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find frcrobot_gazebo)/worlds/frcrobot.world"/>
     <!-- more default parameters can be changed here -->
   </include>
-  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-z 0.2 -param robot_description -urdf -model robot" />
+  <node name="spawn_robot_urdf" pkg="gazebo_ros" type="spawn_model" args="-z 0.5 -param robot_description -urdf -model robot" />
+  <!--
+  <node name="spawn_field_urdf" pkg="gazebo_ros" type="spawn_model" args="-z 0.001 -param field_description -urdf -model field" />
+  <node name="spawn_props_urdf" pkg="gazebo_ros" type="spawn_model" args="-z 0.0 -param props_description -urdf -model props" />
+  -->
 </launch>

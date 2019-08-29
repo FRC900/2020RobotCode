@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<robot name="field" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <link name="field_link">
+    <visual>
+        <origin xyz="-3.3 8.7 -0.1" rpy="1.5707963268 0 0" />
+        <geometry>
+            <mesh filename="package://field_description/meshes/FRC_Field_2018.STL" scale="0.001 0.001 0.001" />
+        </geometry>
+        <material name="Black">
+            <color rgba="0 0 0 1" />
+        </material>
+    </visual>
+
+    <collision>
+      <origin xyz="-9 3.9 0" rpy="1.57 0 0" />
+      <geometry>
+          <mesh filename="package://field_description/meshes/FRC_Field_2018.STL" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="100"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" izz="1.0" iyy="1.0" iyz="0.0" />
+    </inertial>
+  </link>
+
+  <gazebo>
+      <static>true</static>
+  </gazebo>
+  </robot>

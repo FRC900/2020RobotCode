@@ -1,0 +1,264 @@
+<?xml version="1.0"?>
+<robot name="field" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+	<material name="black">
+		<color rgba="0 0 0 1"/>
+	</material>
+
+	<material name="white">
+		<color rgba="1 1 1 1"/>
+	</material>
+
+	<material name="red">
+		<color rgba="1 0 0 1"/>
+	</material>
+
+	<material name="green">
+		<color rgba="0 1 0 1"/>
+	</material>
+
+	<material name="blue">
+		<color rgba="0 0 1 1"/>
+	</material>
+
+	<material name="magenta">
+		<color rgba="1 0 1 1"/>
+	</material>
+
+	<material name="cyan">
+		<color rgba="0 1 1 1"/>
+	</material>
+
+	<material name="yellow">
+		<color rgba="1 1 0 1"/>
+	</material>
+
+	<link name="props_base"/>
+
+	<link name="cargo_ship">
+		<visual>
+			<origin xyz="0 0.71 0.1" rpy="0 0 3.1415926536" />
+			<geometry>
+				<mesh filename="package://field_description/meshes/2019_props/Cargo_Ship.STL" scale="20 20 20"/>
+			</geometry>
+			<material name="black"/>
+		</visual>
+	</link>
+
+	<joint name="cargo_ship_to_base" type="fixed">
+		<parent link="props_base"/>
+		<child link="cargo_ship"/>
+		<origin xyz="6.2 0 0" rpy="0 0 0"/>
+	</joint>
+
+	<link name="cargo_tape_1">
+		<visual>
+			<origin xyz="0 0 0" rpy="-1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_1_to_ship" type="fixed">
+		<parent link="cargo_ship"/>
+		<child link="cargo_tape_1"/>
+		<origin xyz="-2.45 -0.12 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="cargo_tape_2">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_2_to_ship" type="fixed">
+		<parent link="cargo_ship"/>
+		<child link="cargo_tape_2"/>
+		<origin xyz="-2.45 -0.46 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="cargo_tape_3">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_3_to_ship" type="fixed">
+		<parent link="cargo_ship"/>
+		<child link="cargo_tape_3"/>
+		<origin xyz="-2.45 0.12 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="cargo_tape_4">
+		<visual>
+			<origin xyz="0 0 0" rpy="-1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_4_to_ship" type="fixed">
+		<parent link="cargo_ship"/>
+		<child link="cargo_tape_4"/>
+		<origin xyz="-2.45 0.46 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="loading_station">
+		<visual>
+			<origin xyz="-0.3 -0.7 -0.1" rpy="1.5707963268 0 1.5707963268" />
+			<geometry>
+				<mesh filename="package://field_description/meshes/2019_props/Loading_Station.STL" scale="20 20 20"/>
+			</geometry>
+			<material name="black"/>
+		</visual>
+	</link>
+
+	<joint name="loading_station_to_base" type="fixed">
+		<parent link="props_base"/>
+		<child link="loading_station"/>
+		<origin xyz="-1.8 3.4 0" rpy="0 0 0"/>
+	</joint>
+
+	<link name="station_tape_1">
+		<visual>
+			<origin xyz="0 0 0" rpy="-1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_1_to_station" type="fixed">
+		<parent link="loading_station"/>
+		<child link="station_tape_1"/>
+		<origin xyz="0.12 0.14 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="station_tape_2">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_2_to_station" type="fixed">
+		<parent link="loading_station"/>
+		<child link="station_tape_2"/>
+		<origin xyz="0.12 -0.2 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="rocket">
+		<visual>
+			<origin xyz="1.2 0 -0.1" rpy="0 0 3.1415926536" />
+			<geometry>
+				<mesh filename="package://field_description/meshes/2019_props/Rocket_Shell.STL" scale="20 20 20"/>
+			</geometry>
+			<material name="black"/>
+		</visual>
+	</link>
+
+	<joint name="rocket_to_base" type="fixed">
+		<parent link="props_base"/>
+		<child link="rocket"/>
+		<origin xyz="4 4 0" rpy="0 0 0"/>
+	</joint>
+	
+	<!-- Creating a rotated mediation link to make it easier to place the tapes on the rocket -->
+
+	<link name="rocket_mediation_1"/>
+
+	<joint name="mediation_1_to_rocket" type="fixed">
+		<parent link="rocket"/>
+		<child link="rocket_mediation_1"/>
+		<origin xyz="-0.35 -0.43 0" rpy="0 0 0.52"/>
+	</joint>
+
+	<link name="rocket_tape_1">
+		<visual>
+			<origin xyz="0 0 0" rpy="-1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_1_to_mediation" type="fixed">
+		<parent link="rocket_mediation_1"/>
+		<child link="rocket_tape_1"/>
+		<origin xyz="-0.03 0.17 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="rocket_tape_2">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_2_to_mediation" type="fixed">
+		<parent link="rocket_mediation_1"/>
+		<child link="rocket_tape_2"/>
+		<origin xyz="-0.03 -0.17 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="rocket_mediation_2"/>
+
+	<joint name="mediation_2_to_rocket" type="fixed">
+		<parent link="rocket"/>
+		<child link="rocket_mediation_2"/>
+		<origin xyz="0.35 -0.43 0" rpy="0 0 -0.52"/>
+	</joint>
+
+	<link name="rocket_tape_3">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_3_to_mediation" type="fixed">
+		<parent link="rocket_mediation_2"/>
+		<child link="rocket_tape_3"/>
+		<origin xyz="0.03 -0.17 0.6" rpy="0 0 0"/>
+	</joint>
+
+	<link name="rocket_tape_4">
+		<visual>
+			<origin xyz="0 0 0" rpy="-1.0472 0 0" />
+			<geometry>
+				<box size="0.005 0.15 0.06"/>
+			</geometry>
+			<material name="white"/>
+		</visual>
+	</link>
+
+	<joint name="tape_4_to_mediation" type="fixed">
+		<parent link="rocket_mediation_2"/>
+		<child link="rocket_tape_4"/>
+		<origin xyz="0.03 0.17 0.6" rpy="0 0 0"/>
+	</joint>
+
+  </robot>

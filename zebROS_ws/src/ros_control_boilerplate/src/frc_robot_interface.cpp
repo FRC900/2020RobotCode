@@ -74,24 +74,25 @@ void FRCRobotInterface::readJointLocalParams(XmlRpc::XmlRpcValue joint_params,
 	}
 }
 
-FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_model) :
-	  name_("generic_hw_interface")
-	, nh_(nh)
-	, num_can_ctre_mcs_(0)
-	, num_nidec_brushlesses_(0)
-	, num_digital_inputs_(0)
-	, num_digital_outputs_(0)
-	, num_pwms_(0)
-	, num_solenoids_(0)
-	, num_double_solenoids_(0)
-	, num_compressors_(0)
-	, num_rumbles_(0)
-	, num_navX_(0)
-	, num_analog_inputs_(0)
-	, num_dummy_joints_(0)
-    , num_ready_signals_(0)
-	, robot_code_ready_(false)
+void FRCRobotInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 {
+	nh_ = nh;
+	name_ = std::string("generic_hardware_interface");
+	num_can_ctre_mcs_ = 0;
+	num_nidec_brushlesses_ = 0;
+	num_digital_inputs_ = 0;
+	num_digital_outputs_ = 0;
+	num_pwms_ = 0;
+	num_solenoids_ = 0;
+	num_double_solenoids_ = 0;
+	num_compressors_ = 0;
+	num_rumbles_ = 0;
+	num_navX_ = 0;
+	num_analog_inputs_ = 0;
+	num_dummy_joints_ = 0;
+    num_ready_signals_ = 0;
+	robot_code_ready_ = false;
+
 	// Check if the URDF model needs to be loaded
 	if (urdf_model == NULL)
 		loadURDF(nh, "robot_description");
@@ -678,10 +679,6 @@ FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_mode
 	}
 	run_hal_robot_ = rpnh.param<bool>("run_hal_robot", true);
 	can_interface_ = rpnh.param<std::string>("can_interface", "can0");
-}
-
-void FRCRobotInterface::init()
-{
 	num_can_ctre_mcs_ = can_ctre_mc_names_.size();
 	// Create vectors of the correct size for
 	// talon HW state and commands

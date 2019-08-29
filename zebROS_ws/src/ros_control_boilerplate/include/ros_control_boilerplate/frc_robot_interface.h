@@ -94,21 +94,19 @@ class CustomProfileState
 };
 
 /// \brief Hardware interface for a robot
-class FRCRobotInterface : public hardware_interface::RobotHW
+class FRCRobotInterface : public virtual hardware_interface::RobotHW
 {
 	public:
 		/**
 		 * \brief Constructor
-		 * \param nh - Node handle for topics.
-		 * \param urdf - optional pointer to a parsed robot model
 		 */
-		FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL);
+		FRCRobotInterface(void) { }
 
 		/** \brief Destructor */
 		virtual ~FRCRobotInterface() {}
 
 		/** \brief Initialize the hardware interface */
-		virtual void init();
+		virtual void init(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL);
 
 		/** \brief Read the state from the robot hardware. */
 		virtual void read(ros::Duration &elapsed_time) = 0;

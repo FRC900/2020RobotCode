@@ -97,12 +97,8 @@ namespace frcrobot_control
 
 // TODO : Turn into a separate node - make it launched
 // depending on sim mode being true and the key_or_joy setting
-TeleopJointsKeyboard::TeleopJointsKeyboard(ros::NodeHandle &nh)
+TeleopJointsKeyboard::TeleopJointsKeyboard()
 {
-	// Hard-code this to frcrobot_rio namespace so that it matches
-	// the real robot hardware, where joystick data comes from the
-	// driver station via the Rio
-	joints_pub_ = nh.advertise<sensor_msgs::Joy>("/frcrobot_rio/joystick_states_raw_key", 1);
 }
 
 TeleopJointsKeyboard::~TeleopJointsKeyboard()
@@ -145,8 +141,13 @@ int TeleopJointsKeyboard::pollKeyboard(int kfd, char &c) const
 	return rc;
 }
 
-void TeleopJointsKeyboard::keyboardLoop()
+void TeleopJointsKeyboard::keyboardLoop(ros::NodeHandle &nh)
 {
+	// Hard-code this to frcrobot_rio namespace so that it matches
+	// the real robot hardware, where joystick data comes from the
+	// driver station via the Rio
+	joints_pub_ = nh.advertise<sensor_msgs::Joy>("/frcrobot_rio/joystick_states_raw_key", 1);
+
 	int kfd = 0; // stdin
 	char c;
 	// get the console in raw mode
@@ -406,13 +407,6 @@ void TeleopJointsKeyboard::keyboardLoop()
 	tcsetattr(kfd, TCSANOW, &cooked);
 }
 
-
-FRCRobotSimInterface::FRCRobotSimInterface(ros::NodeHandle &nh,
-		urdf::Model *urdf_model)
-	: ros_control_boilerplate::FRCRobotInterface(nh, urdf_model)
-    , teleop_joy_(nh)
-{
-}
 FRCRobotSimInterface::~FRCRobotSimInterface()
 {
     sim_joy_thread_.join();
@@ -438,36 +432,12 @@ void FRCRobotSimInterface::match_data_callback(const frc_msgs::MatchSpecificData
 	match_data_.setBatteryVoltage(match_data.BatteryVoltage);
 }
 
-std::vector<ros_control_boilerplate::DummyJoint> FRCRobotSimInterface::getDummyJoints(void)
-{
-	std::vector<ros_control_boilerplate::DummyJoint> dummy_joints;
-	dummy_joints.push_back(Dumify(navX_zero_));
-	return dummy_joints;
-}
-
-bool FRCRobotSimInterface::setlimit(ros_control_boilerplate::set_limit_switch::Request &req,ros_control_boilerplate::set_limit_switch::Response &/*res*/)
-{
-	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
-	{
-		if (!can_ctre_mc_local_hardwares_[joint_id])
-			continue;
-        auto &ts = talon_state_[joint_id];
-        if((!req.target_joint_name.length() && (ts.getCANID() == req.target_joint_id)) ||
-		   (req.target_joint_name == can_ctre_mc_names_[joint_id]))
-		{
-            ts.setForwardLimitSwitch(req.forward);
-			ts.setReverseLimitSwitch(req.reverse);
-        }
-    }
-	return true;
-}
-
-void FRCRobotSimInterface::init(void)
+void FRCRobotSimInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 {
 	// Do base class init. This loads common interface info
 	// used by both the real and sim interfaces
 	ROS_WARN("Passes");
-	FRCRobotInterface::init();
+	FRCRobotInterface::init(nh, urdf_model);
 	ROS_WARN("Passes");
 
 	ROS_WARN("fails here?1");
@@ -492,7 +462,6 @@ void FRCRobotSimInterface::init(void)
 
 		ROS_WARN_STREAM("fails here? 56789: " << i);
 		// Loop through the list of joint names
-
 	}
 		ROS_WARN_STREAM("fails here? ~");
 	// TODO : assert nidec_brushles_names_.size() == nidec_brushles_xxx_channels_.size()
@@ -582,7 +551,7 @@ void FRCRobotSimInterface::init(void)
 
 	// TODO : make this depend on joystick joints being defined
 	if (run_hal_robot_)
-		sim_joy_thread_ = std::thread(std::bind(&TeleopJointsKeyboard::keyboardLoop, &teleop_joy_));
+		sim_joy_thread_ = std::thread(std::bind(&TeleopJointsKeyboard::keyboardLoop, &teleop_joy_, nh));
 
 	limit_switch_srv_ = nh_.advertiseService("set_limit_switch",&FRCRobotSimInterface::setlimit,this);
     match_data_sub_ = nh_.subscribe("/frcrobot_rio/match_data_in", 1, &FRCRobotSimInterface::match_data_callback, this);
@@ -1129,6 +1098,28 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 		}
 	}
 	//ROS_INFO_STREAM_THROTTLE(1, s.str());
+}
+
+std::vector<ros_control_boilerplate::DummyJoint> FRCRobotSimInterface::getDummyJoints(void)
+{
+	std::vector<ros_control_boilerplate::DummyJoint> dummy_joints;
+	dummy_joints.push_back(Dumify(navX_zero_));
+	return dummy_joints;
+}
+
+bool FRCRobotSimInterface::setlimit(ros_control_boilerplate::set_limit_switch::Request &req,ros_control_boilerplate::set_limit_switch::Response &/*res*/)
+{
+	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
+	{
+		if (!can_ctre_mc_local_hardwares_[joint_id])
+			continue;
+        auto &ts = talon_state_[joint_id];
+        if(ts.getCANID() == req.target_joint_id) {
+            ts.setForwardLimitSwitch(req.forward);
+			ts.setReverseLimitSwitch(req.reverse);
+        }
+    }
+	return true;
 }
 
 }  // namespace

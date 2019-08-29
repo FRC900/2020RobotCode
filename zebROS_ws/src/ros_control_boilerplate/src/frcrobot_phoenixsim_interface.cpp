@@ -8,18 +8,62 @@
 
 namespace frcrobot_control
 {
-FRCRobotPhoenixSimInterface::FRCRobotPhoenixSimInterface(ros::NodeHandle &nh, urdf::Model *urdf_model)
-	: FRCRobotHWInterface(nh, urdf_model)
+void FRCRobotPhoenixSimInterface::init(ros::NodeHandle &nh, urdf::Model *urdf_model)
 {
-}
-
-void FRCRobotPhoenixSimInterface::init(void)
-{
-	for (size_t i = 0; i < can_ctre_mc_can_ids_.size(); i++)
+	// Need to get count of CTRE can devices and ids
+	ros::NodeHandle rpnh(nh, "hardware_interface");
+	XmlRpc::XmlRpcValue joint_param_list;
+	if (!rpnh.getParam("joints", joint_param_list))
+		throw std::runtime_error("No joints were specified.");
+	for (int i = 0; i < joint_param_list.size(); i++)
 	{
-		// TODO : fix device type
-		c_SimCreate(DeviceType::TalonSRXType, can_ctre_mc_can_ids_[i]);
-		ROS_INFO_STREAM("phoenixsim : creating DeviceType::TalonSRXType id=" << can_ctre_mc_can_ids_[i]);
+		XmlRpc::XmlRpcValue &joint_params = joint_param_list[i];
+		if (!joint_params.hasMember("name"))
+			throw std::runtime_error("A joint name was not specified");
+		XmlRpc::XmlRpcValue &xml_joint_name = joint_params["name"];
+		if (!xml_joint_name.valid() ||
+			xml_joint_name.getType() != XmlRpc::XmlRpcValue::TypeString)
+			throw std::runtime_error("An invalid joint name was specified (expecting a string)");
+		const std::string joint_name = xml_joint_name;
+
+		if (!joint_params.hasMember("type"))
+			throw std::runtime_error("A joint type was not specified for joint " + joint_name);
+		XmlRpc::XmlRpcValue &xml_joint_type = joint_params["type"];
+		if (!xml_joint_type.valid() ||
+			xml_joint_type.getType() != XmlRpc::XmlRpcValue::TypeString)
+			throw std::runtime_error("An invalid joint type was specified (expecting a string) for joint " + joint_name);
+		const std::string joint_type = xml_joint_type;
+		bool saw_local_keyword = false;
+		bool local = true;
+		bool local_update;
+		bool local_hardware;
+		if ((joint_type == "can_talon_srx") || (joint_type == "can_victor_spx") )
+		{
+			readJointLocalParams(joint_params, local, saw_local_keyword, local_update, local_hardware);
+
+			const bool has_can_id = joint_params.hasMember("can_id");
+			if (!local_hardware && has_can_id)
+				throw std::runtime_error("A CAN Talon SRX / Victor SPX can_id was specified with local_hardware == false for joint " + joint_name);
+
+			int can_id = 0;
+			if (local_hardware)
+			{
+				if (!has_can_id)
+					throw std::runtime_error("A CAN Talon SRX / Victor SPX can_id was not specified");
+				XmlRpc::XmlRpcValue &xml_can_id = joint_params["can_id"];
+				if (!xml_can_id.valid() ||
+						xml_can_id.getType() != XmlRpc::XmlRpcValue::TypeInt)
+					throw std::runtime_error("An invalid joint can_id was specified (expecting an int) for joint " + joint_name);
+				can_id = xml_can_id;
+				auto it = std::find(can_ctre_mc_can_ids_.cbegin(), can_ctre_mc_can_ids_.cend(), can_id);
+				if (it != can_ctre_mc_can_ids_.cend())
+					throw std::runtime_error("A duplicate can_id was specified for joint " + joint_name);
+
+				// TODO : fix device type when victor is supported
+				c_SimCreate(DeviceType::TalonSRXType, can_id);
+				ROS_INFO_STREAM("phoenixsim : creating DeviceType::TalonSRXType name=" << joint_name << " id=" << can_id);
+			}
+		}
 	}
 
 	// for now we need a delay so backend can properly setup device properties
@@ -28,7 +72,7 @@ void FRCRobotPhoenixSimInterface::init(void)
 	ros::Duration(1.0).sleep();
 
 	hal::init::InitializeHAL();
-	FRCRobotHWInterface::init();
+	FRCRobotHWInterface::init(nh, urdf_model);
 }
 
 

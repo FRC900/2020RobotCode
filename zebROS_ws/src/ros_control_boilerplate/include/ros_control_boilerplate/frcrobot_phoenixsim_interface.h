@@ -8,8 +8,8 @@ namespace frcrobot_control
 class FRCRobotPhoenixSimInterface : public FRCRobotHWInterface
 {
 	public:
-		FRCRobotPhoenixSimInterface(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL);
-		virtual void init(void) override;
+		FRCRobotPhoenixSimInterface() { }
+		virtual void init(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL) override;
 
 		/** \brief Read the state from the robot hardware. */
 		//virtual void read(ros::Duration &elapsed_time) override;

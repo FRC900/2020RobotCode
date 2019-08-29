@@ -56,9 +56,9 @@ namespace frcrobot_control
 class TeleopJointsKeyboard
 {
 	public:
-		TeleopJointsKeyboard(ros::NodeHandle &nh);
+		TeleopJointsKeyboard();
 		~TeleopJointsKeyboard();
-		void keyboardLoop();
+		void keyboardLoop(ros::NodeHandle &nh);
 		int pollKeyboard(int kfd, char &c) const;
 
 	private:
@@ -68,17 +68,16 @@ class TeleopJointsKeyboard
 };
 
 /// \brief Hardware interface for a robot
-class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
+class FRCRobotSimInterface : public virtual ros_control_boilerplate::FRCRobotInterface
 {
 	public:
 		/**
 		 * \brief Constructor
-		 * \param nh - Node handle for topics.
 		 */
-		FRCRobotSimInterface(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL);
+		FRCRobotSimInterface() { };
 		~FRCRobotSimInterface();
 
-		virtual void init(void) override;
+		void virtual init(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL) override;
 
 		/** \brief Read the state from the robot hardware. */
 		virtual void read(ros::Duration &elapsed_time) override;

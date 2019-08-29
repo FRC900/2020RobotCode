@@ -1,0 +1,32 @@
+<!-- a -->
+
+<launch>	
+	<arg name="with_rviz" default="true" />
+	<arg name="with_field" default="true" />
+	<arg name="textured" default="true" />
+	<arg name="with_props" default="true" />
+	<arg name="static_map" default="true" />
+	<arg name="gui" default="false" />
+
+	<node pkg="tf" type="static_transform_publisher" name="map2base" args="0 0 0.1 0 0 0 map odom 100" if="$(arg static_map)"/>
+	<node pkg="tf" type="static_transform_publisher" name="map2field" args="0 0 0.1 0 0 0 map field_link 200" if="$(arg with_field)"/>
+	<node pkg="tf" type="static_transform_publisher" name="map2props" args="0 0 0.1 0 0 0 map props_base 200" if="$(arg with_props)"/>
+
+	<param name="use_gui" value="$(arg gui)"/>
+	<param name="rate" value="30"/>
+	<param name="robot_description" textfile="$(find bosmat_description)/urdf/bosmat_low_detail.urdf" />
+	<param name="field_description" textfile="$(find field_description)/urdf/field2019.urdf" unless="$(arg textured)"/>
+	<param name="field_description" textfile="$(find field_description)/urdf/field2019_textured.urdf" if="$(arg textured)"/>
+	<param name="props_description" textfile="$(find field_description)/urdf/field_props_2019.urdf"/>
+	
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+	<!--node name="field_state_publisher" pkg="robot_state_publisher" type="state_publisher" if="$(arg with_field)" /-->
+	<node name="props_state_publisher" pkg="robot_state_publisher" type="state_publisher" if="$(arg with_props)">
+		<remap from="robot_description" to="props_description" />
+	</node>
+
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find field_description)/rviz/field_2019.rviz" if="$(arg with_rviz)" />
+
+</launch>
+
