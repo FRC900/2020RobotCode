@@ -10,6 +10,27 @@ namespace frcrobot_control
 				std::vector<transmission_interface::TransmissionInfo> transmissions)
 	{
 		FRCRobotSimInterface::init(model_nh, nullptr);
+
+		RobotHWSim::registerInterface(&talon_state_interface_);
+		RobotHWSim::registerInterface(&talon_remote_state_interface_);
+		RobotHWSim::registerInterface(&joint_state_interface_);
+		RobotHWSim::registerInterface(&talon_command_interface_);
+		RobotHWSim::registerInterface(&joint_command_interface_);
+		RobotHWSim::registerInterface(&joint_position_interface_);
+		RobotHWSim::registerInterface(&joint_velocity_interface_);
+		RobotHWSim::registerInterface(&joint_effort_interface_); // empty for now
+		RobotHWSim::registerInterface(&imu_interface_);
+		RobotHWSim::registerInterface(&pdp_state_interface_);
+		RobotHWSim::registerInterface(&pcm_state_interface_);
+		RobotHWSim::registerInterface(&robot_controller_state_interface_);
+		RobotHWSim::registerInterface(&match_state_interface_);
+
+		RobotHWSim::registerInterface(&joint_remote_interface_); // list of Joints defined as remote
+		RobotHWSim::registerInterface(&pdp_remote_state_interface_);
+		RobotHWSim::registerInterface(&pcm_remote_state_interface_);
+		RobotHWSim::registerInterface(&imu_remote_interface_);
+		RobotHWSim::registerInterface(&match_remote_state_interface_);
+
 		for (size_t i = 0; i < can_ctre_mc_names_.size(); i++)
 		{
 			ROS_INFO_STREAM_NAMED("frcrobot_gazebosim_interface",

@@ -123,6 +123,7 @@
 	<gazebo>
 		<plugin name="gazebo_ros_plugin" filename="libgazebo_ros_control.so">
 			<robotNamespace>/frcrobot_jetson</robotNamespace>
+			<robotParam>/frcrobot_jetson/robot_description</robotParam>
 			<robotSimType>frcrobot_control/FRCRobotGazeboSim</robotSimType>
 		</plugin>
 	</gazebo>
