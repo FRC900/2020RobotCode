@@ -16,12 +16,14 @@ int sign(double n)
 
 double nextVelocity(double v, double vt, double &a, double am, double jm, double cr)
 {
+	//ROS_INFO_STREAM("nextVelocity : v=" << v<< " vt=" << vt << " a=" << a << " am=" << am 
+			//<< " jm=" << jm << " cr=" << cr);
 	double diffv = vt - v;
 	int signDiffV = sign(diffv);
 	int signA = sign(a);
 	double nV;
 	bool finish;
-	if(pow(a, 2)/jm >= diffv*signA) //Fix tendency to overshoot?
+	if((a * a) / jm >= diffv*signA) //Fix tendency to overshoot?
 	{
 		//overshoot
 		if(((diffv/cr) -(a)/2)*signDiffV <= 0 && (a - (signA * jm * cr)/2)*signA < 0) //verify and fix
@@ -54,6 +56,7 @@ double nextVelocity(double v, double vt, double &a, double am, double jm, double
 	}
 	nV = v + a * cr;
 	if(finish) {a=0;} 
+	//ROS_INFO_STREAM("  nextV=" << nV << " a=" << a);
 	return nV;
 }
 #endif

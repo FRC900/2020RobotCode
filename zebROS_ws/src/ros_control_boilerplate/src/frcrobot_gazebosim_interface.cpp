@@ -10,6 +10,7 @@ namespace frcrobot_control
 				std::vector<transmission_interface::TransmissionInfo> transmissions)
 	{
 		FRCRobotSimInterface::init(model_nh, nullptr);
+		e_stop_active_ = false;
 
 		RobotHWSim::registerInterface(&talon_state_interface_);
 		RobotHWSim::registerInterface(&talon_remote_state_interface_);
@@ -79,6 +80,7 @@ namespace frcrobot_control
 #endif
 				auto &ts = talon_state_[i];
 				ts.setPosition(position);
+				if (ts.getTalonMode() !=  hardware_interface::TalonMode_MotionMagic)
 				ts.setSpeed(sim_joints_[i]->GetVelocity(0));
 
 #if 0
@@ -145,17 +147,24 @@ namespace frcrobot_control
 					velocity = ts.getSpeed();
 					set_velocity = true;
 				}
+				ROS_INFO_STREAM("talon " << can_ctre_mc_names_[i] <<
+						" setpoint=" << ts.getSetpoint() <<
+						" pos=" << position <<
+						" set_position=" << set_position <<
+						" velocity=" << velocity <<
+						" set_velocity=" << set_velocity <<
+						" e_stop_active_=" << e_stop_active_);
 				if (set_position)
 				{
 					sim_joints_[i]->SetPosition(0, position, true);
 				}
 				if (set_velocity)
 				{
-					if (physics_type_.compare("ode") == 0)
-					{
-						sim_joints_[i]->SetParam("vel", 0, e_stop_active_ ? 0 : velocity);
-					}
-					else
+					//if (physics_type_.compare("ode") == 0)
+					//{
+				//		sim_joints_[i]->SetParam("vel", 0, e_stop_active_ ? 0 : velocity);
+			//		}
+			//		else
 					{
 						sim_joints_[i]->SetVelocity(0, e_stop_active_ ? 0 : velocity);
 					}

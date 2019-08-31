@@ -21,7 +21,9 @@
 				</material>
 			</visual>
 			<collision>
+				<!--
 				<origin xyz="0 0 ${swerve_box_size / 2}" rpy="0 0 0"/>
+-->
 				<geometry>
 					<box size="${swerve_box_size} ${swerve_box_size} ${swerve_box_size}"/>
 				</geometry>
@@ -63,7 +65,7 @@
 		<joint name="${prefix}_drive" type="continuous">
 			<parent link="${prefix}_angle"/>
 			<child link="${prefix}_speed"/>
-			<origin xyz="0 0 -${wheel_diameter}" rpy="0 0 0"/>
+			<origin xyz="0 0 -${wheel_diameter+.001}" rpy="0 0 0"/>
 			<axis xyz="0 1 0" />
 		</joint>
 	</xacro:macro>
