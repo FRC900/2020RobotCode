@@ -47,7 +47,6 @@
 #include <realtime_tools/realtime_publisher.h>
 
 #include <frc_interfaces/robot_controller_interface.h>
-#include "ros_control_boilerplate/AutoMode.h"
 #include "frc_msgs/MatchSpecificData.h"
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/Joy.h>
