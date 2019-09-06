@@ -147,6 +147,7 @@ namespace frcrobot_control
 					velocity = ts.getSpeed();
 					set_velocity = true;
 				}
+#if 0
 				ROS_INFO_STREAM("talon " << can_ctre_mc_names_[i] <<
 						" setpoint=" << ts.getSetpoint() <<
 						" pos=" << position <<
@@ -154,6 +155,7 @@ namespace frcrobot_control
 						" velocity=" << velocity <<
 						" set_velocity=" << set_velocity <<
 						" e_stop_active_=" << e_stop_active_);
+#endif
 				if (set_position)
 				{
 					sim_joints_[i]->SetPosition(0, position, true);
