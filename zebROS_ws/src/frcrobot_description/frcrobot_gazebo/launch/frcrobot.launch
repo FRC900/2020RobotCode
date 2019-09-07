@@ -18,9 +18,18 @@
   </node>
   <node name="spawn_props_urdf" pkg="gazebo_ros" type="spawn_model" args="-z 0.0 -param props_description -urdf -model props" />
 -->
+  <!-- Add a few params which tells gazebo which sim interfaces to load
+	   and, in each of the namespaces of those interfaces, their types
+	-->
   <rosparam file="$(find frcrobot_gazebo)/config/robots.yaml" command="load"/>
+  <!-- process the xacro file into a urdf, load the text of that urdf into a ros 
+	   string parameter. This is used by gazebo to build its robot model
+	-->
   <param name="robot_description" command="$(find xacro)/xacro $(find frcrobot_description)/urdf/frcrobot.xacro" />
   <group ns="frcrobot_jetson">
+	  <!-- publishes transforms between the various ROS joints
+		   TODO - check that this shouldn't be in the root namespace
+	-->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
 
     <rosparam file="$(find ros_control_boilerplate)/config/2019_compbot_base_jetson.yaml" command="load"/>
