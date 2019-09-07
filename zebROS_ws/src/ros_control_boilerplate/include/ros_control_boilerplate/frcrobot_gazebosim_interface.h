@@ -49,7 +49,9 @@ namespace frcrobot_control
 			/// \param active  \c true if the emergency stop is active, \c false if not.
 			virtual void eStopActive(const bool active) {}
 		protected:
-			  std::vector<gazebo::physics::JointPtr> sim_joints_;
+			  std::vector<gazebo::physics::JointPtr> sim_joints_ctre_mcs_;
+			  std::vector<gazebo::physics::JointPtr> sim_joints_solenoids_;
+			  std::vector<gazebo::physics::JointPtr> sim_joints_double_solenoids_;
 			  std::string physics_type_;
 			  // e_stop_active_ is true if the emergency stop is active.
 			  bool e_stop_active_, last_e_stop_active_;
