@@ -73,8 +73,10 @@
   <depend>actionlib_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>message_filters</depend>
+  <depend>tf</depend>
   <depend>swerve_point_generator</depend>
   <depend>behaviors</depend>
+  <depend>control_toolbox</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

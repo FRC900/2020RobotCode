@@ -13,6 +13,9 @@
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
 #include <string>
+#include <control_toolbox/pid.h>
+#include <tf/transform_datatypes.h>
+#include <tf/tf.h>
 
 namespace tf2{
 	template <>
@@ -80,7 +83,7 @@ public:
       nh_ = nh;
   }
 
-  void setup();
+  bool setup();
 
   void loadPath(nav_msgs::Path path);
 
@@ -99,5 +102,7 @@ private:
   double max_velocity_, max_accel_;
   double pos_tol_, final_pos_tol_;
   size_t num_waypoints_;
+  control_toolbox::Pid pid_controller_;
+  ros::Time time_of_last_cycle_;
 };
 

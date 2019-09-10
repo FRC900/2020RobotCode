@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   std_srvs
+  tf
   tf2
   tf2_ros
   message_filters
@@ -20,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   behaviors
   swerve_point_generator
+  control_toolbox
 )
 
 ## System dependencies are found with CMake's conventions
@@ -115,7 +117,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   # LIBRARIES pure_pursuit
-  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters swerve_point_generator
+  CATKIN_DEPENDS geometry_msgs tf control_toolbox roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters swerve_point_generator
   DEPENDS system_lib
 )
 
