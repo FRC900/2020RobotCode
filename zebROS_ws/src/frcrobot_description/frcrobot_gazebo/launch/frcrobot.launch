@@ -56,7 +56,6 @@
       output="screen" args="spawn joint_state_controller joint_state_listener_controller imu_sensor_controller match_state_controller navx_offset_controller robot_controller_state_controller robot_code_ready_controller" /> 
   </group>
 
-  <!--
   <include file="$(find controller_node)/launch/joysticks_sim.launch">
     <arg name="joy_or_key" value="joy"/>
   </include>
@@ -78,6 +77,7 @@
       <remap from="cmd_vel_out" to="/frcrobot_jetson/swerve_drive_controller/cmd_vel"/>
     </node> 
   </group>
+  <!--
 -->
 
 </launch>
