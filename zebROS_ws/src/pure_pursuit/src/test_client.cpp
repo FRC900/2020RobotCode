@@ -8,6 +8,7 @@
 #include <std_srvs/Trigger.h>
 #include "base_trajectory/GenerateSpline.h"
 #include <swerve_point_generator/FullGenCoefs.h>
+#include <pure_pursuit/Point.h>
 #include "tf2/LinearMath/Quaternion.h"
 
 std::shared_ptr<actionlib::SimpleActionClient<pure_pursuit::PurePursuitAction>> ac;
@@ -203,31 +204,26 @@ tk::spline parametrize_spline(const std::vector<spline_coefs> &x_splines_first_d
 	return s;
 }
 
-bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool trigger_pathing_cb(pure_pursuit::Point::Request &req, pure_pursuit::Point::Response &res)
 {
 	/*** GET SPLINE COEFFICIENTS**/
 	ROS_ERROR_STREAM("Getting spline coefficients in pure pursuit test client");
 	base_trajectory::GenerateSpline srvBaseTrajectory;
-	srvBaseTrajectory.request.points.resize(2);
+	int point_num = req.points.size();
+	srvBaseTrajectory.request.points.resize(point_num);
+	ROS_INFO_STREAM(req.points[0].x << " " << req.points[0].y << " " << req.points[0].z);
 
-	//x-movement
-	srvBaseTrajectory.request.points[0].positions.push_back(1);
-	//y-movement
-	srvBaseTrajectory.request.points[0].positions.push_back(2);
-	//z-rotation
-	double rotation = 0;
-	srvBaseTrajectory.request.points[0].positions.push_back(rotation);
-	//time for profile to run
-	srvBaseTrajectory.request.points[0].time_from_start = ros::Duration(10);
-
-	//x-movement
-	srvBaseTrajectory.request.points[1].positions.push_back(0);
-	//y-movement
-	srvBaseTrajectory.request.points[1].positions.push_back(4);
-	//z-rotation
-	srvBaseTrajectory.request.points[1].positions.push_back(rotation);
-	//time for profile to run
-	srvBaseTrajectory.request.points[1].time_from_start = ros::Duration(20);
+	for(int i = 0; i<point_num; i++)
+	{
+		//x-movement
+		srvBaseTrajectory.request.points[i].positions.push_back(req.points[i].x);
+		//y-movement
+		srvBaseTrajectory.request.points[i].positions.push_back(req.points[i].y);
+		//z-rotation
+		srvBaseTrajectory.request.points[i].positions.push_back(req.points[i].z);
+		//time for profile to run
+		srvBaseTrajectory.request.points[i].time_from_start = ros::Duration(10*(i+1));
+	}
 
 	if(!spline_gen.call(srvBaseTrajectory))
 	{
@@ -235,40 +231,35 @@ bool trigger_pathing_cb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Resp
 	}
 
 	swerve_point_generator::FullGenCoefs traj;
-	traj.request.orient_coefs.resize(2);
-	traj.request.x_coefs.resize(2);
-	traj.request.y_coefs.resize(2);
-	traj.request.end_points.resize(2);
-	traj.request.spline_groups.push_back(2);
+	traj.request.orient_coefs.resize(point_num);
+	traj.request.x_coefs.resize(point_num);
+	traj.request.y_coefs.resize(point_num);
+	traj.request.end_points.resize(point_num);
+	traj.request.spline_groups.push_back(point_num);
 
-	for(size_t i = 0; i < srvBaseTrajectory.response.orient_coefs[0].spline.size(); i++)
+	ROS_INFO_STREAM("srv base trajectory size = " << srvBaseTrajectory.response.orient_coefs.size());
+
+	for(int p = 0; p < point_num; p++)
 	{
-		traj.request.orient_coefs[0].spline.push_back(srvBaseTrajectory.response.orient_coefs[1].spline[i]);
-		traj.request.x_coefs[0].spline.push_back(srvBaseTrajectory.response.x_coefs[1].spline[i]);
-		traj.request.y_coefs[0].spline.push_back(srvBaseTrajectory.response.y_coefs[1].spline[i]);
-	}
-	for(size_t i = 0; i < srvBaseTrajectory.response.orient_coefs[1].spline.size(); i++)
-	{
-		traj.request.orient_coefs[1].spline.push_back(srvBaseTrajectory.response.orient_coefs[2].spline[i]);
-		traj.request.x_coefs[1].spline.push_back(srvBaseTrajectory.response.x_coefs[2].spline[i]);
-		traj.request.y_coefs[1].spline.push_back(srvBaseTrajectory.response.y_coefs[2].spline[i]);
-	}
+		for(size_t i = 0; i < srvBaseTrajectory.response.orient_coefs[p].spline.size(); i++)
+		{
+			ROS_INFO_STREAM("p = " << p << " i = " << i);
+			traj.request.orient_coefs[p].spline.push_back(srvBaseTrajectory.response.orient_coefs[p].spline[i]);
+			ROS_INFO_STREAM("p = " << p << " i = " << i);
+			traj.request.x_coefs[p].spline.push_back(srvBaseTrajectory.response.x_coefs[p].spline[i]);
+			ROS_INFO_STREAM("p = " << p << " i = " << i);
+			traj.request.y_coefs[p].spline.push_back(srvBaseTrajectory.response.y_coefs[p].spline[i]);
+			ROS_INFO_STREAM("p = " << p << " i = " << i);
+		}
 
-	traj.request.wait_before_group.push_back(0);
-	traj.request.t_shift.push_back(0);
-	traj.request.flip.push_back(false);
-	traj.request.end_points[0] = srvBaseTrajectory.response.end_points[1];
-	traj.request.initial_v = 0;
-	traj.request.final_v = 0;
-	traj.request.x_invert.push_back(0);
-
-	traj.request.wait_before_group.push_back(.16);
-	traj.request.t_shift.push_back(0);
-	traj.request.flip.push_back(false);
-	traj.request.end_points[1] = srvBaseTrajectory.response.end_points[2];
-	traj.request.initial_v = 0;
-	traj.request.final_v = 0;
-	traj.request.x_invert.push_back(0);
+		traj.request.wait_before_group.push_back(p*0.16);
+		traj.request.t_shift.push_back(0);
+		traj.request.flip.push_back(false);
+		traj.request.end_points[p] = srvBaseTrajectory.response.end_points[p+1];
+		traj.request.initial_v = 0;
+		traj.request.final_v = 0;
+		traj.request.x_invert.push_back(0);
+	}
 
 	nav_msgs::Path path;
 
