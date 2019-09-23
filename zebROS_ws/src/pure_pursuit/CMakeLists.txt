@@ -153,6 +153,13 @@ target_link_libraries(pure_pursuit_test_client
   ${catkin_LIBRARIES}
 )
 
+add_executable(pure_pursuit_test_pp_actionlib src/test_pp_actionlib.cpp)
+add_dependencies(pure_pursuit_test_pp_actionlib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pure_pursuit_test_pp_actionlib
+  ${catkin_LIBRARIES}
+)
+
+
 #############
 ## Install ##
 #############
