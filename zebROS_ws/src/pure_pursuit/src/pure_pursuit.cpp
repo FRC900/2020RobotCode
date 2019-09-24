@@ -96,7 +96,7 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 
 	ros::Duration dt = ros::Time::now() - time_of_last_cycle_;
 	time_of_last_cycle_ = ros::Time::now();
-	double roll, pitch, target_yaw, actual_yaw;
+	double roll, pitch, yaw, target_yaw, actual_yaw;
 	tf::Quaternion odom_q(
 			odom.pose.pose.orientation.w,
 			odom.pose.pose.orientation.x,
@@ -107,9 +107,15 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 			next_waypoint.pose.orientation.x,
 			next_waypoint.pose.orientation.y,
 			next_waypoint.pose.orientation.z);
-	tf::Matrix3x3(odom_q).getRPY(roll, pitch, actual_yaw);
-	tf::Matrix3x3(waypoint_q).getRPY(roll, pitch, target_yaw);
-	ROS_INFO_STREAM("yaw of robot = " << actual_yaw_);
+	tf::Matrix3x3(odom_q).getRPY(actual_yaw, pitch, yaw);
+	ROS_INFO_STREAM("waypoint quaternion = " << 
+			next_waypoint.pose.orientation.w << " " <<
+			next_waypoint.pose.orientation.x << " " <<
+			next_waypoint.pose.orientation.y << " " <<
+			next_waypoint.pose.orientation.z);
+	tf::Matrix3x3(waypoint_q).getRPY(target_yaw, pitch, yaw);
+	ROS_INFO_STREAM("roll + pitch = " << roll << " " << pitch);
+	ROS_INFO_STREAM("yaw of robot = " << actual_yaw);
 	ROS_INFO_STREAM("target yaw of robot = " << target_yaw);
 
 	// Set the angle of the velocity
