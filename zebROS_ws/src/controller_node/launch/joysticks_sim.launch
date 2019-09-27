@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-	<arg name="joy_or_key" default="joy" />
 
-	<group ns="joy0" unless="$(eval arg('joy_or_key')=='key')">
+	<group ns="joy0" if="$(env JOYSTICK_ZERO)">
 		<node name="joy_node" pkg="joy" type="joy_node" output="screen">
 			<param name="autorepeat_rate" type="double" value="100"/>
 			<param name="coalesce_interval" type="double" value="0.01"/>
@@ -14,7 +13,7 @@
 			<rosparam command="load" file="$(find teleop_joystick_control)/config/joystick_remap.yaml"/>
 		</node>
 	</group>	
-	<group ns="joy1" if="$(eval arg('joy_or_key')=='two_joy')">
+	<group ns="joy1" if="$(env JOYSTICK_ONE)">
 		<node name="joy_node" pkg="joy" type="joy_node" output="screen">
 			<param name="dev" value="/dev/input/js1"/>
 			<param name="autorepeat_rate" type="double" value="100"/>
