@@ -69,7 +69,7 @@
 			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen"/>
 		</group>
 
-		<group ns="translator1" if="$(env JOYSTICK_ONE)">	
+		<group ns="translator1" if="$(optenv JOYSTICK_ONE false)">	
 			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen" >
 				<remap from="/frcrobot_rio/joystick_states_raw" to="/frcrobot_rio/joystick_states_raw1" />
 			</node>

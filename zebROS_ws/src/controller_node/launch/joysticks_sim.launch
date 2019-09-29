@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-	<group ns="joy0" if="$(env JOYSTICK_ZERO)">
+	<group ns="joy0" if="$(optenv JOYSTICK_ZERO true)">
 
 		<node name="joy_node" pkg="joy" type="joy_node" output="screen">
 			<param name="autorepeat_rate" type="double" value="100"/>
@@ -17,7 +17,7 @@
 
 	</group>	
 
-	<group ns="joy1" if="$(env JOYSTICK_ONE)">
+	<group ns="joy1" if="$(optenv JOYSTICK_ONE false)">
 
 		<node name="joy_node" pkg="joy" type="joy_node" output="screen">
 			<param name="dev" value="/dev/input/js1"/>
