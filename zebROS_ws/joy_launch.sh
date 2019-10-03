@@ -9,7 +9,7 @@ else
     export JOYSTICK_ZERO="false"
 fi
 
-output=$(ls /dev/input/js0)
+output=$(ls /dev/input/js1)
 
 if [ "$output" == "/dev/input/js1" ]; then
     export JOYSTICK_ONE="true"
