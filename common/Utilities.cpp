@@ -181,6 +181,48 @@ namespace zv_utils {
 		return sum / count;
 	}
 
+	float weightedAvgOfDepthMat(const cv::Mat& img, const cv::Mat &confidence, const cv::Mat& mask, const cv::Rect& bound_rect)
+	{
+		double confidence_sum = 0.0;
+		size_t count = 0;
+		for (int j = bound_rect.tl().y+1; j < bound_rect.br().y; j++) //for each row
+		{
+			const float *ptr_img         = img.ptr<float>(j);
+			const float *ptr_confidence = confidence.ptr<float>(j);
+			const uchar *ptr_mask       = mask.ptr<uchar>(j);
+
+			for (int i = bound_rect.tl().x+1; i < bound_rect.br().x; i++) //for each pixel in row
+			{
+				if (ptr_mask[i] && !(isnan(ptr_img[i]) || isinf(ptr_img[i]) || (ptr_img[i] <= 0)))
+				{
+					confidence_sum += 100. - ptr_confidence[i]; // confidence 0 == best, 100 = worse from docs, but I'm seeing lots of measures in the 80s and 90s from actual data
+					count += 1;
+					//std::cout << i << "," << j << " " << ptr_img[i] << " " << ptr_confidence[i] << " " << confidence_sum << " " << count << std::endl;
+				}
+			}
+		}
+		if (count == 0)
+			return -1;
+
+		double dist = 0.0;
+		for (int j = bound_rect.tl().y+1; j < bound_rect.br().y; j++) //for each row
+		{
+			const float *ptr_img         = img.ptr<float>(j);
+			const float *ptr_confidence  = confidence.ptr<float>(j);
+			const uchar *ptr_mask        = mask.ptr<uchar>(j);
+
+			for (int i = bound_rect.tl().x+1; i < bound_rect.br().x; i++) //for each pixel in row
+			{
+				if (ptr_mask[i] && !(isnan(ptr_img[i]) || isinf(ptr_img[i]) || (ptr_img[i] <= 0)))
+				{
+					dist += ptr_img[i] * ((100. - ptr_confidence[i]) / confidence_sum);
+				}
+			}
+		}
+		return dist;
+	}
+
+
 	void shrinkRect(cv::Rect &rect_in, float shrink_factor) {
 
 		rect_in.tl() = rect_in.tl() + cv::Point(shrink_factor/2.0 * rect_in.width, shrink_factor/2.0 * rect_in.height);

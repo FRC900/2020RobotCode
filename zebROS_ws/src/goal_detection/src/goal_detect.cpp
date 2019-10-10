@@ -70,9 +70,10 @@ namespace goal_detection
 					ROS_INFO("starting goal detection using ZED");
 					frame_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed_goal/left/image_rect_color", sub_rate);
 					depth_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed_goal/depth/depth_registered", sub_rate);
+					confidence_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed_goal/confidence/confidence_map", sub_rate);
 					// ApproximateTime takes a queue size as its constructor argument, hence SyncPolicy(xxx)
-					rgbd_sync_ = std::make_unique<message_filters::Synchronizer<RGBDSyncPolicy>>(RGBDSyncPolicy(10), *frame_sub_, *depth_sub_);
-					rgbd_sync_->registerCallback(boost::bind(&GoalDetect::callback, this, _1, _2));
+					rgbd_sync_ = std::make_unique<message_filters::Synchronizer<RGBDSyncPolicy>>(RGBDSyncPolicy(10), *frame_sub_, *depth_sub_, *confidence_sub_);
+					rgbd_sync_->registerCallback(boost::bind(&GoalDetect::callback, this, _1, _2, _3));
 				}
 				else
 				{
@@ -87,13 +88,14 @@ namespace goal_detection
 				pub_debug_image_ = it.advertise("debug_image", 2);
 			}
 
-			void callback(const sensor_msgs::ImageConstPtr &frameMsg, const sensor_msgs::ImageConstPtr &depthMsg)
+			void callback(const sensor_msgs::ImageConstPtr &frameMsg, const sensor_msgs::ImageConstPtr &depthMsg, const sensor_msgs::ImageConstPtr &confidenceMsg)
 			{
 				//std::lock_guard<std::mutex> l(camera_mutex_);
 				if (!camera_mutex_.try_lock())  // If the previous message is still being
 					return;              // processed, drop this one
 				cv_bridge::CvImageConstPtr cvFrame = cv_bridge::toCvShare(frameMsg, sensor_msgs::image_encodings::BGR8);
 				cv_bridge::CvImageConstPtr cvDepth = cv_bridge::toCvShare(depthMsg, sensor_msgs::image_encodings::TYPE_32FC1);
+				cv_bridge::CvImageConstPtr cvConfidence = cv_bridge::toCvShare(confidenceMsg, sensor_msgs::image_encodings::TYPE_32FC1);
 
 				// Initialize goal detector object the first time
 				// through here. Use the size of the frame
@@ -111,7 +113,7 @@ namespace goal_detection
 				gd_->setMinConfidence(config_.min_confidence);
 
 				//Send current color and depth image to the actual GoalDetector
-				gd_->findBoilers(cvFrame->image, cvDepth->image);
+				gd_->findBoilers(cvFrame->image, cvDepth->image, cvConfidence->image);
 
 				const std::vector< GoalFound > gfd = gd_->return_found();
 				goal_detection::GoalDetection gd_msg;
@@ -229,13 +231,17 @@ namespace goal_detection
 			{
 				cv_bridge::CvImageConstPtr cvFrame = cv_bridge::toCvShare(frameMsg, sensor_msgs::image_encodings::BGR8);
 				cv::Mat depthMat(cvFrame->image.size(), CV_32FC1, cv::Scalar(distance_from_terabee_));
-				callback(frameMsg, cv_bridge::CvImage(std_msgs::Header(), "32FC1", depthMat).toImageMsg());
+				cv::Mat confidenceMat(cvFrame->image.size(), CV_32FC1, cv::Scalar(100.));
+				callback(frameMsg,
+						cv_bridge::CvImage(std_msgs::Header(), "32FC1", depthMat).toImageMsg(),
+						cv_bridge::CvImage(std_msgs::Header(), "32FC1", confidenceMat).toImageMsg());
 			}
-			typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> RGBDSyncPolicy;
+			typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::Image> RGBDSyncPolicy;
 
 			ros::NodeHandle                                                nh_;
 			std::unique_ptr<image_transport::SubscriberFilter>             frame_sub_;
 			std::unique_ptr<image_transport::SubscriberFilter>             depth_sub_;
+			std::unique_ptr<image_transport::SubscriberFilter>             confidence_sub_;
 			std::unique_ptr<image_transport::Subscriber>                   rgb_sub_;
 			std::unique_ptr<message_filters::Synchronizer<RGBDSyncPolicy>> rgbd_sync_;
 			ros::Subscriber                                                terabee_sub_;

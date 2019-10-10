@@ -66,7 +66,7 @@ class GoalDetector
 
 		//If your objectypes have the same width it's safe to run
 		//getContours and computeConfidences with different types
-		void findBoilers(const cv::Mat& image, const cv::Mat& depth);
+		void findBoilers(const cv::Mat& image, const cv::Mat& depth, const cv::Mat &confidence);
 		const std::vector< std::vector< cv::Point > > getContours(const cv::Mat& image);
 
 		bool Valid(void) const;
@@ -97,7 +97,7 @@ class GoalDetector
 		float distanceUsingFixedHeight(const cv::Rect &rect,const cv::Point &center, float expected_delta_height) const;
 		bool generateThresholdAddSubtract(const cv::Mat& imageIn, cv::Mat& imageOut);
 		void isValid();
-		const std::vector<DepthInfo> getDepths(const cv::Mat &depth, const std::vector< std::vector< cv::Point > > &contours, const ObjectNum &objtype, float expected_height);
+		const std::vector<DepthInfo> getDepths(const cv::Mat &depth, const cv::Mat &confidence, const std::vector< std::vector< cv::Point > > &contours, const ObjectNum &objtype, float expected_height);
 		const std::vector< GoalInfo > getInfo(const std::vector< std::vector< cv::Point > > &contours, const std::vector<DepthInfo> &depth_maxs, ObjectNum objtype);
 };
 

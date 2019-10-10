@@ -6,8 +6,8 @@
 using namespace std;
 using namespace cv;
 
-//#define VERBOSE
-//#define VERBOSE_BOILER
+#define VERBOSE
+#define VERBOSE_BOILER
 
 int camera_angle_common = 25;
 
@@ -69,12 +69,12 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
     return true;
 }
 
-void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
+void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth, const cv::Mat &confidence) {
 	clear();
 	const vector<vector<Point>> goal_contours = getContours(image);
 	if (goal_contours.size() == 0)
 		return;
-	const vector<DepthInfo> goal_depths = getDepths(depth,goal_contours, LEFT_CARGO_2019, ObjectType(LEFT_CARGO_2019).real_height());
+	const vector<DepthInfo> goal_depths = getDepths(depth, confidence, goal_contours, LEFT_CARGO_2019, ObjectType(LEFT_CARGO_2019).real_height());
 
 	//compute confidences for both the left piece of
 	//tape and the right piece of tape
@@ -466,7 +466,7 @@ const vector< vector < Point > > GoalDetector::getContours(const Mat& image) {
 	return return_contours;
 }
 
-const vector<DepthInfo> GoalDetector::getDepths(const Mat &depth, const vector< vector< Point > > &contours, const ObjectNum &objtype, float expected_height) {
+const vector<DepthInfo> GoalDetector::getDepths(const Mat &depth, const Mat &confidence, const vector< vector< Point > > &contours, const ObjectNum &objtype, float expected_height) {
 	// Use to mask the contour off from the rest of the
 	// image - used when grabbing depth data for the contour
 	static Mat contour_mask(_frame_size, CV_8UC1, Scalar(0));
@@ -489,8 +489,10 @@ const vector<DepthInfo> GoalDetector::getDepths(const Mat &depth, const vector< 
 		float depth_z_min = average_depth;
 		float depth_z_max = average_depth;
 
+		const float weighted_average_depth = zv_utils::weightedAvgOfDepthMat(depth, confidence, contour_mask, br);
+
 #ifdef VERBOSE
-		cout << "Depth " << i << ": " << depth_z_min << " " << depth_z_max<< endl;
+		cout << "Depth " << i << ": " << depth_z_min << " " << depth_z_max << " " << weighted_average_depth << endl;
 #endif
 
 		// If no depth data, calculate it using FOV and height of
@@ -783,7 +785,6 @@ bool GoalDetector::Valid(void) const
 // a different color
 void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours) const
 {
-
 	for (size_t i = 0; i < contours.size(); i++)
 	{
 		drawContours(image, contours, i, Scalar(0,0,255), 3);
