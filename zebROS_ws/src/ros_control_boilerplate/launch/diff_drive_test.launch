@@ -17,11 +17,15 @@
 
 		<!-- Load controller settings -->
 		<rosparam file="$(find ros_control_boilerplate)/config/diff_drive.yaml" command="load"/>
-		<rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller.yaml" command="load"/>
+		<rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller_jetson.yaml" command="load"/>
 
 		<!-- Load controller manager -->
 		<node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false"
-			output="screen" args="spawn joint_state_controller talon_state_controller diff_drive_controller robot_code_ready_controller"/>
+			output="screen" args="spawn match_state_listener_controller joint_state_controller talon_state_controller diff_drive_controller left_follower_controller right_follower_controller robot_code_ready_controller"/>
+
+		<group ns="diff_drive_controller">
+			<include file="$(find controller_node)/launch/teleop.launch"/>
+		</group>
 
 	</group>
 

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<launch>
+	<group ns="jetson_nano">
+		<node name="frcrobot_hw_interface" pkg="ros_control_boilerplate" type="frcrobot_hw_main"
+			output="screen" launch-prefix="">
+		</node>
+		<node name="joy_node" pkg="joy" type="joy_node" output="screen">
+			<param name="autorepeat_rate" type="double" value="100"/>
+			<param name="coalesce_interval" type="double" value="0.01"/>
+			<param name="deadzone" type="double" value="0.0"/>
+		</node>
+		<node pkg="teleop_joystick_control" type="joystick_remap.py" name="joystick_remap" >
+			<remap from="joy_in" to="/jetson_nano/joy" />
+			<remap from="joy_out" to="/jetson_nano/joystick_states_raw"/>
+			<rosparam command="load" file="$(find teleop_joystick_control)/config/joystick_remap.yaml"/>
+		</node>
+		<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen">
+			<remap from="/frcrobot_rio/joystick_states_raw" to="/jetson_nano/joystick_states_raw" />
+		</node>
+		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
+		<node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen" >
+			<remap from="/jetson_nano/swerve_drive_controller/cmd_vel" to="/jetson_nano/cmd_vel" />
+		</node>
+	</group>
+</launch>

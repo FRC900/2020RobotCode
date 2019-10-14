@@ -1,0 +1,36 @@
+<launch>
+ <arg name="joy_config" default="ps3" />
+  <arg name="joy_dev" default="/dev/input/js0" />
+  <arg name="config_filepath" default="$(find controller_node)/config/$(arg joy_config).config.yaml" />
+  
+ <!-- <node pkg="joy" type="joy_node" name="joy_node">
+    <param name="dev" value="$(arg joy_dev)" />
+    <param name="deadzone" value="0.3" />
+    <param name="autorepeat_rate" value="20" />
+  </node>
+
+  <node pkg="teleop_twist_joy" name="teleop_twist_joy" type="teleop_node">
+    <rosparam command="load" file="$(arg config_filepath)" />
+  </node> -->
+
+	<node name="joy_node" pkg="joy" type="joy_node" output="screen">
+    	<param name="dev" value="$(arg joy_dev)" />
+		<param name="autorepeat_rate" type="double" value="100"/>
+		<param name="coalesce_rate" type="double" value="0.01"/>
+	</node>
+
+	<node pkg="teleop_joystick_control" type="joystick_remap.py" name="joystick_remap" >
+		<remap from="joy_out" to="/frcrobot_rio/joystick_states_raw"/>
+		<remap from="joy_in" to="joy"/>
+		<rosparam command="load" file="$(find teleop_joystick_control)/config/joystick_remap.yaml"/>
+	</node>
+
+	<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
+	<node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen" >
+		<remap from="navx_mxp" to="/frcrobot_rio/navx_mxp"/>
+		<remap from="/frcrobot/diff_drive_controller/swerve_drive_controller/cmd_vel" to="/frcrobot/diff_drive_controller/cmd_vel"/>
+	</node>
+	<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen">
+		<remap from="/frcrobot/diff_drive_controller/joystick_states" to="/teleop/translator0/joystick_states"/>
+	</node>
+</launch>
