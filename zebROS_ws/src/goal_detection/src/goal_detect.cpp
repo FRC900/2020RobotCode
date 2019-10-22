@@ -19,6 +19,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <cv_bridge/cv_bridge.h>
+#include <image_geometry/pinhole_camera_model.h>
 
 #include "teraranger_array/RangeArray.h"
 
@@ -75,6 +76,8 @@ namespace goal_detection
 					// ApproximateTime takes a queue size as its constructor argument, hence SyncPolicy(xxx)
 					rgbd_sync_ = std::make_unique<message_filters::Synchronizer<RGBDSyncPolicy>>(RGBDSyncPolicy(10), *frame_sub_, *depth_sub_);
 					rgbd_sync_->registerCallback(boost::bind(&GoalDetect::callback, this, _1, _2));
+
+					camera_info_sub_ = nh_.subscribe("/zed_goal/left/camera_info", sub_rate, &GoalDetect::camera_info_callback, this);
 				}
 				else
 				{
@@ -139,6 +142,10 @@ namespace goal_detection
 					frame_id += "_frame";
 				}
 				gd_msg.header.frame_id = frame_id;
+
+				image_geometry::PinholeCameraModel model;
+				model.fromCameraInfo(camera_info_);
+
 				for(size_t i = 0; i < gfd.size(); i++)
 				{
 					field_obj::Object dummy;
@@ -148,6 +155,18 @@ namespace goal_detection
 					dummy.id = gfd[i].id;
 					dummy.confidence = gfd[i].confidence;
 					gd_msg.objects.push_back(dummy);
+
+					cv::Point2f uv;
+
+					uv.x = gfd[i].rect.tl().x + gfd[i].rect.width/2.0;
+					uv.x = gfd[i].rect.tl().y + gfd[i].rect.height/2.0;
+
+					cv::Point3f world_coord = model.projectPixelTo3dRay(center_uv);
+
+					ROS_INFO_STREAM("gfd[i].pos:" << gfd[i].pos);
+					ROS_INFO_STREAM("center_uv (unscaled):" << world_coord);
+					ROS_INFO_STREAM("center_uv (scaled):" << world_coord * gfd[i].pos.z);
+					ROS_INFO_STREAM("difference:" << world_coord * gfd[i].pos.z - gfd[i].pos);
 				}
 
 				pub_.publish(gd_msg);
@@ -217,6 +236,14 @@ namespace goal_detection
 				}
 				camera_mutex_.unlock();
 			}
+			void camera_info_callback(const sensor_msgs::CameraInfoConstPtr &info)
+			{
+				if (!camera_mutex_.try_lock())  // If the previous message is still being
+					return;              // processed, drop this one
+
+				camera_info_ = *info;
+				camera_mutex_.unlock();
+			}
 
 			void multiflexCB(const teraranger_array::RangeArray& msg)
 			{
@@ -259,6 +286,9 @@ namespace goal_detection
 			DynamicReconfigureWrapper<goal_detection::GoalDetectionConfig> drw_;
 			std::mutex                                                     camera_mutex_;
 			std::mutex                                                     multiflex_mutex_;
+
+			ros::Subscriber                                                camera_info_sub_;
+			sensor_msgs::CameraInfo                                        camera_info_;
 	};
 } // namspace
 
