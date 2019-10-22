@@ -39,8 +39,6 @@
 			</node>
 		</group>
 	
-		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
-		
 		<group ns="teleop">
 			<group ns="translator0">
 				<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen">
@@ -48,6 +46,7 @@
 					<remap from="joystick_states" to="/teleop/translator0/joystick_states"/>
 				</node>
 			</group>
+			<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
 			<node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen">
 				<remap from="navx_mxp" to="/frcrobot_rio/navx_mxp"/>
 				<remap from="swerve_drive_controller/cmd_vel" to="/frcrobot/diff_drive_controller/cmd_vel"/>

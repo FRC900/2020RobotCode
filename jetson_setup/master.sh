@@ -6,7 +6,7 @@ sudo sysctl -p
 sudo rfkill block wifi  
 sudo rfkill block bluetooth
 
-. /home/ubuntu/2019Offseason/zebROS_ws/ROSJetsonMaster.sh
+source /home/ubuntu/2019Offseason/zebROS_ws/ROSJetsonNano.sh
 #echo 1100-1200,443,80,554,1735 > /proc/sys/net/ipv4/ip_local_reserved_ports
 
 #echo 5800 5810 > /proc/sys/net/ipv4/ip_local_port_range
@@ -26,11 +26,11 @@ if sudo mount /dev/nvme0n1p1 /mnt/900_2; then
 		date >> /home/ubuntu/mounted.txt
 		echo worked >> /home/ubuntu/mounted.txt
 		sudo chmod a+rw /mnt/900_2/
-		roslaunch controller_node 2019_compbot_combined.launch record:=true
+		roslaunch controller_node teleop.launch record:=true
 else
 		date >> /home/ubuntu/mounted.txt
 		echo did not mount >> /home/ubuntu/mounted.txt
-		roslaunch controller_node 2019_compbot_combined.launch
+		roslaunch controller_node teleop.launch
 fi
 
 top -b > /mnt/900_2/$(date +%Y%m%d%H%M%S)_top_log.txt
