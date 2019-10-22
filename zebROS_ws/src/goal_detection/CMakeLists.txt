@@ -12,6 +12,7 @@ if (DEFINED CMAKE_TOOLCHAIN_FILE)
     message_filters
     message_generation
     geometry_msgs
+	image_geometry
 	nodelet
     std_msgs
     sensor_msgs
@@ -26,6 +27,7 @@ else()
 	dynamic_reconfigure_wrapper
     message_generation
     geometry_msgs
+	image_geometry
 	nodelet
     std_msgs
     sensor_msgs
@@ -136,13 +138,10 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-	add_executable(translate_to_pointstamped src/translate_to_pointstamped.cpp)
-	target_link_libraries(translate_to_pointstamped ${catkin_LIBRARIES})
-	add_dependencies(translate_to_pointstamped ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
   find_package(OpenCV REQUIRED)
+  list(FILTER catkin_LIBRARIES EXCLUDE REGEX "opencv_freetype")
+  list(FILTER OpenCV_LIBS EXCLUDE REGEX "opencv_freetype")
   ## Specify additional locations of header files
   ## Your package locations should be listed before other locations
   # include_directories(include)
@@ -158,7 +157,6 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     src/goal_detect_node.cpp
   )
 
-  list(FILTER OpenCV_LIBS EXCLUDE REGEX "opencv_freetype")
   ## Specify libraries to link a library or executable target against
   target_link_libraries(goal_detection_node
     ${catkin_LIBRARIES}
@@ -181,6 +179,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     ../../../common/kalman.cpp
     ../../../common/hungarian.cpp
   )
+
   target_link_libraries(GoalDetection
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
@@ -190,6 +189,10 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     ${${PROJECT_NAME}_EXPORTED_TARGETS} 
     ${catkin_EXPORTED_TARGETS}
   )
+
+  add_executable(translate_to_pointstamped src/translate_to_pointstamped.cpp)
+  target_link_libraries(translate_to_pointstamped ${catkin_LIBRARIES})
+  add_dependencies(translate_to_pointstamped ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 endif()
 
