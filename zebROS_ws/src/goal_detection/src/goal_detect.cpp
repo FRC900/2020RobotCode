@@ -91,6 +91,42 @@ namespace goal_detection
 
 				pub_debug_image_ = it.advertise("debug_image", 2);
 			}
+			// TODO : move this into GoalDetect / object code to replace the old
+			// screen to world / world to screen calcs
+			// Use the camera model to convert the pixel coords at the center of the bounding
+			// box into real-world coords.
+			// pos is the x,y,z coordinates computed using the other method - this is a hack
+			// for getting the reported ZED depth of the targer.  Moving this function into the goal detect class will
+			// make the depth directly readable by this code
+			cv::Point3f get_world_coord_scaled(const image_geometry::PinholeCameraModel &model,
+											   const cv::Rect &bounding_rect,
+											   const cv::Point3f &pos,
+											   const std::string &debug_name) const
+			{
+
+				// Center point of left and right bounding rect
+				const cv::Point2f uv(
+						bounding_rect.tl().x + bounding_rect.width  / 2.0,
+						bounding_rect.tl().y + bounding_rect.height / 2.0
+						);
+				const cv::Point3f world_coord_unit = model.projectPixelTo3dRay(uv);
+				const float distance = sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
+				const cv::Point3f world_coord_scaled = world_coord_unit * distance;
+
+				const cv::Point3f adj_world_coord_scaled(world_coord_scaled.x, world_coord_scaled.z, -world_coord_scaled.y);
+#if 0
+				ROS_INFO_STREAM("bounding_rect:" << bounding_rect);
+				ROS_INFO_STREAM("uv:" << uv);
+				ROS_INFO_STREAM("world_coord_unit:" << world_coord_unit);
+				ROS_INFO_STREAM("distance:" << distance);
+				ROS_INFO_STREAM("world_coord_scaled:" << world_coord_scaled);
+				ROS_INFO_STREAM("pos:" << pos);
+				ROS_INFO_STREAM("adj_world_coord_scaled:" << adj_world_coord_scaled);
+				ROS_INFO_STREAM("adj_distance:" << adj_world_coord_scaled - pos);
+				ROS_INFO_STREAM(debug_name << " : uv : " << uv << " gd_pos : " << pos << " model_pos : " << adj_world_coord_scaled << " difference " << adj_world_coord_scaled - pos);
+#endif
+				return adj_world_coord_scaled;
+			}
 
 			void callback(const sensor_msgs::ImageConstPtr &frameMsg, const sensor_msgs::ImageConstPtr &depthMsg)
 			{
@@ -145,6 +181,7 @@ namespace goal_detection
 
 				image_geometry::PinholeCameraModel model;
 				model.fromCameraInfo(camera_info_);
+				//ROS_INFO_STREAM("Camera_info " << camera_info_);
 
 				for(size_t i = 0; i < gfd.size(); i++)
 				{
@@ -154,19 +191,59 @@ namespace goal_detection
 					dummy.location.z = gfd[i].pos.z;
 					dummy.id = gfd[i].id;
 					dummy.confidence = gfd[i].confidence;
+
+					// Center point of left and right bounding rect in world coords
+					const cv::Point3f left_world_coord_scaled = get_world_coord_scaled(model, gfd[i].left_rect, gfd[i].left_pos, "left");
+					const cv::Point3f right_world_coord_scaled = get_world_coord_scaled(model, gfd[i].right_rect, gfd[i].right_pos, "right");
+
+					// Midpoint of those two should be the goal coords
+					const cv::Point3f center_world_coord_scaled = (left_world_coord_scaled + right_world_coord_scaled) / 2.0;
+
+#if 0
+					ROS_INFO_STREAM("center gd_pos : " << gfd[i].pos <<
+									" model_pos : " << center_world_coord_scaled <<
+									" difference " << center_world_coord_scaled - gfd[i].pos);
+#endif
+					// TODO : pick a coord frame and stick with it?
+					dummy.x = center_world_coord_scaled.y;
+					dummy.y = center_world_coord_scaled.x;
+					dummy.z = center_world_coord_scaled.z;
 					gd_msg.objects.push_back(dummy);
-
-					cv::Point2f uv;
-
-					uv.x = gfd[i].rect.tl().x + gfd[i].rect.width/2.0;
-					uv.x = gfd[i].rect.tl().y + gfd[i].rect.height/2.0;
-
-					cv::Point3f world_coord = model.projectPixelTo3dRay(center_uv);
-
+#if 0
+					ROS_INFO_STREAM("center_world_coord_scaled:" << center_world_coord_scaled);
 					ROS_INFO_STREAM("gfd[i].pos:" << gfd[i].pos);
-					ROS_INFO_STREAM("center_uv (unscaled):" << world_coord);
-					ROS_INFO_STREAM("center_uv (scaled):" << world_coord * gfd[i].pos.z);
-					ROS_INFO_STREAM("difference:" << world_coord * gfd[i].pos.z - gfd[i].pos);
+					ROS_INFO_STREAM("difference:" << center_world_coord_scaled - gfd[i].pos);
+					// Midpoint along the segment connecting those
+					// two center points
+					const cv::Point2f center_uv(
+							left_uv.x + (right_uv.x - left_uv.x) / 2.0,
+							left_uv.y + (right_uv.y - left_uv.y) / 2.0
+					);
+					const cv::Point3f world_coord = model.projectPixelTo3dRay(center_uv);
+					const float distance = sqrt(gfd[i].pos.x * gfd[i].pos.x +
+					                            gfd[i].pos.y * gfd[i].pos.y +
+					                            gfd[i].pos.z * gfd[i].pos.z);
+					ROS_INFO_STREAM("model.fullResolution: " << model.fullResolution());
+
+					ROS_INFO_STREAM("left_rect" << gfd[i].left_rect);
+					ROS_INFO_STREAM("right_rect" << gfd[i].right_rect);
+					ROS_INFO_STREAM("left_uv" << left_uv);
+					ROS_INFO_STREAM("right_uv" << right_uv);
+					ROS_INFO_STREAM("center_uv" << center_uv);
+
+					const cv::Point3f gd_pos(gfd[i].pos.y, gfd[i].pos.x, gfd[i].pos.z);
+
+					ROS_INFO_STREAM("gd_pos:" << gd_pos);
+					ROS_INFO_STREAM("distance:" << distance);
+					ROS_INFO_STREAM("world_coord (unscaled):" << world_coord);
+					ROS_INFO_STREAM("projectPixelTo3dRay(unscaled):" << model.projectPixelTo3dRay(center_uv));
+					ROS_INFO_STREAM("world_coord (scaled):" << world_coord * distance);
+					ROS_INFO_STREAM("difference:" << world_coord * distance - gd_pos);
+
+					const cv::Point3f adj_world_coord(world_coord.z * distance, world_coord.x * distance, -world_coord.y * distance);
+					ROS_INFO_STREAM("adj_world_coord:" << adj_world_coord);
+					ROS_INFO_STREAM("adj_distance:" << adj_world_coord - gd_pos);
+#endif
 				}
 
 				pub_.publish(gd_msg);
