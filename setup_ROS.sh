@@ -23,14 +23,14 @@ sudo apt update
 # From source for the Jetson
 sudo apt install -y git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev libglfw3-dev libgl1-mesa-dev libglu1-mesa-dev 
 mkdir realsense_src && cd realsense_src
-wget https://github.com/IntelRealSense/librealsense/archive/v2.25.0.zip
-unzip v2.25.0.zip
-cd librealsense-2.25.0
+wget https://github.com/IntelRealSense/librealsense/archive/v2.27.0.zip
+unzip v2.27.0.zip
+cd librealsense-2.27.0
 sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && udevadm trigger
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=true ..
-sudo make uninstall && make clean && make -j4 && sudo make install
+sudo make uninstall && make clean && make -j6 && sudo make install
 
 # Add Individual Packages here
 # You can install a specific ROS package (replace underscores with dashes of the package name):
@@ -43,6 +43,7 @@ sudo make uninstall && make clean && make -j4 && sudo make install
 # 
 # Keep each package on a separate line to aid in git merging
 # Try to keep them in alphabetic order to make it easier to find duplicates
+curl -sSL http://get.gazebosim.org | sh
 sudo apt install -y \
 	ros-melodic-ros-base \
 	liblua5.3-dev \
@@ -57,11 +58,14 @@ sudo apt install -y \
 	ros-melodic-control-msgs \
 	ros-melodic-cv-bridge \
 	ros-melodic-ecl-geometry \
+	ros-melodic-gazebo-ros-control \
+	ros-melodic-gazebo-ros-pkgs \
 	ros-melodic-grid-map-core \
 	ros-melodic-grid-map-cv \
 	ros-melodic-grid-map-ros \
 	ros-melodic-hardware-interface \
 	ros-melodic-joint-limits-interface \
+	ros-melodic-joint-state-publisher \
 	ros-melodic-joystick-drivers \
 	ros-melodic-map-server \
 	ros-melodic*mux* \

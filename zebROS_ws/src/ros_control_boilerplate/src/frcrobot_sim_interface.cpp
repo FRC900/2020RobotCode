@@ -657,6 +657,9 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 		if (!can_ctre_mc_local_hardwares_[joint_id])
 			continue;
 
+		if (!talon_command_[joint_id].try_lock())
+			continue;
+
 		custom_profile_write(joint_id);
 
 		auto &ts = talon_state_[joint_id];
@@ -684,7 +687,7 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 				ROS_INFO_STREAM("Set joint " << joint_id << "=" << can_ctre_mc_names_[joint_id] <<" demand1 type / value");
 			}
 		}
-		else if (last_robot_enabled)
+		else
 		{
 			// Update talon state with requested setpoints for
 			// debugging. Don't actually write them to the physical
@@ -698,6 +701,7 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 				// call resetMode() to queue up a change back to the correct mode / setpoint
 				// when the robot switches from disabled back to enabled
 				tc.resetMode();
+				tc.resetDemand1();
 				ts.setTalonMode(hardware_interface::TalonMode_Disabled);
 				ROS_INFO_STREAM("Robot disabled - called Set(Disabled) on " << joint_id << "=" << can_ctre_mc_names_[joint_id]);
 			}
@@ -1006,6 +1010,8 @@ void FRCRobotSimInterface::write(ros::Duration &elapsed_time)
 
 		if (tc.clearStickyFaultsChanged())
 			ROS_INFO_STREAM("Cleared joint " << joint_id << "=" << can_ctre_mc_names_[joint_id] <<" sticky_faults");
+
+		tc.unlock();
 	}
 	last_robot_enabled = robot_enabled;
 

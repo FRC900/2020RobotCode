@@ -5,7 +5,7 @@
  */
 #include "pure_pursuit/pure_pursuit.h"
 
-void PurePursuit::setup()
+bool PurePursuit::setup()
 {
 	// TODO (KCJ) - move these reads to the calling code, pass in just the values
 	// No reason for this class to know anything about ROS
@@ -16,6 +16,16 @@ void PurePursuit::setup()
 	nh_.getParam("/frcrobot_jetson/pure_pursuit/pos_tol", pos_tol_);
 	nh_.getParam("/frcrobot_jetson/pure_pursuit/final_pos_tol", final_pos_tol_);
 
+	if(!pid_controller_.init(ros::NodeHandle(nh_, "pure_pursuit/pid_parameters")))
+	{
+		ROS_ERROR_STREAM("PID controller failed to initiate.");
+		return false;
+	}
+
+	time_of_last_cycle_ = ros::Time::now();
+	pid_controller_.reset();
+
+	return true;
 }
 
 // TODO : for large function parameters, making them const T & is more efficient
@@ -65,8 +75,6 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 
 	next_waypoint = path_.poses[std::min(num_waypoints_ - 1, minimum_idx+1)];
 
-	if(minimum_idx == num_waypoints_ - 1)
-
 	ROS_INFO_STREAM("x-error: " << fabs(odom.pose.pose.position.x - next_waypoint.pose.position.x) << " y-error: " << fabs(odom.pose.pose.position.y - next_waypoint.pose.position.y) << " final_pos_tol: " << final_pos_tol_);
 	if(minimum_idx == num_waypoints_ - 1 && fabs(odom.pose.pose.position.x - path_.poses[num_waypoints_ - 1].pose.position.x) < final_pos_tol_ && fabs(odom.pose.pose.position.y - path_.poses[num_waypoints_ - 1].pose.position.y) < final_pos_tol_)
 	{
@@ -86,6 +94,30 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 			<< " " << next_waypoint.pose.position.y
 			<< " " << next_waypoint.pose.position.z);
 
+	ros::Duration dt = ros::Time::now() - time_of_last_cycle_;
+	time_of_last_cycle_ = ros::Time::now();
+	double roll, pitch, yaw, target_yaw, actual_yaw;
+	tf::Quaternion odom_q(
+			odom.pose.pose.orientation.w,
+			odom.pose.pose.orientation.x,
+			odom.pose.pose.orientation.y,
+			odom.pose.pose.orientation.z);
+	tf::Quaternion waypoint_q(
+			next_waypoint.pose.orientation.w,
+			next_waypoint.pose.orientation.x,
+			next_waypoint.pose.orientation.y,
+			next_waypoint.pose.orientation.z);
+	tf::Matrix3x3(odom_q).getRPY(actual_yaw, pitch, yaw);
+	ROS_INFO_STREAM("waypoint quaternion = " << 
+			next_waypoint.pose.orientation.w << " " <<
+			next_waypoint.pose.orientation.x << " " <<
+			next_waypoint.pose.orientation.y << " " <<
+			next_waypoint.pose.orientation.z);
+	tf::Matrix3x3(waypoint_q).getRPY(target_yaw, pitch, yaw);
+	ROS_INFO_STREAM("roll + pitch = " << roll << " " << pitch);
+	ROS_INFO_STREAM("yaw of robot = " << actual_yaw);
+	ROS_INFO_STREAM("target yaw of robot = " << target_yaw);
+
 	// Set the angle of the velocity
 	geometry_msgs::Point32 base_link_waypoint;
 	base_link_waypoint.x = next_waypoint.pose.position.x - odom.pose.pose.position.x;
@@ -99,7 +131,7 @@ geometry_msgs::Twist PurePursuit::run(nav_msgs::Odometry odom)
 	cmd_vel_.linear.z = 0;
 	cmd_vel_.angular.x = 0;
 	cmd_vel_.angular.y = 0;
-	cmd_vel_.angular.z = 0;
+	cmd_vel_.angular.z = pid_controller_.updatePid(actual_yaw - target_yaw, dt);
 
 	return cmd_vel_;
 }
