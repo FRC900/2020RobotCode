@@ -16,7 +16,7 @@ do
 	dmesg >> $log
 	echo "-----------------------" >> $log
 	sleep 1
-	rmmod gs_usb > $log
+	rmmod gs_usb >> $log
 	sleep 1
 	insmod /lib/modules/4.9.140-tegra/kernel/drivers/net/can/usb/gs_usb.ko >> $log
 done
