@@ -13,6 +13,8 @@ add_definitions(-Wno-deprecated-declarations -Wno-switch -ftrack-macro-expansion
 
 if (DEFINED CMAKE_TOOLCHAIN_FILE)  # Cross-build for Rio
   # Everything is in the toolchain file
+elseif ( WIN32 )
+  #DO nothing
 else() # Native builds
   set (CMAKE_RANLIB "gcc-ranlib" )
   set (CMAKE_AR     "gcc-ar"     )
