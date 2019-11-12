@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="live_camera" default="true" />
+
+  <arg name="sub_rate" default="2" />
+  <arg name="pub_rate" default="1" />
+  <arg name="hFov" default="69.0" />
+  <arg name="camera_angle" default="0.0" />
+  <arg name="no_depth" default="true" /> 
+
+  <!-- Nodelet Manager -->
+  <node pkg="nodelet" type="nodelet" name="c920_nodelet_manager" args="manager" output="screen" />
+  <!-- uvc camera nodelet -->
+  <group ns="c920_camera" if="$(arg live_camera)" >
+    <node pkg="nodelet" type="nodelet" name="uvc_camera" args="load uvc_camera/CameraNodelet /c920_nodelet_manager" output="screen">
+	  <param name="device" value="/dev/video0"/>
+	  <param name="frame_id" value="c920_frame"/>
+	  <param name="fps" value="60"/>
+	  <param name="width" value="640"/>
+	  <param name="height" value="360"/>
+    </node>
+  </group>
+
+  <!-- goal detect nodelet -->
+  <node pkg="nodelet" type="nodelet" name="c920_goal_detection" args="load goal_detection/GoalDetect /c920_nodelet_manager" output="screen">
+	  
+  	<param name="sub_rate" value="$(arg sub_rate)" />
+	<param name="pub_rate" value="$(arg pub_rate)" />
+	<param name="hFov" value="$(arg hFov)" />
+	<param name="camera_angle" value="$(arg camera_angle)" />
+	<param name="no_depth" value="$(arg no_depth)" />
+  </node>
+
+</launch>

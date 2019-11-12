@@ -1,0 +1,4 @@
+robot_visual:
+    width: .89
+    length: 1.022
+    wheel_base_pos_offset: .054
