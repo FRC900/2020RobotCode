@@ -1,3 +1,0 @@
-trajectory_msgs/JointTrajectory[] joint_trajectories
-int32 start_id
----

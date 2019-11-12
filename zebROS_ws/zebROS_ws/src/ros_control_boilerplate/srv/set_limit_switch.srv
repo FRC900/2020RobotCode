@@ -1,4 +1,0 @@
-uint8 target_joint_id
-bool forward
-bool reverse
----
