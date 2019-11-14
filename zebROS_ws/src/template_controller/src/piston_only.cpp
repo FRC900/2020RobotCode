@@ -7,14 +7,16 @@
 
 namespace mech_controller
 {
-	bool MechController::init(hardware_interface::PositionJointInterface *hw,
+	bool MechController::init(hardware_interface::RobotHW *hw,
 									 ros::NodeHandle                 &/*root_nh*/,
 									 ros::NodeHandle                 &controller_nh)
 	{
+		//get interface
+		hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
 		//Give the piston joints a value
 		/* Ex:
-		push_joint_ = hw->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
+		push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 		*/
 
 		//Initialize your ROS server
@@ -39,7 +41,7 @@ namespace mech_controller
 		*/
 
 
-		//Set values of the pistons. Can be 1.0, 0.0, or -1.0
+		//Set values of the pistons. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
 		/* Syntax: push_joint_.setCommand(1.0); */
 	}
 

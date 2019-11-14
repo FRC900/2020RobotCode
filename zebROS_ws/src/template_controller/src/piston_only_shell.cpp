@@ -1,11 +1,17 @@
+//TEMPLATE FOR WRITING A CONTROLLER
+//replace "mech" with the name of your mechanism, words_separated_by_underscores
+//replace "Mech" with the name of your mechanism, ThisIsTheFormatForThat
+
+
 #include "mech_controller/mech_controller.h"
 
 namespace mech_controller
 {
-	bool MechController::init(hardware_interface::PositionJointInterface *hw,
+	bool MechController::init(hardware_interface::RobotHW *hw,
 									 ros::NodeHandle                 &/*root_nh*/,
 									 ros::NodeHandle                 &controller_nh)
 	{
+
 
 		return true;
 	}
@@ -21,20 +27,6 @@ namespace mech_controller
 	void MechController::stopping(const ros::Time &/*time*/) {
 	}
 
-	bool MechController::cmdService(mech_controller::MechSrv::Request &req,
-									mech_controller::MechSrv::Response &/*response*/)
-	{
-		if(isRunning())
-		{
-
-		}
-		else
-		{
-			ROS_ERROR_STREAM("Can't accept new commands. MechController is not running.");
-			return false;
-		}
-		return true;
-	}
 
 }//namespace
 
