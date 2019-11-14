@@ -6,30 +6,29 @@
 #include <controller_interface/controller.h> //for writing controllers
 #include <pluginlib/class_list_macros.h> //to compile as a controller
 
-//REMEMBER TO INCLUDE CUSTOM MESSAGE
+//REMEMBER TO INCLUDE CUSTOM SERVICE
 
 namespace mech_controller
 {
 
-//this is the controller class - it's used to make a controller
-class MechController : public controller_interface::Controller<hardware_interface::PositionJointInterface>
+//this is the controller class, used to make a controller
+class MechController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>
 {
         public:
             MechController()
             {
             }
 
-            //The four essential functions for a controller to live
-			virtual bool init(hardware_interface::PositionJointInterface *hw,
+			//the four essential functions for a controller: init, starting, update, stopping
+
+			virtual bool init(hardware_interface::RobotHW *hw,
                               ros::NodeHandle             &root_nh,
                               ros::NodeHandle             &controller_nh) override;
             virtual void starting(const ros::Time &time) override;
             virtual void update(const ros::Time & time, const ros::Duration& period) override;
             virtual void stopping(const ros::Time &time) override;
 
-
         private:
-
 
 
 
