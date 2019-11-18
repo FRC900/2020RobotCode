@@ -250,6 +250,21 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 
 		double navX_zero_;
 
+		//robot iteration calls - sending stuff to driver station, can be slower than main loop
+		double t_prev_robot_iteration_;
+		double robot_iteration_hz_;
+
+		//certain data will be read at a slower rate than the main loop, for computational efficiency
+		double t_prev_joystick_read_;
+		double joystick_read_hz_;
+
+		double t_prev_match_data_read_time_;
+		double match_data_read_hz_;
+
+		double t_prev_robot_controller_read_time_;
+		double robot_controller_read_hz_;
+
+
 		std::vector<std::shared_ptr<ctre::phoenix::motorcontrol::IMotorController>> ctre_mcs_;
 
 		// Maintain a separate read thread for each talon SRX

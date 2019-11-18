@@ -579,6 +579,21 @@ void FRCRobotHWInterface::init(void)
 
 	navX_zero_ = -10000;
 
+	t_prev_robot_iteration_ = -1; //-1 signals it hasn't been read before, so read it then set this variable
+	robot_iteration_hz_ = 1;
+	if(! nh->getParam("generic_hw_control_loop/robot_iteration_hz"){
+		
+	}
+
+	t_prev_joystick_read_ = -1;
+	joystick_read_hz_ = 100;
+	if(! nh->getParam("generic_hw_control_loop/joystick_read_hz", joystick_read_hz_) {
+		ROS_ERROR("Failed to read joystick_read_hz it frcrobot_hw_interface");
+	}
+
+	t_prev_match_data_read_ = -1;
+	t_prev_robot_controller_read_ = -1;
+
 	ROS_INFO_NAMED("frcrobot_hw_interface", "FRCRobotHWInterface Ready.");
 }
 
@@ -1070,6 +1085,9 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 		}
 
 		read_tracer_.start_unique("match data");
+		//check if sufficient time has passed since last read
+		double t_now = ros::Time::now().toSec();
+		
 		int32_t status = 0;
 		match_data_.setMatchTimeRemaining(HAL_GetMatchTime(&status));
 		HAL_MatchInfo info;
