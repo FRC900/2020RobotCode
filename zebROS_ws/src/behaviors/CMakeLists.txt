@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1)
 project(behaviors)
 
+if(NOT WIN32)
+
 include ("../cmake_modules/CMakeOpt.cmake")
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -310,3 +312,5 @@ install(DIRECTORY
 ## Add folders to be run by python nosetests
 endif()
 # catkin_add_nosetests(test)
+
+endif()

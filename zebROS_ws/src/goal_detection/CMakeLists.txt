@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(goal_detection)
 
+if(NOT WIN32)
+
 include ("../cmake_modules/CMakeOpt.cmake")
 
 ## Find catkin macros and libraries
@@ -242,3 +244,5 @@ endif()
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+endif()
