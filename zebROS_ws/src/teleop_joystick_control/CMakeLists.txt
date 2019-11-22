@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(teleop_joystick_control)
 
+if(NOT WIN32)
+
 include ("../cmake_modules/CMakeOpt.cmake")
 
 if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -23,10 +25,10 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 	find_package(Eigen3 REQUIRED)
 
 	# Generate services in the 'srv' folder
-	add_service_files (
-		FILES
-		RobotOrient.srv
-		)
+	# add_service_files (
+	#	FILES
+	#	RobotOrient.srv
+	#	)
 
 	generate_messages (
 		DEPENDENCIES
@@ -124,5 +126,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 		PATTERN *~ EXCLUDE
 		PATTERN *.sw? EXCLUDE
 		)
+
+endif()
 
 endif()

@@ -24,7 +24,7 @@
 #include "std_srvs/SetBool.h"
 #include "std_srvs/Empty.h"
 #include <vector>
-#include "teleop_joystick_control/RobotOrient.h"
+#include "frc_msgs/RobotOrient.h"
 
 #include "panel_intake_controller/PanelIntakeSrv.h"
 #include "cargo_intake_controller/CargoIntakeSrv.h"
@@ -132,8 +132,8 @@ void preemptActionlibServers()
 	align_cargo_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 }
 
-bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
-					teleop_joystick_control::RobotOrient::Response&/* res*/)
+bool orientCallback(frc_msgs::RobotOrient::Request& req,
+					frc_msgs::RobotOrient::Response&/* res*/)
 {
 	// Used to switch between robot orient and field orient driving
 	robot_orient = req.robot_orient;
