@@ -81,7 +81,7 @@ std::vector<DetectionCostType> Detection::getCosts(const ParticleState &robotLoc
 
 	for (size_t i = 0; i < beacons.size(); i++)
 	{
-		auto robotDistanceAndBearing = beacons[i].distance(robotLoc);
+		const auto robotDistanceAndBearing = beacons[i].distance(robotLoc);
 		// No way we can detect this far out, so cost is set to infeasable
 		if (robotDistanceAndBearing.distance() > maxDetectionDistance)
 		{
