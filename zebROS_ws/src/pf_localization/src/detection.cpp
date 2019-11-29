@@ -185,9 +185,19 @@ double Detections::weights(const ParticleState &loc, const FieldMap &fieldMap, c
 void Detections::guessActuals(const ParticleState &loc, const Beacons &beacons)
 {
 	std::vector<std::vector<DetectionCostType>> costs(detections_.size());
+	//std::cout << "costs" << std::endl;
 	for (size_t i = 0; i < detections_.size(); i++)
 	{
 		costs[i] = detections_[i].getCosts(loc, beacons);
+#if 0
+		for (size_t j = 0; j < costs[i].size(); j++)
+		{
+			if (j)
+				std::cout << ",";
+			std::cout << costs[i][j];
+		}
+		std::cout << std::endl;
+#endif
 	}
 	// TODO - if an entire column or row is infeasable, remove it
 	// from the assignment run. Need to keep a map correlating beacons
@@ -202,13 +212,20 @@ void Detections::guessActuals(const ParticleState &loc, const Beacons &beacons)
 	std::vector<int> assignment;
 	solver_.Solve(costs, assignment);
 
+	//std::cout << "assignment" << std::endl;
 	for (size_t i = 0; i < assignment.size(); ++i)
 	{
+#if 0
+		if (i)
+			std::cout << ",";
+		std::cout << assignment[i];
+#endif
 		if (assignment[i] == -1 || (costs[i][assignment[i]] > 1e4)) // TODO - no magic numbers
 			detections_[i].resetActual();
 		else
 			detections_[i].setActual(beacons[assignment[i]]);
 	}
+	//std::cout << std::endl;
 }
 
 std::ostream& operator<<(std::ostream &stream, const Detections &detections)

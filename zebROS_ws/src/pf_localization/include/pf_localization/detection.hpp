@@ -7,6 +7,7 @@
 #include "pf_localization/particle.hpp"
 
 #include "hungarian.hpp"
+#include "branch_and_bound.hpp"
 
 typedef unsigned int DetectionCostType;
 
@@ -67,7 +68,8 @@ class Detections
 
 	private:
 		std::vector<Detection> detections_;
-		AssignmentProblemSolver<DetectionCostType> solver_;
+//		AssignmentProblemSolver<DetectionCostType> solver_;
+		BandBSolver<DetectionCostType> solver_;
 
 };
 
