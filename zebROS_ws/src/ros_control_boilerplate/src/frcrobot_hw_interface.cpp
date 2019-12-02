@@ -579,25 +579,28 @@ void FRCRobotHWInterface::init(void)
 
 	navX_zero_ = -10000;
 
-	t_prev_robot_iteration_ = -1; //-1 signals it hasn't been read before, so read it then set this variable
+
+	double t_now = ros::Time::now().toSec();
+
+	t_prev_robot_iteration_ = t_now;
 	if(! nh_.getParam("generic_hw_control_loop/robot_iteration_hz", robot_iteration_hz_)) {
 		ROS_ERROR("Failed to read robot_iteration_hz in frcrobot_hw_interface");
 		robot_iteration_hz_ = 20;
 	}
 
-	t_prev_joystick_read_ = -1;
+	t_prev_joystick_read_ = t_now;
 	if(! nh_.getParam("generic_hw_control_loop/joystick_read_hz", joystick_read_hz_)) {
 		ROS_ERROR("Failed to read joystick_read_hz in frcrobot_hw_interface");
 		joystick_read_hz_ = 50;
 	}
 
-	t_prev_match_data_read_ = -1;
+	t_prev_match_data_read_ = t_now;
 	if(! nh_.getParam("generic_hw_control_loop/match_data_read_hz", match_data_read_hz_)) {
 		ROS_ERROR("Failed to read match_data_read_hz in frcrobot_hw_interface");
 		match_data_read_hz_ = 2;
 	}
 
-	t_prev_robot_controller_read_ = -1;
+	t_prev_robot_controller_read_ = t_now;
 	if(! nh_.getParam("generic_hw_control_loop/robot_controller_read_hz", robot_controller_read_hz_)) {
 		ROS_ERROR("Failed to read robot_controller_read_hz in frcrobot_hw_interface");
 		robot_controller_read_hz_ = 20;
@@ -1004,19 +1007,19 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 	{
 		read_tracer_.start_unique("OneIteration");
 		//check if sufficient time has passed since last read
-		double t_now = ros::Time::now().toSec();
-		if(t_prev_robot_iteration_ < 0 || t_now - t_prev_robot_iteration_ > (1/robot_iteration_hz_)) //if previous time value is negative, means we haven't read it at all, so read
+		if(ros::Time::now().toSec() - t_prev_robot_iteration_ > (1/robot_iteration_hz_))
 		{
 			robot_->OneIteration();
 
-			t_prev_robot_iteration_ = t_now;
+			t_prev_robot_iteration_ += 1/robot_iteration_hz_;
 		}
 
 		read_tracer_.start_unique("joysticks");
 		//check if sufficient time has passed since last read
-		t_now = ros::Time::now().toSec();
-		if(t_prev_joystick_read_ < 0 || t_now - t_prev_joystick_read_ > (1/joystick_read_hz_)) //if previous time value is negative, means we haven't read it at all, so read
+		if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1/joystick_read_hz_))
 		{
+			t_prev_joystick_read_ += 1/joystick_read_hz_;
+
 			auto time_now_t = ros::Time::now();
 			for (size_t i = 0; i < num_joysticks_; i++)
 			{
@@ -1103,15 +1106,15 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 				}
 			}
 
-			t_prev_joystick_read_ = t_now;
 		}
 
 		read_tracer_.start_unique("match data");
 		int32_t status = 0;
 		//check if sufficient time has passed since last read
-		t_now = ros::Time::now().toSec();
-		if(t_prev_match_data_read_ < 0 || t_now - t_prev_match_data_read_ > (1/match_data_read_hz_)) //if previous time value is negative, means we haven't read it at all, so read
+		if(ros::Time::now().toSec() - t_prev_match_data_read_ > (1/match_data_read_hz_))
 		{
+			t_prev_match_data_read_ += 1/match_data_read_hz_;
+
 			status = 0;
 			match_data_.setMatchTimeRemaining(HAL_GetMatchTime(&status));
 			HAL_MatchInfo info;
@@ -1163,8 +1166,6 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 
 			match_data_.setMatchNumber(info.matchNumber);
 			match_data_.setReplayNumber(info.replayNumber);
-
-			t_prev_match_data_read_ = t_now;
 		}
 		//read control word match data at full speed - contains enable info, and reads should be v fast
 		HAL_ControlWord controlWord;
@@ -1181,9 +1182,10 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 
 		read_tracer_.start_unique("robot controller data");
 		//check if sufficient time has passed since last read
-		t_now = ros::Time::now().toSec();
-		if(t_prev_robot_controller_read_ < 0 || t_now - t_prev_robot_controller_read_ > (1/robot_controller_read_hz_)) //if previous time value is negative, means we haven't read it at all, so read
+		if(ros::Time::now().toSec() - t_prev_robot_controller_read_ > (1/robot_controller_read_hz_))
 		{
+			t_prev_robot_controller_read_ += 1/robot_controller_read_hz_;
+
 			status = 0;
 			robot_controller_state_.SetFPGAVersion(HAL_GetFPGAVersion(&status));
 			robot_controller_state_.SetFPGARevision(HAL_GetFPGARevision(&status));
@@ -1219,8 +1221,6 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 			robot_controller_state_.SetCANTxFullCount(tx_full_count);
 			robot_controller_state_.SetCANReceiveErrorCount(receive_error_count);
 			robot_controller_state_.SetCANTransmitErrorCount(transmit_error_count);
-
-			t_prev_robot_controller_read_ = t_now;
 		}
 	}
 
