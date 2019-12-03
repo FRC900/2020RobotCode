@@ -68,8 +68,8 @@ class Detections
 
 	private:
 		std::vector<Detection> detections_;
-//		AssignmentProblemSolver<DetectionCostType> solver_;
-		BandBSolver<DetectionCostType> solver_;
+		AssignmentProblemSolver<DetectionCostType> solver_;
+		//BandBSolver<DetectionCostType> solver_;
 
 };
 

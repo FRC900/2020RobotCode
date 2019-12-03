@@ -9,7 +9,6 @@
 #include <vector>
 #include <queue>
 
-
 // state space tree node
 template <class CostType>
 class Node
@@ -19,10 +18,9 @@ public:
 	Node(const size_t jobCount)
 		: workerID_(-1)
 		, jobID_(-1)
+		, assigned_(jobCount, false)
 		, parent_(nullptr)
 	{
-		assigned_ = std::make_unique<bool []>(jobCount);
-		std::fill(assigned_.get(), assigned_.get() + jobCount, false);
 	}
 
 	// Function to allocate a new search tree node
@@ -30,9 +28,9 @@ public:
 	Node(size_t jobCount, int workerID, int jobID, std::shared_ptr<Node> parent)
 		: workerID_(workerID)
 		, jobID_(jobID)
+		, assigned_(jobCount)
 		, parent_(parent)
 	{
-		assigned_ = std::make_unique<bool []>(jobCount);
 		for (size_t i = 0; i < jobCount; i++)
 		{
 			if (!parent_)
@@ -115,7 +113,7 @@ public:
 	// Function to calculate the least promising cost
 	// of node after worker x is assigned to job y.
 	CostType calculateCost(const std::vector<std::vector<CostType>> &costMatrix,
-			std::shared_ptr<bool[]> available) const
+			std::vector<bool> &available) const
 	{
 		CostType cost = 0;
 
@@ -123,6 +121,7 @@ public:
 		// Start with current set of unassigned jobs, and updated
 		// them as they are given to workers
 		//auto available = std::make_unique<bool []>(costMatrix[0].size());
+		//std::vector<bool> available(costMatrix[0].size());
 		for (size_t i = 0; i < costMatrix[0].size(); i++)
 			available[i] = !assigned_[i];
 
@@ -170,7 +169,7 @@ private:
 
 	// Boolean array assigned will contains
 	// info about available jobs
-	std::unique_ptr<bool []> assigned_;
+	std::vector<bool> assigned_;
 
 	// stores parent node of current node
 	// helps in tracing path when answer is found
@@ -182,7 +181,6 @@ private:
 
 	// contains least promising cost
 	CostType cost_;
-
 };
 
 // Comparison object to be used to order the heap
@@ -190,8 +188,8 @@ private:
 template <class CostType>
 struct comp
 {
-	bool operator()(const std::shared_ptr<Node<CostType>> lhs,
-					const std::shared_ptr<Node<CostType>> rhs) const
+	bool operator()(const std::shared_ptr<Node<CostType>> &lhs,
+					const std::shared_ptr<Node<CostType>> &rhs) const
 	{
 		return lhs->getCost() > rhs->getCost();
 	}
@@ -203,7 +201,7 @@ class BandBSolver
 	typedef Node<CostType> NodeType;
 	public:
 		CostType Solve(std::vector<std::vector<CostType>> &costMatrix,
-				std::vector<int> &assignments)
+					   std::vector<int> &assignments)
 		{
 			size_t jobCount = 0;
 			for (size_t i = 0; i < costMatrix.size(); i++)
@@ -247,7 +245,7 @@ class BandBSolver
 	private:
 		// Finds minimum cost using Branch and Bound.
 		CostType findMinCostImpl(const std::vector<std::vector<CostType>> &costMatrix,
-				std::vector<int> &assignments)
+								 std::vector<int> &assignments)
 		{
 			const size_t workerCount = costMatrix.size();
 			const size_t jobCount = costMatrix[0].size(); // TODO Check that all elements of costMatrix are the same size
@@ -257,7 +255,7 @@ class BandBSolver
 								std::vector<std::shared_ptr<NodeType>>,
 								comp<CostType>> pq;
 
-			std::shared_ptr<bool[]> availableBuffer(new bool[jobCount]);;
+			std::vector<bool> availableBuffer(jobCount);
 
 			// initailize heap to dummy node with cost 0
 			// Add dummy node to list of live nodes;

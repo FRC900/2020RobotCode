@@ -34,7 +34,7 @@ int main(void)
 	particle_state << -3.372, 3.589, 2.078 - M_PI / 2., 0, 0, 0;
 
 	const std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-	for (size_t i = 0; i < 10000; i ++)
+	for (size_t i = 0; i < 1000000; i ++)
 	{
 		detections.guessActuals(particle_state, beacons);
 	}
