@@ -1,12 +1,12 @@
 #include <ros/ros.h>
 #include <networktables/NetworkTableInstance.h>
 
-
 int main(void)
 {
-	// Set up a network tables client
+	// Set up a network tables server
 	auto ntInst = nt::NetworkTableInstance::GetDefault();
-	ntInst.StartClientTeam(900);
+	ntInst.SetNetworkIdentity("Robot");
+	ntInst.StartServer("/home/ubuntu/networktables.ini");
 	ntInst.SetUpdateRate(0.01); // 100hz
 	// Get the entries for the input and output tables
 	auto autoSpeedEntry = ntInst.GetEntry("/robot/autospeed");
