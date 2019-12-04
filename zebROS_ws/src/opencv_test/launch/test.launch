@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <node name="opencv_test_node" pkg="opencv_test" type="opencv_test_node" output= "screen">
+  </node>
+  
+  <node name="image_proc_node" pkg="opencv_test" type="image_proc_node" output="screen"></node>  
+</launch>
