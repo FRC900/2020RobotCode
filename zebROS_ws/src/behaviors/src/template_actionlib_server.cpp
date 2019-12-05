@@ -30,7 +30,7 @@ class ServerNameAction {
 		std::string action_name_;
 
 		//clients to call other actionlib servers
-//		actionlib::SimpleActionClient<behaviors::ElevatorAction> ac_elevator_;
+		//e.g. actionlib::SimpleActionClient<behaviors::ElevatorAction> ac_elevator_;
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -38,7 +38,7 @@ class ServerNameAction {
 		//variables to store if server was preempted or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted;
 		bool timed_out;
-		ros::Rate r(100); //used for wait loops
+		ros::Rate r{100}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time;
 
 	public:
@@ -78,7 +78,7 @@ class ServerNameAction {
 			/* e.g.
 			if(!ac_elevator_.waitForServer(ros::Duration(wait_for_server_timeout)))
 			{
-				ROS_ERROR_STREAM("server_name_server couldn't find elevator actionlib server");
+				ROS_ERROR_STREAM(action_name_ << " couldn't find elevator actionlib server");
 				as_.setPreempted();
 				return;
 			}
@@ -88,7 +88,7 @@ class ServerNameAction {
 			/* e.g.
 			if(! mech_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout)))
 			{
-				ROS_ERROR_STREAM("server_name_server can't find mech_controller");
+				ROS_ERROR_STREAM(action_name_ << " can't find mech_controller");
 				as_.setPreempted();
 				return;
 			}
@@ -105,21 +105,22 @@ class ServerNameAction {
 				//call controller client, if failed set preempted = true, and log an error msg
 
 
+
 				//if necessary, run a loop to wait for the controller to finish
 				while(!preempted && !timed_out && ros::ok())
 				{
 					//check preempted
 					if(as_.isPreemptRequested() || !ros::ok()) {
-						ROS_ERROR("server_name_server: preempt in ______");
+						ROS_ERROR_STREAM(action_name_ << ": preempt while calling ______ controller");
 						preempted = true;
 					}
 					//test if succeeded, if so, break out of the loop
 					else if(test here) {
 						break;
 					}
-					//check timed out
+					//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
 					else if (ros::Time::now().toSec() - start_time > server_timeout) {
-						ROS_ERROR("server_name_server: timed out in ______");
+						ROS_ERROR_STREAM(action_name_ << ": timed out while calling ______ controller");
 						timed_out = true;
 					}
 					//otherwise, pause then loop again
@@ -135,9 +136,13 @@ class ServerNameAction {
 			*/
 
 			//if necessary, pause a bit between doing things (between piston firings usually)
-			//ros::Duration(sec_to_pause).sleep();
-
-
+			/* e.g.
+			ros::Duration(sec_to_pause).sleep();
+			if(as_.isPreemptRequested() || !ros::ok()) { //always check for preempts after pausing for a significant duration
+				ROS_ERROR_STREAM(action_name_ << ": preempt after pausing for __________");
+				preempted = true;
+			}
+			*/
 
 
 
@@ -154,7 +159,7 @@ class ServerNameAction {
 				ac_elevator_.sendGoal(elevator_goal);
 				*/
 				//wait for actionlib server
-				//e.g. waitForActionlibServer(ac_elevator_, 30, "calling elevator server"); //this method defined below. Args: action client, timeout in sec, description of activity
+				//e.g. waitForActionlibServer(ac_elevator_, 30, "calling elevator server"); //method defined below. Args: action client, timeout in sec, description of activity
 			}
 			//preempt handling or pause if necessary (see basic controller call)
 
@@ -193,33 +198,9 @@ class ServerNameAction {
 
 		}
 
-		void waitForController(std::string activity)
-			//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called
-		{
-			while(!preempted && !timed_out && ros::ok())
-			{
-				//check preempted
-				if(as_.isPreemptRequested() || !ros::ok()) {
-					ROS_ERROR_STREAM(action_name_ << ": preempt - " << activity);
-					preempted = true;
-				}
-				//test if succeeded, if so, break out of the loop
-				else if(test here) {
-					break;
-				}
-				//check timed out
-				else if (ros::Time::now().toSec() - start_time > server_timeout) {
-					ROS_ERROR(action_name_ << ": timed out - " << activity);
-					timed_out = true;
-				}
-				//otherwise, pause then loop again
-				else {
-					r.sleep();
-				}
-			}
-		}
 
 		void waitForActionlibServer(auto &action_client, double timeout, std::string activity)
+			//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
 		{
 			double request_time = ros::Time::now().toSec();
 
@@ -270,9 +251,9 @@ int main(int argc, char** argv) {
 
 	//get config values
 	ros::NodeHandle n;
+	/* e.g.
 	//ros::NodeHandle n_params_intake(n, "actionlib_cargo_intake_params"); //node handle for a lower-down namespace
 
-	/* e.g.
 	if (!n.getParam("/teleop/teleop_params/linebreak_debounce_iterations", linebreak_debounce_iterations))
 		ROS_ERROR("Could not read linebreak_debounce_iterations in intake_server");
 
