@@ -12,6 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+)
+
+find_package(
   OpenCV REQUIRED
 )
 
@@ -149,6 +152,7 @@ add_executable(${PROJECT_NAME}_node src/arvision_node.cpp)
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 list(FILTER catkin_LIBRARIES EXCLUDE REGEX "opencv_freetype")
+list(FILTER OpenCV_LIBS EXCLUDE REGEX "opencv_freetype")
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
