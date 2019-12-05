@@ -74,6 +74,7 @@ add_service_files(
 add_action_files(
   FILES
   PurePursuit.action
+  Path.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -116,11 +117,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   # LIBRARIES pure_pursuit
-<<<<<<< HEAD
-  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters swerve_point_generator
-=======
   CATKIN_DEPENDS geometry_msgs tf control_toolbox roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters swerve_point_generator
->>>>>>> pure_pursuit_rotation
   DEPENDS system_lib
 )
 
@@ -157,8 +154,6 @@ target_link_libraries(pure_pursuit_test_client
   ${catkin_LIBRARIES}
 )
 
-<<<<<<< HEAD
-=======
 add_executable(pure_pursuit_test_pp_actionlib src/test_pp_actionlib.cpp)
 add_dependencies(pure_pursuit_test_pp_actionlib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pure_pursuit_test_pp_actionlib
@@ -166,7 +161,6 @@ target_link_libraries(pure_pursuit_test_pp_actionlib
 )
 
 
->>>>>>> pure_pursuit_rotation
 #############
 ## Install ##
 #############
