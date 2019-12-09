@@ -10,8 +10,10 @@ project(arvision)
 find_package(catkin REQUIRED COMPONENTS
   message_generation
   roscpp
-  sensor_msgs
   std_msgs
+  sensor_msgs
+  image_transport
+  cv_bridge
 )
 
 find_package(
