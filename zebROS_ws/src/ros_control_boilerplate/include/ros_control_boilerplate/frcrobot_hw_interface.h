@@ -288,6 +288,8 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		std::unique_ptr<ROSIterativeRobot> robot_;
 
 		Tracer read_tracer_;
+
+		unsigned int consecutive_can_errors_;
 };  // class
 
 }  // namespace

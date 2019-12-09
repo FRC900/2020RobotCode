@@ -791,6 +791,19 @@ const char* HAL_GetErrorMessage(int32_t code) {
   }
 }
 
+int32_t HAL_SendError(HAL_Bool isError,
+		int32_t errorCode,
+		HAL_Bool isLVCode,
+		const char * details,
+		const char * location,
+		const char * callStack,
+		HAL_Bool printMsg)
+{
+	ROS_ERROR_STREAM("HAL Error " << errorCode << " : " << HAL_GetErrorMessage(errorCode) <<
+			" " << details << " : " << location << " : " << callStack);
+	return 0;
+}
+
 } // extern "C"
 
 

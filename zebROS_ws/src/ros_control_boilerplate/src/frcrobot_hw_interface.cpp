@@ -209,6 +209,7 @@ void FRCRobotHWInterface::init(void)
 
 		ctre::phoenix::platform::can::SetCANInterface(can_interface_.c_str());
 	}
+	consecutive_can_errors_ = 0;
 
 	for (size_t i = 0; i < num_can_ctre_mcs_; i++)
 	{
@@ -1407,6 +1408,7 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 	switch (error_code)
 	{
 		case ctre::phoenix::OK :
+			consecutive_can_errors_ = 0;
 			return true; // Yay us!
 
 		case ctre::phoenix::CAN_MSG_STALE :
@@ -1560,6 +1562,20 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 				break;
 			}
 
+	}
+	// Seems like a large number, but we're making dozens of calls
+	// per talon every 10msec so this should really just be a few seconds
+	// TODO - test to be sure
+	constexpr unsigned int max_consecutive_can_errors = 50000;
+	if (++consecutive_can_errors_ > max_consecutive_can_errors)
+	{
+		// -1154 is HAL_CAN_TIMEOUT
+		HAL_SendError(true, -1154, false,
+				" Too many consecutive CAN errors in hardware interface",
+				" frcrobot_hw_interface",
+				" no call stack",
+				true);
+		consecutive_can_errors_ = 0;
 	}
 	ROS_ERROR_STREAM("Error calling " << talon_method_name << " : " << error_name);
 	return false;
