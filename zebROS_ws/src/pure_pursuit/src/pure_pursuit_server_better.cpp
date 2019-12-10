@@ -199,13 +199,13 @@ class PathAction
 				z_axis.enable_pub_.publish(enable_msg);
 
 				// TODO - what's the deal with yaw vs actual_yaw? And roll?
-				double roll, pitch, yaw, current_yaw, target_yaw;
+				double roll, pitch, yaw, actual_yaw, target_yaw;
 				tf::Quaternion odom_q(
-					odom.pose.pose.orientation.w,
-					odom.pose.pose.orientation.x,
-					odom.pose.pose.orientation.y,
-					odom.pose.pose.orientation.z);
-				tf::Matrix3x3(odom_q).getRPY(target_yaw, pitch, yaw);
+					odom_.pose.pose.orientation.w,
+					odom_.pose.pose.orientation.x,
+					odom_.pose.pose.orientation.y,
+					odom_.pose.pose.orientation.z);
+				tf::Matrix3x3(odom_q).getRPY(actual_yaw, pitch, yaw);
 				tf::Quaternion waypoint_q(
 					next_waypoint.orientation.w,
 					next_waypoint.orientation.x,

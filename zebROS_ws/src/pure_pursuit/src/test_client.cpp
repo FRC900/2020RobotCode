@@ -3,7 +3,6 @@
 #include <pure_pursuit/PurePursuitGoal.h>
 #include <pure_pursuit/PurePursuitResult.h>
 #include <actionlib/client/simple_action_client.h>
-#include "behaviors/enumerated_elevator_indices.h"
 #include "pure_pursuit/spline.h"
 #include <std_srvs/Trigger.h>
 #include "base_trajectory/GenerateSpline.h"

@@ -19,7 +19,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   actionlib_msgs
   nav_msgs
-  behaviors
   swerve_point_generator
   control_toolbox
 )
