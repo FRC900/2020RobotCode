@@ -77,6 +77,7 @@ class PathAction
 														nh_,
 														axis_config.enable_pub_topic_,
 														axis_config.command_pub_topic_,
+														axis_config.state_pub_topic_,
 														axis_config.error_sub_topic_,
 														boost::bind(&PathAction::error_term_cb, this, _1, axis_config.name_),
 														timeout,
@@ -175,34 +176,47 @@ class PathAction
 				std_msgs::Bool enable_msg;
 				enable_msg.data = true;
 				std_msgs::Float64 command_msg;
+				std_msgs::Float64 state_msg;
 
 				auto x_axis_it = axis_states_.find("x");
 				auto &x_axis = x_axis_it->second;
 				x_axis.enable_pub_.publish(enable_msg);
 				command_msg.data = next_waypoint.position.x;
 				x_axis.command_pub_.publish(command_msg);
+				state_msg.data = odom_position.x;
+				x_axis.state_pub_.publish(state_msg);
 
 				auto y_axis_it = axis_states_.find("y");
 				auto &y_axis = y_axis_it->second;
 				y_axis.enable_pub_.publish(enable_msg);
 				command_msg.data = next_waypoint.position.y;
 				y_axis.command_pub_.publish(command_msg);
+				state_msg.data = odom_position.y;
+				y_axis.state_pub_.publish(state_msg);
 
 				auto z_axis_it = axis_states_.find("z");
 				auto &z_axis = z_axis_it->second;
 				z_axis.enable_pub_.publish(enable_msg);
 
 				// TODO - what's the deal with yaw vs actual_yaw? And roll?
-				double roll, pitch, yaw, actual_yaw;
+				double roll, pitch, yaw, current_yaw, target_yaw;
+				tf::Quaternion odom_q(
+					odom.pose.pose.orientation.w,
+					odom.pose.pose.orientation.x,
+					odom.pose.pose.orientation.y,
+					odom.pose.pose.orientation.z);
+				tf::Matrix3x3(odom_q).getRPY(target_yaw, pitch, yaw);
 				tf::Quaternion waypoint_q(
 					next_waypoint.orientation.w,
 					next_waypoint.orientation.x,
 					next_waypoint.orientation.y,
 					next_waypoint.orientation.z);
-				tf::Matrix3x3(waypoint_q).getRPY(actual_yaw, pitch, yaw);
+				tf::Matrix3x3(waypoint_q).getRPY(target_yaw, pitch, yaw);
 
-				command_msg.data = actual_yaw;
+				command_msg.data = target_yaw;
 				z_axis.command_pub_.publish(command_msg);
+				state_msg.data = actual_yaw;
+				z_axis.state_pub_.publish(state_msg);
 
 				ros::spinOnce();
 				r.sleep();
@@ -251,9 +265,9 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 	PathAction path_action_server("path_server", nh);
 
-	AlignActionAxisConfig x_axis("x", "x_enable_pub", "x_cmd_pub", "x_error_sub", "x_timeout_param", "x_error_threshold_param");
-	AlignActionAxisConfig y_axis("y", "y_enable_pub", "y_cmd_pub", "y_error_sub", "y_timeout_param", "y_error_threshold_param");
-	AlignActionAxisConfig z_axis("z", "z_enable_pub", "z_cmd_pub", "z_error_sub", "z_timeout_param", "z_error_threshold_param");
+	AlignActionAxisConfig x_axis("x", "x_enable_pub", "x_cmd_pub", "x_state_pub", "pid_debug", "x_timeout_param", "x_error_threshold_param");
+	AlignActionAxisConfig y_axis("y", "y_enable_pub", "y_cmd_pub", "y_state_pub", "pid_debug", "y_timeout_param", "y_error_threshold_param");
+	AlignActionAxisConfig z_axis("z", "z_enable_pub", "z_cmd_pub", "z_state_pub", "pid_debug", "z_timeout_param", "z_error_threshold_param");
 
 	if (!path_action_server.addAxis(x_axis))
 	{
