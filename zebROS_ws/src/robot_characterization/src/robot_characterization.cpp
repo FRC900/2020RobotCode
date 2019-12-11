@@ -114,13 +114,22 @@ void talonStateCallback(const talon_state_controller::TalonState &talon_state)
 		battery += busVolts;
 	}
 
-	leftMotorVolts /= lCount;
-	rightMotorVolts /= rCount;
-	leftPosition /= lCount;
-	rightPosition /= rCount;
-	leftRate /= lCount;
-	rightRate /= rCount;
-	battery /= lCount + rCount;
+	if (lCount)
+	{
+		leftMotorVolts /= lCount;
+		leftPosition /= lCount;
+		leftRate /= lCount;
+	}
+	if (rCount)
+	{
+		rightMotorVolts /= rCount;
+		rightPosition /= rCount;
+		rightRate /= rCount;
+	}
+	if (lCount || rCount)
+	{
+		battery /= lCount + rCount;
+	}
 }
 
 int main(int argc, char **argv)

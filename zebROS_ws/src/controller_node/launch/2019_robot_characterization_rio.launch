@@ -27,4 +27,6 @@
 
 	</group>
 
+	<node name="robot_characterization" pkg="robot_characterization" type="robot_characterization" output="screen"/>
+
 </launch>

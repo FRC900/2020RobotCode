@@ -28,5 +28,4 @@
 			output="screen" args="spawn match_state_listener_controller swerve_drive_controller talon_state_controller robot_code_ready_controller" />
 
 	</group>
-	<node name="robot_characterization" pkg="robot_characterization" type="robot_characterization" output="screen"/>
 </launch>
