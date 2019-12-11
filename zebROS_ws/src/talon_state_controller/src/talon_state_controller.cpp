@@ -732,8 +732,8 @@ void TalonStateController::update(const ros::Time &time, const ros::Duration & /
 
 				if (fw_ver >= 0)
 				{
-					char str[16];
-					sprintf(str, "%2.2x.%2.2x", (fw_ver >> 8) & 0xFF, fw_ver & 0xFF);
+					char str[256];
+					sprintf(str, "2.2%d.%2.2d", (fw_ver >> 8) & 0xFF, fw_ver & 0xFF);
 					m.firmware_version[i] = str;
 				}
 			}
