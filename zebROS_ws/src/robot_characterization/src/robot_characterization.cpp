@@ -155,23 +155,28 @@ int main(int argc, char **argv)
 	auto modeClient = nh.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/swerve_drive_controller/percent_out_drive_mode");
 
 	ROS_INFO("Waiting for percent_out_drive_mode service");
+#if 0
 	if (!modeClient.waitForExistence(ros::Duration(30)))
 	{
 		ROS_ERROR("Timeout waiting for percent_out_drive_mode service");
 		return -1;
 	}
+#endif
 	ROS_INFO("Calling percent_out_drive_mode service");
 	std_srvs::SetBool modeData;
 	modeData.request.data = true;
+#if 0
 	while (!modeClient.call(modeData) || (modeData.response.message != "SUCCESS!"))
 	{
 		ROS_ERROR("percent_out_drive_mode service returned error");
 		ros::Duration(1).sleep();
 	}
+#endif
 	ROS_INFO("   Success");
 
 	auto joystickRobotVel = nh.advertise<geometry_msgs::Twist>("/frcrobot_jetson/swerve_drive_controller/cmd_vel", 1);
 
+	ros::Time start_time = ros::Time::now();
 	while (ros::ok())
 	{
 		// Example of reading a double
@@ -188,7 +193,8 @@ int main(int argc, char **argv)
 
 		joystickRobotVel.publish(vel);
 
-		telemetry[0] = ros::Time::now().toSec();
+		telemetry[0] = (ros::Time::now() - start_time).toSec();
+		ROS_INFO_STREAM("t[0] = " << telemetry[0]);
         telemetry[1] = battery;
         telemetry[2] = autospeed;
         telemetry[3] = leftMotorVolts;
