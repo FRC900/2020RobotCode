@@ -8,6 +8,7 @@ include ("../cmake_modules/CMakeOpt.cmake")
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  talon_state_controller
 )
 
 ## System dependencies are found with CMake's conventions
@@ -65,10 +66,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -101,7 +102,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES nt_test
+#  LIBRARIES robot_characterization
 #  CATKIN_DEPENDS roscpp
 #  DEPENDS system_lib
 )
@@ -123,7 +124,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/nt_test.cpp
+#   src/${PROJECT_NAME}/robot_characterization.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -143,8 +144,8 @@ file(GLOB
 	ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/tables/*.cpp
 )
 
-add_executable(nt_test 
-	src/nt_test.cpp
+add_executable(robot_characterization 
+	src/robot_characterization.cpp
 	${ntcore_native_src}
 	${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
 	${ALLWPILIB}/wpiutil/src/main/native/cpp/memory.cpp
@@ -177,10 +178,10 @@ add_executable(nt_test
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(nt_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(robot_characterization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(nt_test
+target_link_libraries(robot_characterization
   ${catkin_LIBRARIES}
 )
 
@@ -200,7 +201,7 @@ target_link_libraries(nt_test
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-install(TARGETS nt_test
+install(TARGETS robot_characterization
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -231,7 +232,7 @@ install(TARGETS nt_test
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_nt_test.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_robot_characterization.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
