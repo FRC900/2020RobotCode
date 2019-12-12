@@ -151,7 +151,7 @@ class TalonSwerveDriveController
 			}), ang(0.0), stamp(0.0) {}
 		};
 
-		void compOdometry(const ros::Time &time, const double inv_delta_t, const Commands command);
+		void compOdometry(const ros::Time &time, const double inv_delta_t, const std::array<double, WHEELCOUNT> &steer_angles);
 
 		struct cmd_points
 		{
