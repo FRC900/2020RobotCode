@@ -57,7 +57,6 @@ using ros::Time;
 using geometry_msgs::TwistConstPtr;
 using ros::Duration;
 
-const std::string talon_swerve_drive_controller::TalonSwerveDriveController::DEF_BASE_LINK = "base_link";
 const double talon_swerve_drive_controller::TalonSwerveDriveController::DEF_ODOM_PUB_FREQ = 100.;
 const bool talon_swerve_drive_controller::TalonSwerveDriveController::DEF_PUB_ODOM_TO_BASE = false;
 const std::string talon_swerve_drive_controller::TalonSwerveDriveController::DEF_ODOM_FRAME = "odom";
@@ -223,15 +222,6 @@ bool TalonSwerveDriveController::init(hardware_interface::TalonCommandInterface 
 	        ROS_ERROR("Didn't read param num_profile_slots in talon_swerve");
 	*/
 	num_profile_slots_ = 20;
-
-	// Odometry related:
-	double publish_rate;
-	std::string base_link;
-	controller_nh.param("base_link", base_link, DEF_BASE_LINK);
-	controller_nh.param("publish_rate", publish_rate, 50.0);
-	ROS_INFO_STREAM_NAMED(name_, "Controller state will be published at "
-						  << publish_rate << "Hz.");
-	publish_period_ = ros::Duration(1.0 / publish_rate);
 
 	// Publish limited velocity:
 	controller_nh.param("publish_cmd", publish_cmd_, true);
@@ -491,12 +481,9 @@ bool TalonSwerveDriveController::init(hardware_interface::TalonCommandInterface 
 		odom_rigid_transf_.setIdentity();
 
 		wheel_pos_.resize(2, WHEELCOUNT);
-		//ROS_WARN("working h");
 		for (size_t i = 0; i < WHEELCOUNT; i++)
 		{
-			//ROS_INFO_STREAM("id: " << i << "pos" << wheel_coords_[i]);
 			wheel_pos_.col(i) = wheel_coords_[i];
-			//ROS_WARN("f1.test");
 		}
 
 		const Vector2d centroid = wheel_pos_.rowwise().mean();
@@ -615,13 +602,13 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 	const double odom_y = odom_to_base_.translation().y();
 	const double odom_yaw = atan2(odom_to_base_(1, 0), odom_to_base_(0, 0));
 
-	bool orientation_comped = false;
 
 	//ROS_INFO_STREAM("odom_x: " << odom_x << " odom_y: " << odom_y << " odom_yaw: " << odom_yaw);
 	// Publish the odometry.
 	//TODO CHECK THIS PUB
 
 	geometry_msgs::Quaternion orientation;
+	bool orientation_comped = false;
 
 	// tf
 	if (pub_odom_to_base_ && time - last_odom_tf_pub_time_ >= odom_pub_period_ &&
@@ -638,7 +625,7 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 		odom_tf_trans.transform.rotation = orientation;
 		ROS_INFO_STREAM(odom_x);
 		odom_tf_pub_.unlockAndPublish();
-		last_odom_tf_pub_time_ = time;
+		last_odom_tf_pub_time_ += odom_pub_period_;
 	}
 
 	// odom
@@ -661,14 +648,14 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 
 		odom_pub_.unlockAndPublish();
 
-		last_odom_pub_time_ = time;
+		last_odom_pub_time_ += odom_pub_period_;
 	}
 }
 
 void TalonSwerveDriveController::update(const ros::Time &time, const ros::Duration &period)
 {
 	const double delta_t = period.toSec();
-	const double inv_delta_t = 1 / delta_t;
+	const double inv_delta_t = 1.0 / delta_t;
 
 	// Grab current steering angle, store it
 	// for other code to use
@@ -682,69 +669,8 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 		steer_angles_ = steer_angles;
 	}
 
-#if 0
 	if (comp_odom_) compOdometry(time, inv_delta_t, steer_angles);
-#endif
 
-	/*
-	// COMPUTE AND PUBLISH ODOMETRY
-	if (open_loop_)
-	{
-	  odometry_.updateOpenLoop(last0_cmd_.lin, last0_cmd_.ang, time);
-	}
-	else
-	{
-	  double left_pos  = 0.0;
-	  double right_pos = 0.0;
-	  for (size_t i = 0; i < wheel_joints_size_; ++i)
-	  {
-	    const double lp = speed_joints_[i].getPosition();
-	    const double rp = steering_joints_[i].getPosition();
-	    if (std::isnan(lp) || std::isnan(rp))
-	      return;
-
-	    left_pos  += lp;
-	    right_pos += rp;
-	  }
-	  left_pos  /= wheel_joints_size_;
-	  right_pos /= wheel_joints_size_;
-
-	  // Estimate linear and angular velocity using joint information
-	  odometry_.update(left_pos, right_pos, time);
-	}
-
-	// Publish odometry message
-	if (last_state_publish_time_ + publish_period_ < time)
-	{
-	  last_state_publish_time_ += publish_period_;
-	  // Compute and store orientation info
-	  const geometry_msgs::Quaternion orientation(
-	        tf::createQuaternionMsgFromYaw(odometry_.getHeading()));
-
-	  // Populate odom message and publish
-	  if (odom_pub_->trylock())
-	  {
-	    odom_pub_->msg_.header.stamp = time;
-	    odom_pub_->msg_.pose.pose.position.x = odometry_.getX();
-	    odom_pub_->msg_.pose.pose.position.y = odometry_.getY();
-	    odom_pub_->msg_.pose.pose.orientation = orientation;
-	    odom_pub_->msg_.twist.twist.linear.x  = odometry_.getLinear();
-	    odom_pub_->msg_.twist.twist.angular.z = odometry_.getAngular();
-	    odom_pub_->unlockAndPublish();
-	  }
-
-	  // Publish tf /odom frame
-	  if (enable_odom_tf_ && tf_odom_pub_->trylock())
-	  {
-	    geometry_msgs::TransformStamped& odom_frame = tf_odom_pub_->msg_.transforms[0];
-	    odom_frame.header.stamp = time;
-	    odom_frame.transform.translation.x = odometry_.getX();
-	    odom_frame.transform.translation.y = odometry_.getY();
-	    odom_frame.transform.rotation = orientation;
-	    tf_odom_pub_->unlockAndPublish();
-	  }
-	}
-	*/
 	// MOVE ROBOT
 	// Retreive current velocity command and time step:
 
@@ -905,8 +831,6 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 		const double dt = (time - curr_cmd.stamp).toSec();
 		const bool dont_set_angle_mode = dont_set_angle_mode_.load(std::memory_order_relaxed);
 
-		if (comp_odom_) compOdometry(time, inv_delta_t, steer_angles);
-
 		//ROS_INFO_STREAM("ang_vel_tar: " << curr_cmd.ang << " lin_vel_tar: " << curr_cmd.lin);
 
 		// Brake if cmd_vel has timeout:
@@ -917,7 +841,6 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 		}
 
 		static std::array<Vector2d, WHEELCOUNT> speeds_angles;
-		static double time_before_brake = 0;
 
 		for (size_t i = 0; i < wheel_joints_size_; ++i)
 		{
@@ -938,13 +861,13 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 
 		}
 		static double brake_last = ros::Time::now().toSec();
+		static double time_before_brake = 0;
 		if (fabs(curr_cmd.lin[0]) <= 1e-6 && fabs(curr_cmd.lin[1]) <= 1e-6 && fabs(curr_cmd.ang) <= 1e-6)
 		{
 			brake_last = ros::Time::now().toSec();
 
 			for (size_t i = 0; i < wheel_joints_size_; ++i)
 			{
-				//ROS_INFO_STREAM("id:" << i << " speed: " <<speeds_angles[i][0]);
 				speed_joints_[i].setCommand(0);
 				speed_joints_[i].setMode(hardware_interface::TalonMode::TalonMode_PercentOutput);
 			}
@@ -984,11 +907,9 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 
 		speeds_angles = swerveC_->motorOutputs(curr_cmd.lin, curr_cmd.ang, M_PI / 2.0, steer_angles, true, *(center_of_rotation_.readFromRT()));
 
-		// Set wheels velocities:
+		// Set wheel steering angles, as long as dont_set_angle_mode is false
 		for (size_t i = 0; !dont_set_angle_mode && (i < wheel_joints_size_); ++i)
 		{
-			//ROS_INFO_STREAM("id:" << i << " speed: " <<speeds_angles[i][0]);
-
 			steering_joints_[i].setCommand(speeds_angles[i][1]);
 		}
 
