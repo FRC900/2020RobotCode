@@ -1166,6 +1166,8 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 
 			match_data_.setMatchNumber(info.matchNumber);
 			match_data_.setReplayNumber(info.replayNumber);
+			status = 0;
+			match_data_.setBatteryVoltage(HAL_GetVinVoltage(&status));
 		}
 		//read control word match data at full speed - contains enable info, and reads should be v fast
 		HAL_ControlWord controlWord;
@@ -1177,8 +1179,6 @@ void FRCRobotHWInterface::read(ros::Duration &/*elapsed_time*/)
 		match_data_.setTest(controlWord.test);
 		match_data_.setDSAttached(controlWord.dsAttached);
 		match_data_.setFMSAttached(controlWord.fmsAttached);
-		status = 0;
-		match_data_.setBatteryVoltage(HAL_GetVinVoltage(&status));
 
 		read_tracer_.start_unique("robot controller data");
 		//check if sufficient time has passed since last read
