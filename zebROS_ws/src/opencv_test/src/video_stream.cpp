@@ -31,13 +31,12 @@ int main(int argc, char** argv)
     }
 
     Mat frame;
-    while(ros::ok)
+    while(ros::ok())
     {
       cap >> frame;
       if(!frame.empty()){
 	  msg = cv_bridge::CvImage(header, "bgr8", frame).toImageMsg();
 	  pub.publish(msg);
-	  waitKey(1);
 	}
 
       ros::spinOnce();

@@ -11,7 +11,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
 	Mat image = cv_bridge::toCvShare(msg, "bgr8")->image;
 
-	imshow("stream", dst);
+	imshow("stream", image);
 	waitKey(30);
 }
 
