@@ -89,6 +89,7 @@ add_action_files(
 	Climb.action
 	Elevator.action
 	Align.action
+	Cindy.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -166,7 +167,16 @@ add_dependencies(outtake_hatch_panel_server ${behaviors_EXPORTED_TARGETS} ${catk
 add_executable(test_actionlib src/test_actionlib.cpp)
 target_link_libraries(test_actionlib ${catkin_LIBRARIES})
 add_dependencies(test_actionlib ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(cindy_actionlib_server  src/cindy_actionlib_server.cpp)
+target_link_libraries(cindy_actionlib_server ${catkin_LIBRARIES})
+add_dependencies(cindy_actionlib_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 #add_executable(dummy src/dummy.cpp)
+target_link_libraries(intake_cargo_server ${catkin_LIBRARIES})
+add_dependencies(intake_cargo_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(dummy src/dummy.cpp)
 #target_link_libraries(
 #    dummy
 #    ${catkin_LIBRARIES}
