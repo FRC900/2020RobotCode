@@ -1,3 +1,7 @@
+//REPLACE "package" with the name of the package this is in
+
+
+
 #pragma once
 
 #include <ros/ros.h>
@@ -37,13 +41,18 @@ class MechController : public controller_interface::MultiInterfaceController<har
             virtual void stopping(const ros::Time &time) override;
 
 			//ROS server callback function
-            virtual bool cmdService(mech_controller::MechSrv::Request &req,
-                                    mech_controller::MechSrv::Response &res);
+            virtual bool cmdService(package::MechSrv::Request &req,
+                                    package::MechSrv::Response &res);
 
         private:
             //variable for piston joint
 			/* Ex:
 			hardware_interface::JointHandle push_joint_; //interface for the piston joint
+			*/
+
+			//variable for motor joint
+			/* Ex:
+			talon_controllers::TalonPercentOutputControllerInterface motor_name_joint_; //other types exist FYI
 			*/
 
 			//set up your ROS server and buffer
