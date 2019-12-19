@@ -66,6 +66,33 @@ class ServerNameAction {
 		{
 		}
 
+		//Use to make pauses while still checking timed_out_ and preempted_
+		bool pause(const double duration, const std::string &activity)
+		{
+			const double pause_start_time = ros::Time::now().toSec();
+
+			while(!preempted_ && !timed_out_ && ros::ok())
+			{
+				if(as_.isPreemptRequested() || !ros::ok())
+				{
+					preempted_ = true;
+					ROS_ERROR_STREAM("server_name_server: preempt during pause() - " << activity);
+				}
+				else if ((ros::Time::now().toSec() - start_time_) >= server_timeout_)
+				{
+					timed_out_ = true;
+					ROS_ERROR_STREAM("server_name_server: timeout during pause() - " << activity);
+				}
+
+				if((ros::Time::now().toSec() - pause_start_time) >= duration)
+				{
+					return true; //pause worked like expected
+				}
+			}
+
+			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
+		}
+
 		//define the function to be executed when the actionlib server is called
 		void executeCB(const behaviors::ThingGoalConstPtr &goal)
 		{
@@ -115,7 +142,6 @@ class ServerNameAction {
 					//check preempted_
 					if(as_.isPreemptRequested() || !ros::ok()) {
 						ROS_ERROR_STREAM(action_name_ << ": preempt while calling ______ controller");
-                                                ac_elevator_.cancellAllGoals();
 						preempted_ = true;
 					}
 					//test if succeeded, if so, break out of the loop
@@ -141,12 +167,7 @@ class ServerNameAction {
 
 			//if necessary, pause a bit between doing things (between piston firings usually)
 			/* e.g.
-			ros::Duration(sec_to_pause).sleep();
-			if(as_.isPreemptRequested() || !ros::ok()) { //always check for preempts after pausing for a significant duration
-				ROS_ERROR_STREAM(action_name_ << ": preempt after pausing for __________");
-                                ac_elevator_.cancellAllGoals();
-				preempted_ = true;
-			}
+			pause(sec_to_pause, "what we're pausing for");
 			*/
 
 
@@ -231,9 +252,8 @@ class ServerNameAction {
 					break; //stop waiting
 				}
 				//checks related to this file's actionlib server
-				else if (as_.isPreemptRequested()) {
+				else if (as_.isPreemptRequested() || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
-                                        ac_elevator_.cancellAllGoals();
 					preempted_ = true;
 				}
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
