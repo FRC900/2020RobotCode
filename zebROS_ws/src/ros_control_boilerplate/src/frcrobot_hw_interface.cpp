@@ -2478,6 +2478,15 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 					ts.setTalonMode(in_mode);
 					ts.setDemand1Type(demand1_type_internal);
 					ts.setDemand1Value(demand1_value);
+					// I think motionmagic calculates a path from currrent setpoint to new setpoint
+					// If we didn't actually make it to the previous setpoint, this will cause
+					// problems with random accumulating error.  It looks like going from disabled
+					// back to motionmagic causes the talon to path from current encoder value
+					// to new setpoint. Temporarily disable the talon before sending a new setpoint
+					// in motionmagic mode to trigger this behavior.
+					if (b2 && (in_mode == hardware_interface::TalonMode_MotionMagic))
+						victor->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled,
+								command, demand1_type_phoenix, demand1_value);
 
 					victor->Set(out_mode, command, demand1_type_phoenix, demand1_value);
 				}
