@@ -7,7 +7,7 @@ namespace panel_intake_controller
 									 ros::NodeHandle                 &controller_nh)
 	{
 		claw_joint_ = hw->getHandle("panel_claw");
-		//push_joint_ = hw->getHandle("panel_push_extend");
+		push_joint_ = hw->getHandle("panel_push_extend");
 
 		panel_intake_service_ = controller_nh.advertiseService("panel_command", &PanelIntakeController::cmdService, this);
 
@@ -29,11 +29,11 @@ namespace panel_intake_controller
         }
 
 		if(panel_cmd.push_cmd_) {
-			//ROS_WARN("intake in");
-			//push_joint_.setCommand(1.0);
+			ROS_WARN("intake in");
+			push_joint_.setCommand(1.0);
 		}
 		else {
-			//push_joint_.setCommand(0.0);
+			push_joint_.setCommand(0.0);
 		}
 	}
 
