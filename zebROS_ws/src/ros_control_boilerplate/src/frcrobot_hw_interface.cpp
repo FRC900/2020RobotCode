@@ -230,8 +230,10 @@ void FRCRobotHWInterface::init(void)
 			else
 				ctre_mcs_.push_back(std::make_shared<ctre::phoenix::motorcontrol::can::VictorSPX>(can_ctre_mc_can_ids_[i]));
 
+		ROS_ERROR_STREAM(__FILE__ << ":" << __LINE__ << " ctre_mcs[i]=" << ctre_mcs_[i]);
 			ctre_mcs_[i]->Set(ctre::phoenix::motorcontrol::ControlMode::Disabled, 0,
 							  ctre::phoenix::motorcontrol::DemandType::DemandType_Neutral, 0);
+		ROS_ERROR_STREAM(__FILE__ << ":" << __LINE__ << " ctre_mcs[i]=" << ctre_mcs_[i]);
 
 			// Clear sticky faults
 			//safeTalonCall(ctre_mcs_[i]->ClearStickyFaults(timeoutMs), "ClearStickyFaults()");
@@ -244,12 +246,14 @@ void FRCRobotHWInterface::init(void)
 			ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
 								  "\tMotor controller firmware version " << ctre_mcs_[i]->GetFirmwareVersion());
 
+		ROS_ERROR_STREAM(__FILE__ << ":" << __LINE__ << " ctre_mcs[i]=" << ctre_mcs_[i]);
 			ctre_mc_read_state_mutexes_.push_back(std::make_shared<std::mutex>());
 			ctre_mc_read_thread_states_.push_back(std::make_shared<hardware_interface::TalonHWState>(can_ctre_mc_can_ids_[i]));
 			ctre_mc_read_threads_.push_back(std::thread(&FRCRobotHWInterface::ctre_mc_read_thread, this,
 										    ctre_mcs_[i], ctre_mc_read_thread_states_[i],
 										    ctre_mc_read_state_mutexes_[i],
 										    std::make_unique<Tracer>("ctre_mc_read_" + can_ctre_mc_names_[i] + " " + nh_.getNamespace())));
+		ROS_ERROR_STREAM(__FILE__ << ":" << __LINE__ << " ctre_mcs[i]=" << ctre_mcs_[i]);
 		}
 		else
 		{

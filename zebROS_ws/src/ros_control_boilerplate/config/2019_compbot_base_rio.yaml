@@ -43,6 +43,15 @@ hardware_interface:
 
        - {name: climber_linebreak_1, type: digital_input, dio_channel: 5, invert: true, local: true}
        - {name: climber_linebreak_2, type: digital_input, dio_channel: 6, invert: true, local: true}
+
+       - {name: fl_drive, type: can_talon_srx, can_id: 21, local: true}
+       - {name: fl_angle, type: can_talon_srx, can_id: 11, local: true}
+       - {name: fr_drive, type: can_talon_srx, can_id: 22, local: true}
+       - {name: fr_angle, type: can_talon_srx, can_id: 12, local: true}
+       - {name: br_drive, type: can_talon_srx, can_id: 24, local: true}
+       - {name: br_angle, type: can_talon_srx, can_id: 14, local: true}
+       - {name: bl_drive, type: can_talon_srx, can_id: 23, local: true}
+       - {name: bl_angle, type: can_talon_srx, can_id: 13, local: true}
          
        - {name: navx_mxp, type: navX, frame_id: navx, id: 0, local: true}
        - {name: joystick, type: joystick, id: 0, local: true}
