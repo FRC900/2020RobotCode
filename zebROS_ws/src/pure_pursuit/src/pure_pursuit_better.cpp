@@ -8,6 +8,17 @@ void PurePursuit::loadPath(const T &path)
 {
 	path_ = path;
 	num_waypoints_ = path_.poses.size();
+        path_length_ = 0;
+        for(size_t i; i < num_waypoints_; ++i)
+        {
+            start_x = path_.poses[i].pose.position.x;
+            start_y = path_.poses[i].pose.position.y;
+            end_x = path_.poses[i+1].pose.position.x;
+            end_y = path_.poses[i+1].pose.position.y;
+            
+            path_length_ += hypot(end_x - start_x, end_y - start_y);
+            vec_path_length_.append(path_length);
+        }
 }
 
 // The idea would be to have other code be responsible for getting current
@@ -31,6 +42,8 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
         double start_y;
         double end_x;
         double end_y;
+
+        double magnitude_projection;
 
 	// Find point in path closest to odometry reading
 	// TODO (KCJ) - another possibility here is looking to see which segment between two wayponints
@@ -60,8 +73,8 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
             {
                 normal_found = true;
                 // Find location of projection onto path
-                // Distance from waypoint to projection
-                double magnitude_projection = innerProduct / hypot(dx, dy);
+                // Distance from waypoint to projection onto path
+                magnitude_projection = innerProduct / hypot(dx, dy);
                 // Find path location
                 current_x_path = start_x + magnitude_projection*(dx/hypot(dx, dy));
                 current_y_path = start_y + magnitude_projection*(dy/hypot(dx, dy));
@@ -131,5 +144,7 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
         target_pos.orientation.z = q_final.z;
         target_pos.orientation.w = q_final.w;
 
-        return target_pos;
+        double total_distance_travelled = vec_path_length_[current_waypoint_index] + magnitude_projection; 
+
+        return target_pos, total_distance_travelled;
 }

@@ -100,5 +100,7 @@ class PurePursuit
 
         double lookahead_distance_;
         size_t num_waypoints_;
+        double path_length_;
+        std::vector<double> vec_path_length_;
 };
 

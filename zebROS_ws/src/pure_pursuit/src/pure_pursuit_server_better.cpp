@@ -10,6 +10,7 @@
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <tf/tf.h>
+#include <pure_pursuit/PurePursuit.h>
 
 class PathAction
 {
@@ -24,6 +25,8 @@ class PathAction
 		nav_msgs::Odometry odom_;
 
 		std::map<std::string, AlignActionAxisState> axis_states_;
+
+                PurePursuit pure_pursuit_;
 
 		bool debug_;
 
