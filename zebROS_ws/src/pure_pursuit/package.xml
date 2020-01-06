@@ -74,8 +74,8 @@
   <depend>nav_msgs</depend>
   <depend>message_filters</depend>
   <depend>tf</depend>
-  <depend>swerve_point_generator</depend>
   <depend>behaviors</depend>
+  <depend>base_trajectory</depend>
   <depend>control_toolbox</depend>
 
 

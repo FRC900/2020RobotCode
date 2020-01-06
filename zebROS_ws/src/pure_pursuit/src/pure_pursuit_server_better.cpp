@@ -120,50 +120,7 @@ class PathAction
 			//in loop, send PID enable commands to rotation, x, y
 			while (ros::ok() && !preempted && !timed_out && !succeeded)
 			{
-				ROS_INFO_STREAM("----------------------------------------------");
-				ROS_INFO_STREAM("current_position = " << odom_.pose.pose.position.x
-								<< " " << odom_.pose.pose.position.y);
-
-				// Find point in path closest to odometry reading
-				// TODO (KCJ) - another possibility here is looking to see which segment between two wayponints
-				// the current position is normal to.  That is, if it is off track, assume it is off track to the left
-				// or right of the desired path, and check to see which segment it is on if the point were projected
-				// perpendicular back to the correct track.
-				// See e.g. https://stackoverflow.com/questions/17581738/check-if-a-point-projected-on-a-line-segment-is-not-outside-it
-				// It could hit multiple segments, though, so maybe the minimum distance of segments it is normal to, using
-				// the right angle distance to the closest point along each segment
-				// http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
-				// This would also potentially give a location between two segments as the current
-				// location, which makes the next lookahead point also somewhere
-				// between two waypoints.
-				// NOTE - there's code for this in base_trajectory.cpp - see
-				// pointToLineSegmentDistance()
-				const nav_msgs::Path path = spline_gen_srv.response.path;
-				double minimum_distance = std::numeric_limits<double>::max();
-				size_t minimum_idx = 0;
-
-				const geometry_msgs::Point &odom_position = odom_.pose.pose.position;
-				for (size_t i = 0; i < path.poses.size(); i++)
-				{
-					const geometry_msgs::Point &path_position = path.poses[i].pose.position;
-					const double l2_dist = hypot(path_position.x - odom_position.x, path_position.y - odom_position.y);
-
-					ROS_INFO_STREAM("waypoint " << i << " = " << path_position.x << ", " << path_position.y);
-					ROS_INFO_STREAM("distance from waypoint " << i << " = " << l2_dist);
-					if (l2_dist < minimum_distance)
-					{
-						minimum_distance = l2_dist;
-						minimum_idx = i;
-					}
-				}
-				ROS_INFO_STREAM("minimum_distance = " << minimum_distance);
-
-				// Probably should also have a % of the distance traveled
-				// between the two waypoints (or maybe just absolute distance)
-				// - this will give an accurate
-				// guess of where along the path we are (even if the robot
-				// is off to one side or the other)
-				const geometry_msgs::Pose &next_waypoint = path.poses[std::min(path.poses.size() - 1, minimum_idx + 1)].pose;
+                                pure_pursuit_.run(odom_);
 
 				// TODO - think about what the target point and axis are
 				// We want to end up driving to a point on the path some
@@ -173,6 +130,7 @@ class PathAction
 				// Need to worry about coordinate frames, since the robot will
 				// potentially be rotated such that it's x&y don't correspond
 				// to the path x&y coordinate axes
+                                /*
 				std_msgs::Bool enable_msg;
 				enable_msg.data = true;
 				std_msgs::Float64 command_msg;
@@ -220,6 +178,7 @@ class PathAction
 
 				ros::spinOnce();
 				r.sleep();
+                                */
 
 				// TODO - exit condition? Timeout? Check for prepemted?
 				/*

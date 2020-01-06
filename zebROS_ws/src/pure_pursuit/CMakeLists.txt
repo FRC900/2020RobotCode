@@ -8,9 +8,10 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
   roscpp
   rospy
+  geometry_msgs
+  base_trajectory
   std_msgs
   std_srvs
   tf
@@ -19,7 +20,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   actionlib_msgs
   nav_msgs
-  swerve_point_generator
   control_toolbox
 )
 
@@ -116,7 +116,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   # LIBRARIES pure_pursuit
-  CATKIN_DEPENDS geometry_msgs tf control_toolbox roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters swerve_point_generator
+  CATKIN_DEPENDS geometry_msgs tf base_trajectory control_toolbox roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters 
   DEPENDS system_lib
 )
 
@@ -141,30 +141,30 @@ include_directories(
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(pure_pursuit_server src/pure_pursuit_server.cpp src/pure_pursuit.cpp)
-add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(pure_pursuit_server
-  ${catkin_LIBRARIES}
-)
+# add_executable(pure_pursuit_server src/pure_pursuit_server.cpp src/pure_pursuit.cpp)
+# add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(pure_pursuit_server
+#   ${catkin_LIBRARIES}
+# )
 
 # TODO - clean up at some point, and pick a less goofy (better?) name
-add_executable(pure_pursuit_server_better src/pure_pursuit_server_better.cpp src/pure_pursuit.cpp)
+add_executable(pure_pursuit_server_better src/pure_pursuit_server_better.cpp src/pure_pursuit_better.cpp)
 add_dependencies(pure_pursuit_server_better ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pure_pursuit_server_better
   ${catkin_LIBRARIES}
 )
 
-add_executable(pure_pursuit_test_client src/test_client.cpp)
-add_dependencies(pure_pursuit_test_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(pure_pursuit_test_client
-  ${catkin_LIBRARIES}
-)
-
-add_executable(pure_pursuit_test_pp_actionlib src/test_pp_actionlib.cpp)
-add_dependencies(pure_pursuit_test_pp_actionlib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(pure_pursuit_test_pp_actionlib
-  ${catkin_LIBRARIES}
-)
+# add_executable(pure_pursuit_test_client src/test_client.cpp)
+# add_dependencies(pure_pursuit_test_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(pure_pursuit_test_client
+#   ${catkin_LIBRARIES}
+# )
+# 
+# add_executable(pure_pursuit_test_pp_actionlib src/test_pp_actionlib.cpp)
+# add_dependencies(pure_pursuit_test_pp_actionlib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(pure_pursuit_test_pp_actionlib
+#   ${catkin_LIBRARIES}
+# )
 
 
 #############
