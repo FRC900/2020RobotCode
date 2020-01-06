@@ -643,10 +643,11 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
                     atan2(odom_rigid_transf_(1, 0), odom_rigid_transf_(0, 0)) * inv_delta_t;
 
 		nav_msgs::Odometry odom_msg;
+                TalonSwerveDriveController::Commands current_cmd = *(command_.readFromRT());
 		//double delta_t = 1/inv_delta_t;
 		double delta_t = (time - last_odom_pub_time_).toSec();
 		static double odom_yaw = 0;
-		odom_yaw += command.ang * delta_t;
+		odom_yaw += current_cmd.ang * delta_t;
 		orientation = tf::createQuaternionMsgFromYaw(odom_yaw);
 
 		//first, we'll publish the transform over tf
@@ -655,8 +656,8 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 		odom_trans.header.frame_id = "odom";
 		odom_trans.child_frame_id = "base_link";
 
-		odom_trans.transform.translation.x += command.lin[0] * delta_t;
-		odom_trans.transform.translation.y += command.lin[1] * delta_t;
+		odom_trans.transform.translation.x += current_cmd.lin[0] * delta_t;
+		odom_trans.transform.translation.y += current_cmd.lin[1] * delta_t;
 		odom_trans.transform.translation.z = 0.0;
 		odom_trans.transform.rotation = orientation;
 
@@ -665,12 +666,12 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 
 		//then, publish the odometry message
 		odom_pub_.msg_.header.stamp = time;
-		odom_pub_.msg_.pose.pose.position.x += command.lin[0] * delta_t;
-		odom_pub_.msg_.pose.pose.position.y += command.lin[1] * delta_t;
+		odom_pub_.msg_.pose.pose.position.x += current_cmd.lin[0] * delta_t;
+		odom_pub_.msg_.pose.pose.position.y += current_cmd.lin[1] * delta_t;
 		odom_pub_.msg_.pose.pose.orientation = orientation;
-		odom_pub_.msg_.twist.twist.linear.x = command.lin[0];
-		odom_pub_.msg_.twist.twist.linear.y = command.lin[1];
-		odom_pub_.msg_.twist.twist.angular.z = command.ang;
+		odom_pub_.msg_.twist.twist.linear.x = current_cmd.lin[0];
+		odom_pub_.msg_.twist.twist.linear.y = current_cmd.lin[1];
+		odom_pub_.msg_.twist.twist.angular.z = current_cmd.ang;
 
 		odom_pub_.unlockAndPublish();
 
