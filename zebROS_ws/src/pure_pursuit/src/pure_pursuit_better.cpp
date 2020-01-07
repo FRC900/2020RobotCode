@@ -4,20 +4,21 @@
  */
 #include "pure_pursuit/pure_pursuit_better.h"
 
-void PurePursuit::loadPath(const T &path)
+//TODO - make const T
+void PurePursuit::loadPath(const nav_msgs::Path path)
 {
 	path_ = path;
 	num_waypoints_ = path_.poses.size();
         path_length_ = 0;
         for(size_t i; i < num_waypoints_; ++i)
         {
-            start_x = path_.poses[i].pose.position.x;
-            start_y = path_.poses[i].pose.position.y;
-            end_x = path_.poses[i+1].pose.position.x;
-            end_y = path_.poses[i+1].pose.position.y;
+            double start_x = path_.poses[i].pose.position.x;
+            double start_y = path_.poses[i].pose.position.y;
+            double end_x = path_.poses[i+1].pose.position.x;
+            double end_y = path_.poses[i+1].pose.position.y;
             
             path_length_ += hypot(end_x - start_x, end_y - start_y);
-            vec_path_length_.append(path_length);
+            vec_path_length_.push_back(path_length_);
         }
 }
 
@@ -25,7 +26,7 @@ void PurePursuit::loadPath(const T &path)
 // position and passing it in to run. run would then return a pose (x_pos, y_pos,
 // orientation) and whoever called run would be responsible for sending that
 // where it needs to go.
-geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
+geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_distance_travelled)
 {
 	ROS_INFO_STREAM("----------------------------------------------");
 	ROS_INFO_STREAM("current_position = " << odom.pose.pose.position.x
@@ -42,6 +43,8 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
         double start_y;
         double end_x;
         double end_y;
+        double dx;
+        double dy;
 
         double magnitude_projection;
 
@@ -65,8 +68,8 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
             end_x = path_.poses[i+1].pose.position.x;
             end_y = path_.poses[i+1].pose.position.y;
 
-            double dx = end_x - start_x;
-            double dy = end_y - start_y;
+            dx = end_x - start_x;
+            dy = end_y - start_y;
             double innerProduct = (current_x - start_x)*dx + (current_y - start_y)*dy;
             // If the current position is normal to this segment
             if(0 <= innerProduct && innerProduct <= dx*dx + dy*dy)
@@ -101,17 +104,17 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
             end_x = path_.poses[end_i+1].pose.position.x;
             end_y = path_.poses[end_i+1].pose.position.y;
 
-            if(distance_to_travel + hypot(end_x - start_x, end_y - start_y) < lookahead_distance)
+            if(distance_to_travel + hypot(end_x - start_x, end_y - start_y) < lookahead_distance_)
                 distance_to_travel += hypot(end_x - start_x, end_y - start_y);
             else
                 break;
         }
 
         // Add fraction of distance between waypoints to find final x and y
-        double dx = end_x - start_x;
-        double dy = end_y - start_y;
-        double final_x = path_.poses[end_i].pose.position.x + (lookahead_distance - distance_to_travel) * (dx / hypot(dx, dy)); 
-        double final_y = path_.poses[end_i].pose.position.y + (lookahead_distance - distance_to_travel) * (dy / hypot(dx, dy)); 
+        dx = end_x - start_x;
+        dy = end_y - start_y;
+        double final_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy)); 
+        double final_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy)); 
 
         // Determine target orientation
         double roll, pitch, start_yaw, end_yaw;
@@ -121,7 +124,7 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
 			path_.poses[end_i].pose.orientation.x,
 			path_.poses[end_i].pose.orientation.y,
 			path_.poses[end_i].pose.orientation.z);
-	tf::Matrix3x3(waypoint_q_end).getRPY(roll, pitch, start_yaw);
+	tf::Matrix3x3(waypoint_q_start).getRPY(roll, pitch, start_yaw);
 	tf::Quaternion waypoint_q_end(
 			path_.poses[end_i + 1].pose.orientation.w,
 			path_.poses[end_i + 1].pose.orientation.x,
@@ -129,22 +132,18 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom)
 			path_.poses[end_i + 1].pose.orientation.z);
 	tf::Matrix3x3(waypoint_q_end).getRPY(roll, pitch, end_yaw);
         // Find orientation between the waypoints
-        double final_orientation = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance - distance_to_travel) / hypot(dx, dy));
+        double final_orientation = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / hypot(dx, dy));
         // Convert back to quaternion
-        tf2::Quaternion q_final;
-        q_final.setRPY(0, 0, final_orientation);
+        geometry_msgs::Quaternion q_final = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, final_orientation);
 
         // Return Pose of target position
         geometry_msgs::Pose target_pos;
         target_pos.position.x = final_x;
         target_pos.position.y = final_y;
         target_pos.position.z = 0;
-        target_pos.orientation.x = q_final.x;
-        target_pos.orientation.y = q_final.y;
-        target_pos.orientation.z = q_final.z;
-        target_pos.orientation.w = q_final.w;
+        target_pos.orientation = q_final;
 
-        double total_distance_travelled = vec_path_length_[current_waypoint_index] + magnitude_projection; 
+        total_distance_travelled = vec_path_length_[current_waypoint_index] + magnitude_projection; 
 
-        return target_pos, total_distance_travelled;
+        return target_pos;
 }

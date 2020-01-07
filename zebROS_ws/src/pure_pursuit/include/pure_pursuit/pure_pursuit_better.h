@@ -83,17 +83,13 @@ class PurePursuit
         PurePursuit(double lookahead_distance)
         {
             double lookahead_distance_ = lookahead_distance;
-            double max_velocity_ = max_velocity; 
-            double max_accel_ = max_accel;
-            double pos_tol_ =  pos_tol; 
-            double final_pos_tol_ = final_pos_tol;
         }
 
         // load nav_msgs::Path
-        void loadPath(const T& path);
+        void loadPath(const nav_msgs::Path path);
 
         // contains the main control loop
-        geometry_msgs::Pose run(nav_msgs::Odometry odom);
+        geometry_msgs::Pose run(nav_msgs::Odometry odom, double &distance_travelled);
 
     private:
         nav_msgs::Path path_;

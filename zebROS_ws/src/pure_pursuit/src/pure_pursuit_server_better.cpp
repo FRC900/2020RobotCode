@@ -10,7 +10,8 @@
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <tf/tf.h>
-#include <pure_pursuit/PurePursuit.h>
+#include <pure_pursuit/pure_pursuit_better.h>
+
 
 class PathAction
 {
@@ -26,18 +27,22 @@ class PathAction
 
 		std::map<std::string, AlignActionAxisState> axis_states_;
 
-                PurePursuit pure_pursuit_;
+                std::shared_ptr<PurePursuit> pure_pursuit_;
+                double lookahead_distance_;
 
 		bool debug_;
 
 	public:
-		PathAction(const std::string &name, ros::NodeHandle nh)
+		PathAction(const std::string &name, ros::NodeHandle nh,
+                        double lookahead_distance)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
 			, debug_(false) // TODO - config item?
 		{
 			as_.start();
+
+                        lookahead_distance_ = lookahead_distance;
 
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
@@ -46,9 +51,9 @@ class PathAction
 			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/path_to_goal/base_trajectory/spline_gen", false, service_connection_header);
 
 			odom_sub_ = nh_.subscribe("some odometry topic", 1, &PathAction::odomCallback, this);
-		}
 
-		~PathAction(void) {}
+                        pure_pursuit_ = std::make_shared<PurePursuit>(lookahead_distance_);
+                }
 
 		void odomCallback(const nav_msgs::Odometry &odom_msg)
 		{
@@ -123,7 +128,8 @@ class PathAction
 			//in loop, send PID enable commands to rotation, x, y
 			while (ros::ok() && !preempted && !timed_out && !succeeded)
 			{
-                                pure_pursuit_.run(odom_);
+                            double distance_travelled;
+                                pure_pursuit_->run(odom_, distance_travelled);
 
 				// TODO - think about what the target point and axis are
 				// We want to end up driving to a point on the path some
@@ -224,8 +230,11 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "path_server");
 
+        double lookahead_distance = 5;
+        //TODO read param
+
 	ros::NodeHandle nh;
-	PathAction path_action_server("path_server", nh);
+	PathAction path_action_server("path_server", nh, lookahead_distance);
 
 	AlignActionAxisConfig x_axis("x", "x_enable_pub", "x_cmd_pub", "x_state_pub", "pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_enable_pub", "y_cmd_pub", "y_state_pub", "pid_debug", "y_timeout_param", "y_error_threshold_param");
@@ -246,6 +255,7 @@ int main(int argc, char **argv)
 		ROS_ERROR_STREAM("Error adding z_axis to path_action_server.");
 		return false;
 	}
+
 
 	ros::spin();
 
