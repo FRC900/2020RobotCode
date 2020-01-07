@@ -22,6 +22,11 @@ void PurePursuit::loadPath(const nav_msgs::Path path)
         }
 }
 
+double PurePursuit::getPathLength()
+{
+    return path_length_;
+}
+
 // The idea would be to have other code be responsible for getting current
 // position and passing it in to run. run would then return a pose (x_pos, y_pos,
 // orientation) and whoever called run would be responsible for sending that

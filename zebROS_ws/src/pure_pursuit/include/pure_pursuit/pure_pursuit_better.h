@@ -88,6 +88,9 @@ class PurePursuit
         // load nav_msgs::Path
         void loadPath(const nav_msgs::Path path);
 
+        // path length getter
+        double getPathLength();
+
         // contains the main control loop
         geometry_msgs::Pose run(nav_msgs::Odometry odom, double &distance_travelled);
 

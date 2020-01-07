@@ -12,7 +12,6 @@
 #include <tf/tf.h>
 #include <pure_pursuit/pure_pursuit_better.h>
 
-
 class PathAction
 {
 	protected:
@@ -29,8 +28,11 @@ class PathAction
 
                 std::shared_ptr<PurePursuit> pure_pursuit_;
                 double lookahead_distance_;
+                double final_pos_tol_;
+                double 
 
 		bool debug_;
+                double start_time_;
 
 	public:
 		PathAction(const std::string &name, ros::NodeHandle nh,
@@ -43,6 +45,7 @@ class PathAction
 			as_.start();
 
                         lookahead_distance_ = lookahead_distance;
+                        final_pos_tol_ = final_pos_tol;
 
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
@@ -126,10 +129,12 @@ class PathAction
 			bool timed_out = false;
 			bool succeeded = false;
 			//in loop, send PID enable commands to rotation, x, y
+                        double distance_travelled = 0;
+                        double total_distance = pure_pursuit_.getPathLength();
+                        start_time_ = ros::Time::now().toSec();
 			while (ros::ok() && !preempted && !timed_out && !succeeded)
 			{
-                            double distance_travelled;
-                                pure_pursuit_->run(odom_, distance_travelled);
+                            geometry_msgs::Pose next_waypoint = pure_pursuit_->run(odom_, distance_travelled);
 
 				// TODO - think about what the target point and axis are
 				// We want to end up driving to a point on the path some
@@ -139,12 +144,11 @@ class PathAction
 				// Need to worry about coordinate frames, since the robot will
 				// potentially be rotated such that it's x&y don't correspond
 				// to the path x&y coordinate axes
-                                /*
 				std_msgs::Bool enable_msg;
 				enable_msg.data = true;
 				std_msgs::Float64 command_msg;
 				std_msgs::Float64 state_msg;
-
+                                
 				auto x_axis_it = axis_states_.find("x");
 				auto &x_axis = x_axis_it->second;
 				x_axis.enable_pub_.publish(enable_msg);
@@ -166,63 +170,63 @@ class PathAction
 				z_axis.enable_pub_.publish(enable_msg);
 
 				// TODO - what's the deal with yaw vs actual_yaw? And roll?
-				double roll, pitch, yaw, actual_yaw, target_yaw;
+				double roll, pitch, yaw, odom_yaw, target_yaw;
 				tf::Quaternion odom_q(
 					odom_.pose.pose.orientation.w,
 					odom_.pose.pose.orientation.x,
 					odom_.pose.pose.orientation.y,
 					odom_.pose.pose.orientation.z);
-				tf::Matrix3x3(odom_q).getRPY(actual_yaw, pitch, yaw);
+				tf::Matrix3x3(odom_q).getRPY(roll, pitch, odom_yaw);
 				tf::Quaternion waypoint_q(
 					next_waypoint.orientation.w,
 					next_waypoint.orientation.x,
 					next_waypoint.orientation.y,
 					next_waypoint.orientation.z);
-				tf::Matrix3x3(waypoint_q).getRPY(target_yaw, pitch, yaw);
+				tf::Matrix3x3(waypoint_q).getRPY(roll, pitch, target_yaw);
 
 				command_msg.data = target_yaw;
 				z_axis.command_pub_.publish(command_msg);
-				state_msg.data = actual_yaw;
+				state_msg.data = odom_yaw;
 				z_axis.state_pub_.publish(state_msg);
+
+                                if(as_.isPreemptRequested() || !ros::ok()) {
+                                    ROS_ERROR_STREAM(action_name_ << ": preempted");
+                                    preempted_ = true;
+                                }
+                                else if(total_distance - distance_threshold < final_pos_tol_)
+                                {
+                                    ROS_INFO_STREAM(action_name_ << ": succeeded");
+                                }
+                                else if(ros::Time::now().toSec() - start_time_ > server_timeout_) {
+                                    ROS_ERROR_STREAM(action_name_ << ": timed out");
+                                    timed_out_ = true;
+                                }
 
 				ros::spinOnce();
 				r.sleep();
-                                */
-
-				// TODO - exit condition? Timeout? Check for prepemted?
-				/*
-				   if(minimum_idx == num_waypoints_ - 1)
-
-					ROS_INFO_STREAM("x-error: " << fabs(odom.pose.pose.position.x - next_waypoint.pose.position.x) << " y-error: " << fabs(odom.pose.pose.position.y - next_waypoint.pose.position.y) << " final_pos_tol: " << final_pos_tol_);
-				if(minimum_idx == num_waypoints_ - 1 && fabs(odom.pose.pose.position.x - path_.poses[num_waypoints_ - 1].pose.position.x) < final_pos_tol_ && fabs(odom.pose.pose.position.y - path_.poses[num_waypoints_ - 1].pose.position.y) < final_pos_tol_)
-				{
-					// TODO : no reason for cmd_vel_ to be a member var, it can
-					// be a local instead.
-					cmd_vel_.linear.x = 0;
-					cmd_vel_.linear.y = 0;
-					cmd_vel_.linear.z = 0;
-					cmd_vel_.angular.x = 0;
-					cmd_vel_.angular.y = 0;
-					cmd_vel_.angular.z = 0;
-
-					return cmd_vel_;
-				}
-
-				ROS_INFO_STREAM("next_waypoint = " << next_waypoint.pose.position.x
-						<< " " << next_waypoint.pose.position.y
-						<< " " << next_waypoint.pose.position.z);
-
-				// Set the angle of the velocity
-				geometry_msgs::Point32 base_link_waypoint;
-				base_link_waypoint.x = next_waypoint.pose.position.x - odom.pose.pose.position.x;
-				base_link_waypoint.y = next_waypoint.pose.position.y - odom.pose.pose.position.y;
-				double mag = hypot(base_link_waypoint.x, base_link_waypoint.y);
-				ROS_INFO_STREAM("distance to drive to next waypoint = " << mag);
-				ROS_INFO_STREAM("max_velocity = " << max_velocity_);
-				ROS_INFO_STREAM("distance to drive x = " << base_link_waypoint.x << "; distance to drive y = " << base_link_waypoint.y);
-				                */
 			}
 			// TODO - disable all axes
+			//log result and set actionlib server state appropriately
+                        pure_pursuit::PathActionResult result;
+
+			if(preempted_) {
+				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
+				result.timed_out_ = false;
+				result.success = false;
+				as_.setPreempted(result);
+			}
+			else if(timed_out_) {
+				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
+				result.timed_out_ = true;
+				result.success = false;
+				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
+			}
+			else { //implies succeeded
+				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
+				result.timed_out_ = false;
+				result.success = true;
+				as_.setSucceeded(result);
+			}
 		}
 };
 
@@ -231,10 +235,14 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "path_server");
 
         double lookahead_distance = 5;
-        //TODO read param
+        double final_pos_tol = 0.01;
+	nh_.getParam("/frcrobot_jetson/pure_pursuit/lookahead_distance", lookahead_distance);
+	nh_.getParam("/frcrobot_jetson/pure_pursuit/final_pos_tol", final_pos_tol);
 
 	ros::NodeHandle nh;
-	PathAction path_action_server("path_server", nh, lookahead_distance);
+	PathAction path_action_server("path_server", nh, 
+                lookahead_distance,
+                final_pos_tol);
 
 	AlignActionAxisConfig x_axis("x", "x_enable_pub", "x_cmd_pub", "x_state_pub", "pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_enable_pub", "y_cmd_pub", "y_state_pub", "pid_debug", "y_timeout_param", "y_error_threshold_param");
