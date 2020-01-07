@@ -234,6 +234,11 @@ bool TalonSwerveDriveController::init(hardware_interface::TalonCommandInterface 
 		ROS_ERROR("talon_swerve_drive_controller : could not read wheel_radius");
 		return false;
 	}
+	if (!controller_nh.getParam("feedforward", feedforward_))
+	{
+		ROS_ERROR("talon_swerve_drive_controller : could not read feedforward");
+		return false;
+	}
 	if (!controller_nh.getParam("cmd_vel_timout",cmd_vel_timeout_))
 	{
 		ROS_ERROR("talon_swerve_drive_controller : could not read cmd_vel_timout");
@@ -917,6 +922,19 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 				if (!percent_out_drive_mode)
 				{
 					speed_joints_[i].setMode(hardware_interface::TalonMode::TalonMode_Velocity);
+
+                                        // Add static feed forward in direction of current velocity
+                                        if(fabs(speeds_angles[i][0]) > 1e-5)
+                                        {
+                                            speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_AuxPID);
+                                            speed_joints_[i].setDemand1Value(copysign(feedforward_, speeds_angles[i][0]));
+                                        }
+                                        else
+                                        {
+                                            speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_Neutral);
+                                            speed_joints_[i].setDemand1Value(0);
+                                        }
+
 					speed_joints_[i].setCommand(speeds_angles[i][0]);
 				}
 				else
@@ -925,6 +943,8 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 					// from 0-100% output and measuring response
 					speed_joints_[i].setMode(hardware_interface::TalonMode::TalonMode_PercentOutput);
 					speed_joints_[i].setCommand(hypot(curr_cmd.lin[0], curr_cmd.lin[1]));
+                                        speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_Neutral);
+                                        speed_joints_[i].setDemand1Value(0);
 				}
 			}
 		}
