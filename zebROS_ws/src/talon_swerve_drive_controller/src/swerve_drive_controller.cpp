@@ -925,6 +925,10 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 					// from 0-100% output and measuring response
 					speed_joints_[i].setMode(hardware_interface::TalonMode::TalonMode_PercentOutput);
 					speed_joints_[i].setCommand(hypot(curr_cmd.lin[0], curr_cmd.lin[1]));
+					if(i == 1)
+					{
+						speed_joints_[i].setCommand(-1*hypot(curr_cmd.lin[0], curr_cmd.lin[1]));
+					}
 				}
 			}
 		}
