@@ -53,20 +53,6 @@
 
 namespace frcrobot_control
 {
-class TeleopJointsKeyboard
-{
-	public:
-		TeleopJointsKeyboard(ros::NodeHandle &nh);
-		~TeleopJointsKeyboard();
-		void keyboardLoop();
-		int pollKeyboard(int kfd, char &c) const;
-
-	private:
-		ros::Publisher joints_pub_;
-		sensor_msgs::Joy cmd_;
-		//bool has_recieved_joints_;
-};
-
 /// \brief Hardware interface for a robot
 class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 {
