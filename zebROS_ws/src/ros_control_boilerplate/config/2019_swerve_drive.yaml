@@ -39,7 +39,7 @@ swerve_drive_controller:
     encoder_drive_set_P_units: 1
     encoder_steering_get_units: 1
     encoder_steering_set_units: 1
-    feedforward: 0.0001 
+    feedforward: 0.115 
 
     wheel_coords: [[-0.26035, 0.26035], [0.26035, 0.26035], [-0.26035, -0.26035], [0.26035, -0.26035]]
  
