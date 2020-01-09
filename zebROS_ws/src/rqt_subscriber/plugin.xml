@@ -1,0 +1,17 @@
+<library path="src">
+  <class name="Subscriber" type="rqt_subscriber.subscriber.Subscriber" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      A Python GUI plugin subscribing to ROS messages.
+    </description>
+    <qtgui>
+      <group>
+        <label>Topics</label>
+        <icon type="theme">folder</icon>
+        <statustip>Plugins related to ROS topics.</statustip>
+      </group>
+      <label>Message Subscriber</label>
+      <icon type="theme">media-playback-start</icon>
+      <statustip>A Python GUI plugin for subscribing to ROS messages.</statustip>
+    </qtgui>
+  </class>
+</library>
