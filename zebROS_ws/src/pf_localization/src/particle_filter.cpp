@@ -60,6 +60,7 @@ void motion_update() {
 
 void assign_weights(std::vector<std::pair<double, double> > mBeacons) {
   for (Particle p : particles) {
-    
+    p.weight = world_.total_distance(p, mBeacons);
   }
+  normalize();
 }
