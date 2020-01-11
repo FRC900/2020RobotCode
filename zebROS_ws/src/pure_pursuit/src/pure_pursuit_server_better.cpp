@@ -29,14 +29,16 @@ class PathAction
                 std::shared_ptr<PurePursuit> pure_pursuit_;
                 double lookahead_distance_;
                 double final_pos_tol_;
-                double 
+                double server_timeout_;
 
 		bool debug_;
                 double start_time_;
 
 	public:
 		PathAction(const std::string &name, ros::NodeHandle nh,
-                        double lookahead_distance)
+                        double lookahead_distance,
+                        double final_pos_tol, 
+                        double server_timeout)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
@@ -46,6 +48,7 @@ class PathAction
 
                         lookahead_distance_ = lookahead_distance;
                         final_pos_tol_ = final_pos_tol;
+                        server_timeout_ = server_timeout;
 
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
@@ -130,7 +133,7 @@ class PathAction
 			bool succeeded = false;
 			//in loop, send PID enable commands to rotation, x, y
                         double distance_travelled = 0;
-                        double total_distance = pure_pursuit_.getPathLength();
+                        double total_distance = pure_pursuit_->getPathLength();
                         start_time_ = ros::Time::now().toSec();
 			while (ros::ok() && !preempted && !timed_out && !succeeded)
 			{
@@ -154,7 +157,7 @@ class PathAction
 				x_axis.enable_pub_.publish(enable_msg);
 				command_msg.data = next_waypoint.position.x;
 				x_axis.command_pub_.publish(command_msg);
-				state_msg.data = odom_position.x;
+				state_msg.data = odom_.pose.pose.position.x;
 				x_axis.state_pub_.publish(state_msg);
 
 				auto y_axis_it = axis_states_.find("y");
@@ -162,7 +165,7 @@ class PathAction
 				y_axis.enable_pub_.publish(enable_msg);
 				command_msg.data = next_waypoint.position.y;
 				y_axis.command_pub_.publish(command_msg);
-				state_msg.data = odom_position.y;
+				state_msg.data = odom_.pose.pose.position.y;
 				y_axis.state_pub_.publish(state_msg);
 
 				auto z_axis_it = axis_states_.find("z");
@@ -191,15 +194,15 @@ class PathAction
 
                                 if(as_.isPreemptRequested() || !ros::ok()) {
                                     ROS_ERROR_STREAM(action_name_ << ": preempted");
-                                    preempted_ = true;
+                                    preempted = true;
                                 }
-                                else if(total_distance - distance_threshold < final_pos_tol_)
+                                else if(total_distance - distance_travelled < final_pos_tol_) //TODO make this an actual check for completed
                                 {
                                     ROS_INFO_STREAM(action_name_ << ": succeeded");
                                 }
                                 else if(ros::Time::now().toSec() - start_time_ > server_timeout_) {
                                     ROS_ERROR_STREAM(action_name_ << ": timed out");
-                                    timed_out_ = true;
+                                    timed_out = true;
                                 }
 
 				ros::spinOnce();
@@ -207,23 +210,23 @@ class PathAction
 			}
 			// TODO - disable all axes
 			//log result and set actionlib server state appropriately
-                        pure_pursuit::PathActionResult result;
+                        pure_pursuit::PathResult result;
 
-			if(preempted_) {
+			if(preempted) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = false;
 				as_.setPreempted(result);
 			}
-			else if(timed_out_) {
+			else if(timed_out) {
 				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
-				result.timed_out_ = true;
+				result.timed_out = true;
 				result.success = false;
 				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
 			}
 			else { //implies succeeded
 				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = true;
 				as_.setSucceeded(result);
 			}
@@ -233,16 +236,19 @@ class PathAction
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "path_server");
+	ros::NodeHandle nh;
 
         double lookahead_distance = 5;
         double final_pos_tol = 0.01;
-	nh_.getParam("/frcrobot_jetson/pure_pursuit/lookahead_distance", lookahead_distance);
-	nh_.getParam("/frcrobot_jetson/pure_pursuit/final_pos_tol", final_pos_tol);
+        double server_timeout = 20.0;
+	nh.getParam("/frcrobot_jetson/pure_pursuit/lookahead_distance", lookahead_distance);
+	nh.getParam("/frcrobot_jetson/pure_pursuit/final_pos_tol", final_pos_tol);
+	nh.getParam("/frcrobot_jetson/pure_pursuit/server_timeout_", server_timeout);
 
-	ros::NodeHandle nh;
 	PathAction path_action_server("path_server", nh, 
                 lookahead_distance,
-                final_pos_tol);
+                final_pos_tol, 
+                server_timeout);
 
 	AlignActionAxisConfig x_axis("x", "x_enable_pub", "x_cmd_pub", "x_state_pub", "pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_enable_pub", "y_cmd_pub", "y_state_pub", "pid_debug", "y_timeout_param", "y_error_threshold_param");

@@ -72,7 +72,6 @@ add_service_files(
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  PurePursuit.action
   Path.action
 )
 
@@ -116,7 +115,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   # LIBRARIES pure_pursuit
-  CATKIN_DEPENDS geometry_msgs tf base_trajectory control_toolbox roscpp rospy std_msgs std_srvs tf2 tf2_ros actionlib_msgs nav_msgs message_filters 
+  CATKIN_DEPENDS geometry_msgs base_trajectory roscpp rospy std_msgs std_srvs actionlib_msgs nav_msgs 
   DEPENDS system_lib
 )
 

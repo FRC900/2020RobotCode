@@ -5,6 +5,7 @@
 #include <behavior_actions/ElevatorAction.h>
 #include <behavior_actions/ClimbAction.h>
 #include <behavior_actions/AlignAction.h>
+#include <pure_pursuit/PathAction.h>
 #include <behavior_actions/enumerated_elevator_indices.h>
 #include <boost/algorithm/string.hpp>
 #include <string>
@@ -268,6 +269,45 @@ bool callAlignHatch()
 	}
 }
 
+bool callPath()
+{
+	actionlib::SimpleActionClient<pure_pursuit::PathAction> path_ac("/pure_pursuit/path_server", true);
+
+	ROS_INFO("Waiting for pure pursuit server to start.");
+	if(!path_ac.waitForServer(ros::Duration(server_wait_timeout)))
+	{
+		ROS_ERROR("callPath: Could not find server.");
+		return false;
+	}
+
+	ROS_INFO("callPath: Sending goal to the server.");
+	pure_pursuit::PathGoal path_goal;
+	path_goal.points.resize(1);
+	path_goal.points[0].x = 1;
+	path_goal.points[0].y = 3;
+	path_goal.points[0].z = 0;
+	path_ac.sendGoal(path_goal);
+
+	//wait for the action to return
+	bool finished_before_timeout = path_ac.waitForResult(ros::Duration(server_exec_timeout));
+
+	if (finished_before_timeout)
+	{
+		actionlib::SimpleClientGoalState state = path_ac.getState();
+		ROS_INFO("callPath: Action finished with state: %s",state.toString().c_str());
+		if(path_ac.getResult()->timed_out)
+		{
+			ROS_INFO("callPath: Path server timed out!");
+		}
+		return true;
+	}
+	else
+	{
+		ROS_INFO("callPath : Action did not finish before the time out.");
+		return false;
+	}
+}
+
 
 
 
@@ -428,6 +468,10 @@ int main (int argc, char **argv)
 	else if(what_to_run == "align_hatch")
 	{
 		callAlignHatch();
+	}
+	else if(what_to_run == "path")
+	{
+		callPath();
 	}
 	else {
 		ROS_ERROR("Invalid run argument");
