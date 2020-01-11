@@ -3,33 +3,28 @@
 
 #include <utility>
 #include <random>
-
-struct Particle {
-  double weight;
-  double x;
-  double y;
-  double rot;
-
-  Particle(double x, double y, double rot): x(x), y(y), rot(rot), weight(0) {}
-};
+#include "world_model.hpp"
+#include "particle.hpp"
 
 class ParticleFilter {
 private:
+  size_t num_particles_;
   double init_stdev_ = 1;
   double noise_stdev_ = 1;
   double rot_noise_stdev_ = 1;
   std::mt19937 rng_(0);
   std::vector<Particle> particles_;
   WorldModel world_;
+  void normalize();
   void resample();
   void noise();
   void init(double x, double y);
 
 public:
-  ParticleFilter(WorldModel w, double x, double y, int num_particles);
-  double predict();
+  ParticleFilter(WorldModel w, double x, double y, size_t n);
+  Particle predict();
   void motion_update();
-  void particle_iter(std::vector<std::pair<double, double> > mBeacons);
+  void assign_weights(std::vector<std::pair<double, double> > mBeacons);
 };
 
 
