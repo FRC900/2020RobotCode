@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <senson_msgs/Joy.h>
+#include <sensor_msgs/Joy.h>
 
 class TeleopJointsKeyboard
 {

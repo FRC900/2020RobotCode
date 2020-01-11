@@ -98,6 +98,13 @@ target_link_libraries(snap_to_nearest_goal
 	${catkin_LIBRARIES}
 	)
 
+add_executable(teleop_joints_keyboard src/teleop_joints_keyboard.cpp)
+set_target_properties(teleop_joints_keyboard PROPERTIES OUTPUT_NAME
+	teleop_joints_keyboard PREFIX "")
+target_link_libraries(teleop_joints_keyboard
+	${catkin_LIBRARIES}
+	)
+
 add_dependencies(snap_to_nearest_goal
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}

@@ -27,4 +27,7 @@
 			<rosparam command="load" file="$(find teleop_joystick_control)/config/joystick_remap.yaml"/>
 		</node>
 	</group>
+	<group ns="keyboard" if="$(eval arg('joy_or_key')=='key')">
+		<node name="keyboard_node" pkg="teleop_joystick_control" type="teleop_joints_keyboard" output="screen"></node>
+	</group>	
 </launch>

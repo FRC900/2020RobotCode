@@ -1,5 +1,5 @@
-#include <ros/ros.h>
-#include <sensor_msgs/JointState.h>
+#include <teleop_joystick_control/teleop_joints_keyboard.h>
+#include <termios.h>
 
 #define KEYCODE_a 0x61
 #define KEYCODE_b 0x62
@@ -47,11 +47,6 @@
 #define KEYCODE_SPACE 0x20
 #define KEYCODE_COMMA 0x2C
 
-#include <ros_control_boilerplate/set_limit_switch.h>
-
-namespace frcrobot_control
-{
-
 // TODO : Turn into a separate node - make it launched
 // depending on sim mode being true and the key_or_joy setting
 TeleopJointsKeyboard::TeleopJointsKeyboard(ros::NodeHandle &nh)
@@ -59,7 +54,7 @@ TeleopJointsKeyboard::TeleopJointsKeyboard(ros::NodeHandle &nh)
 	// Hard-code this to frcrobot_rio namespace so that it matches
 	// the real robot hardware, where joystick data comes from the
 	// driver station via the Rio
-	joints_pub_ = nh.advertise<sensor_msgs::Joy>("/frcrobot_rio/joystick_states_raw_key", 1);
+	joints_pub_ = nh.advertise<sensor_msgs::Joy>("/frcrobot_rio/joystick_states_raw", 1);
 }
 
 TeleopJointsKeyboard::~TeleopJointsKeyboard()
@@ -362,4 +357,12 @@ void TeleopJointsKeyboard::keyboardLoop()
 	// Restore sanity to keyboard input
 	tcsetattr(kfd, TCSANOW, &cooked);
 }
+
+int main(int argc, char **argv)
+{
+	ros::init(argc, argv, "teleop_joints_keyboard");
+	ros::NodeHandle nh;
+	TeleopJointsKeyboard keyboard(nh);
+	keyboard.keyboardLoop();
+	return 0;
 }
