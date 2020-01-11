@@ -62,4 +62,7 @@
 - git:
     local-name: pid
     uri: https://github.com/FRC900/pid.git
-    version: feed_forward 
+    version: feed_forward
+- git:
+    local-name: cpu-monitor
+    uri: https://github.com/pumaking/cpu_monitor.git
