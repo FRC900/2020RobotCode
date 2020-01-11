@@ -18,10 +18,11 @@ void WorldModel::init_particle(Particle p&, double x, double y, double stdev){
 	std::uniform_real_distribution<double> y_distribution(min_y, max_y);
 }
 
-std::vector<double> WorldModel::distances(const std::pair<double, double> m) const {
+std::vector<double> WorldModel::distances(const std::pair<double, double> m,
+                                          std::vector<std::pair<double, double> > rel) const {
   std::vector<double> res;
   res.reserve(beacons_.size());
-  for (std::pair<double, double> b : beacons_) {
+  for (std::pair<double, double> b : rel) {
     res.append(hypot(m.first - b.first, m.second - b.second));
   }
   return res;
@@ -45,6 +46,14 @@ double WorldModel::total_distance(const Particle& p, const std::vector<std::pair
   assignment.reserve(m.size());
   std::vector<std::vector<double> > dists;
   dists.reserve(mBeacons.size());
-  
+  std::vector<std::pair<double, double> > rel = particle_relative(p);
+  for (std::pair<double, double> b : m) {
+    dists.push_back(distances(b, rel));
+  }
   solver_.solve(dists, assignment);
+  double res;
+  for (size_t i = 0; i < assignment.size(); i++) {
+    res += dists[i][assignment[i]];
+  }
+  return res;
 }
