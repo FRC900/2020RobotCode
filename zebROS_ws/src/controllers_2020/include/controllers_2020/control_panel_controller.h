@@ -61,5 +61,30 @@ namespace control_panel_controller
 
 	}; //class
 
-} //namespace
+class ControlPanelCommand
+{
+	public:
+	ControlPanelCommand()
+		: set_point_(0.0)
+		, panel_arm_extend_(false)
+	{
+	}
+	ControlPanelCommand(double set_point, bool panel_arm_extend)
+	{
+		set_point_ = set_point;
+		panel_arm_extend_ = panel_arm_extend;
+	}
+	double set_point_;
+	bool panel_arm_extend_;
+}
 
+
+	private:
+		talon_controllers::TalonMotionMagicCloseLoopControllerInterface control_panel_joint_;//interface for the control panel turning motor
+		hardware_interface::JointHandle control_panel_arm_joint_; //interface for the control panel arm solenoid
+		realtime_tools::RealtimeBuffer<ControlPanelCommand> control_panel_cmd_;
+		ros::ServiceServer control_panel_service_;
+		};
+
+} //namespace
+#endif
