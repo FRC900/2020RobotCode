@@ -15,6 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   realtime_tools
   roscpp
   talon_controllers
+  talon_interface
+  std_msgs
+  std_srvs
+  controller_interface
   controllers_2020_msgs
 )
 

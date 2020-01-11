@@ -64,7 +64,12 @@ hardware_interface:
 # /frcrobot/talon_states
 
 #Set up controllers for main robot mechanisms
- 
+control_panel_controller:
+        type: control_panel_controller/ControlPanelController
+        control_panel_joint: "control_panel"
+        control_panel:
+                joint: control_panel_joint
+                type: talon_controllers/TalonMotionMagicCloseLoopController
 climber_controller:
     type:  climber_controller_2020/ClimberController
     winch_joint: "winch"
@@ -340,6 +345,10 @@ bl_drive_position_controller:
     voltage_compensation_enable: true
     dynamic_reconfigure: True
         
+control_panel_intake_controller:
+    type: talon_controllers/TalonMotionMagicCloseLoopController
+    joint: control_panel_joint
+    feedback_type: CTRE_MagEncoder_Absolute
 
 elevator_master_percent_output_controller:
     type: talon_controllers/TalonPercentOutputController

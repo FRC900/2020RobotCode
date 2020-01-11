@@ -6,35 +6,31 @@ namespace control_panel_controller
                                      ros::NodeHandle                 &/*root_nh*/,
                                      ros::NodeHandle                 &controller_nh)
     {
-        //get interface
-        //hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
+	hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
+        hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
-        //Initialize piston joints
-        /* Ex:
-        push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
-        */
+        //initialize control panel arm joint (pnumatic piston for vertical actuation)
+        control_panel_arm_joint_ = pos_joint_iface->getHandle("control_panel_arm_joint"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
-        //Initialize motor joints
-        /* Ex:
-        //get params from config file
-        XmlRpc::XmlRpcValue intake_motor_params;
-        if ( !controller_nh.getParam("config_value_name", intake_motor_params)) //grabbing the config value under the controller's section in the main config file
+        //initialize control_panel_joint (motor for panel rotation)
+        //get control panel params from config file
+	XmlRpc::XmlRpcValue control_panel_motor_params;
+        if ( !controller_nh.getParam("control_panel_joint", control_panel_motor_params)) //grabbing the config value under the controller's section in the main config file
         {
             ROS_ERROR_STREAM("Could not read _______ params");
             return false;
         }
         //initialize motor joint using those config values
-        if ( !motor_name_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_motor_params) {
+        if ( !control_panel_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, control_panel_motor_params) {
             ROS_ERROR("Cannot initialize ______ joint!");
             return false;
         }
-        */
-
-
-        //Initialize your ROS server
-        /* Ex:
-        control_panel_service_ = controller_nh.advertiseService("control_panel_command", &ControlPanelController::cmdService, this);
-        */
+	else
+	{
+		ROS_INFO("Initialized control panel joint");
+	}
+	
+	control_panel_service_ = controller_nh.advertiseService("control_panel_command", &ControlPanelController:cmdService, this);
 
         return true;
     }
@@ -43,7 +39,8 @@ namespace control_panel_controller
         //give command buffer(s) an initial value
         /* Ex:
         cmd_buffer_.writeFromNonRT(true);
-        */	
+        */
+    	control_panel_cmd_.writeFromNonRT(ControlPanelCommand(0,false));
     }
 
     void ControlPanelController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
@@ -51,28 +48,31 @@ namespace control_panel_controller
         /* Ex:
         const bool extend_cmd = *(cmd_buffer_.readFromRT());
         */
+	const ControlPanelCommand control_panel_cmd = *(control_panel_cmd_.readFromRT());
+	double control_panel_arm_double;
+	if(control_panel_cmd.panel_arm_extend_ == true){
+		control_panel_arm_double = 1;
+	}
+	else {
+		control_panel_arm_double = 0;
+	}
 
+	control_panel_joint_.setCommand(control_panel_cmd.set_point_); //set the position command to the control panel motor
+	control_panel_arm_joint_.setCommand(control_panel_cmd.panel_arm_extend_);//set the extend/retract command to the control panel solenoid
+}
 
-        //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
-        /* Syntax: push_joint_.setCommand(1.0); */
-
-        //for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
-
-    }
 
     void ControlPanelController::stopping(const ros::Time &/*time*/) {
     }
-    /*
-    bool ClimberController::cmdService(package::ClimberSrv::Request &req, package::ClimberSrv::Response &//response//) {
+    bool ControlPanelController::cmdService(controllers_2020_msgs::ControlPanelSrv::Request &req, controllers_2020_msgs::ControlPanelSrv::Response &/*response*/) {
         if(isRunning())
         {
             //assign request value to command buffer(s)
-            //Ex:
-            cmd_buffer_.writeFromNonRT(req.claw_release);
+            control_panel_cmd_.writeFromNonRT(ControlPanelCommand(req.set_point, req.panel_arm_extend));
         }
         else
         {
-            ROS_ERROR_STREAM("Can't accept new commands. ClimberController is not running.");
+            ROS_ERROR_STREAM("Can't accept new commands. ControlPanelController is not running.");
             return false;
         }
         return true;
