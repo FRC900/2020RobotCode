@@ -14,14 +14,18 @@ namespace control_panel_controller
 
         //initialize control_panel_joint (motor for panel rotation)
         //get control panel params from config file
-	XmlRpc::XmlRpcValue control_panel_motor_params;
-        if ( !controller_nh.getParam("control_panel_joint", control_panel_motor_params)) //grabbing the config value under the controller's section in the main config file
+	XmlRpc::XmlRpcValue control_panel_params;
+        if ( !controller_nh.getParam("control_panel_joint", control_panel_params)) //grabbing the config value under the controller's section in the main config file
         {
             ROS_ERROR_STREAM("Could not read _______ params");
             return false;
         }
+		controller_nh.getParam("control_panel_diameter", control_panel_diameter_);
+		controller_nh.getParam("wheel_diameter", wheel_diameter_);
+
+
         //initialize motor joint using those config values
-        if ( !control_panel_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, control_panel_motor_params) {
+        if (!control_panel_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, control_panel_params)) {
             ROS_ERROR("Cannot initialize ______ joint!");
             return false;
         }
@@ -30,7 +34,7 @@ namespace control_panel_controller
 		ROS_INFO("Initialized control panel joint");
 	}
 	
-	control_panel_service_ = controller_nh.advertiseService("control_panel_command", &ControlPanelController:cmdService, this);
+	control_panel_service_ = controller_nh.advertiseService("control_panel_command", &ControlPanelController::cmdService, this);
 
         return true;
     }
@@ -56,8 +60,11 @@ namespace control_panel_controller
 	else {
 		control_panel_arm_double = 0;
 	}
-
-	control_panel_joint_.setCommand(control_panel_cmd.set_point_); //set the position command to the control panel motor
+	double rotation_ratio;
+	rotation_ratio = (wheel_diameter_/control_panel_diameter_);
+	ROS_INFO_STREAM("Control Panel Diameter:" << control_panel_diameter_);
+    ROS_INFO_STREAM("Wheel Diameter:" << wheel_diameter_);
+	control_panel_joint_.setCommand(control_panel_cmd.set_point_ * (rotation_ratio)); //set the position command to the control panel motor
 	control_panel_arm_joint_.setCommand(control_panel_cmd.panel_arm_extend_);//set the extend/retract command to the control panel solenoid
 }
 
@@ -68,7 +75,7 @@ namespace control_panel_controller
         if(isRunning())
         {
             //assign request value to command buffer(s)
-            control_panel_cmd_.writeFromNonRT(ControlPanelCommand(req.set_point, req.panel_arm_extend));
+            control_panel_cmd_.writeFromNonRT(ControlPanelCommand(req.rotations, req.panel_arm_extend));
         }
         else
         {
@@ -77,7 +84,6 @@ namespace control_panel_controller
         }
         return true;
     }
-    */
 
 }//namespace
 
