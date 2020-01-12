@@ -84,7 +84,6 @@ class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 		ros::ServiceServer limit_switch_srv_;
 
 		std::thread sim_joy_thread_;
-		//TeleopJointsKeyboard teleop_joy_;
 
 };  // class
 

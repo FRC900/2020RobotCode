@@ -214,10 +214,6 @@ void FRCRobotSimInterface::init(void)
 		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
 							  "Loading dummy joint " << i << "=" << dummy_joint_names_[i]);
 
-	// TODO : make this depend on joystick joints being defined
-	// if (run_hal_robot_)
-	//	sim_joy_thread_ = std::thread(std::bind(&TeleopJointsKeyboard::keyboardLoop, &teleop_joy_));
-
 	limit_switch_srv_ = nh_.advertiseService("set_limit_switch",&FRCRobotSimInterface::setlimit,this);
     match_data_sub_ = nh_.subscribe("/frcrobot_rio/match_data_in", 1, &FRCRobotSimInterface::match_data_callback, this);
 

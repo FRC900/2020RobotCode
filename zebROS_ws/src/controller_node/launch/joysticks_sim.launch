@@ -28,6 +28,6 @@
 		</node>
 	</group>
 	<group ns="keyboard" if="$(eval arg('joy_or_key')=='key')">
-		<node name="keyboard_node" pkg="teleop_joystick_control" type="teleop_joints_keyboard" output="screen"></node>
+		<node name="keyboard_node" pkg="teleop_joystick_control" type="teleop_joints_keyboard" output="screen" launch-prefix="terminator -x"></node>
 	</group>	
 </launch>
