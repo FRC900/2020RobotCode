@@ -234,11 +234,6 @@ bool TalonSwerveDriveController::init(hardware_interface::TalonCommandInterface 
 		ROS_ERROR("talon_swerve_drive_controller : could not read wheel_radius");
 		return false;
 	}
-	if (!controller_nh.getParam("feedforward", feedforward_))
-	{
-		ROS_ERROR("talon_swerve_drive_controller : could not read feedforward");
-		return false;
-	}
 	if (!controller_nh.getParam("cmd_vel_timout",cmd_vel_timeout_))
 	{
 		ROS_ERROR("talon_swerve_drive_controller : could not read cmd_vel_timout");
@@ -927,7 +922,7 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 					if(fabs(speeds_angles[i][0]) > 1e-5)
 					{
 						speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_ArbitraryFeedForward);
-						speed_joints_[i].setDemand1Value(copysign(feedforward_, speeds_angles[i][0]));
+						speed_joints_[i].setDemand1Value(copysign(f_s_, speeds_angles[i][0]));
 					}
 					else
 					{

@@ -240,7 +240,6 @@ class TalonSwerveDriveController
 
 		/// Wheel radius (assuming it's the same for the left and right wheels):
 		double wheel_radius_;
-                double feedforward_;
 
 		swerveVar::driveModel model_;
 

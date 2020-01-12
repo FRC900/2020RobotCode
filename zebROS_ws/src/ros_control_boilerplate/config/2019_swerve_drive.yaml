@@ -16,11 +16,19 @@ swerve_drive_controller:
     ang_accel_conv: 2.0
     max_rotational_vel: 10
     
-    f_s: 0.12
+    # Feedforward terms -
+    #   f_s is static feed forward - min % out that gets the robot to move at all
+    #   f_a is accel feed forward term (currently only used in motion profile follower mode
+    #  f_v is velocity feed forward term (currently only used in motion profile follower mode, talon vel feed forward term is used for normal driving
+    #
+    f_s: 0.115
     f_a: 0.005 #use torque curve instead? TODO: FIX
     f_v: 0.00315528
 
-    #TODO: FIX BELOW!!!!	
+    # Feedforward terms for steering
+    #   f_s_s is static feed forward 
+    #   f_s_v is velocity feed forward
+    #   Both are currently only used in motion profile follower mode
     f_s_s: 0.05
     f_s_v: 0.07
    
@@ -39,7 +47,6 @@ swerve_drive_controller:
     encoder_drive_set_P_units: 1
     encoder_steering_get_units: 1
     encoder_steering_set_units: 1
-    feedforward: 0.115 
 
     wheel_coords: [[-0.26035, 0.26035], [0.26035, 0.26035], [-0.26035, -0.26035], [0.26035, -0.26035]]
  
