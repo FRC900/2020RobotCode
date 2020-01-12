@@ -859,7 +859,7 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 
 			speed_joints_[i].setPIDFSlot(0);
 			speed_joints_[i].setClosedloopRamp(0);
-			speed_joints_[i].setDemand1Value(0);
+			//speed_joints_[i].setDemand1Value(0);
 
 		}
 		static double brake_last = ros::Time::now().toSec();
@@ -923,17 +923,17 @@ void TalonSwerveDriveController::update(const ros::Time &time, const ros::Durati
 				{
 					speed_joints_[i].setMode(hardware_interface::TalonMode::TalonMode_Velocity);
 
-                                        // Add static feed forward in direction of current velocity
-                                        if(fabs(speeds_angles[i][0]) > 1e-5)
-                                        {
-                                            speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_AuxPID);
-                                            speed_joints_[i].setDemand1Value(copysign(feedforward_, speeds_angles[i][0]));
-                                        }
-                                        else
-                                        {
-                                            speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_Neutral);
-                                            speed_joints_[i].setDemand1Value(0);
-                                        }
+					// Add static feed forward in direction of current velocity
+					if(fabs(speeds_angles[i][0]) > 1e-5)
+					{
+						speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_ArbitraryFeedForward);
+						speed_joints_[i].setDemand1Value(copysign(feedforward_, speeds_angles[i][0]));
+					}
+					else
+					{
+						speed_joints_[i].setDemand1Type(hardware_interface::DemandType::DemandType_Neutral);
+						speed_joints_[i].setDemand1Value(0);
+					}
 
 					speed_joints_[i].setCommand(speeds_angles[i][0]);
 				}
