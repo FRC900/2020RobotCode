@@ -24,7 +24,7 @@ private:
 public:
   ParticleFilter(WorldModel w,
                  double x_min, double x_max, double y_min, double y_max,
-                 size_t n);
+                 double is, double ns, double rs, size_t n);
   Particle predict();
   void motion_update(double delta_x, double delta_y, double delta_rot);
   void set_rotation(double rot);
