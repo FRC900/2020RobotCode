@@ -219,7 +219,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			contour_.push_back(Point2f(0,0));
 			contour_.push_back(Point2f(0.2492375,0.4318));
-			contour_.push_back(Point2f(00.7477125,0.4318));
+			contour_.push_back(Point2f(0.7477125,0.4318));
 			contour_.push_back(Point2f(0.99695,0));
 			contour_.push_back(Point2f(0.9382912,0));
 			contour_.push_back(Point2f(0.7183831,0.381));
