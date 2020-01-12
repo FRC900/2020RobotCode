@@ -7,7 +7,9 @@
 
 ParticleFilter::ParticleFilter(WorldModel w,
                                double x_min, double x_max, double y_min, double y_max,
-                               size_t n) : world_(w), num_particles_(n) {
+                               double is, double ns, double rs, size_t n) :
+                               world_(w), num_particles_(n), init_stdev_(is),
+                               noise_stdev_(ns), rot_noise_stdev_(rs) {
   init(x_min, x_max, y_min, y_max);
 }
 
