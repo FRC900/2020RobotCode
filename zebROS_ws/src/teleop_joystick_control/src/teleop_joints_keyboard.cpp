@@ -47,8 +47,6 @@
 #define KEYCODE_SPACE 0x20
 #define KEYCODE_COMMA 0x2C
 
-// TODO : Turn into a separate node - make it launched
-// depending on sim mode being true and the key_or_joy setting
 TeleopJointsKeyboard::TeleopJointsKeyboard(ros::NodeHandle &nh)
 {
 	// Hard-code this to frcrobot_rio namespace so that it matches
