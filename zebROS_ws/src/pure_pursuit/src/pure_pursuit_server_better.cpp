@@ -54,9 +54,9 @@ class PathAction
 			service_connection_header["tcp_nodelay"] = "1";
 
 			// TODO - not sure which namespace base_trajectory should go in
-			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/path_to_goal/base_trajectory/spline_gen", false, service_connection_header);
+			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/pure_pursuit/base_trajectory/spline_gen", false, service_connection_header);
 
-			odom_sub_ = nh_.subscribe("some odometry topic", 1, &PathAction::odomCallback, this);
+			odom_sub_ = nh_.subscribe("/frcrobot_jetson/dummy_odom_topic", 1, &PathAction::odomCallback, this);
 
                         pure_pursuit_ = std::make_shared<PurePursuit>(lookahead_distance_);
                 }
@@ -120,17 +120,34 @@ class PathAction
 
 		void executeCB(const pure_pursuit::PathGoalConstPtr &goal)
 		{
-			// First, make the spline that represents the points we should travel to
-			base_trajectory::GenerateSpline spline_gen_srv;
-			const size_t point_num = goal->points.size();
-			spline_gen_srv.request.points.resize(point_num);
-
-			ros::Rate r(20); // TODO : I should be a config item
-
 			// TODO - none of these are ever changed
 			bool preempted = false;
 			bool timed_out = false;
 			bool succeeded = false;
+
+			// First, make the spline that represents the points we should travel to
+			base_trajectory::GenerateSpline spline_gen_srv;
+			const size_t point_num = goal->points.size();
+			spline_gen_srv.request.points.resize(point_num);
+                        for(size_t i = 0; i < point_num; i++)
+                        {
+                            spline_gen_srv.request.points[i].positions.resize(3);
+                            spline_gen_srv.request.points[i].positions[0] = goal->points[i].x;
+                            spline_gen_srv.request.points[i].positions[1] = goal->points[i].y;
+                            spline_gen_srv.request.points[i].positions[2] = goal->points[i].z;
+                        }
+                        if(!spline_gen_cli_.call(spline_gen_srv))
+                        {
+                            ROS_ERROR_STREAM("Can't call spline gen service in pure_pursuit_server");
+                            
+                        }
+
+			ros::Rate r(20); // TODO : I should be a config item
+
+
+                        // send path to pure pursuit
+			pure_pursuit_->loadPath(spline_gen_srv.response.path);
+
 			//in loop, send PID enable commands to rotation, x, y
                         double distance_travelled = 0;
                         double total_distance = pure_pursuit_->getPathLength();
