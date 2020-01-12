@@ -37,7 +37,7 @@ class PathAction
 	public:
 		PathAction(const std::string &name, ros::NodeHandle nh,
                         double lookahead_distance,
-                        double final_pos_tol, 
+                        double final_pos_tol,
                         double server_timeout)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
@@ -46,9 +46,9 @@ class PathAction
 		{
 			as_.start();
 
-                        lookahead_distance_ = lookahead_distance;
-                        final_pos_tol_ = final_pos_tol;
-                        server_timeout_ = server_timeout;
+			lookahead_distance_ = lookahead_distance;
+			final_pos_tol_ = final_pos_tol;
+			server_timeout_ = server_timeout;
 
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
@@ -235,7 +235,7 @@ class PathAction
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "path_server");
+	ros::init(argc, argv, "pure_pursuit_server");
 	ros::NodeHandle nh;
 
         double lookahead_distance = 5;
@@ -245,9 +245,9 @@ int main(int argc, char **argv)
 	nh.getParam("/frcrobot_jetson/pure_pursuit/final_pos_tol", final_pos_tol);
 	nh.getParam("/frcrobot_jetson/pure_pursuit/server_timeout_", server_timeout);
 
-	PathAction path_action_server("path_server", nh, 
+	PathAction path_action_server("pure_pursuit_server", nh,
                 lookahead_distance,
-                final_pos_tol, 
+                final_pos_tol,
                 server_timeout);
 
 	AlignActionAxisConfig x_axis("x", "x_enable_pub", "x_cmd_pub", "x_state_pub", "pid_debug", "x_timeout_param", "x_error_threshold_param");
@@ -269,7 +269,6 @@ int main(int argc, char **argv)
 		ROS_ERROR_STREAM("Error adding z_axis to path_action_server.");
 		return false;
 	}
-
 
 	ros::spin();
 

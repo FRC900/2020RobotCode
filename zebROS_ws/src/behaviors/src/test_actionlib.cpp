@@ -271,7 +271,7 @@ bool callAlignHatch()
 
 bool callPath()
 {
-	actionlib::SimpleActionClient<pure_pursuit::PathAction> path_ac("/pure_pursuit/path_server", true);
+	actionlib::SimpleActionClient<pure_pursuit::PathAction> path_ac("/pure_pursuit/pure_pursuit_server", true);
 
 	ROS_INFO("Waiting for pure pursuit server to start.");
 	if(!path_ac.waitForServer(ros::Duration(server_wait_timeout)))
