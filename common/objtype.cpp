@@ -226,7 +226,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.2785669,0.381));
 			contour_.push_back(Point2f(0.0586588,0));
 			name_ = "power_port";
-
+			break;
 		case LOADING_BAY_2020: //target on the LOADING BAY (2020)
 			depth_ = 0;
 			contour_.push_back(Point2f(0.0508,0.2286));
@@ -240,6 +240,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.127,0.0508));
 			contour_.push_back(Point2f(0.127,0.2286));
 			name_ = "loading_bay";
+			break;
 		default:
 			cerr << "error initializing object!" << endl;
 	}
