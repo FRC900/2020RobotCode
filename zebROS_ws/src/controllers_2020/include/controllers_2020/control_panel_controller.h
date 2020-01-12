@@ -1,6 +1,3 @@
-#ifndef CONTROL_PANEL_CONTROLLER
-#define CONTROL_PANEL_CONTROLLER
-
 #pragma once
 
 #include <ros/ros.h>
@@ -69,4 +66,4 @@ class ControlPanelController : public controller_interface::MultiInterfaceContro
 }; //class
 
 } //namespace
-#endif
+

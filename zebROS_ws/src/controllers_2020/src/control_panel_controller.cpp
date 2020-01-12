@@ -17,7 +17,7 @@ namespace control_panel_controller
 	XmlRpc::XmlRpcValue control_panel_params;
         if ( !controller_nh.getParam("control_panel_joint", control_panel_params)) //grabbing the config value under the controller's section in the main config file
         {
-            ROS_ERROR_STREAM("Could not read _______ params");
+            ROS_ERROR_STREAM("Could not read control_panel_params");
             return false;
         }
 		controller_nh.getParam("control_panel_diameter", control_panel_diameter_);
@@ -26,7 +26,7 @@ namespace control_panel_controller
 
         //initialize motor joint using those config values
         if (!control_panel_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, control_panel_params)) {
-            ROS_ERROR("Cannot initialize ______ joint!");
+            ROS_ERROR("Cannot initialize control_panel_joint!");
             return false;
         }
 	else
