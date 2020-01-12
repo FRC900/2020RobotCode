@@ -82,9 +82,6 @@ class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 		std::mutex match_data_mutex_;
 		ros::ServiceServer linebreak_sensor_srv_;
 		ros::ServiceServer limit_switch_srv_;
-
-		std::thread sim_joy_thread_;
-
 };  // class
 
 }  // namespace

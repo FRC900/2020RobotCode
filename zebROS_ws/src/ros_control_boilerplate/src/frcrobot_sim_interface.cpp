@@ -56,7 +56,6 @@ FRCRobotSimInterface::FRCRobotSimInterface(ros::NodeHandle &nh,
 }
 FRCRobotSimInterface::~FRCRobotSimInterface()
 {
-    sim_joy_thread_.join();
 }
 
 void FRCRobotSimInterface::match_data_callback(const frc_msgs::MatchSpecificData &match_data) {
