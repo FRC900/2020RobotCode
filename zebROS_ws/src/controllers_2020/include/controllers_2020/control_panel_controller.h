@@ -76,15 +76,37 @@ class ControlPanelCommand
 	}
 	double set_point_;
 	bool panel_arm_extend_;
-}
+};
 
 
-	private:
+	
+	
+class ControlPanelController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>
+{
+        public:
+            ControlPanelController()
+            {
+            }
+
+			//the four essential functions for a controller: init, starting, update, stopping
+
+			virtual bool init(hardware_interface::RobotHW *hw,
+                              ros::NodeHandle             &root_nh,
+                              ros::NodeHandle             &controller_nh) override;
+            virtual void starting(const ros::Time &time) override;
+            virtual void update(const ros::Time & time, const ros::Duration& period) override;
+            virtual void stopping(const ros::Time &time) override;
+	    bool cmdService (controllers_2020_msgs::ControlPanelSrv::Request &req, controllers_2020_msgs::ControlPanelSrv::Response &/*response*/);
+
+        private:
 		talon_controllers::TalonMotionMagicCloseLoopControllerInterface control_panel_joint_;//interface for the control panel turning motor
 		hardware_interface::JointHandle control_panel_arm_joint_; //interface for the control panel arm solenoid
 		realtime_tools::RealtimeBuffer<ControlPanelCommand> control_panel_cmd_;
 		ros::ServiceServer control_panel_service_;
-		};
+		double control_panel_diameter_;
+		double wheel_diameter_;
+
+}; //class
 
 } //namespace
 #endif
