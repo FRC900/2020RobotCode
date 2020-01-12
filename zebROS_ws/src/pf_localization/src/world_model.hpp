@@ -8,14 +8,17 @@ class WorldModel {
 private:
   std::vector<std::pair<double, double> > beacons_;
   double boundaries_[4]; // xmin, xmax, ymin, ymax
-  AssignmentProblemSolver<double> solver_;
-  std::vector<double> distances(const std::pair<double, double> m) const;
+  AssignmentProblemSolver solver_;
+  std::vector<double> distances(const std::pair<double, double> m,
+                                const std::vector<std::pair<double, double> > rel) const;
   std::vector<std::pair<double, double> > particle_relative(const Particle& p) const;
 
 public:
-  WorldModel();
+  WorldModel(double x_min, double x_max, double y_min, double y_max);
+  std::vector<double> get_boundaries();
   bool is_in_world(const Particle& p) const;
-  void init_particle(Particle& p, double x, double y, double stdev);
+  void constrain_to_world(Particle& p) const;
+  void init_particle(Particle& p, double x_min, double x_max, double y_min, double y_max);
   double total_distance(const Particle& p, const std::vector<std::pair<double, double> >& m);
 };
 
