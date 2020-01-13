@@ -14,7 +14,7 @@ ParticleFilter::ParticleFilter(WorldModel w,
 }
 
 void ParticleFilter::constrain_particles() {
-  for (Particle p : particles_) {
+  for (Particle& p : particles_) {
     world_.constrain_to_world(p);
   }
 }
@@ -25,7 +25,7 @@ void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max
   double x_l = std::max(x_min, bounds[0]);
   double x_u = std::min(x_max, bounds[1]);
   double y_l = std::max(y_min, bounds[2]);
-  double y_u = std::min(y_min, bounds[3]);
+  double y_u = std::min(y_max, bounds[3]);
   for (size_t i = 0; i < num_particles_; i++) {
     std::uniform_real_distribution<double> x_distribution(x_l, x_u);
   	std::uniform_real_distribution<double> y_distribution(y_l, y_u);
@@ -42,7 +42,7 @@ void ParticleFilter::normalize() {
   for (Particle p : particles_) {
     sum += p.weight;
   }
-  for (Particle p : particles_) {
+  for (Particle& p : particles_) {
     p.weight /= sum;
   }
 }
@@ -50,7 +50,7 @@ void ParticleFilter::normalize() {
 void ParticleFilter::noise() {
   std::normal_distribution<double> pos_dist(0, noise_stdev_);
   std::normal_distribution<double> rot_dist(0, rot_noise_stdev_);
-  for (Particle p : particles_) {
+  for (Particle& p : particles_) {
     p.x += pos_dist(rng_);
     p.y += pos_dist(rng_);
     p.rot += rot_dist(rng_);
@@ -79,7 +79,7 @@ Particle ParticleFilter::predict() {
 }
 
 void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_rot) {
-  for (Particle p : particles_) {
+  for (Particle& p : particles_) {
     p.x += delta_x;
     p.y += delta_y;
     p.rot += delta_rot;
@@ -89,14 +89,18 @@ void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_
 }
 
 void ParticleFilter::set_rotation(double rot) {
-  for (Particle p : particles_) {
+  for (Particle& p : particles_) {
     p.rot = rot;
   }
 }
 
 void ParticleFilter::assign_weights(std::vector<std::pair<double, double> > mBeacons) {
-  for (Particle p : particles_) {
+  for (Particle& p : particles_) {
     p.weight = world_.total_distance(p, mBeacons);
   }
   normalize();
+}
+
+std::vector<Particle> ParticleFilter::get_particles() const {
+  return particles_;
 }

@@ -16,7 +16,6 @@ private:
   std::vector<Particle> particles_;
   WorldModel world_;
   void normalize();
-  void resample();
   void noise();
   void init(double x_min, double x_max, double y_min, double y_max);
   void constrain_particles();
@@ -29,6 +28,8 @@ public:
   void motion_update(double delta_x, double delta_y, double delta_rot);
   void set_rotation(double rot);
   void assign_weights(std::vector<std::pair<double, double> > mBeacons);
+  void resample();
+  std::vector<Particle> get_particles() const;
 };
 
 
