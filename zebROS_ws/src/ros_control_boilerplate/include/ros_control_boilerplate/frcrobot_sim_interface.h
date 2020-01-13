@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-/* Author: Dave Coleman
+/* Original Author: Dave Coleman
    Desc:   Example ros_control hardware interface blank template for the FRCRobot
            For a more detailed simulation example, see sim_hw_interface.h
 */
@@ -53,20 +53,6 @@
 
 namespace frcrobot_control
 {
-class TeleopJointsKeyboard
-{
-	public:
-		TeleopJointsKeyboard(ros::NodeHandle &nh);
-		~TeleopJointsKeyboard();
-		void keyboardLoop();
-		int pollKeyboard(int kfd, char &c) const;
-
-	private:
-		ros::Publisher joints_pub_;
-		sensor_msgs::Joy cmd_;
-		//bool has_recieved_joints_;
-};
-
 /// \brief Hardware interface for a robot
 class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 {
@@ -88,9 +74,6 @@ class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 
 		virtual bool setlimit(ros_control_boilerplate::set_limit_switch::Request &req,ros_control_boilerplate::set_limit_switch::Response &res);
 
-	protected:
-		virtual std::vector<ros_control_boilerplate::DummyJoint> getDummyJoints(void) override;
-
 	private:
         ros::Subscriber match_data_sub_;
         void match_data_callback(const frc_msgs::MatchSpecificData &match_data);
@@ -99,12 +82,6 @@ class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 		std::mutex match_data_mutex_;
 		ros::ServiceServer linebreak_sensor_srv_;
 		ros::ServiceServer limit_switch_srv_;
-
-		double navX_zero_;
-
-		std::thread sim_joy_thread_;
-		TeleopJointsKeyboard teleop_joy_;
-
 };  // class
 
 }  // namespace
