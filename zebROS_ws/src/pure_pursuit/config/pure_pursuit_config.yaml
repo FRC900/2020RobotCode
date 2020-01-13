@@ -1,6 +1,5 @@
 pure_pursuit:
-    lookahead_distance: 1
-    pos_tol: 0.3 # position tolerance
+    lookahead_distance: 0.5
     odometry_topic: "/frcrobot_jetson/swerve_drive_controller/odom"
     target_frame: "initial_pose"
     final_pos_tol: 0.1
