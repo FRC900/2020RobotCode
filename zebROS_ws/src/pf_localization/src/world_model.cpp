@@ -5,7 +5,9 @@
 #include <algorithm>
 
 
-WorldModel::WorldModel(double x_min, double x_max, double y_min, double y_max) {
+WorldModel::WorldModel(std::vector<std::pair<double, double> > beacons,
+                       double x_min, double x_max, double y_min, double y_max) {
+  beacons_ = beacons;
   boundaries_[0] = x_min;
   boundaries_[1] = x_max;
   boundaries_[2] = y_min;

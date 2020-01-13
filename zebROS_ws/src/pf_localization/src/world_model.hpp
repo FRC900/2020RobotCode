@@ -14,7 +14,8 @@ private:
   std::vector<std::pair<double, double> > particle_relative(const Particle& p) const;
 
 public:
-  WorldModel(double x_min, double x_max, double y_min, double y_max);
+  WorldModel(std::vector<std::pair<double, double> > beacons,
+             double x_min, double x_max, double y_min, double y_max);
   std::vector<double> get_boundaries();
   bool is_in_world(const Particle& p) const;
   void constrain_to_world(Particle& p) const;
