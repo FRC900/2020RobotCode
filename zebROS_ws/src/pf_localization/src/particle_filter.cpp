@@ -23,6 +23,7 @@ void ParticleFilter::constrain_particles() {
 }
 
 void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max) {
+  /*
   particles_.reserve(num_particles_);
   std::vector<double> bounds = world_.get_boundaries();
   double x_l = std::max(x_min, bounds[0]);
@@ -36,6 +37,11 @@ void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max
     double y = y_distribution(rng_);
     double rot = 0; //fix
     Particle p = {x, y, rot};
+    particles_.push_back(p);
+  }
+  */
+  for (size_t i = 0; i < num_particles_; i++) {
+    Particle p {(x_min + x_max) / 2, (y_min + y_max) / 2, 0};
     particles_.push_back(p);
   }
 }
@@ -100,7 +106,7 @@ void ParticleFilter::set_rotation(double rot) {
 
 void ParticleFilter::assign_weights(std::vector<std::pair<double, double> > mBeacons) {
   for (Particle& p : particles_) {
-    p.weight = world_.total_distance(p, mBeacons);
+    p.weight = 1 / world_.total_distance(p, mBeacons);
   }
   normalize();
 }
