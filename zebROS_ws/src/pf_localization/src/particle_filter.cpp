@@ -4,12 +4,15 @@
 #include <vector>
 #include <utility>
 
+#include <iostream>
+
 
 ParticleFilter::ParticleFilter(WorldModel w,
                                double x_min, double x_max, double y_min, double y_max,
                                double is, double ns, double rs, size_t n) :
                                world_(w), num_particles_(n), init_stdev_(is),
                                noise_stdev_(ns), rot_noise_stdev_(rs) {
+  rng_ = std::mt19937(0);
   init(x_min, x_max, y_min, y_max);
 }
 
@@ -61,7 +64,8 @@ void ParticleFilter::resample() {
   std::vector<Particle> new_particles;
   new_particles.reserve(num_particles_);
   for (int i = 0; i < num_particles_; i++) {
-    double r = (rng_() - rng_.min()) / (rng_.max() - rng_.min());
+    double r = ((double) rng_() - rng_.min()) / (rng_.max() - rng_.min());
+    // std::cout << r << '\n';
     double a = 0;
     for (Particle p : particles_) {
       a += p.weight;

@@ -4,6 +4,8 @@
 #include <utility>
 #include <algorithm>
 
+// #include <iostream>
+
 
 WorldModel::WorldModel(std::vector<std::pair<double, double> > beacons,
                        double x_min, double x_max, double y_min, double y_max) {
@@ -37,6 +39,7 @@ void WorldModel::constrain_to_world(Particle& p) const {
   p.y = std::min(boundaries_[3], std::max(boundaries_[2], p.y));
 }
 
+//computes distances from a position a set of beacon positions
 std::vector<double> WorldModel::distances(const std::pair<double, double> m,
                                           const std::vector<std::pair<double, double> > rel) const {
   std::vector<double> res;
@@ -47,6 +50,7 @@ std::vector<double> WorldModel::distances(const std::pair<double, double> m,
   return res;
 }
 
+//gets the coordinates of all the beacons relative to a give particle
 std::vector<std::pair<double, double> > WorldModel::particle_relative(const Particle& p) const {
   std::vector<std::pair<double, double> > res;
   for (std::pair<double, double> b : beacons_) {
@@ -74,5 +78,6 @@ double WorldModel::total_distance(const Particle& p, const std::vector<std::pair
   for (size_t i = 0; i < assignment.size(); i++) {
     res += dists[i][assignment[i]];
   }
+  // std::cout << res << '\n';
   return res;
 }
