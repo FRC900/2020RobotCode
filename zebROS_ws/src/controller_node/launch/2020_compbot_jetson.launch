@@ -54,7 +54,6 @@
 		<include file="cpu-monitor/launch/cpu_monitor.launch">
 			<arg name="poll_period" value="1"/>
 		</include>
-		<node name="cpu_monitor" pkg="cpu_monitor">
 	</group>
 	<group ns="teleop">
 		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
