@@ -31,4 +31,10 @@
 		<node name="uptime_rio" pkg="uptime" type="uptime_node" output="screen" />
 	</group>
 
+	<group ns="cpu-monitor">
+		<include file="cpu-monitor/launch/cpu_monitor.launch">
+			<arg name="poll_period" value="1"/>
+		</include>
+	</group>
+
 </launch>
