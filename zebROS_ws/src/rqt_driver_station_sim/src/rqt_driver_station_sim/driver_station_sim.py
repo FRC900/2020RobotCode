@@ -167,30 +167,23 @@ class DriverStationSim(Plugin):
             self._widget.ain_vertical_layout.addWidget(self._widget.ain_buttons[i])
         self._widget.sim_input_horizontal_layout.addLayout(self._widget.ain_vertical_layout)
 
-        auto_pub = rospy.Publisher("/frcrobot_rio/autonomous_mode", AutoMode, queue_size=3)
         match_pub = rospy.Publisher("/frcrobot_rio/match_data_in", MatchSpecificData, queue_size=3)
 
         self._widget.disable_button_2.setChecked(True)
         self._widget.teleop_button.setChecked(True)
         def pub_data(self):
             r = rospy.Rate(20)
-            auto_msg = AutoMode()
-            auto_msg.mode = [0, 0, 0, 0]
-            auto_msg.delays = [0, 0, 0, 0]
             match_msg = MatchSpecificData()
 
             modes =  [0, 0, 0, 0]
             match_msg = MatchSpecificData()
             start_time = rospy.get_time()
             enable_last = False
-            auto_last = False
             practice_last = False
-            auto_duration = 0
             while(not rospy.is_shutdown()):
                 #Robot State Values
                 enable = self._widget.enable_button_2.isChecked()
                 disable = self._widget.disable_button_2.isChecked()
-                auto = self._widget.auto_mode.isChecked()
                 practice = self._widget.practice_button.isChecked()
 
 
@@ -198,24 +191,18 @@ class DriverStationSim(Plugin):
                 if(not enable_last and enable):
                     rospy.logwarn("enableLast")
                     start_time = rospy.get_time()
-                if(not auto_last and auto and not practice):
-                    rospy.logwarn("autoLast")
-                    start_time = rospy.get_time()
                 if(not practice_last and practice):
                     rospy.logwarn("practiceLast")
                     start_time = rospy.get_time()
                     auto_duration = 15 #TODO read from DS
                 if(enable and practice):
                     if(rospy.get_time() < start_time + auto_duration):
-                        auto = True
                         enable = True
                         disable = False
                     elif(rospy.get_time() >= start_time + auto_duration and rospy.get_time < start_time + 150):
-                        auto = False
                         enable = True
                         disable = False
                     elif(rospy.get_time() >= start_time + 150):
-                        auto = False
                         enable = False
                         disable = True
 
@@ -240,29 +227,11 @@ class DriverStationSim(Plugin):
                 match_msg.allianceColor = 1
                 match_msg.driverStationLocation = 1
                 match_msg.matchNumber = 1
-                match_msg.Autonomous = auto
 
                 enable_last = match_msg.Enabled
-                auto_last = auto
                 practice_last = practice
 
-
-                auto_msg.header.stamp = rospy.Time.now()
-
-                auto_msg.position = self._widget.start_pos.value();
-
-                auto_msg.mode[0] = self._widget.mode_0.value();
-                auto_msg.mode[1] = self._widget.mode_1.value();
-                auto_msg.mode[2] = self._widget.mode_2.value();
-                auto_msg.mode[3] = self._widget.mode_3.value();
-                
-                auto_msg.delays[0] = self._widget.delay_0.value();
-                auto_msg.delays[1] = self._widget.delay_1.value();
-                auto_msg.delays[2] = self._widget.delay_2.value();
-                auto_msg.delays[3] = self._widget.delay_3.value();
-                
                 match_pub.publish(match_msg)
-                auto_pub.publish(auto_msg)
                 r.sleep()
                 
         load_thread = threading.Thread(target=pub_data, args=(self,))
