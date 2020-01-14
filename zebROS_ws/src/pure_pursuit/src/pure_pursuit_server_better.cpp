@@ -152,9 +152,10 @@ class PathAction
                         double distance_travelled = 0;
                         double total_distance = pure_pursuit_->getPathLength();
                         start_time_ = ros::Time::now().toSec();
-			while (ros::ok() && !preempted && !timed_out && !succeeded)
-			{
+                        while (ros::ok() && !preempted && !timed_out && !succeeded)
+                        {
                             geometry_msgs::Pose next_waypoint = pure_pursuit_->run(odom_, distance_travelled);
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
 				// TODO - think about what the target point and axis are
 				// We want to end up driving to a point on the path some
@@ -168,6 +169,7 @@ class PathAction
 				enable_msg.data = true;
 				std_msgs::Float64 command_msg;
 				std_msgs::Float64 state_msg;
+                            ROS_INFO_STREAM("Line = " << __LINE__);
                                 
 				auto x_axis_it = axis_states_.find("x");
 				auto &x_axis = x_axis_it->second;
@@ -176,6 +178,7 @@ class PathAction
 				x_axis.command_pub_.publish(command_msg);
 				state_msg.data = odom_.pose.pose.position.x;
 				x_axis.state_pub_.publish(state_msg);
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
 				auto y_axis_it = axis_states_.find("y");
 				auto &y_axis = y_axis_it->second;
@@ -184,10 +187,12 @@ class PathAction
 				y_axis.command_pub_.publish(command_msg);
 				state_msg.data = odom_.pose.pose.position.y;
 				y_axis.state_pub_.publish(state_msg);
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
 				auto z_axis_it = axis_states_.find("z");
 				auto &z_axis = z_axis_it->second;
 				z_axis.enable_pub_.publish(enable_msg);
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
 				// TODO - what's the deal with yaw vs actual_yaw? And roll?
 				double roll, pitch, yaw, odom_yaw, target_yaw;
@@ -203,11 +208,13 @@ class PathAction
 					next_waypoint.orientation.y,
 					next_waypoint.orientation.z);
 				tf::Matrix3x3(waypoint_q).getRPY(roll, pitch, target_yaw);
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
 				command_msg.data = target_yaw;
 				z_axis.command_pub_.publish(command_msg);
 				state_msg.data = odom_yaw;
 				z_axis.state_pub_.publish(state_msg);
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
                                 if(as_.isPreemptRequested() || !ros::ok()) {
                                     ROS_ERROR_STREAM(action_name_ << ": preempted");
@@ -221,12 +228,14 @@ class PathAction
                                     ROS_ERROR_STREAM(action_name_ << ": timed out");
                                     timed_out = true;
                                 }
+                            ROS_INFO_STREAM("Line = " << __LINE__);
 
 				ros::spinOnce();
 				r.sleep();
 			}
 			// TODO - disable all axes
 			//log result and set actionlib server state appropriately
+                        ROS_INFO_STREAM("Line = " << __LINE__);
                         pure_pursuit::PathResult result;
 
 			if(preempted) {
@@ -255,12 +264,12 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "pure_pursuit_server");
 	ros::NodeHandle nh;
 
-        double lookahead_distance = 5;
+        double lookahead_distance = 0.1;
         double final_pos_tol = 0.01;
         double server_timeout = 20.0;
-	nh.getParam("/frcrobot_jetson/pure_pursuit/lookahead_distance", lookahead_distance);
-	nh.getParam("/frcrobot_jetson/pure_pursuit/final_pos_tol", final_pos_tol);
-	nh.getParam("/frcrobot_jetson/pure_pursuit/server_timeout_", server_timeout);
+	nh.getParam("/pure_pursuit/pure_pursuit/lookahead_distance", lookahead_distance);
+	nh.getParam("/pure_pursuit/pure_pursuit/final_pos_tol", final_pos_tol);
+	nh.getParam("/pure_pursuit/pure_pursuit/server_timeout_", server_timeout);
 
 	PathAction path_action_server("pure_pursuit_server", nh,
                 lookahead_distance,

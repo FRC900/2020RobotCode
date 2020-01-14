@@ -79,10 +79,18 @@ namespace tf2{
 
 class PurePursuit
 {
+    private:
+        nav_msgs::Path path_;
+
+        double lookahead_distance_;
+        size_t num_waypoints_;
+        double path_length_;
+        std::vector<double> vec_path_length_;
+
     public:
         PurePursuit(double lookahead_distance)
         {
-            double lookahead_distance_ = lookahead_distance;
+            lookahead_distance_ = lookahead_distance;
         }
 
         // load nav_msgs::Path
@@ -93,13 +101,5 @@ class PurePursuit
 
         // contains the main control loop
         geometry_msgs::Pose run(nav_msgs::Odometry odom, double &distance_travelled);
-
-    private:
-        nav_msgs::Path path_;
-
-        double lookahead_distance_;
-        size_t num_waypoints_;
-        double path_length_;
-        std::vector<double> vec_path_length_;
 };
 
