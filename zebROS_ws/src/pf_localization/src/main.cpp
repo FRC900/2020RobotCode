@@ -5,6 +5,7 @@ also used to run some tests
 
 #include "particle_filter.hpp"
 #include "world_model.hpp"
+#include "particle.hpp"
 #include <vector>
 #include <utility>
 #include <iostream>
@@ -59,6 +60,30 @@ int main(int argc, char const *argv[]) {
   print_all_particles(pf);
   #endif
 
+  #if 0
+  // test if world model total distance works
+  std::vector<std::pair<double, double> > beacons;
+  beacons.push_back(std::make_pair(0.0, 0.0));
+  // beacons.push_back(std::make_pair(3.0, 4.0));
+  WorldModel world(beacons, 0, 10, 0, 10);
+  Particle p0 { 0, 4, 0 };
+  Particle p1 = p0;
+  // Particle p2 { 0, 100, 0 };
+  std::vector<std::pair<double, double> > m;
+  m.push_back(std::make_pair(-3.0, 0.0));
+  m.push_back(std::make_pair(0.0, 4.0));
+  std::cout << world.total_distance(p0, m) << '\n';
+  std::cout << world.total_distance(p1, m) << '\n';
+  std::vector<Particle> particles;
+  for (int i = 0; i < 10; i++) {
+    particles.push_back(Particle(0.1, 0.1, 0));
+  }
+  for (Particle p : particles) {
+    std::cout << world.total_distance(p, m) << '\n';
+  }
+  // std::cout << world.total_distance(p2, m) << '\n';
+  #endif
+
   #if 1
   // test localization around fixed point
   std::vector<std::pair<double, double> > beacons;
@@ -66,20 +91,26 @@ int main(int argc, char const *argv[]) {
   WorldModel world(beacons, 0, 1, 0, 1);
   ParticleFilter pf(world,
                     0, 0.5, 0, 0.5,
-                    0.01, 0.01, 0.01,
+                    0, 0, 0,
                     5);
   print_all_particles(pf);
-  /*
+
+  // std::vector<std::pair<double, double> > measurement;
+  // measurement.push_back(std::make_pair(-0.5, -0.5));
+  // pf.assign_weights(beacons);
+  // print_all_particles(pf);
+
   for (int i = 0; i < 10; i++) {
     std::vector<std::pair<double, double> > measurement;
     measurement.push_back(std::make_pair(-0.5, -0.5));
     pf.assign_weights(measurement);
+    print_all_particles(pf);
     pf.resample();
+    print_all_particles(pf);
     pf.motion_update(0, 0, 0);
     print_all_particles(pf);
+    std::cout << "\n\n";
   }
-  */
-
   #endif
 
   return 0;
