@@ -226,9 +226,9 @@ int main(int argc, char const *argv[]) {
                     500);
 
   std::pair<double, double> pos = std::make_pair(1, 2);
-  for (int i = 0; i < 100; i++) {
-    double x_rate = ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 0.08;
-    double y_rate = ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 0.08;
+  for (int i = 0; i < 1000; i++) {
+    double x_rate = ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 0.01;
+    double y_rate = ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 0.01;
     std::vector<std::pair<double, double> > measurement;
     for (std::pair<double, double> b : beacons) {
       measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
