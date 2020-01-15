@@ -10,6 +10,7 @@ also used to run some tests
 #include <utility>
 #include <iostream>
 #include <random>
+#include <cmath>
 
 //formats and prints particle attributes
 void print_particle(Particle p) {
@@ -209,7 +210,7 @@ int main(int argc, char const *argv[]) {
   #endif
 
   //simulate localization using randomly generated x_rates and y_rates
-  #if 1
+  #if 0
   std::mt19937 rng(0);
   // test localization around fixed point
   std::vector<std::pair<double, double> > beacons;
@@ -242,6 +243,45 @@ int main(int argc, char const *argv[]) {
     //std::cout << "\n";
     pos.first += x_rate;
     pos.second += y_rate;
+  }
+  #endif
+
+  #if 1
+  std::mt19937 rng(0);
+  // test localization around fixed point
+  std::vector<std::pair<double, double> > beacons;
+  for (int i = 0; i < 10; i++) {
+    beacons.push_back(std::make_pair(
+      ((double) rng() - rng.min()) / (rng.max() - rng.min()),
+      ((double) rng() - rng.min()) / (rng.max() - rng.min())
+    ));
+  }
+  WorldModel world(beacons, 0, 16, 0, 16);
+  ParticleFilter pf(world,
+                    0, 16, 0, 16,
+                    0.1, 0.1, 0.1,
+                    200);
+
+  double theta = 0;
+  const double r = 3;
+  double theta_step = 0.01;
+  std::pair<double, double> pos = std::make_pair(13, 8);
+  std::pair<double, double> last_pos;
+  for (int i = 0; i < 628; i++) {
+    last_pos = pos;
+    pos = std::make_pair(r * cos(theta) + 8, r * sin(theta) + 8);
+    std::vector<std::pair<double, double> > measurement;
+    for (std::pair<double, double> b : beacons) {
+      measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
+    }
+    pf.assign_weights(measurement);
+    pf.resample();
+    pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
+    // pf.set_rotation(0);
+    std::cout << pos.first << ", " << pos.second << ", ";
+    print_particle(pf.predict());
+    //std::cout << "\n";
+    theta += theta_step;
   }
   #endif
 
