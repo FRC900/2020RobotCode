@@ -49,8 +49,17 @@
 
         <group ns="pure_pursuit">
             <rosparam file="$(find pure_pursuit)/config/pure_pursuit_config.yaml" command="load"/>
+
             <node name="pure_pursuit_server" pkg="pure_pursuit" type="pure_pursuit_server_better" output="screen"/>
-			<node name="base_trajectory_node" pkg="base_trajectory" type="base_trajectory_node" output="screen" > </node>
+            <node name="base_trajectory_node" pkg="base_trajectory" type="base_trajectory_node" output="screen" > </node>
+            <node name="pure_pursuit_publish_pid_cmd_vel_node" pkg="behaviors" type="publish_pid_cmd_vel_node" output="screen">
+                <param name="orient_topic" value="orient_pid/orient_command" />
+                <param name="x_topic" value="x_position_pid/x_command" />
+                <param name="y_topic" value="y_position_pid/y_command" />
+                <param name="command_timeout" value="0.5" />
+                <param name="enable_topic" value="pure_pursuit_pid/pid_enable" />
+                <param name="name" value="pure_pursuit_pid" />
+            </node>
 
             <node name="x_position_pid" pkg="pid" type="controller" >
                 <param name="node_name" value="x_position_pid" />
