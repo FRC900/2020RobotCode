@@ -168,7 +168,7 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   std::mt19937 rng(0);
   // test localization around fixed point
   std::vector<std::pair<double, double> > beacons;
@@ -203,6 +203,43 @@ int main(int argc, char const *argv[]) {
     std::cout << pos.first << ", " << pos.second << '\n';
     print_particle(pf.predict());
     std::cout << "\n";
+    pos.first += x_rate;
+    pos.second += y_rate;
+  }
+  #endif
+
+  //simulate localization using randomly generated x_rates and y_rates
+  #if 1
+  std::mt19937 rng(0);
+  // test localization around fixed point
+  std::vector<std::pair<double, double> > beacons;
+  for (int i = 0; i < 10; i++) {
+    beacons.push_back(std::make_pair(
+      ((double) rng() - rng.min()) / (rng.max() - rng.min()),
+      ((double) rng() - rng.min()) / (rng.max() - rng.min())
+    ));
+  }
+  WorldModel world(beacons, 0, 8, 0, 16);
+  ParticleFilter pf(world,
+                    0, 8, 0, 16,
+                    0.1, 0.1, 0.1,
+                    500);
+
+  std::pair<double, double> pos = std::make_pair(1, 2);
+  for (int i = 0; i < 100; i++) {
+    double x_rate = ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 0.08;
+    double y_rate = ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 0.08;
+    std::vector<std::pair<double, double> > measurement;
+    for (std::pair<double, double> b : beacons) {
+      measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
+    }
+    pf.assign_weights(measurement);
+    pf.resample();
+    pf.motion_update(x_rate, y_rate, 0);
+    // pf.set_rotation(0);
+    std::cout << pos.first << ", " << pos.second << ", ";
+    print_particle(pf.predict());
+    //std::cout << "\n";
     pos.first += x_rate;
     pos.second += y_rate;
   }
