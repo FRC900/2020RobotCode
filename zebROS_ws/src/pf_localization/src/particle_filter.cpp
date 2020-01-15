@@ -40,6 +40,7 @@ void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max
   }
 }
 
+//Normalize weights to sum to 1
 void ParticleFilter::normalize() {
   double sum = 0;
   for (Particle p : particles_) {
@@ -49,7 +50,9 @@ void ParticleFilter::normalize() {
     p.weight /= sum;
   }
 }
+\
 
+//adds random noise to particles
 void ParticleFilter::noise() {
   std::normal_distribution<double> pos_dist(0, noise_stdev_);
   std::normal_distribution<double> rot_dist(0, rot_noise_stdev_);
@@ -60,6 +63,7 @@ void ParticleFilter::noise() {
   }
 }
 
+//Particles with higher weights are more likely to be resampled
 void ParticleFilter::resample() {
   std::vector<Particle> new_particles;
   new_particles.reserve(num_particles_);
@@ -107,6 +111,7 @@ void ParticleFilter::set_rotation(double rot) {
   }
 }
 
+//assigns the reciprocal of the computed error of each particles assignment vector to the respective particle
 void ParticleFilter::assign_weights(std::vector<std::pair<double, double> > mBeacons) {
   for (Particle& p : particles_) {
     p.weight = 1 / world_.total_distance(p, mBeacons);

@@ -10,10 +10,12 @@ also used to run some tests
 #include <utility>
 #include <iostream>
 
+//formats and prints particle attributes
 void print_particle(Particle p) {
   std::cout << p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n';
 }
 
+//print the attributes of all particles
 void print_all_particles(ParticleFilter pf) {
   for (Particle p : pf.get_particles()) {
     print_particle(p);
