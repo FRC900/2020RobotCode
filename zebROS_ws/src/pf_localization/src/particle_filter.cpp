@@ -83,15 +83,17 @@ void ParticleFilter::resample() {
 }
 
 Particle ParticleFilter::predict() {
+  double weight = 0;
   Particle res {0, 0, 0};
   for (Particle& p : particles_) {
-    res.x += p.x;
-    res.y += p.y;
-    res.rot += p.rot;
+    res.x += p.x * p.weight;
+    res.y += p.y * p.weight;
+    res.rot += p.rot * p.weight;
+    weight += p.weight;
   }
-  res.x /= num_particles_;
-  res.y /= num_particles_;
-  res.rot /= num_particles_;
+  res.x /= weight;
+  res.y /= weight;
+  res.rot /= weight;
   return res;
 }
 
