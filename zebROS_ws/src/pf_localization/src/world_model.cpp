@@ -75,8 +75,7 @@ double WorldModel::total_distance(const Particle& p, const std::vector<std::pair
   }
   solver_.Solve(dists, assignment);
 
-  double res;
-  res = 0;
+  double res = 0;
   for (size_t i = 0; i < assignment.size(); i++) {
     res += dists[i][assignment[i]];
   }

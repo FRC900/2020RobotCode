@@ -79,7 +79,16 @@ void ParticleFilter::resample() {
 }
 
 Particle ParticleFilter::predict() {
-  return Particle(0, 0, 0); // TODO
+  Particle res {0, 0, 0};
+  for (Particle& p : particles_) {
+    res.x += p.x;
+    res.y += p.y;
+    res.rot += p.rot;
+  }
+  res.x /= num_particles_;
+  res.y /= num_particles_;
+  res.rot /= num_particles_;
+  return res;
 }
 
 void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_rot) {
