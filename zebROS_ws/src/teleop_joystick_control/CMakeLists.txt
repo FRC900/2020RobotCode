@@ -91,6 +91,18 @@ add_dependencies(translate_joystick_data_node
 	${catkin_EXPORTED_TARGETS}
 	)
 
+add_executable(auto_rotate_strafing_node src/auto_rotate_strafing.cpp)
+set_target_properties(auto_rotate_strafing_node PROPERTIES OUTPUT_NAME 
+	auto_rotate_strafing_node PREFIX "")
+target_link_libraries(auto_rotate_strafing_node
+	${catkin_LIBRARIES}
+	)
+
+add_dependencies(auto_rotate_strafing_node
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+	)
+
 add_executable(snap_to_nearest_goal src/snap_to_nearest_goal.cpp)
 set_target_properties(snap_to_nearest_goal PROPERTIES OUTPUT_NAME 
 	snap_to_nearest_goal PREFIX "")
@@ -117,7 +129,7 @@ add_dependencies(teleop_joints_keyboard
 
 # Install ------------------------------------------------------------
 # Install header files
-install(TARGETS teleop_joystick_comp translate_joystick_data_node teleop_joints_keyboard
+install(TARGETS teleop_joystick_comp teleop_joints_keyboard
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
