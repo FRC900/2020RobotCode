@@ -84,7 +84,7 @@ int main(int argc, char const *argv[]) {
   // std::cout << world.total_distance(p2, m) << '\n';
   #endif
 
-  #if 1
+  #if 0
   // test localization around fixed point
   std::vector<std::pair<double, double> > beacons;
   beacons.push_back(std::make_pair(0.0, 0.0));
@@ -111,6 +111,7 @@ int main(int argc, char const *argv[]) {
     print_all_particles(pf);
     pf.motion_update(0, 0, 0);
     print_all_particles(pf);
+    print_particle(pf.predict());
     std::cout << "\n\n";
   }
   #endif
