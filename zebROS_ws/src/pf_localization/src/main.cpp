@@ -9,6 +9,7 @@ also used to run some tests
 #include <vector>
 #include <utility>
 #include <iostream>
+#include <random>
 
 //formats and prints particle attributes
 void print_particle(Particle p) {
@@ -131,6 +132,39 @@ int main(int argc, char const *argv[]) {
     measurement.push_back(std::make_pair(-0.5, -0.5));
     pf.assign_weights(measurement);
     print_all_particles(pf);
+  }
+  #endif
+
+  #if 1
+  std::mt19937 rng(0);
+  // test localization around fixed point
+  std::vector<std::pair<double, double> > beacons;
+  for (int i = 0; i < 5; i++) {
+    beacons.push_back(std::make_pair(
+      ((double) rng() - rng.min()) / (rng.max() - rng.min()),
+      ((double) rng() - rng.min()) / (rng.max() - rng.min())
+    ));
+  }
+  WorldModel world(beacons, 0, 8, 0, 16);
+  ParticleFilter pf(world,
+                    0, 8, 0, 16,
+                    0.1, 0.1, 0.1,
+                    200);
+
+  // std::vector<std::pair<double, double> > measurement;
+  // measurement.push_back(std::make_pair(-0.5, -0.5));
+  // pf.assign_weights(beacons);
+  // print_all_particles(pf);
+  std::vector<std::pair<double, double> > measurement;
+  for (std::pair<double, double> b : beacons) {
+    measurement.push_back(std::make_pair(b.first - 3, b.second - 5));
+  }
+  for (int i = 0; i < 100; i++) {
+    pf.assign_weights(measurement);
+    pf.resample();
+    pf.motion_update(0, 0, 0);
+    print_particle(pf.predict());
+    std::cout << "\n";
   }
   #endif
 
