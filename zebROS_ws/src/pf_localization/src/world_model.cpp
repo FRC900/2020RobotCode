@@ -24,6 +24,7 @@ std::vector<double> WorldModel::get_boundaries() {
   return res;
 }
 
+//checks if a given particle is within the defined boundaries
 bool WorldModel::is_in_world(const Particle& p) const {
   if(p.x < boundaries_[0] || p.x > boundaries_[1]){
     return false;
@@ -34,6 +35,7 @@ bool WorldModel::is_in_world(const Particle& p) const {
   return true;
 }
 
+//moves a given particle to the nearest position that is within the defined boundaries
 void WorldModel::constrain_to_world(Particle& p) const {
   p.x = std::min(boundaries_[1], std::max(boundaries_[0], p.x));
   p.y = std::min(boundaries_[3], std::max(boundaries_[2], p.y));
@@ -64,6 +66,7 @@ std::vector<std::pair<double, double> > WorldModel::particle_relative(const Part
   return res;
 }
 
+//Uses hungarian algorithm to pair particle relatiev beacons and robot relative beacons and returns the total error (sum of distance errors from particle to robot beacons)
 double WorldModel::total_distance(const Particle& p, const std::vector<std::pair<double, double> >& m) {
   std::vector<int> assignment;
   assignment.reserve(m.size());
