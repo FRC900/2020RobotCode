@@ -88,10 +88,11 @@ int main(int argc, char const *argv[]) {
   // test localization around fixed point
   std::vector<std::pair<double, double> > beacons;
   beacons.push_back(std::make_pair(0.0, 0.0));
+  beacons.push_back(std::make_pair(1.0, 1.0));
   WorldModel world(beacons, 0, 1, 0, 1);
   ParticleFilter pf(world,
                     0, 0.5, 0, 0.5,
-                    0, 0, 0,
+                    0.05, 0.05, 0.05,
                     5);
   print_all_particles(pf);
 
@@ -103,6 +104,7 @@ int main(int argc, char const *argv[]) {
   for (int i = 0; i < 10; i++) {
     std::vector<std::pair<double, double> > measurement;
     measurement.push_back(std::make_pair(-0.5, -0.5));
+    measurement.push_back(std::make_pair(0.5, 0.5));
     pf.assign_weights(measurement);
     print_all_particles(pf);
     pf.resample();
