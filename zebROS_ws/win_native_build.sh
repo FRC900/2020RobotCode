@@ -44,6 +44,10 @@ catkin config --blacklist \
 	zed_rtabmap_example \
 	zed_tracking_sub_tutorial \
 	zed_video_sub_tutorial \
+	teraranger \
+	teraranger_array \
+	realsense2_camera \
+	robot_characterization \
 	$EXTRA_BLACKLIST_PACKAGES
 
 catkin build -DCATKIN_ENABLE_TESTING=OFF -DBUILD_WITH_OPENMP=ON "$@"
