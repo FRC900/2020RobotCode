@@ -178,7 +178,6 @@ int main(int argc, char **argv)
 		ROS_ERROR("Could not read linebreak_debounce_interations in teleop joystick snap to goal");
 	}
 
-
 	imu_angle = M_PI / 2;
 	has_panel = true;
 	has_cargo = false;
