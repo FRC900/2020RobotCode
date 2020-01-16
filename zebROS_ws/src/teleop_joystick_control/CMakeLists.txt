@@ -91,14 +91,14 @@ add_dependencies(translate_joystick_data_node
 	${catkin_EXPORTED_TARGETS}
 	)
 
-add_executable(auto_rotate_strafing_node src/auto_rotate_strafing.cpp)
-set_target_properties(auto_rotate_strafing_node PROPERTIES OUTPUT_NAME 
-	auto_rotate_strafing_node PREFIX "")
-target_link_libraries(auto_rotate_strafing_node
+add_executable(combine_orient_strafing_node src/combine_orient_strafing.cpp)
+set_target_properties(combine_orient_strafing_node PROPERTIES OUTPUT_NAME 
+	combine_orient_strafing_node PREFIX "")
+target_link_libraries(combine_orient_strafing_node
 	${catkin_LIBRARIES}
 	)
 
-add_dependencies(auto_rotate_strafing_node
+add_dependencies(combine_orient_strafing_node
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 	)
