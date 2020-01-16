@@ -1386,8 +1386,9 @@ void FRCRobotHWInterface::as726x_read_thread(
 	}
 }
 
-void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /*period*/)
+void FRCRobotHWInterface::read(const ros::Time& time, const ros::Duration& period)
 {
+	FRCRobotInterface::read(time, period);
 	read_tracer_.start_unique("Check for ready");
 	if (run_hal_robot_ && !robot_code_ready_)
 	{
@@ -2226,8 +2227,9 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 }
 
 //#define DEBUG_WRITE
-void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& period)
+void FRCRobotHWInterface::write(const ros::Time& time, const ros::Duration& period)
 {
+	FRCRobotInterface::write(time, period);
 	// Was the robot enabled last time write was run?
 	static bool last_robot_enabled = false;
 

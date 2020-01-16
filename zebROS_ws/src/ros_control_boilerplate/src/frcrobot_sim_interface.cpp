@@ -116,6 +116,11 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 	// set for that motor controller in config files.
 	// TODO : assert can_ctre_mc_names_.size() == can_ctre_mc_can_ids_.size()
 
+	limit_switch_srv_ = root_nh.advertiseService("set_limit_switch",&FRCRobotSimInterface::setlimit,this);
+    match_data_sub_ = root_nh.subscribe("/frcrobot_rio/match_data_in", 1, &FRCRobotSimInterface::match_data_callback, this);
+
+	linebreak_sensor_srv_ = root_nh.advertiseService("linebreak_service_set",&FRCRobotSimInterface::evaluateDigitalInput, this);
+	ROS_INFO_NAMED("frcrobot_sim_interface", "FRCRobotSimInterface Ready.");
 	for (size_t i = 0; i < can_ctre_mc_names_.size(); i++)
 	{
 		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
@@ -145,91 +150,6 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 							  (cancoder_local_hardwares_[i] ? "local" : "remote") << " hardware" <<
 							  " at CAN id " << cancoder_can_ids_[i]);
 	}
-
-	// TODO : assert nidec_brushles_names_.size() == nidec_brushles_xxx_channels_.size()
-	for (size_t i = 0; i < nidec_brushless_names_.size(); i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << nidec_brushless_names_[i] <<
-							  (nidec_brushless_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (nidec_brushless_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as PWM channel " << nidec_brushless_pwm_channels_[i] <<
-							  " / DIO channel " << nidec_brushless_dio_channels_[i] <<
-							  " invert " << nidec_brushless_inverts_[i]);
-
-	for (size_t i = 0; i < num_digital_inputs_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << digital_input_names_[i] <<
-							  " local = " << digital_input_locals_[i] <<
-							  " as Digital Input " << digital_input_dio_channels_[i] <<
-							  " invert " << digital_input_inverts_[i]);
-
-	for (size_t i = 0; i < num_digital_outputs_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << digital_output_names_[i] <<
-							  (digital_output_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (digital_output_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as Digital Output " << digital_output_dio_channels_[i] <<
-							  " invert " << digital_output_inverts_[i]);
-
-	for (size_t i = 0; i < num_pwms_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << pwm_names_[i] <<
-							  (pwm_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (pwm_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as PWM " << pwm_pwm_channels_[i] <<
-							  " invert " << pwm_inverts_[i]);
-
-	ROS_WARN("fails here?5");
-	for (size_t i = 0; i < num_solenoids_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << solenoid_names_[i] <<
-							  (solenoid_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (solenoid_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as Solenoid " << solenoid_ids_[i]);
-
-	for (size_t i = 0; i < num_double_solenoids_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << double_solenoid_names_[i] <<
-							  (double_solenoid_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (double_solenoid_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as Double Solenoid  forward " << double_solenoid_forward_ids_[i] <<
-							  " reverse " << double_solenoid_reverse_ids_[i]);
-
-	for(size_t i = 0; i < num_navX_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << navX_names_[i] <<
-							  " local = " << navX_locals_[i] <<
-							  " as navX id" << navX_ids_[i]);
-
-	for (size_t i = 0; i < num_analog_inputs_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << analog_input_names_[i] <<
-							  " local = " << analog_input_locals_[i] <<
-							  " as Analog Input " << analog_input_analog_channels_[i]);
-
-	for (size_t i = 0; i < num_compressors_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << compressor_names_[i] <<
-							  (compressor_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (compressor_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as Compressor with pcm " << compressor_pcm_ids_[i]);
-
-	for (size_t i = 0; i < num_rumbles_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << rumble_names_[i] <<
-							  (rumble_local_updates_[i] ? " local" : " remote") << " update, " <<
-							  (rumble_local_hardwares_[i] ? "local" : "remote") << " hardware " <<
-							  " as Rumble with port" << rumble_ports_[i]);
-
-	for (size_t i = 0; i < num_pdps_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading joint " << i << "=" << pdp_names_[i] <<
-							  " local = " << pdp_locals_[i] <<
-							  " as PDP");
-
-	for(size_t i = 0; i < num_dummy_joints_; i++)
-		ROS_INFO_STREAM_NAMED("frcrobot_sim_interface",
-							  "Loading dummy joint " << i << "=" << dummy_joint_names_[i]);
 
 	for (size_t i = 0; i < num_as726xs_; i++)
 	{
