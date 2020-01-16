@@ -34,19 +34,27 @@ int main(int argc, char const *argv[]) {
   ParticleFilter pf(world, 0, 0, 0.5, 0.5, 0.1, 0.1, 0.1, 100);
   #endif
 
-  #if 0
+  #if 1
   // test motion_update
   std::vector<std::pair<double, double> > beacons;
   beacons.push_back(std::make_pair(0.0, 0.0));
-  WorldModel world(beacons, 0, 1, 0, 1);
+  WorldModel world(beacons, 0, 10, 0, 10);
   ParticleFilter pf(world,
-                    0, 0.5, 0, 0.5,
-                    0.01, 0.01, 0.01,
-                    1);
-  print_all_particles(pf);
-  for (int i = 0; i < 10; i++) {
-    pf.motion_update(0, 0.01, 0);
-    print_all_particles(pf);
+                    0, 1, 0, 1,
+                    0.0, 0.0, 0.0,
+                    100);
+  std::pair<double, double> pos = std::make_pair(0.0, 0.0);
+  std::vector<std::pair<double, double> > measurement;
+  for (std::pair<double, double> b : beacons) {
+    measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
+  }
+  pf.assign_weights(measurement);
+  for (int i = 0; i < 50; i++) {
+    pf.motion_update(0.1, 0.1, 0);
+    pos.first += 0.1;
+    pos.second += 0.1;
+    std::cout << pos.first << ", " << pos.second << ", ";
+    print_particle(pf.predict());
   }
   #endif
 
@@ -246,7 +254,7 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   std::mt19937 rng(0);
   // test localization around fixed point
   std::vector<std::pair<double, double> > beacons;
