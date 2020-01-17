@@ -11,6 +11,8 @@ private:
   AssignmentProblemSolver solver_;
   std::vector<double> distances(const std::pair<double, double> m,
                                 const std::vector<std::pair<double, double> > rel) const;
+
+public:
   std::vector<std::pair<double, double> > particle_relative(const Particle& p) const;
 
 public:

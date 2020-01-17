@@ -34,7 +34,7 @@ int main(int argc, char const *argv[]) {
   ParticleFilter pf(world, 0, 0, 0.5, 0.5, 0.1, 0.1, 0.1, 100);
   #endif
 
-  #if 1
+  #if 0
   // test motion_update
   std::vector<std::pair<double, double> > beacons;
   beacons.push_back(std::make_pair(0.0, 0.0));
@@ -179,7 +179,7 @@ int main(int argc, char const *argv[]) {
 
   #if 0
   std::mt19937 rng(0);
-  // test localization around fixed point
+  // linear constant movement
   std::vector<std::pair<double, double> > beacons;
   for (int i = 0; i < 10; i++) {
     beacons.push_back(std::make_pair(
@@ -220,7 +220,7 @@ int main(int argc, char const *argv[]) {
   //simulate localization using randomly generated x_rates and y_rates
   #if 0
   std::mt19937 rng(0);
-  // test localization around fixed point
+  // linear random movement
   std::vector<std::pair<double, double> > beacons;
   for (int i = 0; i < 10; i++) {
     beacons.push_back(std::make_pair(
@@ -254,9 +254,9 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
-  #if 0
+  #if 1
   std::mt19937 rng(0);
-  // test localization around fixed point
+  // test circular movement
   std::vector<std::pair<double, double> > beacons;
   for (int i = 0; i < 10; i++) {
     beacons.push_back(std::make_pair(
@@ -267,7 +267,7 @@ int main(int argc, char const *argv[]) {
   WorldModel world(beacons, 0, 16, 0, 16);
   ParticleFilter pf(world,
                     0, 16, 0, 16,
-                    0.1, 0.1, 0.1,
+                    0.1, 0.1, 0.01,
                     200);
 
   double theta = 0;
@@ -279,18 +279,47 @@ int main(int argc, char const *argv[]) {
     last_pos = pos;
     pos = std::make_pair(r * cos(theta) + 8, r * sin(theta) + 8);
     std::vector<std::pair<double, double> > measurement;
-    for (std::pair<double, double> b : beacons) {
-      measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
-    }
+    Particle p(pos.first, pos.second, 0.5);
+    measurement = world.particle_relative(p);
+    // for (std::pair<double, double> b : beacons) {
+    //   measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
+    // }
     pf.assign_weights(measurement);
     pf.resample();
     pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
-    // pf.set_rotation(0);
+    // pf.set_rotation(0.5);
     std::cout << pos.first << ", " << pos.second << ", ";
     print_particle(pf.predict());
     //std::cout << "\n";
     theta += theta_step;
   }
+  #endif
+
+  #if 0
+  // test WorldModel::particle_relative
+  // requires particle_relative to temporarily be made public
+  std::vector<std::pair<double, double> > beacons;
+  beacons.push_back(std::make_pair(3.0, 4.0));
+  beacons.push_back(std::make_pair(1.0, 4.0));
+  beacons.push_back(std::make_pair(1.0, 2.0));
+  beacons.push_back(std::make_pair(3.0, 2.0));
+  beacons.push_back(std::make_pair(3.0, 3.0));
+  beacons.push_back(std::make_pair(2.0, 4.0));
+  beacons.push_back(std::make_pair(1.0, 3.0));
+  beacons.push_back(std::make_pair(2.0, 2.0));
+  WorldModel world(beacons, 1, 10, 2, 10);
+  Particle p0 {2, 3, 0};
+  std::vector<std::pair<double, double> > rel = world.particle_relative(p0);
+  for (size_t i = 0; i < rel.size(); i++) {
+    std::cout << rel[i].first << '\t' << rel[i].second << '\n';
+  }
+  std::cout << '\n';
+  Particle p1 {2, 3, -0.5 * 3.14159265358979323};
+  rel = world.particle_relative(p1);
+  for (size_t i = 0; i < rel.size(); i++) {
+    std::cout << rel[i].first << '\t' << rel[i].second << '\n';
+  }
+
   #endif
 
   return 0;
