@@ -595,7 +595,7 @@ class ClimbAction {
 		//initialize the client being used to call the climber controller to engage the climber
 		climber_engage_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/climber_controller/climber_release_endgame", false, service_connection_header);
 
-		navX_sub_ = nh_.subscribe("/frcrobot_rio/navx_mxp", 1, &ClimbAction::navXCallback, this);
+		navX_sub_ = nh_.subscribe("zeroed_imu", 1, &ClimbAction::navXCallback, this);
 		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states",1,&ClimbAction::talonStateCallback, this);
 
 		cargo_intake_controller_client_ = nh_.serviceClient<controllers_2019_msgs::CargoIntakeSrv>("/frcrobot_jetson/cargo_intake_controller/cargo_intake_command", false, service_connection_header);

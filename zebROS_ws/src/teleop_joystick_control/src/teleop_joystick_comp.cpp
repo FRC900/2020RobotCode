@@ -901,7 +901,7 @@ int main(int argc, char **argv)
 	orient_strafing_state_pub = n.advertise<std_msgs::Float64>("orient_strafing/state", 1);
 	JoystickRobotVel = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	elevator_setpoint = n.advertise<std_msgs::Int8>("elevator_setpoint",1);
-	ros::Subscriber navX_heading = n.subscribe("/navx_jetson/zeroed_imu", 1, &navXCallback);
+	ros::Subscriber imu_heading = n.subscribe("zeroed_imu", 1, &imuCallback);
 	ros::Subscriber joint_states_sub = n.subscribe("/frcrobot_jetson/joint_states", 1, &jointStateCallback);
 
 	//initialize actionlib clients
