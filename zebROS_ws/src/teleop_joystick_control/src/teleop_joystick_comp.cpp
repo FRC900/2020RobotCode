@@ -46,6 +46,8 @@ const int elevator_num_setpoints = 4;
 bool robot_orient = false;
 double offset_angle = 0;
 
+bool enable_combine_orient_strafing = false;
+
 // array of joystick_states messages for multiple joysticks
 std::vector <frc_msgs::JoystickState> joystick_states_array;
 std::vector <std::string> topic_array;
@@ -264,6 +266,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			JoystickRobotVel.publish(vel);
 			sendRobotZero = false;
 		}
+
+		if(rotation != 0.0)
+			enable_combine_orient_strafing == false;
 
 		//Joystick1: buttonA
 		if(joystick_states_array[0].buttonAPress)
