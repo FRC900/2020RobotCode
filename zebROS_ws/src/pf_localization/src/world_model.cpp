@@ -56,11 +56,15 @@ std::vector<double> WorldModel::distances(const std::pair<double, double> m,
 std::vector<std::pair<double, double> > WorldModel::particle_relative(const Particle& p) const {
   std::vector<std::pair<double, double> > res;
   for (std::pair<double, double> b : beacons_) {
-    double r = hypot(b.first - p.x, b.second - p.y);
-    double theta = atan2(b.second - p.y, b.first - p.x);
+
+    double x = b.first - p.x;
+    double y = b.second - p.y;
+    double r = hypot(x, y);
+    double theta = atan2(y, x);
     theta -= p.rot;
-    double x = r * cos(theta);
-    double y = r * sin(theta);
+    x = r * cos(theta);
+    y = r * sin(theta);
+
     res.push_back(std::make_pair(x, y));
   }
   return res;
