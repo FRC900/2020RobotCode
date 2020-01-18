@@ -22,9 +22,9 @@ void teleopCallback(const geometry_msgs::Twist::ConstPtr &teleop_msg)
 
 void orientCallback(const std_msgs::Float64::ConstPtr &orient_msg)
 {
-	combined_cmd_vel.angular.z = *orient_msg;
+	combined_cmd_vel.angular.z = orient_msg->data;
 
-	enable_combination = (*orient_msg != 0.0) ? true : false;
+	enable_combination = (orient_msg->data != 0.0) ? true : false;
 }
 
 int main(int argc, char ** argv)
