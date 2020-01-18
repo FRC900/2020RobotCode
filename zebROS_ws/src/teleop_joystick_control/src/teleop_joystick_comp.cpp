@@ -991,9 +991,9 @@ int main(int argc, char **argv)
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
 
-	combine_orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("combine_orient_stafing_pid/pid_enable", 1);
-	combine_orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("combine_orient_stafing_pid/setpoint", 1);
-	combine_orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("combine_orient_stafing_pid/state", 1);
+	combine_orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("combine_orient_strafing/pid_enable", 1);
+	combine_orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("combine_orient_strafing/setpoint", 1);
+	combine_orient_strafing_state_pub = n.advertise<std_msgs::Float64>("combine_orient_strafing/state", 1);
 	JoystickRobotVel = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	elevator_setpoint = n.advertise<std_msgs::Int8>("elevator_setpoint",1);
 	ros::Subscriber navX_heading = n.subscribe("navx_mxp", 1, &navXCallback);

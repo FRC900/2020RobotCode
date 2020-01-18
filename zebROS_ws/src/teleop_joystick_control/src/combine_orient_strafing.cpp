@@ -42,7 +42,7 @@ int main(int argc, char ** argv)
 	ros::Subscriber teleop_cmd_vel_sub = n.subscribe("/teleop/swerve_drive_controller/cmd_vel", 5, teleopCallback);
 	ros::Subscriber orient_pid_cmd_vel_sub = n.subscribe("control_effort", 5, orientCallback);
 
-	combined_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 5);
+	combined_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 5);
 
 	ros::Rate r = 100;
 
