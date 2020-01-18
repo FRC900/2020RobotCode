@@ -81,6 +81,7 @@
 #include <networktables/NetworkTable.h>
 #include <hal/CAN.h>
 #include <hal/Compressor.h>
+#include <hal/DriverStation.h>
 #include <hal/PDP.h>
 #include <hal/Power.h>
 #include <hal/Solenoid.h>
@@ -1521,6 +1522,17 @@ double FRCRobotHWInterface::getConversionFactor(int encoder_ticks_per_rotation,
 	}
 }
 
+void canFailCallback(ctre::phoenix::ErrorCode error_code)
+{
+	HAL_SendError(true,
+				  error_code,
+                  false,
+                  "CAN bus failed to come up",
+                  "/src/ros_control_boilerplate/src/ frcrobot_hw_interface.cpp",
+                  "",
+                  true);
+}
+
 bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, const std::string &talon_method_name)
 {
 	//ROS_INFO_STREAM("safeTalonCall(" << talon_method_name << ")");
@@ -1528,11 +1540,13 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 	switch (error_code)
 	{
 		case ctre::phoenix::OK :
+			can_fails_ = 0;
 			return true; // Yay us!
 
 		case ctre::phoenix::CAN_MSG_STALE :
 			error_name = "CAN_MSG_STALE/CAN_TX_FULL/TxFailed";
 			break;
+
 		case ctre::phoenix::InvalidParamValue :
 			error_name = "InvalidParamValue/CAN_INVALID_PARAM";
 			break;
@@ -1540,27 +1554,35 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::RxTimeout :
 			error_name = "RxTimeout/CAN_MSG_NOT_FOUND";
 			break;
+
 		case ctre::phoenix::TxTimeout :
 			error_name = "TxTimeout/CAN_NO_MORE_TX_JOBS";
 			break;
+
 		case ctre::phoenix::UnexpectedArbId :
 			error_name = "UnexpectedArbId/CAN_NO_SESSIONS_AVAIL";
 			break;
+
 		case ctre::phoenix::BufferFull :
 			error_name = "BufferFull";
 			break;
+
 		case ctre::phoenix::CAN_OVERFLOW:
 			error_name = "CAN_OVERFLOW";
 			break;
+
 		case ctre::phoenix::SensorNotPresent :
 			error_name = "SensorNotPresent";
 			break;
+
 		case ctre::phoenix::FirmwareTooOld :
 			error_name = "FirmwareTooOld";
 			break;
+
 		case ctre::phoenix::CouldNotChangePeriod :
 			error_name = "CouldNotChangePeriod";
 			break;
+
 		case ctre::phoenix::BufferFailure :
 			error_name = "BufferFailure";
 			break;
@@ -1572,6 +1594,7 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::SIG_NOT_UPDATED :
 			error_name = "SIG_NOT_UPDATED";
 			break;
+
 		case ctre::phoenix::NotAllPIDValuesUpdated :
 			error_name = "NotAllPIDValuesUpdated";
 			break;
@@ -1579,6 +1602,7 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::GEN_PORT_ERROR :
 			error_name = "GEN_PORT_ERROR";
 			break;
+
 		case ctre::phoenix::PORT_MODULE_TYPE_MISMATCH :
 			error_name = "PORT_MODULE_TYPE_MISMATCH";
 			break;
@@ -1586,9 +1610,11 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::GEN_MODULE_ERROR :
 			error_name = "GEN_MODULE_ERROR";
 			break;
+
 		case ctre::phoenix::MODULE_NOT_INIT_SET_ERROR :
 			error_name = "MODULE_NOT_INIT_SET_ERROR";
 			break;
+
 		case ctre::phoenix::MODULE_NOT_INIT_GET_ERROR :
 			error_name = "MODULE_NOT_INIT_GET_ERROR";
 			break;
@@ -1596,15 +1622,19 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::WheelRadiusTooSmall :
 			error_name = "WheelRadiusTooSmall";
 			break;
+
 		case ctre::phoenix::TicksPerRevZero :
 			error_name = "TicksPerRevZero";
 			break;
+
 		case ctre::phoenix::DistanceBetweenWheelsTooSmall :
 			error_name = "DistanceBetweenWheelsTooSmall";
 			break;
+
 		case ctre::phoenix::GainsAreNotSet :
 			error_name = "GainsAreNotSet";
 			break;
+
 		case ctre::phoenix::WrongRemoteLimitSwitchSource :
 			error_name = "WrongRemoteLimitSwitchSource";
 			break;
@@ -1612,6 +1642,7 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::IncompatibleMode :
 			error_name = "IncompatibleMode";
 			break;
+
 		case ctre::phoenix::InvalidHandle :
 			error_name = "InvalidHandle";
 			break;
@@ -1619,18 +1650,23 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::FeatureRequiresHigherFirm:
 			error_name = "FeatureRequiresHigherFirm";
 			break;
+
 		case ctre::phoenix::TalonFeatureRequiresHigherFirm:
 			error_name = "TalonFeatureRequiresHigherFirm";
 			break;
+
 		case ctre::phoenix::ConfigFactoryDefaultRequiresHigherFirm:
 			error_name = "ConfigFactoryDefaultRequiresHigherFirm";
 			break;
+
 		case ctre::phoenix::LibraryCouldNotBeLoaded :
 			error_name = "LibraryCouldNotBeLoaded";
 			break;
+
 		case ctre::phoenix::MissingRoutineInLibrary :
 			error_name = "MissingRoutineInLibrary";
 			break;
+
 		case ctre::phoenix::ResourceNotAvailable :
 			error_name = "ResourceNotAvailable";
 			break;
@@ -1638,21 +1674,27 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::PulseWidthSensorNotPresent :
 			error_name = "PulseWidthSensorNotPresent";
 			break;
+
 		case ctre::phoenix::GeneralWarning :
 			error_name = "GeneralWarning";
 			break;
+
 		case ctre::phoenix::FeatureNotSupported :
 			error_name = "FeatureNotSupported";
 			break;
+
 		case ctre::phoenix::NotImplemented :
 			error_name = "NotImplemented";
 			break;
+
 		case ctre::phoenix::FirmVersionCouldNotBeRetrieved :
 			error_name = "FirmVersionCouldNotBeRetrieved";
 			break;
+
 		case ctre::phoenix::FeaturesNotAvailableYet :
 			error_name = "FeaturesNotAvailableYet";
 			break;
+
 		case ctre::phoenix::ControlModeNotValid :
 			error_name = "ControlModeNotValid";
 			break;
@@ -1660,15 +1702,19 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 		case ctre::phoenix::ControlModeNotSupportedYet :
 			error_name = "ConrolModeNotSupportedYet";
 			break;
+
 		case ctre::phoenix::CascadedPIDNotSupporteYet:
 			error_name = "CascadedPIDNotSupporteYet/AuxiliaryPIDNotSupportedYet";
 			break;
+
 		case ctre::phoenix::RemoteSensorsNotSupportedYet:
 			error_name = "RemoteSensorsNotSupportedYet";
 			break;
+
 		case ctre::phoenix::MotProfFirmThreshold:
 			error_name = "MotProfFirmThreshold";
 			break;
+
 		case ctre::phoenix::MotProfFirmThreshold2:
 			error_name = "MotProfFirmThreshold2";
 			break;
@@ -1683,6 +1729,11 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 
 	}
 	ROS_ERROR_STREAM("Error calling " << talon_method_name << " : " << error_name);
+	can_fails_++;
+	if (can_fails_ > 3000)
+	{
+		canFailCallback(error_code);
+	}
 	return false;
 }
 

@@ -708,6 +708,12 @@ int32_t HAL_SetJoystickOutputs(int32_t, int64_t,
 	ROS_ERROR("Called HAL_SetJoystickOutputs(int32_t joystickNum, int64_t outputs, int32_t leftRumble, int32_t rightRumble) on unsupported device");
 	return -1;
 }
+int32_t HAL_SendError(HAL_Bool isError, int32_t errorCode, HAL_Bool isLVCode, const char * details,     const char * location, const char * callStack, HAL_Bool printMsg)
+{
+    ROS_ERROR("Error has occurred: Sending to drivers station. (This is being used to test errors     when the CAN doesn't respond)");
+	return false;
+}
+
 
 #include <frc/Timer.h>
 double frc::Timer::GetFPGATimestamp()
