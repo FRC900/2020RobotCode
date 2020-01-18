@@ -216,6 +216,9 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		double t_prev_robot_controller_read_;
 		double robot_controller_read_hz_;
 
+		//integer that counts CAN fails, and alerts the DS if necessary
+		int can_fails_;
+
 		std::vector<std::shared_ptr<ctre::phoenix::motorcontrol::IMotorController>> ctre_mcs_;
 
 		// Maintain a separate read thread for each talon SRX
