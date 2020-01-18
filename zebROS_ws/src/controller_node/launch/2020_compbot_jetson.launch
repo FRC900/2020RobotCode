@@ -71,19 +71,12 @@
 				<param name="Kp" value="13.0" />
 				<param name="Ki" value="0.0" />
 				<param name="Kd" value="0.0" />
-				<param name="upper_limit" value="8" />
-				<param name="lower_limit" value="-8" />
-				<param name="windup_limit" value="10" />
-				<param name="angle_error" value="false" />
-				<param name="angle_wrap" value="false" />
-				<param name="max_loop_frequency" value="100.0" />
-				<param name="min_loop_frequency" value="100.0" />
-				<param name="topic_from_controller" value="orient_command" />
-				<param name="setpoint_topic" value="setpoint" />
-				<param name="topic_from_plant" value="state" />
-				<remap from="pid_debug" to="combine_orient_strafing/pid_debug"/>
-				<remap from="pid_enable" to="combine_orient_strafing/pid_enable"/>
+				<param name="upper_limit" value="5" />
+				<param name="lower_limit" value="-5" />
+				<param name="windup_limit" value="5" />
+				<param name="angle_error" value="true" />
 			</node>
+			<node name="combine_orient_strafing_node" pkg="teleop_joystick_control" type="combine_orient_strafing_node" output="screen"/>
 		</group>
 	</group>
 
