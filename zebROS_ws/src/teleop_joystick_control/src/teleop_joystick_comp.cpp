@@ -59,8 +59,9 @@ teleop_joystick_control::TeleopJoystickCompConfig config;
 double max_speed;
 double max_rot;
 
-ros::Publisher combine_orient_strafing_angle_pub;
 ros::Publisher combine_orient_strafing_enable_pub;
+ros::Publisher combine_orient_strafing_setpoint_pub;
+ros::Publisher combine_orient_strafing_state_pub;
 ros::Publisher elevator_setpoint;
 ros::Publisher JoystickRobotVel;
 ros::Publisher cargo_pid;
@@ -508,7 +509,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		if((joystick_states_array[0].leftTrigger >= 0.5) && (rotation != 0.0))
 		{
 			combine_orient_strafing_enable_pub.publish(true);
-			combine_orient_strafing_enable_pub.publish(combine_orient_strafing_angle);
+			combine_orient_strafing_setpoint_pub.publish(combine_orient_strafing_angle);
+			combine_orient_strafing_state_pub.publish(navX_angle);
 		}
 		else
 		{
@@ -989,8 +991,9 @@ int main(int argc, char **argv)
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
 
-	combine_orient_strafing_angle_pub = n.advertise<std_msgs::Float64>("combine_orient_stafing_pid/setpoint", 1);
-	combine_orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("combine_orient_stafing_pid/enable", 1);
+	combine_orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("combine_orient_stafing_pid/pid_enable", 1);
+	combine_orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("combine_orient_stafing_pid/setpoint", 1);
+	combine_orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("combine_orient_stafing_pid/state", 1);
 	JoystickRobotVel = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	elevator_setpoint = n.advertise<std_msgs::Int8>("elevator_setpoint",1);
 	ros::Subscriber navX_heading = n.subscribe("navx_mxp", 1, &navXCallback);

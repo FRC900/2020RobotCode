@@ -78,9 +78,9 @@
 				<param name="angle_wrap" value="false" />
 				<param name="max_loop_frequency" value="100.0" />
 				<param name="min_loop_frequency" value="100.0" />
-				<param name="topic_from_controller" value="combine_orient_strafing/orient_command" />
-				<param name="setpoint_topic" value="combine_orient_strafing/setpoint" />
-				<param name="topic_from_plant" value="combine_orient_strafing/state" />
+				<param name="topic_from_controller" value="orient_command" />
+				<param name="setpoint_topic" value="setpoint" />
+				<param name="topic_from_plant" value="state" />
 				<remap from="pid_debug" to="combine_orient_strafing/pid_debug"/>
 				<remap from="pid_enable" to="combine_orient_strafing/pid_enable"/>
 			</node>
