@@ -24,7 +24,7 @@
 #include "std_srvs/Empty.h"
 #include <vector>
 #include "teleop_joystick_control/RobotOrient.h"
-#include "teleop_joystick_control/CombineOrientStrafingAngle.h"
+#include "teleop_joystick_control/OrientStrafingAngle.h"
 
 #include "controllers_2019_msgs/PanelIntakeSrv.h"
 #include "controllers_2019_msgs/CargoIntakeSrv.h"
@@ -44,7 +44,7 @@ bool panel_push_extend = false;
 const int climber_num_steps = 4;
 const int elevator_num_setpoints = 4;
 
-double combine_orient_strafing_angle = 0.0;
+double orient_strafing_angle = 0.0;
 
 bool robot_orient = false;
 double offset_angle = 0;
@@ -59,9 +59,9 @@ teleop_joystick_control::TeleopJoystickCompConfig config;
 double max_speed;
 double max_rot;
 
-ros::Publisher combine_orient_strafing_enable_pub;
-ros::Publisher combine_orient_strafing_setpoint_pub;
-ros::Publisher combine_orient_strafing_state_pub;
+ros::Publisher orient_strafing_enable_pub;
+ros::Publisher orient_strafing_setpoint_pub;
+ros::Publisher orient_strafing_state_pub;
 ros::Publisher elevator_setpoint;
 ros::Publisher JoystickRobotVel;
 ros::Publisher cargo_pid;
@@ -144,10 +144,10 @@ bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
 	return true;
 }
 
-bool combineOrientStrafingAngleCallback(teleop_joystick_control::CombineOrientStrafingAngle::Request& req,
-										teleop_joystick_control::CombineOrientStrafingAngle::Response&/* res*/)
+bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::Request& req,
+										teleop_joystick_control::OrientStrafingAngle::Response&/* res*/)
 {
-	combine_orient_strafing_angle = req.angle;
+	orient_strafing_angle = req.angle;
 	return true;
 }
 void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& event)
@@ -506,15 +506,15 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			rotation_rate_limit.updateMinMax(-max_rot, max_rot);
 			prev_slow_mode = slow_mode;
 		}
-		if((joystick_states_array[0].leftTrigger >= 0.5) && (rotation = 0.0))
+		if((joystick_states_array[0].leftTrigger >= 0.5) && (rotation == 0.0))
 		{
-			combine_orient_strafing_enable_pub.publish(true);
-			combine_orient_strafing_setpoint_pub.publish(combine_orient_strafing_angle);
-			combine_orient_strafing_state_pub.publish(navX_angle);
+			orient_strafing_enable_pub.publish(true);
+			orient_strafing_setpoint_pub.publish(orient_strafing_angle);
+			orient_strafing_state_pub.publish(navX_angle);
 		}
 		else
 		{
-			combine_orient_strafing_enable_pub.publish(false);
+			orient_strafing_enable_pub.publish(false);
 		}
 		//Joystick1: directionLeft
 		if(joystick_states_array[0].directionLeftPress)
@@ -991,9 +991,9 @@ int main(int argc, char **argv)
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
 
-	combine_orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("combine_orient_strafing/pid_enable", 1);
-	combine_orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("combine_orient_strafing/setpoint", 1);
-	combine_orient_strafing_state_pub = n.advertise<std_msgs::Float64>("combine_orient_strafing/state", 1);
+	orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("orient_strafing/pid_enable", 1);
+	orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("orient_strafing/setpoint", 1);
+	orient_strafing_state_pub = n.advertise<std_msgs::Float64>("orient_strafing/state", 1);
 	JoystickRobotVel = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	elevator_setpoint = n.advertise<std_msgs::Int8>("elevator_setpoint",1);
 	ros::Subscriber navX_heading = n.subscribe("navx_mxp", 1, &navXCallback);
@@ -1025,7 +1025,7 @@ int main(int argc, char **argv)
 
 	ros::ServiceServer robot_orient_service = n.advertiseService("robot_orient", orientCallback);
 
-	ros::ServiceServer combine_orient_strafing_angle_service = n.advertiseService("combine_orient_strafing_angle", combineOrientStrafingAngleCallback);
+	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
 
 	DynamicReconfigureWrapper<teleop_joystick_control::TeleopJoystickCompConfig> drw(n_params, config);
 

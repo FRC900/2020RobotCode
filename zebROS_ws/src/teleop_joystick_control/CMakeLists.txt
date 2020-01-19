@@ -24,7 +24,7 @@ find_package(Eigen3 REQUIRED)
 add_service_files (
 	FILES
 	RobotOrient.srv
-	CombineOrientStrafingAngle.srv
+	OrientStrafingAngle.srv
 	)
 
 generate_messages (
@@ -92,14 +92,14 @@ add_dependencies(translate_joystick_data_node
 	${catkin_EXPORTED_TARGETS}
 	)
 
-add_executable(combine_orient_strafing_node src/combine_orient_strafing.cpp)
-set_target_properties(combine_orient_strafing_node PROPERTIES OUTPUT_NAME 
-	combine_orient_strafing_node PREFIX "")
-target_link_libraries(combine_orient_strafing_node
+add_executable(orient_strafing_node src/orient_strafing.cpp)
+set_target_properties(orient_strafing_node PROPERTIES OUTPUT_NAME 
+	orient_strafing_node PREFIX "")
+target_link_libraries(orient_strafing_node
 	${catkin_LIBRARIES}
 	)
 
-add_dependencies(combine_orient_strafing_node
+add_dependencies(orient_strafing_node
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 	)

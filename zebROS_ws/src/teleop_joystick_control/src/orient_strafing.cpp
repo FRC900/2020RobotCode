@@ -1,5 +1,6 @@
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 
 bool enable_combination = false;
@@ -14,6 +15,11 @@ void publishCombinedCmdVel(void)
 		combined_cmd_vel_pub.publish(combined_cmd_vel);
 }
 
+void enableCallback(const std_msgs::Bool::ConstPtr &enable_msg)
+{
+	enable_combination = enable_msg->data ? true : false;
+}
+
 void teleopCallback(const geometry_msgs::Twist::ConstPtr &teleop_msg)
 {
 	combined_cmd_vel.linear.x = teleop_msg->linear.x;
@@ -23,8 +29,6 @@ void teleopCallback(const geometry_msgs::Twist::ConstPtr &teleop_msg)
 void orientCallback(const std_msgs::Float64::ConstPtr &orient_msg)
 {
 	combined_cmd_vel.angular.z = orient_msg->data;
-
-	enable_combination = (orient_msg->data != 0.0) ? true : false;
 }
 
 int main(int argc, char ** argv)
@@ -39,8 +43,9 @@ int main(int argc, char ** argv)
 	combined_cmd_vel.angular.y = 0.0;
 	combined_cmd_vel.angular.z = 0.0;
 
-	ros::Subscriber teleop_cmd_vel_sub = n.subscribe("/teleop/swerve_drive_controller/cmd_vel", 5, teleopCallback);
-	ros::Subscriber orient_pid_cmd_vel_sub = n.subscribe("control_effort", 5, orientCallback);
+	ros::Subscriber enable_sub = n.subscribe("pid_enable", 5, enableCallback);
+	ros::Subscriber teleop_sub = n.subscribe("/teleop/swerve_drive_controller/cmd_vel", 5, teleopCallback);
+	ros::Subscriber orient_sub = n.subscribe("control_effort", 5, orientCallback);
 
 	combined_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 5);
 
