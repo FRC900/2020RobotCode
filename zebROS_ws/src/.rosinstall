@@ -67,5 +67,5 @@
     local-name: adi_driver
     uri: https://github.com/tork-a/adi_driver
 - git:
-    local-name: cpu-monitor
-    uri: https://github.com/pumaking/cpu_monitor.git
+    local-name: cpu_monitor
+    uri: https://github.com/FRC900/cpu_monitor
