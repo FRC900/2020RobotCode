@@ -283,6 +283,7 @@ class TalonCIParams
 		// Copy from internal state to TalonConfigConfig state
 		TalonConfigConfig toConfig(void) const
 		{
+			ROS_INFO_STREAM(joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 			TalonConfigConfig config;
 			config.p0            = p_[0];
 			config.p1            = p_[1];
@@ -1632,6 +1633,7 @@ class TalonControllerInterface
 
 		void setDemand1Type(hardware_interface::DemandType demand1_type)
 		{
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 			if (demand1_type == params_.demand1_type_)
 				return;
 			params_.demand1_type_ = demand1_type;
@@ -1643,6 +1645,7 @@ class TalonControllerInterface
 		{
 			if (fabs(demand1_value - params_.demand1_value_) < double_value_epsilon)
 				return;
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 			params_.demand1_value_ = demand1_value;
 			//  syncDynamicReconfigure();
 			talon_->setDemand1Value(demand1_value);
@@ -1794,14 +1797,18 @@ class TalonControllerInterface
 		// state
 		void syncDynamicReconfigure(void)
 		{
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 			if (srv_)
 			{
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 				TalonConfigConfig config(params_.toConfig());
 				// first call in updateConfig is another lock, this is probably
 				// redundant
 				// boost::recursive_mutex::scoped_lock lock(*srv_mutex_);
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 				srv_->updateConfig(config);
 			}
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 		}
 
 		// Use data in params to actually set up Talon
@@ -1817,6 +1824,7 @@ class TalonControllerInterface
 				hardware_interface::TalonCommandHandle talon,
 				bool update_params = true)
 		{
+			ROS_INFO_STREAM(params_.joint_name_ << " : " << __FUNCTION__ << ":" << __LINE__);
 			talon->lock();
 			// perform additional hardware init here
 			// but don't set mode - either force the caller to

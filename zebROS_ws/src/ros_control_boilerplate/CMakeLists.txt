@@ -74,7 +74,8 @@ include_directories(
 
 add_library(frc_robot_interface STATIC
 	src/frc_robot_interface.cpp
-	src/generic_hw_control_loop.cpp)
+	src/generic_hw_control_loop.cpp
+	src/AS726x.cpp)
 
 # Don't build sim code for the Rio or Jetson -
 # saves time and space for something which will
