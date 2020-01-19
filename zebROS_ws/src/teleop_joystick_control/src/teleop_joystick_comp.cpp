@@ -506,7 +506,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			rotation_rate_limit.updateMinMax(-max_rot, max_rot);
 			prev_slow_mode = slow_mode;
 		}
-		if((joystick_states_array[0].leftTrigger >= 0.5) && (rotation != 0.0))
+		if((joystick_states_array[0].leftTrigger >= 0.5) && (rotation = 0.0))
 		{
 			combine_orient_strafing_enable_pub.publish(true);
 			combine_orient_strafing_setpoint_pub.publish(combine_orient_strafing_angle);
