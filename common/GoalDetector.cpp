@@ -74,337 +74,75 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 	const vector<vector<Point>> goal_contours = getContours(image);
 	if (goal_contours.size() == 0)
 		return;
-	const vector<DepthInfo> goal_depths = getDepths(depth,goal_contours, LEFT_CARGO_2019, ObjectType(LEFT_CARGO_2019).real_height());
+	const vector<DepthInfo> goal_depths = getDepths(depth,goal_contours, POWER_PORT_2020, ObjectType(POWER_PORT_2020).real_height());
 
-	//compute confidences for both the left piece of
-	//tape and the right piece of tape
-	const vector<GoalInfo> left_info = getInfo(goal_contours,goal_depths,LEFT_CARGO_2019);
-	if(left_info.size() == 0)
-		return;
-	const vector<GoalInfo> right_info = getInfo(goal_contours,goal_depths,RIGHT_CARGO_2019);
-	if(right_info.size() == 0)
+	//compute confidences for power port tapes
+	const vector<GoalInfo> power_port_info = getInfo(goal_contours,goal_depths,POWER_PORT_2020);
+	if(power_port_info.size() == 0)
 		return;
 #ifdef VERBOSE
-	cout << left_info.size() << " left goals found and " << right_info.size() << " right"  << endl;
+	cout << power_port_info.size() << " power port goals found" << endl;
 #endif
 
-	//loop through every combination of left and right goal and check for the following conditions:
-	//left is actually to the left of right
-	//confidences are higher than any previous one
-	for(size_t i = 0; i < left_info.size(); i++) {
-		for(size_t j = 0; j < right_info.size(); j++) {
+	//loop through every power port goal found
+	for(size_t i = 0; i < power_port_info.size(); i++) {
 #ifdef VERBOSE_BOILER
-			cout << "i:" << i << " j:" << j << endl;
-			cout << left_info[i].contour_index << " " << right_info[j].contour_index << " cidx" << endl;
+			cout << "i:" << i << endl;
+			cout << power_port_info[i].contour_index << " cidx" << endl;
 #endif
-			// Index of the contour corrsponding to
-			// left and right goal. Since we filter out
-			// some contours prior to testing goal data
-			// these can be different than i&j
-			const int left_vindex = left_info[i].contour_index;
-			const int right_vindex = right_info[j].contour_index;
-			if (left_vindex == right_vindex)
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << left_vindex << " " << right_vindex << " same contour" << endl;
-#endif
-				continue;
-			}
-
-			if(left_info[i].com.x > right_info[j].com.x)
-			{
-#ifdef VERBOSE_BOILER
-				cout << "Left too far to the right " << left_info[i].com.x << " " << right_info[j].com.x << endl;
-#endif
-				continue;
-			}
-
-#if 0 // This is the same check as above
-			if(right_info[j].pos.x < left_info[i].pos.x)
-			{
-#ifdef VERBOSE_BOILER
-				cout << "Right goal too far to the left" << endl;
-#endif
-				continue;
-			}
-#endif
-
-			// Make sure the goal parts are reasonably close
-			// together on the screen and proportionally accurate to the tapes.
-			const float screendx = left_info[i].com.x - right_info[j].com.x;
-			const float screendy = left_info[i].com.y - right_info[j].com.y;
-			const float screenDist = sqrtf(screendx * screendx + screendy * screendy);
-
-			if (screenDist > (3.0 * (left_info[i].br.width + right_info[i].br.width)))
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << screenDist << " max screen dist check failed" << endl;
-#endif
-				continue;
-			}
-
-			if (screenDist < (0.5 * (left_info[i].br.width + right_info[i].br.width)))
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << screenDist << " min screen dist check failed" << endl;
-#endif
-				continue;
-			}
-
-			const Rect leftBr = left_info[i].br;
-			const Rect rightBr = right_info[j].br;
-
-#ifdef VERBOSE_BOILER
-			cout << leftBr << " " << rightBr << endl;
-#endif
-			if ((leftBr & rightBr).area() > 0)
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << " ovelapping bounding rects failed" << endl;
-#endif
-				continue;
-			}
-
-			// Make sure the two contours are
-			// similar in size
-			//const float area_ratio = (float)leftBr.area() / rightBr.area();
-			const float area_ratio = contourArea(goal_contours[left_vindex]) / contourArea(goal_contours[right_vindex]);
-			constexpr float max_area_ratio = 4;
-			if ((area_ratio > max_area_ratio) || (area_ratio < (1. / max_area_ratio)))
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << area_ratio << " screen area ratio failed" << endl;
-#endif
-				continue;
-			}
-
-			// Make sure the right contour overlaps at least
-			// part of the left contour
-			if ((leftBr.br().y - (leftBr.height * 0.)) < rightBr.y)
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << leftBr.br().y << " " << leftBr.height << " "  << rightBr.y << " stacked check 1 failed" << endl;
-#endif
-				continue;
-			}
-
-			if ((leftBr.y + (leftBr.height * 0.)) > rightBr.br().y)
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << leftBr.y << " " << leftBr.height << " "  << rightBr.br().y << " stacked check 2 failed" << endl;
-#endif
-				continue;
-			}
-
-			// Make sure the left contour overlaps at least
-			// part of the right contour
-			if ((rightBr.br().y - (rightBr.height * 0.)) < leftBr.y)
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << rightBr.br().y << " " << rightBr.height << " "  << leftBr.y << " stacked check 3 failed" << endl;
-#endif
-				continue;
-			}
-
-			if ((rightBr.y + (rightBr.height * 0.)) > leftBr.br().y)
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " " << rightBr.y << " " << rightBr.height << " "  << leftBr.br().y << " stacked check 4 failed" << endl;
-#endif
-				continue;
-			}
-
-			// Only do distance checks if we believe the
-			// depth info is correct
-			if (!left_info[i].depth_error && !right_info[j].depth_error)
-			{
-/*
-				if (fabsf(left_info[i].angle) + fabsf(right_info[j].angle) < 50.0)
-				{
-#ifdef VERBOSE_BOILER
-					cout << i << " " << j << " angle compare failed" << endl;
-#endif
-					continue;
-				}
-*/
-				// Make sure there isn't too much
-				// distance left to right between the goals
-				const float dx = left_info[i].pos.x - right_info[j].pos.x;
-				if (fabsf(dx) > .5)
-				{
-#ifdef VERBOSE_BOILER
-					cout << i << " " << j << " " << dx << " dx check failed" << endl;
-#endif
-					continue;
-				}
-				const float dy = left_info[i].pos.y - right_info[j].pos.y;
-				const float dz = left_info[i].pos.z - right_info[j].pos.z;
-				const float dist = sqrt(dx * dx + dy * dy + dz * dz);
-				if (dist > 1.25)
-				{
-#ifdef VERBOSE_BOILER
-					cout << i << " " << j << " " << dist << " distance check failed" << endl;
-#endif
-					continue;
-				}
-			}
-				/*
-				// Keep detecting the goal, even if something gets in the way to
-				// obstruct the goal.
-
-				if (!found_goal || left_info[i].confidence[i] )
-				{
-#ifdef VERBOSE_BOILER
-					cout << i << " " << j << " " <<  << " obstruction detected, detecting previous goal" << endl;
-#endif
-					continue;
-				} */
-/*
-			rtRect[i] =
-			_goal_left_rotated_rect = rtRect[left_info[i].contour_index];
-			_goal_right_rotated_rect =rtRect[right_info[i].contour_index];
-			vector<Point> points;
-			Point2f vtx[4];
-			rtR ect[i].points(vtx);
-			for (int idx = 0; idx < 4; idx++)
-				line(image, vtx[idx], vtx[(idx+1)%4], Scalar(153,50,204), 2);
-*/
-			Point2f intersection_point;
-
-			if (!intersection(left_info[i].lineStart, left_info[i].lineEnd,
-			                  right_info[j].lineStart, right_info[j].lineEnd,
-							  intersection_point) ||
-					(intersection_point.y > std::max(left_info[i].com.y, right_info[j].com.y)))
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " intersection point below com of contours : " << intersection_point << endl;
-#endif
-				continue;
-			}
-
-
-#if 0
-			// minAreaRect returns a multiple of 90 if it can't ID a rectangle's
-			// orientation. If so, don't perform the angle check
-			if((fabs(fmod(left_info[i].rtRect.angle, 90)) != 0.) &&
-			   (fabs(fmod(right_info[j].rtRect.angle, 90)) != 0.))
-			{
-				// Normalize angles to -45 .. 45
-				double lAngle = left_info[i].rtRect.angle;
-				double rAngle = right_info[j].rtRect.angle;
-				while (lAngle >= 45)
-					lAngle -= 90;
-				while (lAngle <= -45)
-					lAngle += 90;
-				while (rAngle >= 45)
-					rAngle -= 90;
-				while (rAngle <= -45)
-					rAngle += 90;
-
-				// Make sure contours are pointed in opposite directions
-				if (signbit(lAngle) == signbit(rAngle))
-				{
-#ifdef VERBOSE_BOILER
-					cout << i << " " << j << " Angle sign check failed " <<
-						left_info[i].rtRect.angle  << " " <<
-						right_info[j].rtRect.angle << " " <<
-						lAngle << " " <<
-						rAngle << endl;
-#endif
-					continue;
-				}
-				if (left_info[i].rtRect.angle > right_info[j].rtRect.angle)
-				{
-#ifdef VERBOSE_BOILER
-					cout << i << " " << j << " Angle check failed " <<
-						fabs(fmod(left_info[i].rtRect.angle, 90))  << " " <<
-						fabs(fmod(right_info[j].rtRect.angle, 90)) << " " <<
-						left_info[i].rtRect.angle  << " " <<
-						right_info[j].rtRect.angle << " " <<
-						lAngle << " " <<
-						rAngle << endl;
-#endif
-					continue;
-				}
-			}
-#endif
-
-
-			//_goal_left_rotated_rect =  minAreaRect(Mat(goal_contours[left_info[i].contour_index]));
-			//_goal_right_rotated_rect = minAreaRect(Mat(goal_contours[right_info[j].contour_index]));
-
-			// This doesn't work near the edges of the frame?
-			if ((left_info[i].rect & right_info[j].rect).area() > (.5 * min(left_info[i].rect.area(), right_info[j].rect.area())))
-			{
-#ifdef VERBOSE_BOILER
-				cout << i << " " << j << " overlap check failed" << endl;
-#endif
-				continue;
-			}
 
 			// If this is the first valid pair
 			// or if this pair has a higher combined
 			// confidence than the previously saved
 			// pair, keep it as the best result
-			if ((left_info[i].confidence + right_info[j].confidence) > _min_valid_confidence)
+			if (power_port_info[i].confidence > _min_valid_confidence)
 			{
 				GoalFound goal_found;
-				goal_found.pos.x               = left_info[i].pos.x + ((right_info[j].pos.x - left_info[i].pos.x) / 2.);
-				goal_found.pos.y			   = left_info[i].pos.y + ((right_info[j].pos.y - left_info[i].pos.y) / 2.);
-				goal_found.pos.z			   = left_info[i].pos.z + ((right_info[j].pos.z - left_info[i].pos.z) / 2.);
-				goal_found.left_pos            = left_info[i].pos;
-				goal_found.right_pos           = right_info[j].pos;
+				goal_found.pos.x               = power_port_info[i].pos.x;
+				goal_found.pos.y			   = power_port_info[i].pos.y;
+				goal_found.pos.z			   = power_port_info[i].pos.z;
 				goal_found.distance            = sqrt(goal_found.pos.x * goal_found.pos.x + goal_found.pos.y * goal_found.pos.y);
 				goal_found.angle               = atan2f(goal_found.pos.x, goal_found.pos.y) * 180. / M_PI;
-				goal_found.confidence          = left_info[i].confidence + right_info[j].confidence;
-				goal_found.left_contour_index  = left_info[i].contour_index;
-				goal_found.right_contour_index = right_info[j].contour_index;
-				goal_found.left_rect		   = left_info[i].rect;
-				goal_found.right_rect		   = right_info[j].rect;
-				goal_found.left_rotated_rect   = left_info[i].rtRect;
-				goal_found.right_rotated_rect  = right_info[j].rtRect;
+				goal_found.confidence          = power_port_info[i].confidence;
+				goal_found.contour_index  = power_port_info[i].contour_index;
+				goal_found.rect		   = power_port_info[i].rect;
+				goal_found.rotated_rect   = power_port_info[i].rtRect;
 
 				//These are the saved values for the best goal before moving on to
 				//try and find another one.
 				bool repeated = false;
 				if(_return_found.size() > 0)
 				{
-					size_t gf_lci = goal_found.left_contour_index;
-					size_t gf_rci = goal_found.right_contour_index;
+					size_t gf_ci = goal_found.contour_index;
 					for(size_t k = 0; k < _return_found.size(); k++)
 					{
-						size_t rf_lci = _return_found[k].left_contour_index;
-						size_t rf_rci = _return_found[k].right_contour_index;
+						size_t rf_ci = _return_found[k].contour_index;
 						// compare contour indexes of goal_found vs _return_found[k].  If neither
 						// match, this can't be a repeated goal so add it to return_found and continue.
-						if ((gf_lci != rf_lci) && (gf_lci != rf_rci) &&
-						    (gf_rci != rf_lci) && (gf_rci != rf_rci))
+						if (gf_ci != rf_ci)
 						{
 							continue;
 						}
 						repeated = true;
-						// TODO : next, check distance between (goal_found.right_pos.x - goal_found.left_pos.x) and
-						// (return_found[k].right_pos.x - return_found[k].left_pos.x).  If the goal_found
-						// distance is shorter, replace return_found with goal_found. This would be the case
-						// where one contour is shared between both, but goal_found has closer second contour
-						// than the one in return_found
-						if ((goal_found.right_pos.x - goal_found.left_pos.x) < (_return_found[k].right_pos.x - _return_found[k].left_pos.x))
+
+						if (goal_found.confidence > _return_found[k].confidence)
 						{
 							_return_found[k] = goal_found;
 							break;
 						}
+
 						// TODO : then, if confidence is higher for goal_found compared to return_found[k],
 						// replace return_found[k] with goal info.  This might not be needed
 						// TODO : otherwise, discard goal_found since the previously found goal in return_found
 						// was closer to the ideal goal
 #if 0
-						if(abs(left_info[i].pos.x - _return_found[k].pos.x) < min_dist_bwn_goals)
+						if(abs(power_port_info[i].pos.x - _return_found[k].pos.x) < min_dist_bwn_goals)
 						{
 							break;
 						}
 						for(size_t l = 0; l < _return_found.size(); l++)
 						{
-							if(abs(left_info[i].pos.x - _return_found[l].pos.x) < min_dist_bwn_goals)
+							if(abs(power_port_info[i].pos.x - _return_found[l].pos.x) < min_dist_bwn_goals)
 								repeated = true;
 						}
 #endif
@@ -420,8 +158,7 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 				cout << "Number of goals: " << _return_found.size() << endl;
 				for(size_t n = 0; n < _return_found.size(); n++)
 				{
-					cout << "Goal " << n + 1 << " " << _return_found[n].left_contour_index << " " <<
-						_return_found[n].right_contour_index << " pos: " << _return_found[n].pos <<
+					cout << "Goal " << n + 1 << " " << _return_found[n].contour_index << " pos: " << _return_found[n].pos <<
 						" distance: " << _return_found[n].distance << " angle: " << _return_found[n].angle << endl;
 				}
 #endif
@@ -429,11 +166,10 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 			else
 			{
 #ifdef VERBOSE_BOILER
-				cout << i << " " << j << " confidence too low " <<
-					left_info[i].confidence  << " " << right_info[j].confidence << endl;
+				cout << i << " confidence too low " << /
+					power_port_info[i].confidence  << endl;
 #endif
 			}
-		}
 	}
 }
 
@@ -833,17 +569,14 @@ void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours
 	*/
 	for(size_t i = 0; i < _return_found.size(); i++)
 	{
-		const auto lr =_return_found[i].left_rect;
-		const auto rr =_return_found[i].right_rect;
+		const auto lr =_return_found[i].rect;
 		rectangle(image, lr, Scalar(0,255,0), 3);
-		rectangle(image, rr, Scalar(0,140,255), 3);
-		line(image,
+		/* line(image,
 			 Point(lr.x + lr.width / 2.0, lr.y + lr.height / 2.0),
-			 Point(rr.x + rr.width / 2.0, rr.y + rr.height / 2.0),
 			 Scalar(0, 140, 255), 3, CV_AA);
 		const double center_x = (lr.x + lr.width / 2.0 + rr.x + rr.width / 2.0) / 2.0;
 		const double center_y = (lr.y + lr.height / 2.0 + rr.y + rr.height / 2.0) / 2.0;
-		circle(image, Point(center_x, center_y), 8, Scalar(0, 140, 255), 2, CV_AA);
+		circle(image, Point(center_x, center_y), 8, Scalar(0, 140, 255), 2, CV_AA); */
 	}
 }
 
