@@ -37,17 +37,12 @@ struct GoalInfo
 struct GoalFound
 {
 	cv::Point3f pos;
-	cv::Point3f left_pos;
-	cv::Point3f right_pos;
 	float distance;
 	float angle;
 	float confidence;
-	size_t left_contour_index;
-	size_t right_contour_index;
-	cv::Rect left_rect;
-	cv::Rect right_rect;
-	cv::RotatedRect left_rotated_rect;
-	cv::RotatedRect right_rotated_rect;
+	size_t contour_index;
+	cv::Rect rect;
+	cv::RotatedRect rotated_rect;
 };
 
 
@@ -100,4 +95,3 @@ class GoalDetector
 		const std::vector<DepthInfo> getDepths(const cv::Mat &depth, const std::vector< std::vector< cv::Point > > &contours, const ObjectNum &objtype, float expected_height);
 		const std::vector< GoalInfo > getInfo(const std::vector< std::vector< cv::Point > > &contours, const std::vector<DepthInfo> &depth_maxs, ObjectNum objtype);
 };
-
