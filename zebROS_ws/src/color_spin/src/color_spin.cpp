@@ -1,8 +1,8 @@
 #include "ros/ros.h"
-#include <std_msgs>
+#include "color_spin/color_algorithm.h"
 
-color_spin::rotation::Request &req,
-color_spin::rotation::Response &res
+color_spin::color_algorithm::Request &req,
+color_spin::color_algorithm::Response &res
 {
   if (sensor_color == 'r') {
 	  if (fms_color == 'y') {
