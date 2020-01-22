@@ -27,7 +27,7 @@ Zero point in degrees is set using service call.
 
 
 constexpr double pi = 3.14159;
-const std::string sub_topic = "data";
+const std::string sub_topic = "imu/data";
 const std::string pub_topic = "zeroed_imu";
 const std::string service_name = "set_imu_zero";
 ros::Publisher pub;
