@@ -1,15 +1,21 @@
 #Config file for configuring autonomous modes and actions
 
-#modes - arrays of actions (see below) that will be executed in order
+# MODES - arrays of actions (see below) that will be executed in order
 
 auto_mode_1: ["align_to_shoot"] #example
 auto_mode_2: []
 
 
-#actions
+# ACTIONS
+
+# allowed names of actionlib servers: ____, ____
 
 #example:
 align_to_shoot:
-    actionlib_server: "/path/name_of_server"
+    actionlib_server: "something from the above list"
     goal:
-        #action goal items
+        # action goal items
+
+pause_2_sec:
+    type: "pause"
+    duration: 2 #sec
