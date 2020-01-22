@@ -267,7 +267,7 @@ int main(int argc, char const *argv[]) {
   WorldModel world(beacons, 0, 16, 0, 16);
   ParticleFilter pf(world,
                     0, 16, 0, 16,
-                    0.1, 0.1, 0.01,
+                    0.1, 0.1, 0.0,
                     200);
 
   double theta = 0;
@@ -287,7 +287,7 @@ int main(int argc, char const *argv[]) {
     pf.assign_weights(measurement);
     pf.resample();
     pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
-    // pf.set_rotation(0.5);
+    pf.set_rotation(0.5);
     std::cout << pos.first << ", " << pos.second << ", ";
     print_particle(pf.predict());
     //std::cout << "\n";
