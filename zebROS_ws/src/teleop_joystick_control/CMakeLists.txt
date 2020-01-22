@@ -70,6 +70,13 @@ target_link_libraries(teleop_joystick_comp
 	${catkin_LIBRARIES}
 	)
 
+add_executable(2020_teleop_joystick_comp src/2020_teleop_joystick_comp.cpp)
+set_target_properties(2020_teleop_joystick_comp PROPERTIES OUTPUT_NAME 
+	2020_teleop_joystick_comp PREFIX "")
+target_link_libraries(2020_teleop_joystick_comp
+	${catkin_LIBRARIES}
+	)
+
 # Add cmake target dependencies of the executable
 # same as for the library above. This is needed to force
 # talon controller messages to be built before the
@@ -117,7 +124,7 @@ add_dependencies(teleop_joints_keyboard
 
 # Install ------------------------------------------------------------
 # Install header files
-install(TARGETS teleop_joystick_comp translate_joystick_data_node teleop_joints_keyboard
+install(TARGETS teleop_joystick_comp 2020_teleop_joystick_comp translate_joystick_data_node teleop_joints_keyboard
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
