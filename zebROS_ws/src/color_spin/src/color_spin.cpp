@@ -49,7 +49,7 @@ bool rotate(color_spin::color_algorithm::Request &req,
 		}
   }
   ROS_INFO("request = x%1c, y=%1c", (char)req.fms_color, (char)req.sensor_color);
-  ROS_INFO("sending response = [x%4d]", (float)res.rotate);
+  ROS_INFO("sending response = [x%1f]", (float)res.rotate);
   return true;
 }
 
