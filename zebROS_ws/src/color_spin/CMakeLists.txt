@@ -10,7 +10,9 @@ project(color_spin)
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	std_msgs
-	message_generation	
+	message_generatioin
+	rospy
+	genmsg	
 	
 )
 
