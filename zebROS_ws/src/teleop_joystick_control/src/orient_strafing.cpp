@@ -17,7 +17,7 @@ void publishCombinedCmdVel(void)
 
 void enableCallback(const std_msgs::Bool::ConstPtr &enable_msg)
 {
-	enable_combination = enable_msg->data ? true : false;
+	enable_combination = enable_msg->data;
 }
 
 void teleopCallback(const geometry_msgs::Twist::ConstPtr &teleop_msg)
