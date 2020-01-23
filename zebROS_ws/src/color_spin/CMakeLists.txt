@@ -10,7 +10,7 @@ project(color_spin)
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	std_msgs
-	message_generatioin
+	message_generation
 	rospy
 	genmsg	
 	
@@ -112,8 +112,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
- ${catkin_INCLUDE_DIRS}
+ include ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -145,9 +144,16 @@ add_executable(color_spin src/color_spin.cpp)
 # add_dependencies(color_spin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(color_spin
-#   ${catkin_LIBRARIES}
-# )
+add_executable(color_spin src/color_spin.cpp)
+target_link_libraries(color_spin
+   ${catkin_LIBRARIES}
+   )
+add_dependencies(
+add_executable(color_spin src/color_spin.cpp)
+target_link_libraries(color_spin
+   ${catkin_LIBRARIES}
+   )
+add_dependencies(
 
 #############
 ## Install ##
