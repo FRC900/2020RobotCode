@@ -1,18 +1,20 @@
 #Config file for configuring autonomous modes and actions
 
-# MODES - arrays of actions (see below) that will be executed in order
+# MODES ---------------------------------------------------------------------------
+# arrays of actions (see below) that will be executed in order
+# format: auto_mode_[integer]: array
 
-auto_mode_1: ["align_to_shoot", "pause_2_sec"] #example
+auto_mode_1: ["intake", "pause_2_sec"] #example
 auto_mode_2: []
 
 
-# ACTIONS - must have a value for "type", other stuff varies
-
+# ACTIONS ------------------------------------------------------------------------
+# must have a value for "type", other stuff varies
 #valid action types: "intake_actionlib_server", "pause"
 
 #examples:
 
-align_to_shoot:
+intake:
     type: "intake_actionlib_server"
     goal:
         "placeholder"

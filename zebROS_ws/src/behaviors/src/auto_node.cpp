@@ -2,7 +2,7 @@
 #include "behavior_actions/AutoMode.h"
 
 //variables to store stuff read from config
-int auto_mode;
+int auto_mode = -1; //-1 if nothing selected
 std::vector<std::string> auto_steps; //stores string of action names to do, read from the auto mode array in the config file
 
 bool auto_running = false;
@@ -42,8 +42,8 @@ int main(int argc, char** argv)
 	{
 		if(!ros::ok())
 		{
-			ROS_ERROR("Killing auto mode b/c ros not ok");
-			return 1;
+			ROS_ERROR("Killing auto node b/c ros not ok when waiting for autonomous to start");
+			return 0;
 		}
 
 		ros::spinOnce(); //spin so the subscribers can update
@@ -55,9 +55,20 @@ int main(int argc, char** argv)
 
 	//EXECUTE AUTONOMOUS ACTIONS --------------------------------------------------------------------------
 
+	auto_mode = 1; //TODO remove this later
+
+	if(auto_mode < 0){
+		ROS_ERROR("Auto node - No auto mode selected");
+		return 1;
+	}
+
+	ROS_INFO_STREAM("Auto node - Executing auto mode " << auto_mode);
+
 	//read sequence of actions
-	ROS_INFO("Auto node - reading config values based on the selected auto mode");
-	nh.getParam("auto_mode_1", auto_steps); //TODO if it failed
+	if(! nh.getParam("auto_mode_" + std::to_string(auto_mode), auto_steps)){
+		ROS_ERROR_STREAM("Couldn't read auto_mode_" + std::to_string(auto_mode) + " config value in auto node");
+		return 1; //TODO pick a default?
+	}
 
 
 	//run through actions in order
@@ -68,22 +79,32 @@ int main(int argc, char** argv)
 
 			//read data needed to carry out the action
 			XmlRpc::XmlRpcValue action_data;
-			nh.getParam(auto_steps[i], action_data);
+			if(! nh.getParam(auto_steps[i], action_data)){
+				ROS_ERROR_STREAM("Auto node - Couldn't read data for '" << auto_steps[i] << "' auto action from config file");
+				return 1;
+			}
 
-			//figure out what to do based on the action type
-			const char* action_type = action_data["type"];
-			switch(action_type) //TODO can't do switch like this
+			//figure out what to do based on the action type, and do it
+			if(action_data["type"] == "intake_actionlib_server")
 			{
-				case "intake_actionlib_server":
-					ROS_INFO("intake actionlib server");
-					break;
-				default:
-					ROS_INFO_STREAM("Invalid type of action: " << action_type);
+				//do stuff
+			}
+			else if(action_data["type"] == "pause")
+			{
+				//do stuff
+			}
+			else
+			{
+				ROS_ERROR_STREAM("Invalid type of action: " << action_data["type"]);
+				return 1;
 			}
 		}
 
 	}
 
+	ROS_INFO("Autonomous actions completed!");
+
+	return 0;
 }
 
 
