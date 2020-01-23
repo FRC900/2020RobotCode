@@ -47,7 +47,7 @@ bool rotate(color_spin::color_algorithm::Request &req,
 	  else if (req.fms_color == 'c') {
 		  res.rotate = -.125;
 		}
-  }
+	  }
   ROS_INFO("request = x%1c, y=%1c", (char)req.fms_color, (char)req.sensor_color);
   ROS_INFO("sending response = [x%4d]", (float)res.rotate);
   return true;
