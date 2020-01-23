@@ -2,18 +2,20 @@
 
 # MODES - arrays of actions (see below) that will be executed in order
 
-auto_mode_1: ["align_to_shoot"] #example
+auto_mode_1: ["align_to_shoot", "pause_2_sec"] #example
 auto_mode_2: []
 
 
-# ACTIONS
+# ACTIONS - must have a value for "type", other stuff varies
 
-# allowed names of actionlib servers: ____, ____
+#valid action types: "intake_actionlib_server", "pause"
 
-#example:
+#examples:
+
 align_to_shoot:
-    actionlib_server: "something from the above list"
+    type: "intake_actionlib_server"
     goal:
+        "placeholder"
         # action goal items
 
 pause_2_sec:
