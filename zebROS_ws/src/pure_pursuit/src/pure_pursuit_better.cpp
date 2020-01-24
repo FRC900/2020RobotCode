@@ -3,6 +3,7 @@
  * 3. find the goal point -- that is, point which the robot should drive to (based on lookahead distance)
  */
 #include "pure_pursuit/pure_pursuit_better.h"
+#include "ros/ros.h"
 
 //TODO - make const T
 void PurePursuit::loadPath(const nav_msgs::Path path)
@@ -11,8 +12,10 @@ void PurePursuit::loadPath(const nav_msgs::Path path)
     num_waypoints_ = path_.poses.size();
     path_length_ = 0;
     vec_path_length_.push_back(0); // Path length at the first waypoint is 0
+    ROS_INFO_STREAM("0: (" << path_.poses[0].pose.position.x << ", " << path_.poses[0].pose.position.y << ")"); 
     for(size_t i = 0; i < num_waypoints_ - 1; i++)
     {
+        ROS_INFO_STREAM(i << ": (" << path_.poses[i + 1].pose.position.x << ", " << path_.poses[i + 1].pose.position.y << ")"); 
         double start_x = path_.poses[i].pose.position.x;
         double start_y = path_.poses[i].pose.position.y;
         double end_x = path_.poses[i+1].pose.position.x;
@@ -67,10 +70,10 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
     // This would also potentially give a location between two segments as the current
     // location, which makes the next lookahead point also somewhere
     // between two waypoints.
-    //ROS_INFO_STREAM("num_waypoints = " << num_waypoints_);
-    for(size_t i = 0; i < num_waypoints_; i++)
+    ROS_INFO_STREAM("num_waypoints = " << num_waypoints_);
+    for(size_t i = 0; i < num_waypoints_ - 1; i++)
     {
-        //ROS_INFO_STREAM("test_point = " << path_.poses[i].pose.position.x << ", " << path_.poses[i].pose.position.y);
+        ROS_INFO_STREAM("test_point = " << path_.poses[i].pose.position.x << ", " << path_.poses[i].pose.position.y);
         // The line segment between this waypoint and the next waypoint
         start_x = path_.poses[i].pose.position.x;
         start_y = path_.poses[i].pose.position.y;
@@ -90,16 +93,16 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
             // Find path location
             current_x_path = start_x + magnitude_projection*(dx/hypot(dx, dy));
             current_y_path = start_y + magnitude_projection*(dy/hypot(dx, dy));
-            //ROS_INFO_STREAM("current path point = " << current_x_path << ", " << current_y_path);
+            ROS_INFO_STREAM("current path point = " << current_x_path << ", " << current_y_path);
 
             // Update minimum distance from path
             double distance_from_path = hypot(current_x - current_x_path, current_y - current_y_path); 
-            //ROS_INFO_STREAM("distance_from_path = " << distance_from_path);
+            ROS_INFO_STREAM("distance_from_path = " << distance_from_path);
             if(distance_from_path < minimum_distance)
             {
                 minimum_distance = distance_from_path;
                 current_waypoint_index = i;
-                //ROS_INFO_STREAM("dx, dy = " << dx << ", " << dy << "; magnitude_projection = " << magnitude_projection);
+                ROS_INFO_STREAM("dx, dy = " << dx << ", " << dy << "; magnitude_projection = " << magnitude_projection);
                 distance_to_travel = hypot(dx, dy) - magnitude_projection; // Current value is distance that the robot will travel to reach the next waypoint
             }
         }
@@ -107,16 +110,22 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
 
     if(minimum_distance == std::numeric_limits<double>::max())
     {
-        //ROS_ERROR_STREAM("Not within path limits"); //TODO: drive toward beginning of path?
+        ROS_ERROR_STREAM("Not within path limits"); //TODO: drive toward beginning/end of path based on which is closest
+        geometry_msgs::Pose target_pos;
+        target_pos.position.x = path_.poses[num_waypoints_ - 1].pose.position.x;
+        target_pos.position.y = path_.poses[num_waypoints_ - 1].pose.position.x;
+        target_pos.position.z = 0;
+        geometry_msgs::Quaternion q_final = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, 0.0);
+        return target_pos;
     }
 
-    //ROS_INFO_STREAM("minimum_distance = " << minimum_distance);
+    ROS_INFO_STREAM("minimum_distance = " << minimum_distance);
 
     // Determine next waypoint
     size_t end_i = current_waypoint_index + 1; // the waypoint after the point normal to the position of the robot
     for(; end_i < num_waypoints_ - 1; end_i++)
     {
-        //ROS_INFO_STREAM("index = " << end_i << ", distance_to_travel = " << distance_to_travel);
+        ROS_INFO_STREAM("index = " << end_i << ", distance_to_travel = " << distance_to_travel);
         start_x = path_.poses[end_i].pose.position.x;
         start_y = path_.poses[end_i].pose.position.y;
         end_x = path_.poses[end_i+1].pose.position.x;
@@ -127,13 +136,13 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
         else
             break;
     }
-    //ROS_INFO_STREAM("index before end point: " << end_i);
+    ROS_INFO_STREAM("index before end point: " << end_i);
 
     // Add fraction of distance between waypoints to find final x and y
     dx = end_x - start_x;
     dy = end_y - start_y;
-    //ROS_INFO_STREAM("distance already travelled through waypoints = " << distance_to_travel);
-    //ROS_INFO_STREAM("lookahead distance = " << lookahead_distance_);
+    ROS_INFO_STREAM("distance already travelled through waypoints = " << distance_to_travel);
+    ROS_INFO_STREAM("lookahead distance = " << lookahead_distance_);
     double final_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy)); 
     double final_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy)); 
     ROS_INFO_STREAM("drive to coordinates: (" << final_x << ", " << final_y << ")");
@@ -168,6 +177,6 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
 
     total_distance_travelled = vec_path_length_[current_waypoint_index] + magnitude_projection; 
 
-    //ROS_INFO_STREAM("Successfully returned target position and orientation");
+    ROS_INFO_STREAM("Successfully returned target position and orientation");
     return target_pos;
 }

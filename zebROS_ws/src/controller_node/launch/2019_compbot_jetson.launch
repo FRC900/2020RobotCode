@@ -63,7 +63,7 @@
 
             <node name="x_position_pid" pkg="pid" type="controller" >
                 <param name="node_name" value="x_position_pid" />
-                <param name="Kp" value="1.0" />
+                <param name="Kp" value="10.0" />
                 <param name="Ki" value="0.0" />
                 <param name="Kd" value="0.0" />
                 <param name="upper_limit" value="10" />
@@ -80,7 +80,7 @@
 
             <node name="y_position_pid" pkg="pid" type="controller" >
                 <param name="node_name" value="y_position_pid" />
-                <param name="Kp" value="1.0" />
+                <param name="Kp" value="10.0" />
                 <param name="Ki" value="0.0" />
                 <param name="Kd" value="0.0" />
                 <param name="upper_limit" value="10" />
@@ -130,50 +130,6 @@
 		</group>
 	</group>
 
-	<!-- Actionlib servers!!! -->
-	<!-- Include this at the top level so all actionlib servers can find it -->
-	<rosparam file="$(find behaviors)/config/autoInterpreterServer.yaml" command="load"/>
-	<group ns="elevator">
-		<rosparam file="$(find behaviors)/config/elevatorServer.yaml" command="load"/>
-		<node name="elevator_ac_server" pkg="behaviors" type="elevator_server" output="screen" />
-	</group>
-	<group ns="climber">
-		<rosparam file="$(find behaviors)/config/climberServer.yaml" command="load"/>
-		<node name="climber_ac_server" pkg="behaviors" type="climber_server" output="screen" />
-	</group>
-	<group ns="cargo_intake">
-		<rosparam file="$(find behaviors)/config/intakeCargoServer.yaml" command="load"/>
-		<node name="intake_cargo_ac_server" pkg="behaviors" type="intake_cargo_server" output="screen" />
-	</group>
-	<group ns="cargo_outtake">
-		<rosparam file="$(find behaviors)/config/outtakeCargoServer.yaml" command="load"/>
-		<node name="outtake_cargo_ac_server" pkg="behaviors" type="outtake_cargo_server" output="screen" />
-	</group>
-	<group ns="hatch_intake">
-		<rosparam file="$(find behaviors)/config/intakeHatchPanelServer.yaml" command="load"/>
-		<node name="intake_hatch_ac_server" pkg="behaviors" type="intake_hatch_panel_server" output="screen" />
-	</group>
-	<group ns="hatch_outtake">
-		<rosparam file="$(find behaviors)/config/outtakeHatchPanelServer.yaml" command="load"/>
-		<node name="outtake_hatch_ac_server" pkg="behaviors" type="outtake_hatch_panel_server" output="screen" />
-	</group>
-
-	<group ns="path_to_goal">
-<!--
-		<rosparam file="$(find robot_visualizer)/config/robot_visualize.yaml" command="load"/>
-		<node name="robot_visualize" pkg="robot_visualizer" type="robot_visualize" output="screen" />
-		<node name="profile_follow" pkg="robot_visualizer" type="profile_follow" output="screen" />
--->
-<!--
-		<rosparam file="$(find swerve_point_generator)/config/point_gen.yaml" command="load"/>
-		<node name="point_gen" pkg="swerve_point_generator" type="point_gen" output="screen" />
-		<node name="map_server" pkg="map_server" type="map_server" args="$(find controller_node)/maps/2018FRC_field.yaml" output="screen" if="$(arg static_map)">
-			<param name="frame_id" value="/map"/>
-		</node>
-		<node name="path_to_goal_ac_server" pkg="path_to_goal" type="path_to_goal_server" output="screen" />
-		<node name="test_client" pkg="path_to_goal" type="test_client" output="screen" />
--->
-	</group>
 
 	<group ns="cmd_vel_mux">
 		<node name="twist_mux" pkg="twist_mux" type="twist_mux">

@@ -4,4 +4,4 @@ pure_pursuit:
     target_frame: "initial_pose"
     final_pos_tol: 0.1
     ros_rate: 10
-    server_timeout: 5
+    server_timeout: 10

@@ -126,7 +126,6 @@ class PathAction
 
 		void executeCB(const pure_pursuit::PathGoalConstPtr &goal)
 		{
-			// TODO - none of these are ever changed
 			bool preempted = false;
 			bool timed_out = false;
 			bool succeeded = false;
@@ -146,6 +145,20 @@ class PathAction
                         {
                             ROS_ERROR_STREAM("Can't call spline gen service in pure_pursuit_server");
                             
+                        }
+                        int num_waypoints = spline_gen_srv.response.path.poses.size();
+
+                        //debug
+                        for(int i = 0; i < spline_gen_srv.response.end_points.size(); i++)
+                        {
+                            ROS_INFO_STREAM("end point at " << i << " is " << spline_gen_srv.response.end_points[i]);
+                        }
+                        ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x);
+
+                        for(size_t i = 0; i < num_waypoints; i++) //TODO hacky fix
+                        {
+                            spline_gen_srv.response.path.poses[i].pose.position.x += odom_.pose.pose.position.x;
+                            spline_gen_srv.response.path.poses[i].pose.position.y += odom_.pose.pose.position.y;
                         }
 
 			ros::Rate r(ros_rate_); // TODO : I should be a config item
@@ -220,9 +233,11 @@ class PathAction
                                     ROS_ERROR_STREAM(action_name_ << ": preempted");
                                     preempted = true;
                                 }
-                                else if(total_distance - distance_travelled < final_pos_tol_) //TODO make this an actual check for completed
+                                else if((spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x - odom_.pose.pose.position.x < final_pos_tol_) &&
+                                        (spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y - odom_.pose.pose.position.y < final_pos_tol_))
                                 {
                                     ROS_INFO_STREAM(action_name_ << ": succeeded");
+                                    succeeded = true;
                                 }
                                 else if(ros::Time::now().toSec() - start_time_ > server_timeout_) {
                                     ROS_ERROR_STREAM(action_name_ << ": timed out");

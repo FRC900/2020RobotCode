@@ -282,13 +282,16 @@ bool callPath()
 
 	ROS_INFO("callPath: Sending goal to the server.");
 	pure_pursuit::PathGoal path_goal;
-	path_goal.points.resize(2);
+	path_goal.points.resize(3);
 	path_goal.points[0].x = 0;
 	path_goal.points[0].y = 0;
 	path_goal.points[0].z = 0;
 	path_goal.points[1].x = 1;
 	path_goal.points[1].y = 3;
 	path_goal.points[1].z = 0;
+	path_goal.points[2].x = 0;
+	path_goal.points[2].y = 6;
+	path_goal.points[2].z = 0;
 	path_ac.sendGoal(path_goal);
 
 	//wait for the action to return
