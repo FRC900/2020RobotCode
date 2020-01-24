@@ -10,6 +10,7 @@ project(behavior_actions)
 find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
+  message_generation
   roscpp
 )
 
@@ -53,11 +54,10 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  StopAuto.srv
+)
 
 ## Generate actions in the 'action' folder
 add_action_files(

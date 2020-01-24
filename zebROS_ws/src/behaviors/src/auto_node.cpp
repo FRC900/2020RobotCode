@@ -1,7 +1,12 @@
 #include "ros/ros.h"
-#include "behavior_actions/AutoMode.h"
+#include "behavior_actions/AutoMode.h" //msg file
+#include "behavior_actions/StopAuto.h" //srv file
 
-//variables to store stuff read from config
+#include "actionlib/client/simple_action_client.h"
+#include "behavior_actions/ElevatorAction.h" //TODO remove this, it's for testing using last year's stuff
+
+
+//variables
 int auto_mode = -1; //-1 if nothing selected
 std::vector<std::string> auto_steps; //stores string of action names to do, read from the auto mode array in the config file
 
@@ -10,6 +15,47 @@ bool auto_running = false;
 //set false if something fails
 //set false if driver overrides auto continuing (during teleop)
 //Everything checks if this is true before proceeding.
+
+
+
+
+
+
+//function to wait while an actionlib server is running
+//TODO: steal from actionlib server template maybe
+
+
+
+//server callback for stop autonomous execution
+bool stopAuto(behavior_actions::StopAuto::Request &req,
+			  behavior_actions::StopAuto::Response &res)
+{
+	auto_running = false; //TODO does this need to be a buffer?
+	return true;
+}
+
+
+
+//subscriber callback for match data
+
+
+
+
+//subscriber callback for dashboard data
+void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
+{
+	//only change auto mode if auto hasn't started - don't want to try to change it in the middle
+	if(!auto_running)
+	{
+		auto_mode = msg->auto_mode;
+	}
+}
+
+
+
+
+
+
 
 
 int main(int argc, char** argv)
@@ -25,8 +71,13 @@ int main(int argc, char** argv)
 	//rio match data (to know if we're in auto period)
 	//dashboard (to get auto mode)
 
+	//servers
+	ros::ServiceServer stop_auto_server = nh.advertiseService("stop_auto", stopAuto); //called by teleoop node to stop auto execution during teleop if driver wants
+
 	//actionlib clients
 	//TODO
+	//example:
+	actionlib::SimpleActionClient<behavior_actions::ElevatorAction> elevator_ac("/elevator/elevator_server", true);
 
 
 	//other variables
@@ -57,6 +108,7 @@ int main(int argc, char** argv)
 
 	auto_mode = 1; //TODO remove this later
 
+	//check if an auto mode was selected
 	if(auto_mode < 0){
 		ROS_ERROR("Auto node - No auto mode selected");
 		return 1;
@@ -64,7 +116,7 @@ int main(int argc, char** argv)
 
 	ROS_INFO_STREAM("Auto node - Executing auto mode " << auto_mode);
 
-	//read sequence of actions
+	//read sequence of actions from config
 	if(! nh.getParam("auto_mode_" + std::to_string(auto_mode), auto_steps)){
 		ROS_ERROR_STREAM("Couldn't read auto_mode_" + std::to_string(auto_mode) + " config value in auto node");
 		return 1; //TODO pick a default?
@@ -77,7 +129,7 @@ int main(int argc, char** argv)
 		{
 			ROS_INFO_STREAM("Auto node - running step " << i << ": " << auto_steps[i]);
 
-			//read data needed to carry out the action
+			//read data from config needed to carry out the action
 			XmlRpc::XmlRpcValue action_data;
 			if(! nh.getParam(auto_steps[i], action_data)){
 				ROS_ERROR_STREAM("Auto node - Couldn't read data for '" << auto_steps[i] << "' auto action from config file");
@@ -88,10 +140,19 @@ int main(int argc, char** argv)
 			if(action_data["type"] == "intake_actionlib_server")
 			{
 				//do stuff
+
 			}
 			else if(action_data["type"] == "pause")
 			{
 				//do stuff
+			}
+			//TODO remove test
+			else if(action_data["type"] == "elevator_actionlib_server")
+			{
+				if(!elevator_ac.waitForServer(ros::Duration(5))){ROS_ERROR("couldn't find server");} //for some reason this is necessary, even if the server has been up and running for a while
+				behavior_actions::ElevatorGoal goal;
+				goal.setpoint_index = (int) action_data["goal"]["setpoint_index"];
+				elevator_ac.sendGoal(goal);
 			}
 			else
 			{
@@ -107,25 +168,3 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-
-
-
-
-
-
-
-
-//subscriber callback for match data
-
-
-
-
-//subscriber callback for dashboard data
-void autoModeCallback(const behavior_actions::AutoMode::ConstPtr& msg)
-{
-	//only change auto mode if auto hasn't started
-	if(!auto_running)
-	{
-		//TODO read data
-	}
-}
