@@ -6,28 +6,27 @@
 using namespace std;
 using namespace cv;
 
-//#define VERBOSE
-//#define VERBOSE_BOILER
+#define VERBOSE
+#define VERBOSE_BOILER
 
 int camera_angle_common = 25;
 
 void angleCallback(int value, void *data)
 {
 	std::cout << "running AngleCallback with value " << value << endl;
-	GoalDetector *gd = static_cast<GoalDetector*>(data);
 	double angle = static_cast<double>(value)/-10;
-	gd->setCameraAngle(angle);
+	//gd->setCameraAngle(angle);
 }
 
 GoalDetector::GoalDetector(const cv::Point2f &fov_size, const cv::Size &frame_size, bool gui) :
 	_fov_size(fov_size),
 	_frame_size(frame_size),
 	_isValid(false),
-	_min_valid_confidence(0.50),
+	_min_valid_confidence(0.35),
 	_otsu_threshold(5),
 	_blue_scale(90),
 	_red_scale(80),
-	_camera_angle(-250) // in tenths of a degree
+	_camera_angle(0) // in tenths of a degree
 {
 	if (gui)
 	{
@@ -159,15 +158,14 @@ void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
 				for(size_t n = 0; n < _return_found.size(); n++)
 				{
 					cout << "Goal " << n + 1 << " " << _return_found[n].contour_index << " pos: " << _return_found[n].pos <<
-						" distance: " << _return_found[n].distance << " angle: " << _return_found[n].angle << endl;
+						" distance: " << _return_found[n].distance << " angle: " << _return_found[n].angle << " confidence: " << _return_found[n].confidence << endl;
 				}
 #endif
 			}
 			else
 			{
 #ifdef VERBOSE_BOILER
-				cout << i << " confidence too low " << /
-					power_port_info[i].confidence  << endl;
+				cout << "goal " << i << " confidence too low -> " << power_port_info[i].confidence << endl;
 #endif
 			}
 	}
@@ -257,7 +255,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 	const float filledPercentageExpected = goal_shape.area() / goal_shape.boundingArea();
 
 	// Aspect ratio of the goal
-	const float expectedRatio = goal_shape.width() / goal_shape.height();
+	const float expectedRatio = (float)std::min(goal_shape.height(), goal_shape.width()) / std::max(goal_shape.height(), goal_shape.width());
 
 	for (size_t i = 0; i < contours.size(); i++)
 	{
@@ -279,46 +277,13 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		// height and width of the contour
 		//const RotatedRect rr(minAreaRect(contours[i]));
 		const float actualRatio = (float)std::min(br.height, br.width) / std::max(br.height, br.width);
-		if ((actualRatio < .20) || (actualRatio > 1.0))
+		if ((actualRatio < .30) || (actualRatio > 1.0))
 		{
 #ifdef VERBOSE
 			cout << "Contour " << i << " height/width ratio fail" << br.size() << " " << actualRatio << endl;
 #endif
 			continue;
 		}
-
-#if 0
-		// TODO : Figure out how well this works in practice
-		// Filter out goals which are too close or too far
-		if (!depth_maxs[i].error && (6.2 < depth_maxs[i].depth || depth_maxs[i].depth < .1))
-		{
-#ifdef VERBOSE
-			cout << "Contour " << i << " depth out of range " << depth_maxs[i].depth << endl;
-#endif
-			continue;
-		}
-#endif
-		// Fit a line to the countor, calculate the start and end points on screen
-		// for the line.
-		Vec4f fit_line;
-		fitLine(contours[i], fit_line, CV_DIST_L2, 0, 0.01, 0.01);
-
-		const float vx = fit_line[0];
-		const float vy = fit_line[1];
-		const float x = fit_line[2];
-		const float y = fit_line[3];
-		const float leftY =((-x * vy / vx) + y);
-		const float rightY =(((_frame_size.width - x) * vy / vx) + y);
-#if 0
-		const float angle = atan2(vy, vx);
-		cout << "fit_line: " << fit_line << endl;
-		cout << "   frame_size " << _frame_size << endl;
-		cout << "   leftY: " << leftY << endl;
-		cout << "   rightY: " << rightY << endl;
-		cout << "   angle: " << angle * 180. / M_PI << endl;
-#endif
-		const Point2f start_line(_frame_size.width - 1, rightY);
-		const Point2f end_line(0, leftY);
 
 		//create a trackedobject to get various statistics
 		//including area and x,y,z position of the goal
@@ -331,14 +296,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		// close to 1.0 with some variance due to perspective
 		const float exp_area = goal_tracked_obj.getScreenPosition(_fov_size, _frame_size).area();
 		const float actualScreenArea = (float)br.area() / exp_area;
-/*
-		if (((exp_area / br.area()) < 0.20) || ((exp_area / br.area()) > 5.00))
-		{
-#ifdef VERBOSE
-			cout << "Contour " << i << " area out of range for depth (depth/act/exp/ratio):" << depth_maxs[i].depth << "/" << br.area() << "/" << exp_area << "/" << actualScreenArea << endl;
-#endif
-			continue;
-		}*/
+
 		//percentage of the object filled in
 		const float filledPercentageActual = goal_actual.area() / goal_actual.boundingArea();
 
@@ -346,32 +304,19 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		Point2f com_percent_actual((goal_actual.com().x - br.tl().x) / goal_actual.width(),
 								   (goal_actual.com().y - br.tl().y) / goal_actual.height());
 
-		/* I don't think this block of code works but I'll leave it in here
-		Mat test_contour = Mat::zeros(640,640,CV_8UC1);
-		std::vector<Point> upscaled_contour;
-		for(int j = 0; j < goal_shape.shape().size(); j++) {
-			upscaled_contour.push_back(Point(goal_shape.shape()[j].x * 100, goal_shape.shape()[j].y * 100));
-			cout << "Upscaled contour point: " << Point(goal_shape.shape()[j].x * 100, goal_shape.shape()[j].y * 100) << endl;
-			}
-		std::vector< std::vector<Point> > upscaledcontours;
-		upscaledcontours.push_back(upscaled_contour);
-		drawContours(test_contour, upscaledcontours, 0, Scalar(0,0,0));
-		imshow("Goal shape", test_contour);
-		*/
-
 		//parameters for the normal distributions
 		//values for standard deviation were determined by
 		//taking the standard deviation of a bunch of values from the goal
 		//confidence is near 0.5 when value is near the mean
 		//confidence is small or large when value is not near mean
-		const float confidence_height      = createConfidence(goal_shape.real_height(), 0.2, goal_tracked_obj.getPosition().z - goal_shape.height() / 2.0);
-		const float confidence_com_x       = createConfidence(com_percent_expected.x, 0.125,  com_percent_actual.x);
-		const float confidence_com_y       = createConfidence(com_percent_expected.y, 0.125,  com_percent_actual.y);
+		const float confidence_height      = createConfidence(goal_shape.real_height(), 0.2, goal_tracked_obj.getPosition().z - ( goal_shape.height() / 2.0 ));
+		const float confidence_com_x       = createConfidence(com_percent_expected.x, 0.13,  com_percent_actual.x);
+		const float confidence_com_y       = createConfidence(com_percent_expected.y, 0.13,  com_percent_actual.y);
 		const float confidence_filled_area = createConfidence(filledPercentageExpected, 0.33, filledPercentageActual);
 		const float confidence_ratio       = createConfidence(expectedRatio, 1.5,  actualRatio);
 		const float confidence_screen_area = createConfidence(1.0, 1.50, actualScreenArea);
 
-		// higher is better
+		// higher confidence is better
 		const float confidence = (confidence_height + confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
 
 #ifdef VERBOSE
@@ -393,8 +338,8 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		cout << "com_expected / actual: " << com_percent_expected << " " << com_percent_actual << endl;
 		cout << "position: " << goal_tracked_obj.getPosition() << endl;
 		//cout << "Angle: " << minAreaRect(contours[i]).angle << endl;
-		cout << "lineStart: " << start_line << endl;
-		cout << "lineEnd: " << end_line << endl;
+		//cout << "lineStart: " << start_line << endl;
+		//cout << "lineEnd: " << end_line << endl;
 		cout << "-------------------------------------------" << endl;
 #endif
 
@@ -412,8 +357,8 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		goal_info.com           = goal_actual.com();
 		goal_info.br            = br;
 		//goal_info.rtRect        = rr;
-		goal_info.lineStart     = start_line;
-		goal_info.lineEnd       = end_line;
+		//goal_info.lineStart     = start_line;
+		//goal_info.lineEnd       = end_line;
 		return_info.push_back(goal_info);
 
 	}
@@ -444,9 +389,9 @@ bool GoalDetector::generateThresholdAddSubtract(const Mat& imageIn, Mat& imageOu
 				bluePlusRed);
 	subtract(splitImage[1], bluePlusRed, imageOut);
 
-    static const Mat erodeElement(getStructuringElement(MORPH_RECT, Size(3, 3)));
+    static const Mat erodeElement(getStructuringElement(MORPH_RECT, Size(1, 1)));
     static const Mat dilateElement(getStructuringElement(MORPH_RECT, Size(3, 3)));
-	erode(imageOut, imageOut, erodeElement, Point(-1, -1), 1);
+    erode(imageOut, imageOut, erodeElement, Point(-1, -1), 1);
 	dilate(imageOut, imageOut, dilateElement, Point(-1, -1), 1);
 
 	// Use Ostu adaptive thresholding.  This will turn
@@ -523,7 +468,7 @@ void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours
 	for (size_t i = 0; i < contours.size(); i++)
 	{
 		drawContours(image, contours, i, Scalar(0,0,255), 3);
-
+#if 0
 		Vec4f fit_line;
 		fitLine(contours[i], fit_line, CV_DIST_L2, 0, 0.01, 0.01);
 
@@ -533,17 +478,16 @@ void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours
 		const float y = fit_line[3];
 		const float leftY =((-x * vy / vx) + y);
 		const float rightY =(((image.cols- x) * vy / vx) + y);
-#if 0
+
 		const float angle = atan2(vy, vx);
-		cout << "fit_line: " << fit_line << endl;
 		cout << "   image: " << image.size() << endl;
 		cout << "   leftY: " << leftY << endl;
 		cout << "   rightY: " << rightY << endl;
 		cout << "   angle: " << angle * 180. / M_PI << endl;
-#endif
+
 		if ((fabs(vx) > 1e-5) && (fabs(vy) > 1e-5))
 			line(image, Point2f(image.cols - 1, rightY), Point2f(0 ,leftY), Scalar(0,128,0), 2, CV_AA);
-
+#endif
 		Rect br(boundingRect(contours[i]));
 		//rectangle(image, br, Scalar(255,0,0), 3);
 		putText(image, to_string(i), br.br(), FONT_HERSHEY_PLAIN, 1, Scalar(0,255,0));
