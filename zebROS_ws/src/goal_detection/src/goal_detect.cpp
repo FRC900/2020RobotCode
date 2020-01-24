@@ -57,7 +57,7 @@ namespace goal_detection
 				nh_.param("blue_scale", config_.blue_scale, 0.90);
 				nh_.param("red_scale", config_.red_scale, 0.80);
 				nh_.param("otsu_threshold", config_.otsu_threshold, 5);
-				nh_.param("min_confidence", config_.min_confidence, 0.50);
+				nh_.param("min_confidence", config_.min_confidence, 0.30);
 				drw_.init(nh_, config_);
 
 				bool no_depth = false;
@@ -108,7 +108,7 @@ namespace goal_detection
 				gd_->setBlueScale(config_.blue_scale);
 				gd_->setRedScale(config_.red_scale);
 				gd_->setOtsuThreshold(config_.otsu_threshold);
-				gd_->setMinConfidence(config_.min_confidence);
+				//gd_->setMinConfidence(config_.min_confidence);
 
 				//Send current color and depth image to the actual GoalDetector
 				gd_->findBoilers(cvFrame->image, cvDepth->image);

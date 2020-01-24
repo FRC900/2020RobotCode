@@ -217,6 +217,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			break;
 		case POWER_PORT_2020: //target on the POWER PORT (2020)
 			depth_ = 0;
+			real_height_ = 0.5; // TODO: subtract camera height
 			contour_.push_back(Point2f(0,0));
 			contour_.push_back(Point2f(0.2492375,0.4318));
 			contour_.push_back(Point2f(0.7477125,0.4318));
@@ -397,4 +398,3 @@ bool ObjectType::operator== (const ObjectType &t1) const
 {
 	return this->shape() == t1.shape();
 }
-

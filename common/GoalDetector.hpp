@@ -29,8 +29,6 @@ struct GoalInfo
 	cv::Point com;
 	cv::Rect br;
 	cv::RotatedRect rtRect;
-	cv::Point2f lineStart;
-	cv::Point2f lineEnd;
 };
 
 //This contains all the necessary info for a goal
@@ -80,7 +78,7 @@ class GoalDetector
 		bool        _isValid;
 		std::vector< GoalFound > _return_found;
 		float       _min_valid_confidence;
-
+		
 		int         _otsu_threshold;
 		int         _blue_scale;
 		int         _red_scale;
