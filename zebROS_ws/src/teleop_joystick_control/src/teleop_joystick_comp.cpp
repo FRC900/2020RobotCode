@@ -402,13 +402,15 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0))
 		{
 			orient_strafing_enable_pub.publish(true);
-			orient_strafing_setpoint_pub.publish(orient_strafing_angle);
-			orient_strafing_state_pub.publish(navX_angle);
 		}
 		else
 		{
 			orient_strafing_enable_pub.publish(false);
 		}
+
+		orient_strafing_setpoint_pub.publish(orient_strafing_angle);
+		orient_strafing_state_pub.publish(navX_angle);
+
 		//Joystick1: directionLeft
 		if(joystick_states_array[0].directionLeftPress)
 		{

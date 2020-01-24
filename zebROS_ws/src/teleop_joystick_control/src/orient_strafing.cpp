@@ -1,3 +1,7 @@
+#include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
+#include "teleop_joystick_control/rate_limiter.h"
+#include "teleop_joystick_control/TeleopJoystickCompConfig.h"
+
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
@@ -8,6 +12,10 @@ bool enable_combination = false;
 geometry_msgs::Twist combined_cmd_vel;
 
 ros::Publisher combined_cmd_vel_pub;
+
+teleop_joystick_control::TeleopJoystickCompConfig config;
+
+std::unique_ptr<rate_limiter::RateLimiter> rotation_rate_limiter;
 
 void publishCombinedCmdVel(void)
 {
@@ -28,13 +36,28 @@ void teleopCallback(const geometry_msgs::Twist::ConstPtr &teleop_msg)
 
 void orientCallback(const std_msgs::Float64::ConstPtr &orient_msg)
 {
-	combined_cmd_vel.angular.z = orient_msg->data;
+	const double rotation = rotation_rate_limiter->applyLimit(orient_msg->data, ros::Time::now());
+	combined_cmd_vel.angular.z = -rotation;
 }
 
 int main(int argc, char ** argv)
 {
 	ros::init(argc, argv, "combine_orient_strafing_node");
 	ros::NodeHandle n;
+	ros::NodeHandle n_params(n, "teleop_params");
+
+	if(!n_params.getParam("max_rot", config.max_rot))
+	{
+		ROS_ERROR("Could not read max_rot in orient_strafing");
+	}
+	if(!n_params.getParam("rotate_rate_limit_time", config.rotate_rate_limit_time))
+	{
+		ROS_ERROR("Could not read rotate_rate_limit_time in orient_strafing");
+	}
+
+	DynamicReconfigureWrapper<teleop_joystick_control::TeleopJoystickCompConfig> drw(n_params, config);
+
+	rotation_rate_limiter = std::make_unique<rate_limiter::RateLimiter>(-config.max_rot, config.max_rot, config.drive_rate_limit_time);
 
 	combined_cmd_vel.linear.x = 0.0;
 	combined_cmd_vel.linear.y = 0.0;
