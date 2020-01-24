@@ -247,7 +247,24 @@ class PathAction
 				ros::spinOnce();
 				r.sleep();
 			}
-			// TODO - disable all axes
+
+                        std_msgs::Bool enable_msg;
+                        enable_msg.data = false;
+
+                        combine_cmd_vel_pub_.publish(enable_msg);
+
+                        auto x_axis_it = axis_states_.find("x");
+                        auto &x_axis = x_axis_it->second;
+                        x_axis.enable_pub_.publish(enable_msg);
+
+                        auto y_axis_it = axis_states_.find("y");
+                        auto &y_axis = y_axis_it->second;
+                        y_axis.enable_pub_.publish(enable_msg);
+
+                        auto z_axis_it = axis_states_.find("z");
+                        auto &z_axis = z_axis_it->second;
+                        z_axis.enable_pub_.publish(enable_msg);
+
 			//log result and set actionlib server state appropriately
                         pure_pursuit::PathResult result;
 
