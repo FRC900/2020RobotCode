@@ -604,7 +604,58 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 	//TODO CHECK THIS PUB
 
 	geometry_msgs::Quaternion orientation;
-	bool orientation_comped = false;
+	if (time - last_odom_pub_time_ >= odom_pub_period_ && odom_pub_.trylock())
+	{
+                Commands command = *(command_.readFromRT());
+		/*if (!orientation_comped)
+			orientation = tf::createQuaternionMsgFromYaw(odom_yaw);
+		odom_pub_.msg_.header.stamp = time;
+		odom_pub_.msg_.pose.pose.position.x = odom_x;
+		odom_pub_.msg_.pose.pose.position.y = odom_y;
+		odom_pub_.msg_.pose.pose.orientation = orientation;
+		odom_pub_.msg_.twist.twist.linear.x =
+			odom_rigid_transf_.translation().x() * inv_delta_t;
+		odom_pub_.msg_.twist.twist.linear.y =
+			odom_rigid_transf_.translation().y() * inv_delta_t;
+		odom_pub_.msg_.twist.twist.angular.z =
+			atan2(odom_rigid_transf_(1, 0), odom_rigid_transf_(0, 0)) * inv_delta_t;*/
+
+		nav_msgs::Odometry odom_msg;
+		//double delta_t = 1/inv_delta_t;
+		double delta_t = (time - last_odom_pub_time_).toSec();
+		static double odom_yaw = 0;
+		odom_yaw += command.ang * delta_t;
+		orientation = tf::createQuaternionMsgFromYaw(odom_yaw);
+
+		//first, we'll publish the transform over tf
+		geometry_msgs::TransformStamped odom_trans;
+		odom_trans.header.stamp = time;
+		odom_trans.header.frame_id = "odom";
+		odom_trans.child_frame_id = "base_link";
+
+		odom_trans.transform.translation.x += command.lin[0] * delta_t;
+		odom_trans.transform.translation.y += command.lin[1] * delta_t;
+		odom_trans.transform.translation.z = 0.0;
+		odom_trans.transform.rotation = orientation;
+
+		//send the transform
+		odom_tf_.sendTransform(odom_trans);
+
+		//then, publish the odometry message
+		odom_pub_.msg_.header.stamp = time;
+		odom_pub_.msg_.pose.pose.position.x += command.lin[0] * delta_t;
+		odom_pub_.msg_.pose.pose.position.y += command.lin[1] * delta_t;
+		odom_pub_.msg_.pose.pose.orientation = orientation;
+		odom_pub_.msg_.twist.twist.linear.x = command.lin[0];
+		odom_pub_.msg_.twist.twist.linear.y = command.lin[1];
+		odom_pub_.msg_.twist.twist.angular.x = command.ang;
+
+		odom_pub_.unlockAndPublish();
+
+		last_odom_pub_time_ = time;
+	}
+
+	/*bool orientation_comped = false;
 
 	// tf
 	if (pub_odom_to_base_ && time - last_odom_tf_pub_time_ >= odom_pub_period_ &&
@@ -676,7 +727,7 @@ void TalonSwerveDriveController::compOdometry(const Time &time, const double inv
 		odom_pub_.unlockAndPublish();
 
 		last_odom_pub_time_ += odom_pub_period_;
-	}
+	}*/
 }
 
 void TalonSwerveDriveController::update(const ros::Time &time, const ros::Duration &period)
