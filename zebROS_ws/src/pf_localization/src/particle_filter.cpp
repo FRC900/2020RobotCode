@@ -39,6 +39,7 @@ void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max
     Particle p = {x, y, rot};
     particles_.push_back(p);
   }
+  normalize();
 }
 
 //Normalize weights to sum to 1
