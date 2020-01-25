@@ -140,7 +140,6 @@ int main(int argc, char** argv)
 			if(action_data["type"] == "intake_actionlib_server")
 			{
 				//do stuff
-
 			}
 			else if(action_data["type"] == "pause")
 			{
