@@ -111,11 +111,21 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
     if(minimum_distance == std::numeric_limits<double>::max())
     {
         ROS_ERROR_STREAM("Not within path limits"); //TODO: drive toward beginning/end of path based on which is closest
+        double dist_from_startpoint = hypot(current_x -  path_.poses[0].pose.position.x, current_y - path_.poses[0].pose.position.y);
+        double dist_from_endpoint = hypot(current_x -  path_.poses[num_waypoints_ - 1].pose.position.x, current_y - path_.poses[num_waypoints_ - 1].pose.position.y);
         geometry_msgs::Pose target_pos;
-        target_pos.position.x = path_.poses[num_waypoints_ - 1].pose.position.x;
-        target_pos.position.y = path_.poses[num_waypoints_ - 1].pose.position.x;
-        target_pos.position.z = 0;
-        geometry_msgs::Quaternion q_final = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, 0.0);
+        if(dist_from_startpoint > dist_from_endpoint)
+        {
+            target_pos.position.x = path_.poses[0].pose.position.x;
+            target_pos.position.y = path_.poses[0].pose.position.y;
+            target_pos.position.z = 0;
+        }
+        else
+        {
+            target_pos.position.x = path_.poses[num_waypoints_ - 1].pose.position.x;
+            target_pos.position.y = path_.poses[num_waypoints_ - 1].pose.position.y;
+            target_pos.position.z = 0;
+        }
         return target_pos;
     }
 

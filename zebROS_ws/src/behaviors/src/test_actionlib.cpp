@@ -269,8 +269,9 @@ bool callAlignHatch()
 	}
 }
 
-bool callPath()
+bool callPath(double path_x_setpoint, double path_y_setpoint)
 {
+        ROS_INFO_STREAM("path_x_setpoint = " << path_x_setpoint);
 	actionlib::SimpleActionClient<pure_pursuit::PathAction> path_ac("/pure_pursuit/pure_pursuit_server", true);
 
 	ROS_INFO("Waiting for pure pursuit server to start.");
@@ -282,16 +283,13 @@ bool callPath()
 
 	ROS_INFO("callPath: Sending goal to the server.");
 	pure_pursuit::PathGoal path_goal;
-	path_goal.points.resize(3);
+	path_goal.points.resize(2);
 	path_goal.points[0].x = 0;
 	path_goal.points[0].y = 0;
 	path_goal.points[0].z = 0;
-	path_goal.points[1].x = 1;
-	path_goal.points[1].y = 3;
+	path_goal.points[1].x = path_x_setpoint;
+	path_goal.points[1].y = path_y_setpoint;
 	path_goal.points[1].z = 0;
-	path_goal.points[2].x = 0;
-	path_goal.points[2].y = 6;
-	path_goal.points[2].z = 0;
 	path_ac.sendGoal(path_goal);
 
 	//wait for the action to return
@@ -333,6 +331,8 @@ int main (int argc, char **argv)
 	 */
 	std::string what_to_run;
 	std::string elevator_setpoint;
+        std::string path_x_setpoint;
+        std::string path_y_setpoint;
 
 	what_to_run = ros::getROSArg(argc, argv, "run"); //if can't find the argument, will default to an empty string of length 0
 	boost::algorithm::to_lower(what_to_run); //convert to lower case
@@ -345,6 +345,8 @@ int main (int argc, char **argv)
 		return 0;
 	}
 	elevator_setpoint = ros::getROSArg(argc, argv, "setpoint"); //only used for elevator call or outtake call. Not used for the 'all' run option
+	path_x_setpoint = ros::getROSArg(argc, argv, "path_x"); //only used for elevator call or outtake call. Not used for the 'all' run option
+	path_y_setpoint = ros::getROSArg(argc, argv, "path_y"); //only used for elevator call or outtake call. Not used for the 'all' run option
 	boost::algorithm::to_upper(elevator_setpoint); //convert to upper case
 
 	//make sure we have the setpoint if we need it, and determine what it is
@@ -397,6 +399,8 @@ int main (int argc, char **argv)
 
 	ROS_WARN("what_to_run: %s", what_to_run.c_str());
 	ROS_WARN("setpoint: %s", elevator_setpoint.c_str());
+	ROS_WARN("path_x_setpoint: %s", path_x_setpoint.c_str());
+	ROS_WARN("path_y_setpoint: %s", path_y_setpoint.c_str());
 
 
 	//Actually run stuff ---------------------------------
@@ -477,7 +481,7 @@ int main (int argc, char **argv)
 	}
 	else if(what_to_run == "path")
 	{
-		callPath();
+		callPath(std::stod(path_x_setpoint.substr(1)), std::stod(path_y_setpoint.substr(1)));
 	}
 	else {
 		ROS_ERROR("Invalid run argument");
