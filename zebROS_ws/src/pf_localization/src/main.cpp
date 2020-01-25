@@ -104,7 +104,7 @@ int main(int argc, char const *argv[]) {
     last_pos = pos;
     pos = std::make_pair(r * cos(theta) + 8, r * sin(theta) + 8);
     std::vector<std::pair<double, double> > measurement;
-    Particle p(pos.first, pos.second, 0.5);
+    Particle p(pos.first, pos.second, theta + 3.14159265258979323 / 2);
     measurement = world.particle_relative(p);
     pf.assign_weights(measurement);
     Particle prediction = pf.predict();
