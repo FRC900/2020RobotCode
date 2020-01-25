@@ -66,7 +66,7 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
-  #if 0
+  #if 1
   // test circular movement with output for animated visualization
   // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
 
@@ -81,7 +81,7 @@ int main(int argc, char const *argv[]) {
   WorldModel world(beacons, 0, 16, 0, 16);
   ParticleFilter pf(world,
                     0, 16, 0, 16,
-                    0.1, 0.1, 0.0,
+                    0.1, 0.1, 0.1,
                     200);
 
   std::vector<double> boundaries = world.get_boundaries();
@@ -94,7 +94,7 @@ int main(int argc, char const *argv[]) {
   const double r = 3;
   double theta_step = 0.01;
   const int iterations = 628;
-  std::pair<double, double> pos = std::make_pair(13, 8);
+  std::pair<double, double> pos = std::make_pair(11, 8);
   std::pair<double, double> last_pos;
   for (int i = 0; i < iterations; i++) {
     last_pos = pos;
@@ -102,16 +102,12 @@ int main(int argc, char const *argv[]) {
     std::vector<std::pair<double, double> > measurement;
     Particle p(pos.first, pos.second, 0.5);
     measurement = world.particle_relative(p);
-    // for (std::pair<double, double> b : beacons) {
-    //   measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
-    // }
     pf.assign_weights(measurement);
     Particle prediction = pf.predict();
     pf.resample();
-    pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
+    pf.motion_update(hypot(pos.first - last_pos.first, pos.second - last_pos.second), 0, theta_step);
     print_all_particles(pf);
     print_particle(pf.predict());
-    // pf.set_rotation(0.5);
     std::cout << pos.first << ", " << pos.second << ", " << theta + 3.14159265258979323 / 2 << "\n~\n";
     print_particle(prediction);
     //std::cout << "\n";
@@ -119,7 +115,7 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   // test motion update with output for animated visualization
   // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
 
