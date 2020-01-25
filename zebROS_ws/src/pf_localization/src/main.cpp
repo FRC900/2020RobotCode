@@ -66,7 +66,7 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
-  #if 1
+  #if 0
   // test circular movement with output for animated visualization
   // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
 
@@ -160,6 +160,53 @@ int main(int argc, char const *argv[]) {
     print_all_particles(pf);
     print_particle(pf.predict());
     // pf.set_rotation(0.5);
+    std::cout << pos.first << ", " << pos.second << ", " << theta + 3.14159265258979323 / 2 << "\n~\n";
+    print_particle(prediction);
+    //std::cout << "\n";
+    theta += theta_step;
+  }
+  #endif
+
+  #if 1
+  // test localization using actual retro tape beacon positions
+  // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
+
+  std::mt19937 rng(0);
+  std::vector<std::pair<double, double> > beacons;
+  beacons.push_back(std::make_pair(2.40, 0));
+  beacons.push_back(std::make_pair(6.50, 0));
+  beacons.push_back(std::make_pair(1.71, 15.98));
+  beacons.push_back(std::make_pair(5.81, 15.98));
+  WorldModel world(beacons, 0, 8.21, 0, 15.98);
+  ParticleFilter pf(world,
+                    0, 8.21, 2, 4,
+                    0.1, 0.1, 0.1,
+                    200);
+
+  std::vector<double> boundaries = world.get_boundaries();
+  std::cout << boundaries[0] << ',' << boundaries[1] << ',' << boundaries[2] << ',' << boundaries[3] << "\n*\n";
+  for (std::pair<double, double> b : beacons) {
+    std::cout << b.first << ',' << b.second << '\n';
+  }
+  std::cout << "\n*\n";
+  const double r = 3;
+  double theta_step = 0.01;
+  const int iterations = 628;
+  std::pair<double, double> pos = std::make_pair(4, 3.05);
+  double theta = -3.14159265258979323 / 2;
+  std::pair<double, double> last_pos;
+  for (int i = 0; i < iterations; i++) {
+    last_pos = pos;
+    pos = std::make_pair(r * cos(theta) + 4, r * sin(theta) + 6.05);
+    std::vector<std::pair<double, double> > measurement;
+    Particle p(pos.first, pos.second, theta + 3.14159265258979323 / 2);
+    measurement = world.particle_relative(p);
+    pf.assign_weights(measurement);
+    Particle prediction = pf.predict();
+    pf.resample();
+    pf.motion_update(hypot(pos.first - last_pos.first, pos.second - last_pos.second), 0, theta_step);
+    print_all_particles(pf);
+    print_particle(pf.predict());
     std::cout << pos.first << ", " << pos.second << ", " << theta + 3.14159265258979323 / 2 << "\n~\n";
     print_particle(prediction);
     //std::cout << "\n";
