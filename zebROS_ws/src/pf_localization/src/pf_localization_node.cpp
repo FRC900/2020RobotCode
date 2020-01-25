@@ -1,55 +1,49 @@
-/*
-just a main function to test if code builds
-also used to run some tests
-*/
-
 #include "particle_filter.hpp"
 #include "world_model.hpp"
 #include "particle.hpp"
+#include "pf_localization/pf_pose.h"
+
+#include <iostream>
 #include <ros/ros.h>
 
 #define VERBOSE
 
 const std::string rot_topic = "zeroed_imu";
+const std::string odom_topic = "odom";
 const std::string goal_pos_topic = "goal_detect_msg";
-const std::string predicted_pos_topic = "pf/predicted_pos";
+const std::string pub_topic = "pf/predicted_pose";
+static ros::Publisher pub;
 
 //formats and prints particle attributes
 void print_particle(const Particle& p) {
   std::cout << p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n';
 }
 
-//print the attributes of all particles
-void print_all_particles(const ParticleFilter& pf) {
-  for (Particle p : pf.get_particles()) {
-    print_particle(p);
-  }
-}
-
-<<<<<<< HEAD
-int main(void) {
-=======
 int main(int argc, char const *argv[]) {
   #if 0
->>>>>>> implemented robot-relative motion update
   std::mt19937 rng(0);
-
-  
-
-  std::vector<std::pair<double, double> > beacons;
-<<<<<<< HEAD
-
 =======
+int main(int argc, char **argv) {
+  ros::init(argc, argv, "pf_localization_node");
+  ros::NodeHandle nh_;
+>>>>>>> updated cmakelist and package.xml for pf localization.. it builds!:zebROS_ws/src/pf_localization/src/pf_localization_node.cpp
+
+  pub = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
+
+  std::mt19937 rng(0);
+  std::vector<std::pair<double, double> > beacons;
   for (int i = 0; i < 10; i++) {
     beacons.push_back(std::make_pair(
       ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16,
       ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16
     ));
   }
->>>>>>> implemented robot-relative motion update
   WorldModel world(beacons, 0, 16, 0, 16);
+=======
+  WorldModel world(beacons, 0, 8.2, 0, 16.0);
+>>>>>>> updated cmakelist and package.xml for pf localization.. it builds!:zebROS_ws/src/pf_localization/src/pf_localization_node.cpp
   ParticleFilter pf(world,
-                    0, 16, 0, 16,
+                    0, 8, 2, 4,
                     0.1, 0.1, 0.0,
                     200);
 
@@ -60,14 +54,12 @@ int main(int argc, char const *argv[]) {
     Particle p(pos.first, pos.second, 0.5);
     measurement = world.particle_relative(p);
     pf.assign_weights(measurement);
-    pf.predict()
+    pf.predict();
     pf.resample();
-    pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
-    // pf.set_rotation(0.5);
+    //pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
+    pf.set_rotation(0.5);
     std::cout << pos.first << ", " << pos.second << ", ";
   }
-<<<<<<< HEAD
-=======
   #endif
 
   #if 1
@@ -171,7 +163,6 @@ int main(int argc, char const *argv[]) {
   }
   #endif
 
->>>>>>> implemented robot-relative motion update
   return 0;
 }
 
