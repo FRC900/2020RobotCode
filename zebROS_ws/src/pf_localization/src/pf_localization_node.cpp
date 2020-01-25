@@ -2,35 +2,71 @@
 #include "world_model.hpp"
 #include "particle.hpp"
 #include "pf_localization/pf_pose.h"
+#include "goal_detection/GoalDetection.h"
+#include "nav_msgs/Odometry.h"
 
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <sensor_msgs/Imu.h>
 #include <iostream>
 #include <ros/ros.h>
+#include <vector>
+#include <utility>
 
 #define VERBOSE
 
 const std::string rot_topic = "zeroed_imu";
 const std::string odom_topic = "odom";
 const std::string goal_pos_topic = "goal_detect_msg";
+
 const std::string pub_topic = "pf/predicted_pose";
 static ros::Publisher pub;
+
+constexpr double pi = 3.14159;
+
+double rot, delta_x, delta_y;
+std::vector<std::pair<double, double> > measurement;
+
+double degToRad(double deg) {
+  double rad = (deg / 180) * pi;
+  return rad;
+}
 
 //formats and prints particle attributes
 void print_particle(const Particle& p) {
   std::cout << p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n';
 }
 
-int main(int argc, char const *argv[]) {
-  #if 0
-  std::mt19937 rng(0);
 =======
+void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
+  double roll, pitch, yaw;
+  tf2::Quaternion raw;
+  tf2::convert(msg -> orientation, raw);
+  tf2::Matrix3x3(raw).getRPY(roll, pitch, yaw);
+  rot = degToRad(yaw);
+}
+
+void goalCallback(const goal_detection::GoalDetection::ConstPtr& msg){
+  for(const geometry_msgs::Point32& p : msg->location) {
+    measurement.push_back(std::make_pair(p.x, p.y));
+  }
+}
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
+  delta_x = msg->pose.pose.position.x;
+  delta_y = msg->pose.pose.position.y;
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
->>>>>>> updated cmakelist and package.xml for pf localization.. it builds!:zebROS_ws/src/pf_localization/src/pf_localization_node.cpp
+  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1000, rotCallback);
+  ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, odomCallback);
+  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 1000, goalCallback);
 
   pub = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
-  std::mt19937 rng(0);
   std::vector<std::pair<double, double> > beacons;
   for (int i = 0; i < 10; i++) {
     beacons.push_back(std::make_pair(
@@ -39,219 +75,18 @@ int main(int argc, char **argv) {
     ));
   }
   WorldModel world(beacons, 0, 16, 0, 16);
-=======
-  WorldModel world(beacons, 0, 8.2, 0, 16.0);
->>>>>>> updated cmakelist and package.xml for pf localization.. it builds!:zebROS_ws/src/pf_localization/src/pf_localization_node.cpp
   ParticleFilter pf(world,
                     0, 8, 2, 4,
-                    0.1, 0.1, 0.0,
+                    0.1, 0.1, 0.1,
                     200);
 
-  std::pair<double, double> pos = std::make_pair(0, 0);
-
   while (ros::ok()) {
-    std::vector<std::pair<double, double> > measurement;
-    Particle p(pos.first, pos.second, 0.5);
-    measurement = world.particle_relative(p);
+    pf.set_rotation(rot);
+    pf.motion_update(delta_x, delta_y, 0);
     pf.assign_weights(measurement);
     pf.predict();
     pf.resample();
-    //pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
-    pf.set_rotation(0.5);
-    std::cout << pos.first << ", " << pos.second << ", ";
   }
-  #endif
-
-  #if 0
-  // test circular movement with output for animated visualization
-  // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
-
-  std::mt19937 rng(0);
-  std::vector<std::pair<double, double> > beacons;
-  for (int i = 0; i < 10; i++) {
-    beacons.push_back(std::make_pair(
-      ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16,
-      ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16
-    ));
-  }
-  WorldModel world(beacons, 0, 16, 0, 16);
-  ParticleFilter pf(world,
-                    0, 16, 0, 16,
-                    0.1, 0.1, 0.1,
-                    200);
-
-  std::vector<double> boundaries = world.get_boundaries();
-  std::cout << boundaries[0] << ',' << boundaries[1] << ',' << boundaries[2] << ',' << boundaries[3] << "\n*\n";
-  for (std::pair<double, double> b : beacons) {
-    std::cout << b.first << ',' << b.second << '\n';
-  }
-  std::cout << "\n*\n";
-  double theta = 0;
-  const double r = 3;
-  double theta_step = 0.01;
-  const int iterations = 628;
-  std::pair<double, double> pos = std::make_pair(11, 8);
-  std::pair<double, double> last_pos;
-  for (int i = 0; i < iterations; i++) {
-    last_pos = pos;
-    pos = std::make_pair(r * cos(theta) + 8, r * sin(theta) + 8);
-    std::vector<std::pair<double, double> > measurement;
-    Particle p(pos.first, pos.second, theta + 3.14159265258979323 / 2);
-    measurement = world.particle_relative(p);
-    pf.assign_weights(measurement);
-    Particle prediction = pf.predict();
-    pf.resample();
-    pf.motion_update(hypot(pos.first - last_pos.first, pos.second - last_pos.second), 0, theta_step);
-    print_all_particles(pf);
-    print_particle(pf.predict());
-    std::cout << pos.first << ", " << pos.second << ", " << theta + 3.14159265258979323 / 2 << "\n~\n";
-    print_particle(prediction);
-    //std::cout << "\n";
-    theta += theta_step;
-  }
-  #endif
-
-  #if 0
-  // test motion update with output for animated visualization
-  // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
-
-  std::mt19937 rng(0);
-  std::vector<std::pair<double, double> > beacons;
-  for (int i = 0; i < 10; i++) {
-    beacons.push_back(std::make_pair(
-      ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16,
-      ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16
-    ));
-  }
-  WorldModel world(beacons, 0, 16, 0, 16);
-  ParticleFilter pf(world,
-                    10.7, 10.9, 7.9, 8.1,
-                    0.0, 0.0, 0.0,
-                    200);
-
-  std::vector<double> boundaries = world.get_boundaries();
-  std::cout << boundaries[0] << ',' << boundaries[1] << ',' << boundaries[2] << ',' << boundaries[3] << "\n*\n";
-  for (std::pair<double, double> b : beacons) {
-    std::cout << b.first << ',' << b.second << '\n';
-  }
-  std::cout << "\n*\n";
-  double theta = 0;
-  const double r = 3;
-  double theta_step = 0.01;
-  const int iterations = 628;
-  std::pair<double, double> pos = std::make_pair(11.0, 8.0);
-  std::pair<double, double> last_pos;
-  for (int i = 0; i < iterations; i++) {
-    last_pos = pos;
-    pos = std::make_pair(r * cos(theta) + 8, r * sin(theta) + 8);
-    if (i == 0) {
-      pf.set_rotation(3.14159265258979323 / 2);
-      std::vector<std::pair<double, double> > measurement;
-      Particle p(pos.first, pos.second, 3.14159265258979323 / 2);
-      measurement = world.particle_relative(p);
-      pf.assign_weights(measurement);
-    }
-    Particle prediction = pf.predict();
-    pf.motion_update(hypot(pos.first - last_pos.first, pos.second - last_pos.second), 0, theta_step);
-    print_all_particles(pf);
-    print_particle(pf.predict());
-    // pf.set_rotation(0.5);
-    std::cout << pos.first << ", " << pos.second << ", " << theta + 3.14159265258979323 / 2 << "\n~\n";
-    print_particle(prediction);
-    //std::cout << "\n";
-    theta += theta_step;
-  }
-  #endif
-
-  #if 1
-  // test localization using actual retro tape beacon positions
-  // NOTE: this sends a LOT of stuff to stdout, redirect it to a file
-
-  std::mt19937 rng(0);
-  std::vector<std::pair<double, double> > beacons;
-  beacons.push_back(std::make_pair(2.40, 0));
-  beacons.push_back(std::make_pair(6.50, 0));
-  beacons.push_back(std::make_pair(1.71, 15.98));
-  beacons.push_back(std::make_pair(5.81, 15.98));
-  WorldModel world(beacons, 0, 8.21, 0, 15.98);
-  ParticleFilter pf(world,
-                    0, 8.21, 2, 4,
-                    0.1, 0.1, 0.1,
-                    200);
-
-  std::vector<double> boundaries = world.get_boundaries();
-  std::cout << boundaries[0] << ',' << boundaries[1] << ',' << boundaries[2] << ',' << boundaries[3] << "\n*\n";
-  for (std::pair<double, double> b : beacons) {
-    std::cout << b.first << ',' << b.second << '\n';
-  }
-  std::cout << "\n*\n";
-  const double r = 3;
-  double theta_step = 0.01;
-  const int iterations = 628;
-  std::pair<double, double> pos = std::make_pair(4, 3.05);
-  double theta = -3.14159265258979323 / 2;
-  std::pair<double, double> last_pos;
-  for (int i = 0; i < iterations; i++) {
-    last_pos = pos;
-    pos = std::make_pair(r * cos(theta) + 4, r * sin(theta) + 6.05);
-    std::vector<std::pair<double, double> > measurement;
-    Particle p(pos.first, pos.second, theta + 3.14159265258979323 / 2);
-    measurement = world.particle_relative(p);
-    pf.assign_weights(measurement);
-    Particle prediction = pf.predict();
-    pf.resample();
-    pf.motion_update(hypot(pos.first - last_pos.first, pos.second - last_pos.second), 0, theta_step);
-    print_all_particles(pf);
-    print_particle(pf.predict());
-    std::cout << pos.first << ", " << pos.second << ", " << theta + 3.14159265258979323 / 2 << "\n~\n";
-    print_particle(prediction);
-    //std::cout << "\n";
-    theta += theta_step;
-  }
-  #endif
 
   return 0;
 }
-
-/*
-#if 1
-std::mt19937 rng(0);
-// test circular movement
-std::vector<std::pair<double, double> > beacons;
-for (int i = 0; i < 10; i++) {
-  beacons.push_back(std::make_pair(
-    ((double) rng() - rng.min()) / (rng.max() - rng.min()),
-    ((double) rng() - rng.min()) / (rng.max() - rng.min())
-  ));
-}
-WorldModel world(beacons, 0, 16, 0, 16);
-ParticleFilter pf(world,
-                  0, 16, 0, 16,
-                  0.1, 0.1, 0.0,
-                  200);
-
-double theta = 0;
-const double r = 3;
-double theta_step = 0.01;
-std::pair<double, double> pos = std::make_pair(13, 8);
-std::pair<double, double> last_pos;
-for (int i = 0; i < 628; i++) {
-  last_pos = pos;
-  pos = std::make_pair(r * cos(theta) + 8, r * sin(theta) + 8);
-  std::vector<std::pair<double, double> > measurement;
-  Particle p(pos.first, pos.second, 0.5);
-  measurement = world.particle_relative(p);
-  // for (std::pair<double, double> b : beacons) {
-  //   measurement.push_back(std::make_pair(b.first - pos.first, b.second - pos.second));
-  // }
-  pf.assign_weights(measurement);
-  pf.resample();
-  pf.motion_update(pos.first - last_pos.first, pos.second - last_pos.second, 0);
-  pf.set_rotation(0.5);
-  std::cout << pos.first << ", " << pos.second << ", ";
-  print_particle(pf.predict());
-  //std::cout << "\n";
-  theta += theta_step;
-}
-#endif
-*/
