@@ -21,7 +21,7 @@ const std::string odom_topic = "odom";
 const std::string goal_pos_topic = "goal_detect_msg";
 
 const std::string pub_topic = "pf/predicted_pose";
-static ros::Publisher pub;
+static ros::Publisher pub_;
 
 constexpr double pi = 3.14159;
 
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
   ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, odomCallback);
   ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 1000, goalCallback);
 
-  pub = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
+  pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
   std::vector<std::pair<double, double> > beacons;
   for (int i = 0; i < 10; i++) {
@@ -83,9 +83,19 @@ int main(int argc, char **argv) {
   while (ros::ok()) {
     pf.set_rotation(rot);
     pf.motion_update(delta_x, delta_y, 0);
-    pf.assign_weights(measurement);
-    pf.predict();
-    pf.resample();
+    if (measurement.size() > 0){
+      pf.assign_weights(measurement);
+    }
+    Particle prediction = pf.predict();
+    if (measurement.size() > 0){
+      pf.resample();
+    }
+
+    pf_localization::pf_pose pose;
+    pose.x = prediction.x;
+    pose.y = prediction.y;
+    pose.rot = prediction.rot;
+    pub_.publish(pose);
   }
 
   return 0;
