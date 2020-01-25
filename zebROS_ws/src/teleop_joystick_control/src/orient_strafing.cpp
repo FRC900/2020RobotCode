@@ -37,14 +37,14 @@ void teleopCallback(const geometry_msgs::Twist::ConstPtr &teleop_msg)
 void orientCallback(const std_msgs::Float64::ConstPtr &orient_msg)
 {
 	const double rotation = rotation_rate_limiter->applyLimit(orient_msg->data, ros::Time::now());
-	combined_cmd_vel.angular.z = -rotation;
+	combined_cmd_vel.angular.z = rotation;
 }
 
 int main(int argc, char ** argv)
 {
 	ros::init(argc, argv, "combine_orient_strafing_node");
 	ros::NodeHandle n;
-	ros::NodeHandle n_params(n, "teleop_params");
+	ros::NodeHandle n_params(n, "/teleop/teleop_params");
 
 	if(!n_params.getParam("max_rot", config.max_rot))
 	{
