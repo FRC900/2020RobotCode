@@ -100,9 +100,11 @@ Particle ParticleFilter::predict() {
 
 void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_rot) {
   for (Particle& p : particles_) {
-    p.x += delta_x;
-    p.y += delta_y;
+    // p.x += delta_x;
+    // p.y += delta_y;
     p.rot += delta_rot;
+    p.x += delta_x * cos(p.rot) + delta_y * sin(p.rot);
+    p.y += delta_x * sin(p.rot) + delta_y * cos(p.rot);
   }
   noise();
   constrain_particles();
