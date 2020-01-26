@@ -96,6 +96,9 @@ class PurePursuit
         // load nav_msgs::Path
         void loadPath(const nav_msgs::Path path);
 
+        // get yaw from geometry_msgs quaternion 
+        static double getYaw(const geometry_msgs::Quaternion q);
+
         // path length getter
         double getPathLength();
 

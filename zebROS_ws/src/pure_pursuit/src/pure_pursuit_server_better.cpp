@@ -130,7 +130,7 @@ class PathAction
 			bool timed_out = false;
 			bool succeeded = false;
 
-			// First, make the spline that represents the points we should travel to
+			// Generate the waypoints of the spline 
 			base_trajectory::GenerateSpline spline_gen_srv;
 			const size_t point_num = goal->points.size();
 			spline_gen_srv.request.points.resize(point_num);
@@ -153,15 +153,25 @@ class PathAction
                         {
                             ROS_INFO_STREAM("end point at " << i << " is " << spline_gen_srv.response.end_points[i]);
                         }
-                        ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x);
 
+                        //replacement for actual transforms, for now
                         for(size_t i = 0; i < num_waypoints; i++) //TODO hacky fix
                         {
                             spline_gen_srv.response.path.poses[i].pose.position.x += odom_.pose.pose.position.x;
                             spline_gen_srv.response.path.poses[i].pose.position.y += odom_.pose.pose.position.y;
                         }
+                        
+                        //debug
+                        double roll, pitch, yaw;
+                        tf::Quaternion end_z(
+                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.w,
+                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.x,
+                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.y,
+                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.z);
+                        tf::Matrix3x3(end_z).getRPY(roll, pitch, yaw);
+                        ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y << ", " << yaw);
 
-			ros::Rate r(ros_rate_); // TODO : I should be a config item
+			ros::Rate r(ros_rate_);
 
                         // send path to pure pursuit
 			pure_pursuit_->loadPath(spline_gen_srv.response.path);
@@ -209,24 +219,9 @@ class PathAction
 				auto &z_axis = z_axis_it->second;
 				z_axis.enable_pub_.publish(enable_msg);
 
-				// TODO - what's the deal with yaw vs actual_yaw? And roll?
-				double roll, pitch, yaw, odom_yaw, target_yaw;
-				tf::Quaternion odom_q(
-					odom_.pose.pose.orientation.w,
-					odom_.pose.pose.orientation.x,
-					odom_.pose.pose.orientation.y,
-					odom_.pose.pose.orientation.z);
-				tf::Matrix3x3(odom_q).getRPY(roll, pitch, odom_yaw);
-				tf::Quaternion waypoint_q(
-					next_waypoint.orientation.w,
-					next_waypoint.orientation.x,
-					next_waypoint.orientation.y,
-					next_waypoint.orientation.z);
-				tf::Matrix3x3(waypoint_q).getRPY(roll, pitch, target_yaw);
-
-				command_msg.data = target_yaw;
+				command_msg.data = PurePursuit::getYaw(next_waypoint.orientation);
 				z_axis.command_pub_.publish(command_msg);
-				state_msg.data = odom_yaw;
+				state_msg.data = PurePursuit::getYaw(odom_.pose.pose.orientation);
 				z_axis.state_pub_.publish(state_msg);
 
                                 if(as_.isPreemptRequested() || !ros::ok()) {
@@ -237,6 +232,7 @@ class PathAction
                                         (spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y - odom_.pose.pose.position.y < final_pos_tol_))
                                 {
                                     ROS_INFO_STREAM(action_name_ << ": succeeded");
+                                    ROS_INFO_STREAM("endpoint_x = " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", odom_x = " << odom_.pose.pose.position.x);
                                     succeeded = true;
                                 }
                                 else if(ros::Time::now().toSec() - start_time_ > server_timeout_) {
@@ -311,7 +307,7 @@ int main(int argc, char **argv)
 
 	AlignActionAxisConfig x_axis("x", "x_position_pid/pid_enable", "x_position_pid/x_cmd_pub", "x_position_pid/x_state_pub", "x_position_pid/pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_position_pid/pid_enable", "y_position_pid/y_cmd_pub", "y_position_pid/y_state_pub", "y_position_pid/pid_debug", "y_timeout_param", "y_error_threshold_param");
-	AlignActionAxisConfig z_axis("z", "orient_pid/pid_enable", "orient_pid/orient_cmd_pub", "orient_pid/z_state_pub/change_me", "orient_pid/pid_debug", "z_timeout_param", "z_error_threshold_param");
+	AlignActionAxisConfig z_axis("z", "orient_pid/pid_enable", "orient_pid/orient_cmd_pub", "orient_pid/orient_state", "orient_pid/pid_debug", "z_timeout_param", "z_error_threshold_param");
 
 	if (!path_action_server.addAxis(x_axis))
 	{

@@ -269,7 +269,7 @@ bool callAlignHatch()
 	}
 }
 
-bool callPath(double path_x_setpoint, double path_y_setpoint)
+bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setpoint, double path_x2_setpoint, double path_y2_setpoint, double path_z2_setpoint)
 {
         ROS_INFO_STREAM("path_x_setpoint = " << path_x_setpoint);
 	actionlib::SimpleActionClient<pure_pursuit::PathAction> path_ac("/pure_pursuit/pure_pursuit_server", true);
@@ -283,13 +283,16 @@ bool callPath(double path_x_setpoint, double path_y_setpoint)
 
 	ROS_INFO("callPath: Sending goal to the server.");
 	pure_pursuit::PathGoal path_goal;
-	path_goal.points.resize(2);
+	path_goal.points.resize(3);
 	path_goal.points[0].x = 0;
 	path_goal.points[0].y = 0;
 	path_goal.points[0].z = 0;
 	path_goal.points[1].x = path_x_setpoint;
 	path_goal.points[1].y = path_y_setpoint;
-	path_goal.points[1].z = 0;
+	path_goal.points[1].z = path_z_setpoint;
+	path_goal.points[2].x = path_x2_setpoint;
+	path_goal.points[2].y = path_y2_setpoint;
+	path_goal.points[2].z = path_z2_setpoint;
 	path_ac.sendGoal(path_goal);
 
 	//wait for the action to return
@@ -331,8 +334,12 @@ int main (int argc, char **argv)
 	 */
 	std::string what_to_run;
 	std::string elevator_setpoint;
-        std::string path_x_setpoint;
-        std::string path_y_setpoint;
+        double path_x_setpoint;
+        double path_y_setpoint;
+        double path_z_setpoint;
+        double path_x2_setpoint;
+        double path_y2_setpoint;
+        double path_z2_setpoint;
 
 	what_to_run = ros::getROSArg(argc, argv, "run"); //if can't find the argument, will default to an empty string of length 0
 	boost::algorithm::to_lower(what_to_run); //convert to lower case
@@ -345,8 +352,6 @@ int main (int argc, char **argv)
 		return 0;
 	}
 	elevator_setpoint = ros::getROSArg(argc, argv, "setpoint"); //only used for elevator call or outtake call. Not used for the 'all' run option
-	path_x_setpoint = ros::getROSArg(argc, argv, "path_x"); //only used for elevator call or outtake call. Not used for the 'all' run option
-	path_y_setpoint = ros::getROSArg(argc, argv, "path_y"); //only used for elevator call or outtake call. Not used for the 'all' run option
 	boost::algorithm::to_upper(elevator_setpoint); //convert to upper case
 
 	//make sure we have the setpoint if we need it, and determine what it is
@@ -399,8 +404,6 @@ int main (int argc, char **argv)
 
 	ROS_WARN("what_to_run: %s", what_to_run.c_str());
 	ROS_WARN("setpoint: %s", elevator_setpoint.c_str());
-	ROS_WARN("path_x_setpoint: %s", path_x_setpoint.c_str());
-	ROS_WARN("path_y_setpoint: %s", path_y_setpoint.c_str());
 
 
 	//Actually run stuff ---------------------------------
@@ -481,7 +484,19 @@ int main (int argc, char **argv)
 	}
 	else if(what_to_run == "path")
 	{
-		callPath(std::stod(path_x_setpoint.substr(1)), std::stod(path_y_setpoint.substr(1)));
+            std::cin >> path_x_setpoint;
+            std::cin >> path_y_setpoint;
+            std::cin >> path_z_setpoint;
+            std::cin >> path_x2_setpoint;
+            std::cin >> path_y2_setpoint;
+            std::cin >> path_z2_setpoint;
+            ROS_WARN_STREAM("path_x_setpoint: " << path_x_setpoint);
+            ROS_WARN_STREAM("path_y_setpoint: " << path_y_setpoint);
+            ROS_WARN_STREAM("path_z_setpoint: " << path_z_setpoint);
+            ROS_WARN_STREAM("path_x2_setpoint: " << path_x2_setpoint);
+            ROS_WARN_STREAM("path_y2_setpoint: " << path_y2_setpoint);
+            ROS_WARN_STREAM("path_z2_setpoint: " << path_z2_setpoint);
+            callPath(path_x_setpoint, path_y_setpoint, path_z_setpoint, path_x2_setpoint, path_y2_setpoint, path_z2_setpoint);
 	}
 	else {
 		ROS_ERROR("Invalid run argument");

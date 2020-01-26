@@ -15,7 +15,7 @@ void PurePursuit::loadPath(const nav_msgs::Path path)
     ROS_INFO_STREAM("0: (" << path_.poses[0].pose.position.x << ", " << path_.poses[0].pose.position.y << ")"); 
     for(size_t i = 0; i < num_waypoints_ - 1; i++)
     {
-        ROS_INFO_STREAM(i << ": (" << path_.poses[i + 1].pose.position.x << ", " << path_.poses[i + 1].pose.position.y << ")"); 
+        ROS_INFO_STREAM(i << ": (" << path_.poses[i + 1].pose.position.x << ", " << path_.poses[i + 1].pose.position.y << ", " << getYaw(path_.poses[i+1].pose.orientation) << ")"); 
         double start_x = path_.poses[i].pose.position.x;
         double start_y = path_.poses[i].pose.position.y;
         double end_x = path_.poses[i+1].pose.position.x;
@@ -29,6 +29,18 @@ void PurePursuit::loadPath(const nav_msgs::Path path)
 double PurePursuit::getPathLength()
 {
     return path_length_;
+}
+
+double PurePursuit::getYaw(const geometry_msgs::Quaternion q)
+{
+    double roll, pitch, yaw;
+    tf::Quaternion tf_q(
+            q.w,
+            q.x,
+            q.y,
+            q.z);
+    tf::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
+    return M_PI - roll;
 }
 
 // The idea would be to have other code be responsible for getting current
@@ -73,7 +85,7 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
     ROS_INFO_STREAM("num_waypoints = " << num_waypoints_);
     for(size_t i = 0; i < num_waypoints_ - 1; i++)
     {
-        ROS_INFO_STREAM("test_point = " << path_.poses[i].pose.position.x << ", " << path_.poses[i].pose.position.y);
+        ROS_INFO_STREAM("test_point = " << path_.poses[i].pose.position.x << ", " << path_.poses[i].pose.position.y << ", " << getYaw(path_.poses[i].pose.orientation));
         // The line segment between this waypoint and the next waypoint
         start_x = path_.poses[i].pose.position.x;
         start_y = path_.poses[i].pose.position.y;
@@ -146,34 +158,30 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
         else
             break;
     }
+    end_i = end_i - 1; //TODO fix your for loop problems
     ROS_INFO_STREAM("index before end point: " << end_i);
 
     // Add fraction of distance between waypoints to find final x and y
-    dx = end_x - start_x;
-    dy = end_y - start_y;
+    dx = path_.poses[end_i + 1].pose.position.x - path_.poses[end_i].pose.position.x;
+    dy = path_.poses[end_i + 1].pose.position.y - path_.poses[end_i].pose.position.y;
     ROS_INFO_STREAM("distance already travelled through waypoints = " << distance_to_travel);
     ROS_INFO_STREAM("lookahead distance = " << lookahead_distance_);
-    double final_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy)); 
-    double final_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy)); 
+    double extrapolated_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy));
+    double extrapolated_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy));
+    double last_x = path_.poses[num_waypoints_ - 1].pose.position.x; 
+    double last_y = path_.poses[num_waypoints_ - 1].pose.position.y;
+    double final_x = std::min(last_x, extrapolated_x); 
+    double final_y = std::min(last_y, extrapolated_y); 
     ROS_INFO_STREAM("drive to coordinates: (" << final_x << ", " << final_y << ")");
 
     // Determine target orientation
-    double roll, pitch, start_yaw, end_yaw;
     // Convert to Euler
-    tf::Quaternion waypoint_q_start(
-            path_.poses[end_i].pose.orientation.w,
-            path_.poses[end_i].pose.orientation.x,
-            path_.poses[end_i].pose.orientation.y,
-            path_.poses[end_i].pose.orientation.z);
-    tf::Matrix3x3(waypoint_q_start).getRPY(roll, pitch, start_yaw);
-    tf::Quaternion waypoint_q_end(
-            path_.poses[end_i + 1].pose.orientation.w,
-            path_.poses[end_i + 1].pose.orientation.x,
-            path_.poses[end_i + 1].pose.orientation.y,
-            path_.poses[end_i + 1].pose.orientation.z);
-    tf::Matrix3x3(waypoint_q_end).getRPY(roll, pitch, end_yaw);
+    double start_yaw = getYaw(path_.poses[end_i].pose.orientation);
+    double end_yaw = getYaw(path_.poses[end_i + 1].pose.orientation);
     // Find orientation between the waypoints
-    double final_orientation = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / hypot(dx, dy));
+    ROS_INFO_STREAM("start yaw = " << start_yaw << ", end_yaw = " << end_yaw << ", dx = " << dx << ", dy = " << dy);
+    double extrapolated_yaw = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / hypot(dx, dy));
+    double final_orientation = std::min(extrapolated_yaw, getYaw(path_.poses[num_waypoints_ - 1].pose.orientation));
     ROS_INFO_STREAM("drive to orientation: " << final_orientation);
     // Convert back to quaternion
     geometry_msgs::Quaternion q_final = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, final_orientation);
