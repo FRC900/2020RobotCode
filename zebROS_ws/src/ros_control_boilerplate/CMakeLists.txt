@@ -5,6 +5,7 @@ include ("../cmake_modules/CMakeOpt.cmake")
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(catkin REQUIRED COMPONENTS
+  as726x_interface
   cmake_modules
   realtime_tools
   hardware_interface

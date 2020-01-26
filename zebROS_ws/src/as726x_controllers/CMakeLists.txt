@@ -9,10 +9,10 @@ include ("../cmake_modules/CMakeOpt.cmake")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  as726x_interface
+  as726x_msgs
   controller_interface
   ddynamic_reconfigure
-  frc_interfaces
-  frc_msgs
   hardware_interface
   pluginlib
   realtime_tools

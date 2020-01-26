@@ -36,7 +36,7 @@
 #include <controller_interface/controller.h>
 
 #include "ddynamic_reconfigure/ddynamic_reconfigure.h"
-#include "frc_interfaces/as726x_interface.h"
+#include "as726x_interface/as726x_interface.h"
 
 namespace as726x_controller
 {

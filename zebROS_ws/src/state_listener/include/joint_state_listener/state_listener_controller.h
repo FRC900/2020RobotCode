@@ -5,8 +5,9 @@
 #include <realtime_tools/realtime_buffer.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/Imu.h>
+#include "as726x_interface/as726x_interface.h"
 #include "frc_interfaces/remote_joint_interface.h"
-#include "frc_msgs/AS726xState.h"
+#include "as726x_msgs/AS726xState.h"
 #include "frc_msgs/MatchSpecificData.h"
 #include "frc_msgs/PDPData.h"
 #include "talon_state_msgs/TalonState.h"
@@ -544,7 +545,7 @@ class AS726xStateListenerController :
 				return false;
 			}
 
-			sub_command_ = n.subscribe<frc_msgs::AS726xState>(topic, 1, &AS726xStateListenerController::commandCB, this);
+			sub_command_ = n.subscribe<as726x_msgs::AS726xState>(topic, 1, &AS726xStateListenerController::commandCB, this);
 			return true;
 		}
 
@@ -579,7 +580,7 @@ class AS726xStateListenerController :
 		// Iterate through each desired joint state.  If it is found in
 		// the message, save the value here in the realtime buffer.
 		// // TODO : figure out how to hack this to use a ConstPtr type instead
-		virtual void commandCB(const frc_msgs::AS726xStateConstPtr &msg)
+		virtual void commandCB(const as726x_msgs::AS726xStateConstPtr &msg)
 		{
 			std::vector<ValueValid<hardware_interface::as726x::AS726xState>> data;
 			for (size_t i = 0; i < joint_names_.size(); i++)

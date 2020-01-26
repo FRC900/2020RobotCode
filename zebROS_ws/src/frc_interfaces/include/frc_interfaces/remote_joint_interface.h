@@ -4,7 +4,6 @@
 #define private protected
 #include <hardware_interface/imu_sensor_interface.h>
 #undef private
-#include "frc_interfaces/as726x_interface.h"
 #include "frc_interfaces/match_data_interface.h"
 #include "frc_interfaces/pcm_state_interface.h"
 #include "frc_interfaces/pdp_state_interface.h"
@@ -63,9 +62,4 @@ namespace hardware_interface
 	class RemotePCMStateInterface   : public HardwareResourceManager<PCMWritableStateHandle,   ClaimResources> {};
 	class RemoteMatchStateInterface : public HardwareResourceManager<MatchStateWritableHandle, ClaimResources> {};
 	class RemoteTalonStateInterface : public HardwareResourceManager<TalonWritableStateHandle, ClaimResources> {};
-	namespace as726x
-	{
-		class RemoteAS726xStateInterface : public HardwareResourceManager<AS726xWritableStateHandle, ClaimResources> {};
-	}
 }
-

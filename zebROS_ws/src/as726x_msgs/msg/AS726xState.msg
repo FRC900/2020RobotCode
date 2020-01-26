@@ -11,5 +11,5 @@ string[] conversion_type
 string[] gain
 uint8[]  integration_time
 uint8[]  temperature
-frc_msgs/AS726xRawChannelData[] raw_channel_data
-frc_msgs/AS726xCalibratedChannelData[] calibrated_channel_data
+as726x_msgs/AS726xRawChannelData[] raw_channel_data
+as726x_msgs/AS726xCalibratedChannelData[] calibrated_channel_data

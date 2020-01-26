@@ -377,6 +377,7 @@ class AS726xCommand
 typedef StateHandle<const AS726xState> AS726xStateHandle;
 typedef StateHandle<AS726xState> AS726xWritableStateHandle;
 class AS726xStateInterface: public HardwareResourceManager<AS726xStateHandle> {};
+class RemoteAS726xStateInterface : public HardwareResourceManager<AS726xWritableStateHandle, ClaimResources> {};
 
 // Handle - used by each controller to get, by name of the
 // corresponding joint, an interface with which to send commands

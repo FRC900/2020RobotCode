@@ -57,7 +57,7 @@ bool AS726xStateController::init(hardware_interface::as726x::AS726xStateInterfac
 
 	// realtime publisher
 	realtime_pub_.reset(new
-						realtime_tools::RealtimePublisher<frc_msgs::AS726xState>(root_nh, "as726x_states", 2));
+						realtime_tools::RealtimePublisher<as726x_msgs::AS726xState>(root_nh, "as726x_states", 2));
 
 	auto &m = realtime_pub_->msg_;
 	// get joints and allocate message
@@ -75,8 +75,8 @@ bool AS726xStateController::init(hardware_interface::as726x::AS726xStateInterfac
 		m.gain.push_back("");
 		m.integration_time.push_back(0);
 		m.temperature.push_back(0);
-		m.raw_channel_data.push_back(frc_msgs::AS726xRawChannelData());
-		m.calibrated_channel_data.push_back(frc_msgs::AS726xCalibratedChannelData());
+		m.raw_channel_data.push_back(as726x_msgs::AS726xRawChannelData());
+		m.calibrated_channel_data.push_back(as726x_msgs::AS726xCalibratedChannelData());
 		for (size_t j = 0; j < 6; j++)
 		{
 			m.raw_channel_data[i].raw_channel_data.push_back(0);

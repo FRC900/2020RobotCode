@@ -33,8 +33,8 @@
 
 #include <controller_interface/controller.h>
 #include <realtime_tools/realtime_publisher.h>
-#include <frc_interfaces/as726x_interface.h>
-#include <frc_msgs/AS726xState.h>
+#include <as726x_interface/as726x_interface.h>
+#include <as726x_msgs/AS726xState.h>
 
 namespace as726x_state_controller
 {
@@ -43,7 +43,7 @@ namespace as726x_state_controller
  * \brief Controller that publishes the state of all as726x color sensors on a robot.
  *
  * This controller publishes the state of all resources registered to a \c hardware_interface::as726x::AS726xStateInterface to a
- * topic of type \c frc_msgs/AS726xState. The following is a basic configuration of the controller.
+ * topic of type \c as726x_msgs/AS726xState. The following is a basic configuration of the controller.
  *
  * \code
  * as726x_state_controller:
@@ -66,7 +66,7 @@ class AS726xStateController: public controller_interface::Controller<hardware_in
 
 	private:
 		std::vector<hardware_interface::as726x::AS726xStateHandle> as726x_state_;
-		std::shared_ptr<realtime_tools::RealtimePublisher<frc_msgs::AS726xState> > realtime_pub_;
+		std::shared_ptr<realtime_tools::RealtimePublisher<as726x_msgs::AS726xState> > realtime_pub_;
 		ros::Time last_publish_time_;
 		double publish_rate_;
 		size_t num_hw_joints_; ///< Number of joints present in the AS726xStateInterface
