@@ -25,7 +25,9 @@ static ros::Publisher pub_;
 
 constexpr double pi = 3.14159;
 
-double rot, delta_x, delta_y;
+double delta_x = 0;
+double delta_y = 0;
+double rot = 0;
 std::vector<std::pair<double, double> > measurement;
 
 double degToRad(double deg) {
@@ -34,8 +36,8 @@ double degToRad(double deg) {
 }
 
 //formats and prints particle attributes
-void print_particle(const Particle& p) {
-  std::cout << p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n';
+void print_particle(Particle p) {
+  ROS_INFO_STREAM(p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n');
 }
 
 =======
@@ -79,6 +81,15 @@ int main(int argc, char **argv) {
                     0, 8, 2, 4,
                     0.1, 0.1, 0.1,
                     200);
+
+  #ifdef VERBOSE
+  for (Particle p : pf.get_particles()) {
+    print_particle(p);
+  }
+  ROS_INFO_STREAM("\n\n");
+  print_particle(pf.predict());
+  #endif
+
 
   while (ros::ok()) {
     pf.set_rotation(rot);
