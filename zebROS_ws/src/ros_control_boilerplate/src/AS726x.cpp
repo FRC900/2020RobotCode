@@ -66,7 +66,7 @@ bool AS726x::begin()
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  turn on the driver LED
   */
 /**************************************************************************/
@@ -77,7 +77,7 @@ void AS726x::drvOn()
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  turn off the driver LED
   */
 /**************************************************************************/
@@ -88,7 +88,7 @@ void AS726x::drvOff()
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  set the current limit for the driver LED.
   @param current the current limit setting. Should be one of LIMIT_12MA5, LIMIT_25MA, LIMIT_50MA, or LIMIT_100MA = 0b11.
   */
@@ -100,7 +100,7 @@ void AS726x::setDrvCurrent(uint8_t current)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  turn on/off the indicator LED
   @param  on True if you want the LED on, False to turn off
   */
@@ -113,7 +113,7 @@ void AS726x::indicateLED(bool on)
 
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  set the current limit for the driver LED.
   @param current the current limit setting. Should be one of LIMIT_1MA, LIMIT_2MA, LIMIT_4MA, or LIMIT_8MA
   */
@@ -125,7 +125,7 @@ void AS726x::setIndicateCurrent(uint8_t current)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  Set the conversion mode.
   @param type the mode to set the sensor to. Should be one of MODE_0, MODE_1, MODE_2, ONE_SHOT.
   */
@@ -137,7 +137,7 @@ void AS726x::setConversionType(uint8_t type)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  Set the sensor gain.
   @param gain the gain to set the sensor to. Should be one of GAIN_1X, GAIN_3X7, GAIN_16X, or GAIN_64X = 0b11.
   */
@@ -149,7 +149,7 @@ void AS726x::setGain(uint8_t gain)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  Set the integration time for the sensor.
   @param time the integration time to set. The actual integration time will be time*2.8ms
   */
@@ -161,7 +161,7 @@ void AS726x::setIntegrationTime(uint8_t time)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  enable the device interrupt
   */
 /**************************************************************************/
@@ -172,7 +172,7 @@ void AS726x::enableInterrupt()
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  disable the device interrupt
   */
 /**************************************************************************/
@@ -183,7 +183,7 @@ void AS726x::disableInterrupt()
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  begin a measurement. This sets the conversion mode to ONE_SHOT.
   */
 /**************************************************************************/
@@ -197,7 +197,7 @@ void AS726x::startMeasurement()
 
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  read an individual raw spectral channel
   @param channel the channel to read
   @return the reading as a raw 16-bit integer
@@ -209,7 +209,7 @@ uint16_t AS726x::readChannel(uint8_t channel)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  read the raw channels
   @param buf the buffer to read the data into
   @param num Optional number of channels to read. Defaults to AS726x_NUM_CHANNELS
@@ -244,7 +244,7 @@ void AS726x::readRawValues(uint16_t *buf, uint8_t num)
 }
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  read the calibrated channels
   @param buf the buffer to read the data into
   @param num Optional number of channels to read. Defaults to AS726x_NUM_CHANNELS
@@ -279,7 +279,7 @@ void AS726x::readCalibratedValues(float *buf, uint8_t num){
 
 
 /**************************************************************************/
-/*! 
+/*!
   @brief  read an individual calibrated spectral channel
   @param channel the channel to read
   @return the reading as a raw 16-bit integer
