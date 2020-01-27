@@ -57,7 +57,7 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
     double current_y = odom.pose.pose.position.y;
     double normal_found = false;
     double current_x_path, current_y_path;
-    size_t current_waypoint_index;
+    size_t current_waypoint_index; //the index BEFORE the point on the path
     double minimum_distance = std::numeric_limits<double>::max();
 
     double start_x;
@@ -67,21 +67,10 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
     double dx;
     double dy;
 
-    double magnitude_projection;
-    double distance_to_travel;
+    double magnitude_projection; // distance from the waypoint to the point on the path
+    double distance_to_travel; // distance from the point on the path, along the path
 
     // Find point in path closest to odometry reading
-    // TODO (KCJ) - another possibility here is looking to see which segment between two wayponints
-    // the current position is normal to.  That is, if it is off track, assume it is off track to the left
-    // or right of the desired path, and check to see which segment it is on if the point were projected
-    // perpendicular back to the correct track.
-    // See e.g. https://stackoverflow.com/questions/17581738/check-if-a-point-projected-on-a-line-segment-is-not-outside-it
-    // It could hit multiple segments, though, so maybe the minimum distance of segments it is normal to, using
-    // the right angle distance to the closest point along each segment
-    // http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
-    // This would also potentially give a location between two segments as the current
-    // location, which makes the next lookahead point also somewhere
-    // between two waypoints.
     ROS_INFO_STREAM("num_waypoints = " << num_waypoints_);
     for(size_t i = 0; i < num_waypoints_ - 1; i++)
     {
@@ -122,21 +111,24 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
 
     if(minimum_distance == std::numeric_limits<double>::max())
     {
-        ROS_ERROR_STREAM("Not within path limits"); //TODO: drive toward beginning/end of path based on which is closest
         double dist_from_startpoint = hypot(current_x -  path_.poses[0].pose.position.x, current_y - path_.poses[0].pose.position.y);
         double dist_from_endpoint = hypot(current_x -  path_.poses[num_waypoints_ - 1].pose.position.x, current_y - path_.poses[num_waypoints_ - 1].pose.position.y);
         geometry_msgs::Pose target_pos;
-        if(dist_from_startpoint > dist_from_endpoint)
+        if(dist_from_startpoint < dist_from_endpoint)
         {
+            ROS_ERROR_STREAM("Not within path limits : driving to start waypoint"); 
             target_pos.position.x = path_.poses[0].pose.position.x;
             target_pos.position.y = path_.poses[0].pose.position.y;
             target_pos.position.z = 0;
+            target_pos.orientation = path_.poses[0].pose.orientation;
         }
         else
         {
+            ROS_ERROR_STREAM("Not within path limits : driving to end waypoint"); 
             target_pos.position.x = path_.poses[num_waypoints_ - 1].pose.position.x;
             target_pos.position.y = path_.poses[num_waypoints_ - 1].pose.position.y;
             target_pos.position.z = 0;
+            target_pos.orientation = path_.poses[num_waypoints_ - 1].pose.orientation;
         }
         return target_pos;
     }
@@ -158,31 +150,36 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
         else
             break;
     }
-    end_i = end_i - 1; //TODO fix your for loop problems
     ROS_INFO_STREAM("index before end point: " << end_i);
 
-    // Add fraction of distance between waypoints to find final x and y
-    dx = path_.poses[end_i + 1].pose.position.x - path_.poses[end_i].pose.position.x;
-    dy = path_.poses[end_i + 1].pose.position.y - path_.poses[end_i].pose.position.y;
-    ROS_INFO_STREAM("distance already travelled through waypoints = " << distance_to_travel);
-    ROS_INFO_STREAM("lookahead distance = " << lookahead_distance_);
-    double extrapolated_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy));
-    double extrapolated_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy));
-    double last_x = path_.poses[num_waypoints_ - 1].pose.position.x; 
-    double last_y = path_.poses[num_waypoints_ - 1].pose.position.y;
-    double final_x = std::min(last_x, extrapolated_x); 
-    double final_y = std::min(last_y, extrapolated_y); 
-    ROS_INFO_STREAM("drive to coordinates: (" << final_x << ", " << final_y << ")");
+    double final_x, final_y, final_orientation;
+    if(end_i == num_waypoints_ - 1) // if the lookahead distance is after the path has ended
+    {
+        ROS_INFO_STREAM("Current index is " << end_i << "; going to the end of the path");
+        final_x = path_.poses[num_waypoints_ - 1].pose.position.x; 
+        final_y = path_.poses[num_waypoints_ - 1].pose.position.y;
+        final_orientation = getYaw(path_.poses[num_waypoints_ - 1].pose.orientation);
+    }
+    else //if we're still in the path
+    {
+        ROS_INFO_STREAM("Current index is " << end_i << "; going to point within the path");
+        ROS_INFO_STREAM("distance already travelled through waypoints = " << distance_to_travel);
+        ROS_INFO_STREAM("lookahead distance = " << lookahead_distance_);
+        // Add fraction of distance between waypoints to find final x and y
+        dx = path_.poses[end_i + 1].pose.position.x - path_.poses[end_i].pose.position.x;
+        dy = path_.poses[end_i + 1].pose.position.y - path_.poses[end_i].pose.position.y;
+        final_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy));
+        final_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy));
 
-    // Determine target orientation
-    // Convert to Euler
-    double start_yaw = getYaw(path_.poses[end_i].pose.orientation);
-    double end_yaw = getYaw(path_.poses[end_i + 1].pose.orientation);
-    // Find orientation between the waypoints
-    ROS_INFO_STREAM("start yaw = " << start_yaw << ", end_yaw = " << end_yaw << ", dx = " << dx << ", dy = " << dy);
-    double extrapolated_yaw = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / hypot(dx, dy));
-    double final_orientation = std::min(extrapolated_yaw, getYaw(path_.poses[num_waypoints_ - 1].pose.orientation));
+        // Determine target orientation
+        double start_yaw = getYaw(path_.poses[end_i].pose.orientation);
+        double end_yaw = getYaw(path_.poses[end_i + 1].pose.orientation);
+        ROS_INFO_STREAM("start yaw = " << start_yaw << ", end_yaw = " << end_yaw << ", dx = " << dx << ", dy = " << dy);
+        final_orientation = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / hypot(dx, dy));
+    }
+    ROS_INFO_STREAM("drive to coordinates: (" << final_x << ", " << final_y << ")");
     ROS_INFO_STREAM("drive to orientation: " << final_orientation);
+
     // Convert back to quaternion
     geometry_msgs::Quaternion q_final = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, final_orientation);
 
