@@ -155,6 +155,7 @@ target_link_libraries(color_spin
    )
 add_dependencies(
    )
+   )
 #############
 ## Install ##
 #############
