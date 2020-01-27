@@ -228,8 +228,8 @@ class PathAction
                                     ROS_ERROR_STREAM(action_name_ << ": preempted");
                                     preempted = true;
                                 }
-                                else if((spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x - odom_.pose.pose.position.x < final_pos_tol_) &&
-                                        (spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y - odom_.pose.pose.position.y < final_pos_tol_))
+                                else if((fabs(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x - odom_.pose.pose.position.x) < final_pos_tol_) &&
+                                        (fabs(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y - odom_.pose.pose.position.y) < final_pos_tol_))
                                 {
                                     ROS_INFO_STREAM(action_name_ << ": succeeded");
                                     ROS_INFO_STREAM("endpoint_x = " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", odom_x = " << odom_.pose.pose.position.x);
