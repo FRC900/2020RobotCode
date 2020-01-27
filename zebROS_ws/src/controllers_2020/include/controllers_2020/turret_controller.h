@@ -1,3 +1,6 @@
+//REPLACE "package" with the name of the package this is in
+
+
 
 #pragma once
 
@@ -13,19 +16,23 @@
 
 //REMEMBER TO INCLUDE CUSTOM SERVICE
 
-namespace turret_controller
+namespace mech_controller
 {
 
-//this is the controller class, used to make a controller
-class TurretController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>
+//this is the controller class, so it stores all of the  update() functions and the actual handle from the joint interface
+//if it was only one type, can do controller_interface::Controller<TalonCommandInterface or PositionJointInterface> here
+class MechController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface> //including both talons and pistons so can copy paste this w/o having to change it if you want to add a talon
 {
         public:
-            TurretController()
+            MechController()
             {
             }
 
 			//the four essential functions for a controller: init, starting, update, stopping
 
+            //if just doing a one-type-of-interface controller (PositionJointInterface vs. TalonCommandInterface), can pass e.g
+			//hardware_interface::PositionJointInterface *pos_joint_iface
+			//to this function and not have to get the interface in the src file
 			virtual bool init(hardware_interface::RobotHW *hw,
                               ros::NodeHandle             &root_nh,
                               ros::NodeHandle             &controller_nh) override;
@@ -33,11 +40,11 @@ class TurretController : public controller_interface::MultiInterfaceController<h
             virtual void update(const ros::Time & time, const ros::Duration& period) override;
             virtual void stopping(const ros::Time &time) override;
 
+			//ROS server callback function
+            virtual bool cmdService(package::MechSrv::Request &req,
+                                    package::MechSrv::Response &res);
+
         private:
-
-
-
-}; //class
-
-} //namespace
-
+            //variable for piston joint
+			/* Ex:
+			hardware_interface::JointHandle push_joint_; //interface for the piston joint
