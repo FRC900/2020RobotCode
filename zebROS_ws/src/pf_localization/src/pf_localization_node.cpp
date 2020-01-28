@@ -17,11 +17,11 @@
 
 #define VERBOSE
 
-const std::string rot_topic = "zeroed_imu";
-const std::string odom_topic = "odom";
-const std::string goal_pos_topic = "goal_detect_msg";
+const std::string rot_topic = "/zeroed_imu";
+const std::string odom_topic = "/odom";
+const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
-const std::string pub_topic = "pf/predicted_pose";
+const std::string pub_topic = "predicted_pose";
 static ros::Publisher pub_;
 
 constexpr double pi = 3.14159;
@@ -63,6 +63,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
+
   ROS_INFO_STREAM(nh_.getNamespace());
 
   ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1000, rotCallback);
@@ -71,37 +72,68 @@ int main(int argc, char **argv) {
 
   pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
-  XmlRpc::XmlRpcValue xml_beacons, field_dims, init_dims, noise_stdev;
+  XmlRpc::XmlRpcValue xml_beacons;
   double f_x_min, f_x_max, f_y_min, f_y_max, i_x_min, i_x_max, i_y_min, i_y_max, p_stdev, r_stdev;
   int num_particles;
 
   std::vector<std::pair<double, double> > beacons;
 
   nh_.getParam("num_particles", num_particles);
-  nh_.getParam("field_dims", field_dims);
-  nh_.getParam("init_dims", init_dims);
-  nh_.getParam("noise_stdev", noise_stdev);
   nh_.getParam("beacons", xml_beacons);
 
-  f_x_min = field_dims["x_min"];
-  f_x_max = field_dims["x_max"];
-  f_y_min = field_dims["y_min"];
-  f_y_max = field_dims["y_max"];
+  if (!nh_.getParam("field_dims/x_min", f_x_min)) {
+    ROS_ERROR("field dimension not specified");
+    return -1;
+  }
+  if (!nh_.getParam("field_dims/x_max", f_x_max)) {
+    ROS_ERROR("field dimension not specified");
+    return -1;
+  }
+  if (!nh_.getParam("field_dims/y_min", f_y_min)) {
+    ROS_ERROR("field dimension not specified");
+    return -1;
+  }
+  if (!nh_.getParam("field_dims/y_max", f_y_max)) {
+    ROS_ERROR("field dimension not specified");
+    return -1;
+  }
 
-  i_x_min = init_dims["x_min"];
-  i_x_max = init_dims["x_max"];
-  i_y_min = init_dims["y_min"];
-  i_y_max = init_dims["y_max"];
+  ROS_INFO_STREAM("field dims assigned");
 
-  p_stdev = noise_stdev["position"];
-  r_stdev = noise_stdev["rotation"];
+  if (!nh_.getParam("init_dims/x_min", i_x_min)) {
+    ROS_ERROR("particle initialization dimension not specified");
+    return -1;
+  }
+  if (!nh_.getParam("init_dims/x_max", i_x_max)) {
+    ROS_ERROR("particle initialization dimension not specified");
+    return -1;
+  }
+  if (!nh_.getParam("init_dims/y_min", i_y_min)) {
+    ROS_ERROR("particle initialization dimension not specified");
+    return -1;
+  }
+  if (!nh_.getParam("init_dims/y_max", i_y_max)) {
+    ROS_ERROR("particle initialization dimension not specified");
+    return -1;
+  }
+
+  ROS_INFO("initialization dims assigned");
+
+  if (!nh_.param("noise_stdev/position", p_stdev, 0.1)) {
+    ROS_WARN("no position stdev specified, using defalut");
+  }
+  if (!nh_.param("noise_stdev/rotation", r_stdev, 0.1)) {
+    ROS_WARN("no rotation stdev specified, using defalut");
+  }
+
+  ROS_INFO("noise stdevs assigned");
 
   ROS_INFO_STREAM(f_x_min << ' ' << i_x_min << ' ' << p_stdev);
 
-  // beacons.reserve(xml_beacons.size());
-  // for (size_t i = 0; i < (unsigned) xml_beacons.size(); i++) {
-  //   beacons.push_back(std::make_pair(xml_beacons[i][0], xml_beacons[i][1]));
-  // }
+  beacons.reserve(xml_beacons.size());
+  for (size_t i = 0; i < (unsigned) xml_beacons.size(); i++) {
+    beacons.push_back(std::make_pair(xml_beacons[i][0], xml_beacons[i][1]));
+  }
 
   WorldModel world(beacons, f_x_min, f_x_max, f_y_min, f_y_max);
   ParticleFilter pf(world,
