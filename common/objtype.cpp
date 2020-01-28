@@ -242,6 +242,13 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.127,0.2286));
 			name_ = "loading_bay";
 			break;
+		case TEST_TARGET_2020:
+			depth_ = 0;
+			contour_.push_back(Point2f(0, 0))
+			contour_.push_back(Point2f(0, 0.102))
+			contour_.push_back(Point2f(0.102, 0))
+			contour_.push_back(Point2f(0.102, 0.102))
+			name_ = "test_target"
 		default:
 			cerr << "error initializing object!" << endl;
 	}
