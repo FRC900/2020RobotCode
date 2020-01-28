@@ -112,7 +112,7 @@ bool AS726xController::init(hardware_interface::as726x::AS726xCommandInterface *
 	controller_nh.param("drv_led_enable", bool_val, false);
 	drv_led_enable_ = bool_val;
 
-	conversion_type_ = hardware_interface::as726x::ConversionTypes::MODE_2;
+	conversion_type_ = hardware_interface::as726x::ConversionTypes::ONE_SHOT;
 	if (controller_nh.getParam("conversion_type", param_str))
 	{
 		if (!convertConversionType(param_str, conversion_type_))

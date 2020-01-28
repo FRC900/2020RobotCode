@@ -84,7 +84,7 @@ as726x_controller:
     ind_led_enable: false
     drv_led_current_limit: DRV_LIMIT_12MA5
     drv_led_enable: false
-    conversion_type: MODE_2
+    conversion_type: ONE_SHOT
     channel_gain: GAIN_1X
     integration_time: 10
 
