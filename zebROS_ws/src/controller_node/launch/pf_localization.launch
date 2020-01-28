@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="config_file" default="../../pf_localization/cfg/pf_params.yaml" />
-
-  <node name="pf_localization" pkg="pf_localization" type="pf_localization" output= "screen">
-    <rosparam command="load" file="$(find pf_localization)/cfg/pf_params.yaml" />
-  </node>
+  <group ns="pf_localization">
+    <rosparam command="load" file="$(find pf_localization)/config/pf_params.yaml" />
+    <node name="pf_localization" pkg="pf_localization" type="pf_localization_node" output= "screen">
+    </node>
+  </group>
 
 </launch>

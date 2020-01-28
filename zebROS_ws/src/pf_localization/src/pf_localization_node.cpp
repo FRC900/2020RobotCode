@@ -13,6 +13,7 @@
 #include <ros/ros.h>
 #include <vector>
 #include <utility>
+#include <XmlRpcValue.h>
 
 #define VERBOSE
 
@@ -62,6 +63,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
+  ROS_INFO_STREAM(nh_.getNamespace());
 
   ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1000, rotCallback);
   ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, odomCallback);
@@ -69,18 +71,43 @@ int main(int argc, char **argv) {
 
   pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
+  XmlRpc::XmlRpcValue xml_beacons, field_dims, init_dims, noise_stdev;
+  double f_x_min, f_x_max, f_y_min, f_y_max, i_x_min, i_x_max, i_y_min, i_y_max, p_stdev, r_stdev;
+  int num_particles;
+
   std::vector<std::pair<double, double> > beacons;
-  for (int i = 0; i < 10; i++) {
-    beacons.push_back(std::make_pair(
-      ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16,
-      ((double) rng() - rng.min()) / (rng.max() - rng.min()) * 16
-    ));
-  }
-  WorldModel world(beacons, 0, 16, 0, 16);
+
+  nh_.getParam("num_particles", num_particles);
+  nh_.getParam("field_dims", field_dims);
+  nh_.getParam("init_dims", init_dims);
+  nh_.getParam("noise_stdev", noise_stdev);
+  nh_.getParam("beacons", xml_beacons);
+
+  f_x_min = field_dims["x_min"];
+  f_x_max = field_dims["x_max"];
+  f_y_min = field_dims["y_min"];
+  f_y_max = field_dims["y_max"];
+
+  i_x_min = init_dims["x_min"];
+  i_x_max = init_dims["x_max"];
+  i_y_min = init_dims["y_min"];
+  i_y_max = init_dims["y_max"];
+
+  p_stdev = noise_stdev["position"];
+  r_stdev = noise_stdev["rotation"];
+
+  ROS_INFO_STREAM(f_x_min << ' ' << i_x_min << ' ' << p_stdev);
+
+  // beacons.reserve(xml_beacons.size());
+  // for (size_t i = 0; i < (unsigned) xml_beacons.size(); i++) {
+  //   beacons.push_back(std::make_pair(xml_beacons[i][0], xml_beacons[i][1]));
+  // }
+
+  WorldModel world(beacons, f_x_min, f_x_max, f_y_min, f_y_max);
   ParticleFilter pf(world,
-                    0, 8, 2, 4,
-                    0.1, 0.1, 0.1,
-                    200);
+                    i_x_min, i_x_max, i_y_min, i_y_max,
+                    p_stdev, r_stdev,
+                    num_particles);
 
   #ifdef VERBOSE
   for (Particle p : pf.get_particles()) {
