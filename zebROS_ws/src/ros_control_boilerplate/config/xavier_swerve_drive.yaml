@@ -50,7 +50,7 @@ swerve_drive_controller:
             - {p: 0.1, i: 0.0, d: 10.0, f: 0.0, i_zone: 0}
         sensor_phase: true 
         invert_output: false 
-        feedback_type: CTRE_MagEncoder_Relative
+        feedback_type: IntegratedSensor
         voltage_compensation_enable: True
         current_limit_continuous_amps: 20
         current_limit_enable: True
@@ -63,7 +63,7 @@ swerve_drive_controller:
             - {p: 0.1, i: 0.0, d: 10.0, f: 0.0, i_zone: 0}
         sensor_phase: true 
         invert_output: false 
-        feedback_type: CTRE_MagEncoder_Relative
+        feedback_type: IntegratedSensor
         voltage_compensation_enable: True
         current_limit_continuous_amps: 20
         current_limit_enable: True
@@ -74,9 +74,9 @@ swerve_drive_controller:
         close_loop_values: 
             - {p: 0.01, i: 0.0001, d: 0.0, f: 0.075, i_zone: 650}
             - {p: 0.1, i: 0.0, d: 10.0, f: 0.0, i_zone: 0}
-        feedback_type: CTRE_MagEncoder_Relative
         sensor_phase: true  
         invert_output: false 
+        feedback_type: IntegratedSensor
         voltage_compensation_enable: True
         current_limit_continuous_amps: 20
         current_limit_enable: True
@@ -89,7 +89,7 @@ swerve_drive_controller:
             - {p: 0.1, i: 0.0, d: 10.0, f: 0.0, i_zone: 0}
         sensor_phase: True
         invert_output: false 
-        feedback_type: CTRE_MagEncoder_Relative
+        feedback_type: IntegratedSensor
         voltage_compensation_enable: True
         current_limit_continuous_amps: 20
         current_limit_enable: True
