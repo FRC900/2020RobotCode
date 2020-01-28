@@ -40,7 +40,6 @@ void print_particle(Particle p) {
   ROS_INFO_STREAM(p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n');
 }
 
-=======
 void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
   double roll, pitch, yaw;
   tf2::Quaternion raw;
