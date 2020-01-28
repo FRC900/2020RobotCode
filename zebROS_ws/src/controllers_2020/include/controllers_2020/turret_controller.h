@@ -14,17 +14,18 @@
 
 #include <pluginlib/class_list_macros.h> //to compile as a controller
 
+#include <controllers_2020_msgs/TurretSrv.h>
 //REMEMBER TO INCLUDE CUSTOM SERVICE
 
-namespace mech_controller
+namespace turret_controller
 {
 
 //this is the controller class, so it stores all of the  update() functions and the actual handle from the joint interface
 //if it was only one type, can do controller_interface::Controller<TalonCommandInterface or PositionJointInterface> here
-class MechController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface> //including both talons and pistons so can copy paste this w/o having to change it if you want to add a talon
+class TurretController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface> //including both talons and pistons so can copy paste this w/o having to change it if you want to add a talon
 {
         public:
-            MechController()
+            TurretController()
             {
             }
 
@@ -41,10 +42,30 @@ class MechController : public controller_interface::MultiInterfaceController<har
             virtual void stopping(const ros::Time &time) override;
 
 			//ROS server callback function
-            virtual bool cmdService(package::MechSrv::Request &req,
-                                    package::MechSrv::Response &res);
+            virtual bool cmdService(controllers_2020_msgs::TurretSrv::Request &req,
+                                    controllers_2020_msgs::TurretSrv::Response &res);
 
         private:
             //variable for piston joint
 			/* Ex:
 			hardware_interface::JointHandle push_joint_; //interface for the piston joint
+			*/
+
+			//variable for motor joint
+			/* Ex:
+			talon_controllers::TalonPercentOutputControllerInterface motor_name_joint_; //other types exist FYI
+			*/
+
+			//set up your ROS server and buffer
+			/* Ex:
+            ros::ServiceServer mech_service_; //service for receiving commands
+            realtime_tools::RealtimeBuffer<bool> cmd_buffer_; //buffer for commands
+			*/
+
+			talon_controllers::TalonMotionMagicCloseLoopControllerInterface turret_joint_;
+			hardware_interface::JointHandle turret_arm_joint_;
+			realtime_tools::RealtimeBuffer<TurretCommand> turret_cmd_;
+}; //class
+
+} //namespace
+

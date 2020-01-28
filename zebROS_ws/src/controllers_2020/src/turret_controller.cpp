@@ -3,11 +3,11 @@
 //replace "Mech" with the name of your mechanism, ThisIsTheFormatForThat
 //replace "package" with the name of the controllers package
 
-#include "package/mech_controller.h"
+#include "package/turret_controller.h"
 
-namespace mech_controller
+namespace turret_controller
 {
-	bool MechController::init(hardware_interface::RobotHW *hw,
+	bool TurretController::init(hardware_interface::RobotHW *hw,
 									 ros::NodeHandle                 &/*root_nh*/,
 									 ros::NodeHandle                 &controller_nh)
 	{
@@ -46,14 +46,14 @@ namespace mech_controller
 		return true;
 	}
 
-	void MechController::starting(const ros::Time &/*time*/) {
+	void TurretController::starting(const ros::Time &/*time*/) {
 		//give command buffer(s) an initial value
 		/* Ex:
 		cmd_buffer_.writeFromNonRT(true);
 		*/
 	}
 
-	void MechController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
+	void TurretController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
 		//grab value from command buffer(s)
 		/* Ex:
 		const bool extend_cmd = *(cmd_buffer_.readFromRT());
@@ -66,10 +66,10 @@ namespace mech_controller
 		//for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
 	}
 
-	void MechController::stopping(const ros::Time &/*time*/) {
+	void TurretController::stopping(const ros::Time &/*time*/) {
 	}
 
-	bool MechController::cmdService(package::MechSrv::Request &req, package::MechSrv::Response &/*response*/) {
+	bool TurretController::cmdService(package::MechSrv::Request &req, package::MechSrv::Response &/*response*/) {
 		if(isRunning())
 		{
 			//assign request value to command buffer(s)
