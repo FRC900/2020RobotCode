@@ -144,17 +144,12 @@ add_executable(color_spin src/color_spin.cpp)
 # add_dependencies(color_spin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-add_executable(color_spin src/color_spin.cpp)
 target_link_libraries(color_spin
    ${catkin_LIBRARIES}
    )
-add_dependencies(
-add_executable(color_spin src/color_spin.cpp)
+add_dependencies(color_spin src/color_spin.cpp)
 target_link_libraries(color_spin
    ${catkin_LIBRARIES}
-   )
-add_dependencies(
-   )
    )
 #############
 ## Install ##
