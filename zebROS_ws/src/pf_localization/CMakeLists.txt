@@ -12,9 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   std_msgs
   geometry_msgs
-  dynamic_reconfigure
   goal_detection
-  dynamic_reconfigure_wrapper
 )
 
 ## System dependencies are found with CMake's conventions
@@ -90,9 +88,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
- generate_dynamic_reconfigure_options(
-   cfg/ParticleFilter.cfg
- )
+# generate_dynamic_reconfigure_options(
+#   cfg/ParticleFilter.cfg
+# )
 
 ###################################
 ## catkin specific configuration ##

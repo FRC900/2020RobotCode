@@ -14,9 +14,6 @@
 #include <vector>
 #include <utility>
 
-#include "pf_localization/ParticleFilterConfig.h"
-#include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
-
 #define VERBOSE
 
 const std::string rot_topic = "zeroed_imu";
@@ -66,7 +63,6 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
-  pf_localization::ParticleFilterConfig config_;
 
   ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1000, rotCallback);
   ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, odomCallback);
@@ -83,7 +79,7 @@ int main(int argc, char **argv) {
   }
   WorldModel world(beacons, 0, 16, 0, 16);
   ParticleFilter pf(world,
-                    config_.init_x_min, config_.init_x_max, config_.init_y_min, config_.init_y_max,
+                    0, 8, 2, 4,
                     0.1, 0.1, 0.1,
                     200);
 
