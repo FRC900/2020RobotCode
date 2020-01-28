@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<!-- GDB functionality -->
+	<arg name="debug" default="false" />
+	<arg unless="$(arg debug)" name="launch_prefix" value="" />
+	<arg if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+	<group ns="frcrobot_jetson">
+		<rosparam file="$(find ros_control_boilerplate)/config/xavier_base.yaml" command="load"/>
+		<rosparam file="$(find ros_control_boilerplate)/config/xavier_swerve_drive.yaml" command="load"/>
+		<rosparam file="$(find ros_control_boilerplate)/config/xavier_offsets.yaml" command="load"/>
+		<rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller_jetson.yaml" command="load"/>
+
+		<!-- Load hardware interface -->
+		<node name="frcrobot_hw_interface" pkg="ros_control_boilerplate" type="frcrobot_hw_main"
+			output="screen" launch-prefix="$(arg launch_prefix)">
+		</node>
+
+		<!-- Load controller manager-->
+		<node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false"
+			output="screen" args="spawn joint_state_controller_jetson joint_state_listener_controller talon_state_controller_jetson talon_config_controller match_state_listener_controller swerve_drive_controller robot_code_ready_controller" />
+	</group>
+
+	<group ns="navx_jetson">
+		<include file="$(find controller_node)/launch/2019_compbot_jetson_navx.launch" />
+	</group>
+
+	<group ns="joy0">
+		<node name="joy_node" pkg="joy" type="joy_node" output="screen">
+			<param name="autorepeat_rate" type="double" value="100"/>
+			<param name="coalesce_interval" type="double" value="0.01"/>
+			<param name="deadzone" type="double" value="0.0"/>
+		</node>
+		<node pkg="teleop_joystick_control" type="joystick_remap.py" name="joystick_remap" >
+			<remap from="joy_in" to="/joy0/joy" />
+			<remap from="joy_out" to="/frcrobot_rio/joystick_states_raw"/>
+			<rosparam command="load" file="$(find teleop_joystick_control)/config/joystick_remap.yaml"/>
+		</node>
+	</group>
+
+	<group ns="teleop">
+		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
+		<node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen" >
+			<remap from="navx_mxp" to="/navx_jetson/zeroed_imu"/>
+			<remap from="swerve_drive_controller/cmd_vel" to="/frcrobot_jetson/swerve_drive_controller/cmd_vel"/>
+		</node>
+
+		<group ns="translator0">
+			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen"/>
+		</group>
+	</group>
+</launch>

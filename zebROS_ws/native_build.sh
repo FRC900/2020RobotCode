@@ -20,6 +20,7 @@ if [ $? -eq 1 ]; then
 fi
 
 catkin config --blacklist \
+	goal_detection \
 	velocity_controllers \
 	zed_ar_track_alvar_example \
 	zed_display_rviz \
