@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="config_file" default="../../pf_localization/cfg/pf_params.yaml" />
+
+  <node name="pf_localization" pkg="pf_localization" type="pf_localization" output= "screen">
+    <rosparam command="load" file="$(arg config_file)" />
+  </node>
+
+</launch>
