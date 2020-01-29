@@ -4,6 +4,7 @@
 #include "std_srvs/Trigger.h"
 
 #include "std_msgs/Bool.h"
+#include "std_msgs/Float64.h"
 #include "std_msgs/Int8.h"
 
 #include "actionlib/client/simple_action_client.h"
@@ -399,17 +400,27 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		{
 			teleop_cmd_vel->setSlowMode(false);
 		}
+
+		std_msgs::Bool enable_pub_msg;
+
 		if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0))
 		{
-			orient_strafing_enable_pub.publish(true);
+			enable_pub_msg.data = true;
 		}
 		else
 		{
-			orient_strafing_enable_pub.publish(false);
+			enable_pub_msg.data = false;
 		}
 
-		orient_strafing_setpoint_pub.publish(orient_strafing_angle);
-		orient_strafing_state_pub.publish(navX_angle);
+		orient_strafing_enable_pub.publish(enable_pub_msg);
+
+		std_msgs::Float64 orient_strafing_angle_msg;
+		orient_strafing_angle_msg.data = orient_strafing_angle;
+		orient_strafing_setpoint_pub.publish(orient_strafing_angle_msg);
+
+		std_msgs::Float64 navX_angle_msg;
+		navX_angle_msg.data = navX_angle;
+		orient_strafing_state_pub.publish(navX_angle_msg);
 
 		//Joystick1: directionLeft
 		if(joystick_states_array[0].directionLeftPress)
