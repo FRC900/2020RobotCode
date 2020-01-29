@@ -28,6 +28,8 @@ double orient_strafing_angle = 0.0;
 std::vector <frc_msgs::JoystickState> joystick_states_array;
 std::vector <std::string> topic_array;
 
+ros::Publisher enable_from_joystick_pub;
+
 ros::Publisher orient_strafing_enable_pub;
 ros::Publisher orient_strafing_setpoint_pub;
 ros::Publisher orient_strafing_state_pub;
@@ -163,9 +165,13 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		{
 		}
 
+		frc_msgs::MatchSpecificData enable_from_joystick_msg;
+
 		//Joystick1: bumperLeft
 		if(joystick_states_array[0].bumperLeftPress)
 		{
+			enable_from_joystick_msg.Enabled = true;
+			enable_from_joystick_pub.publish(enable_from_joystick_msg);
 		}
 		if(joystick_states_array[0].bumperLeftButton)
 		{
@@ -177,6 +183,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick1: bumperRight
 		if(joystick_states_array[0].bumperRightPress)
 		{
+			enable_from_joystick_msg.Enabled = false;
+			enable_from_joystick_pub.publish(enable_from_joystick_msg);
 		}
 		if(joystick_states_array[0].bumperRightButton)
 		{
@@ -475,6 +483,8 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
+
+	enable_from_joystick_pub = n.advertise<frc_msgs::MatchSpecificData>("/frcrobot_rio/match_data", 1);
 
 	orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("orient_strafing/pid_enable", 1);
 	orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("orient_strafing/setpoint", 1);
