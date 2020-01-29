@@ -8,6 +8,7 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <iostream>
 #include <ros/ros.h>
@@ -17,8 +18,8 @@
 
 #define VERBOSE
 
-const std::string rot_topic = "/zeroed_imu";
-const std::string odom_topic = "/odom";
+const std::string rot_topic = "/frcrobot_rio/navx_mxp";
+const std::string odom_topic = "/teleop/swerve_drive_controller/cmd_vel_out";
 const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
 const std::string pub_topic = "predicted_pose";
@@ -60,6 +61,15 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
   delta_y = msg->pose.pose.position.y;
 }
 
+void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
+  double timestep = msg->header.stamp.sec;
+  double x_vel = msg->twist.linear.x;
+  double y_vel = msg->twist.linear.y;
+
+  delta_x = x_vel * timestep;
+  delta_y = y_vel * timestep;
+}
+
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
@@ -67,7 +77,7 @@ int main(int argc, char **argv) {
   ROS_INFO_STREAM(nh_.getNamespace());
 
   ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1000, rotCallback);
-  ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, odomCallback);
+  ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, cmdCallback);
   ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 1000, goalCallback);
 
   pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
