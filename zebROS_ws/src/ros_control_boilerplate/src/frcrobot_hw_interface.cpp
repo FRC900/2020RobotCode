@@ -1702,12 +1702,10 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 	// Was the robot enabled last time write was run?
 	static bool last_robot_enabled = false;
 
-#if 0
 	if (!run_hal_robot_ && num_can_ctre_mcs_)
 	{
 		c_FeedEnable(100);
 	}
-#endif
 
 	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
 	{
@@ -1727,7 +1725,7 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 		auto falcon = std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonFX>(ctre_mcs_[joint_id]);
 		auto talon = std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonSRX>(ctre_mcs_[joint_id]);
 		auto victor = std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::IMotorController>(ctre_mcs_[joint_id]);
-#if 0
+# if 0	
 		if (mc_enhanced)
 		{
 			ROS_ERROR_STREAM_THROTTLE(5.0, "mc_enhanced OK for id " << joint_id);
@@ -1760,13 +1758,13 @@ void FRCRobotHWInterface::write(ros::Duration &elapsed_time)
 		{
 			ROS_ERROR_STREAM_THROTTLE(5.0, "victor NOT OK for id " << joint_id);
 		}
-#endif
 
 		if (!victor && !talon && !mc_enhanced && !falcon) // skip unintialized Talons
 		{
 			talon_command_[joint_id].unlock();
 			continue;
 		}
+#endif
 
 		// Save some typing by making references to commonly
 		// used variables

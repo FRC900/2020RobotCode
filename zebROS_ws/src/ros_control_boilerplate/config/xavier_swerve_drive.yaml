@@ -100,7 +100,7 @@ swerve_drive_controller:
         feedback_type: CTRE_MagEncoder_Absolute
         close_loop_values:
             #- {p: 2.0, i: 0.002, d: 0.0, f: 1.0, i_zone: 0}
-            - {p: 5.0, i: 0.000, d: 70.0, f: 1.0, i_zone: 0}
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
             - {p: 1.5, i: 0.005, d: 0.0, f: 0.0, i_zone: 130}
         invert_output: true
         sensor_phase: false
@@ -116,7 +116,7 @@ swerve_drive_controller:
         feedback_type: CTRE_MagEncoder_Absolute
         close_loop_values:
             #- {p: 2.0, i: 0.002, d: 0.0, f: 1.0, i_zone: 0}
-            - {p: 5.0, i: 0.000, d: 70.0, f: 1.0, i_zone: 0}
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
             - {p: 1.5, i: 0.005, d: 0.0, f: 0.0, i_zone: 130}
         invert_output: true
         sensor_phase: false 
@@ -132,7 +132,7 @@ swerve_drive_controller:
         feedback_type: CTRE_MagEncoder_Absolute
         close_loop_values:
             #- {p: 2.0, i: 0.002, d: 0.0, f: 1.0, i_zone: 0}
-            - {p: 5.0, i: 0.000, d: 70.0, f: 1.0, i_zone: 0}
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
             - {p: 1.5, i: 0.005, d: 0.0, f: 0.0, i_zone: 130}
         invert_output: true 
         sensor_phase: false 
@@ -148,7 +148,7 @@ swerve_drive_controller:
         feedback_type: CTRE_MagEncoder_Absolute
         close_loop_values:
             #- {p: 2.0, i: 0.002, d: 0.0, f: 1.0, i_zone: 0}
-            - {p: 5.0, i: 0.000, d: 70.0, f: 1.0, i_zone: 0}
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
             - {p: 1.5, i: 0.005, d: 0.0, f: 0.0, i_zone: 130}
         invert_output: true 
         sensor_phase: false 
