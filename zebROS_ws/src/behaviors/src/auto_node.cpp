@@ -2,6 +2,7 @@
 #include "std_msgs/String.h"
 #include "behavior_actions/AutoMode.h" //msg file
 #include "behavior_actions/StopAuto.h" //srv file
+#include "frc_msgs/MatchSpecificData.h"
 
 #include "actionlib/client/simple_action_client.h"
 #include "behavior_actions/ElevatorAction.h" //TODO remove this, it's for testing using last year's stuff
@@ -9,15 +10,13 @@
 #include "thread"
 #include "atomic"
 
-//VARIABLES --------
+//VARIABLES ---------------------------------------------------------
 int auto_mode = -1; //-1 if nothing selected
 std::vector<std::string> auto_steps; //stores string of action names to do, read from the auto mode array in the config file
 
-bool auto_running = false;
-//set to true when enter auto mode (not set false when enter teleop b/c we'll let this node keep running)
-//set false if something fails
-//set false if driver overrides auto continuing (during teleop)
-//Everything checks if this is true before proceeding.
+bool auto_started = false; //set to true when enter auto time period (not set false when enter teleop b/c we'll let this node keep running)
+bool auto_stopped = false; //set to true if driver stops auto (see the service, calls stopAuto() )
+//All actions check if(auto_started && !auto_stopped) before proceeding.
 
 std::atomic<int> auto_state(0); //This state is published by the publish thread
 //0:not ready, 1:ready, 2:running, 3:done, -1:error
@@ -34,23 +33,26 @@ std::atomic<int> auto_state(0); //This state is published by the publish thread
 bool stopAuto(behavior_actions::StopAuto::Request &req,
 			  behavior_actions::StopAuto::Response &res)
 {
-	auto_running = false;
+	ROS_INFO("Stopping auto execution");
+	auto_stopped = true;
 	return true;
 }
 
 //subscriber callback for match data
-
+void matchDataCallback(const frc_msgs::MatchSpecificData::ConstPtr& msg)
+{
+	if(msg->Autonomous)
+	{
+		auto_started = true; //only want to set this to true, never set it to false afterwards
+	}
+}
 
 
 
 //subscriber callback for dashboard data
 void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
 {
-	//only change auto mode if auto hasn't started - don't want to try to change it in the middle
-	if(!auto_running)
-	{
-		auto_mode = msg->auto_mode;
-	}
+	auto_mode = msg->auto_mode;
 }
 
 
@@ -86,9 +88,10 @@ int main(int argc, char** argv)
 	ros::NodeHandle nh;
 
 	//subscribers
-	//TODO
 	//rio match data (to know if we're in auto period)
+	ros::Subscriber match_data_sub = nh.subscribe("/frcrobot_rio/match_data", 1, matchDataCallback);
 	//dashboard (to get auto mode)
+	ros::Subscriber auto_mode_sub = nh.subscribe("auto_mode", 1, updateAutoMode); //TODO get correct topic name
 
 	//publishers
 	//auto state
@@ -111,37 +114,34 @@ int main(int argc, char** argv)
 	//WAIT FOR MATCH TO START --------------------------------------------------------------------------
 	ROS_INFO("Auto node - waiting for autonomous to start");
 
-	ros::Duration(5).sleep(); //TODO remove
-	auto_mode = 1; //TODO remove
-	auto_running = true; //TODO remove
-
 	//wait for auto period to start
-	while(!auto_running)
+	while( (!auto_started && !auto_stopped) || auto_mode <= 0) //last one checks if we selected an auto mode yet
 	{
-		if(!ros::ok())
-		{
+		if(!ros::ok()){
 			ROS_ERROR("Killing auto node b/c ros not ok when waiting for autonomous to start");
 			auto_state = 3; //done
 			auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
 			return 0;
 		}
 
+		ros::spinOnce(); //spin so the subscribers can update
+
 		if(auto_mode > 0){
 			auto_state = 1; //ready
 		}
+		if(auto_started && auto_mode <= 0){
+			ROS_ERROR("Please choose an auto mode");
+		}
 
-		ros::spinOnce(); //spin so the subscribers can update
 		r.sleep();
 	}
 
-	//check if an auto mode was selected
-	if(auto_mode < 0){
-		ROS_ERROR("Auto node - No auto mode selected");
-		auto_state = -1; //error
-		auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
-		return 1;
+	if(auto_stopped){
+		ROS_INFO("Auto stopped before execution");
+		auto_state = 3; //done
+		auto_state_pub_thread.join();
+		return 0;
 	}
-
 
 	//EXECUTE AUTONOMOUS ACTIONS --------------------------------------------------------------------------
 
@@ -159,7 +159,7 @@ int main(int argc, char** argv)
 
 	//run through actions in order
 	for(size_t i = 0; i < auto_steps.size(); i++){
-		if(auto_running)
+		if(auto_started && !auto_stopped)
 		{
 			ROS_INFO_STREAM("Auto node - running step " << i << ": " << auto_steps[i]);
 
@@ -202,7 +202,12 @@ int main(int argc, char** argv)
 
 	}
 
-	ROS_INFO("Autonomous actions completed!");
+	if(auto_stopped){
+		ROS_INFO("Autonomous actions stopped before completion");
+	}
+	else {
+		ROS_INFO("Autonomous actions completed!");
+	}
 	auto_state = 3; //done
 	auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
 	return 0;
