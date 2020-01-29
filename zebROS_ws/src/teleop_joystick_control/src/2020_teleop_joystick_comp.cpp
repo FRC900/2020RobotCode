@@ -4,6 +4,7 @@
 #include "std_srvs/Trigger.h"
 
 #include "std_msgs/Bool.h"
+#include "std_msgs/Float64.h"
 #include "std_msgs/Int8.h"
 
 #include "actionlib/client/simple_action_client.h"
@@ -12,6 +13,7 @@
 #include "std_srvs/Empty.h"
 #include <vector>
 #include "teleop_joystick_control/RobotOrient.h"
+#include "teleop_joystick_control/OrientStrafingAngle.h"
 
 #include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
 #include "teleop_joystick_control/TeleopJoystickCompConfig.h"
@@ -20,9 +22,15 @@
 
 std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 
+double orient_strafing_angle = 0.0;
+
 // array of joystick_states messages for multiple joysticks
 std::vector <frc_msgs::JoystickState> joystick_states_array;
 std::vector <std::string> topic_array;
+
+ros::Publisher orient_strafing_enable_pub;
+ros::Publisher orient_strafing_setpoint_pub;
+ros::Publisher orient_strafing_state_pub;
 
 teleop_joystick_control::TeleopJoystickCompConfig config;
 
@@ -54,6 +62,13 @@ bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
 	// Used to switch between robot orient and field orient driving
 	teleop_cmd_vel->setRobotOrient(req.robot_orient, req.offset_angle);
 	ROS_WARN_STREAM("Robot Orient = " << req.robot_orient << ", Offset Angle = " << req.offset_angle);
+	return true;
+}
+
+bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::Request& req,
+										teleop_joystick_control::OrientStrafingAngle::Response&/* res*/)
+{
+	orient_strafing_angle = req.angle;
 	return true;
 }
 
@@ -177,6 +192,27 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		else
 		{
 		}
+
+		std_msgs::Bool enable_pub_msg;
+
+		if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0))
+		{
+			enable_pub_msg.data = true;
+		}
+		else
+		{
+			enable_pub_msg.data = false;
+		}
+
+		orient_strafing_enable_pub.publish(enable_pub_msg);
+
+		std_msgs::Float64 orient_strafing_angle_msg;
+		orient_strafing_angle_msg.data = orient_strafing_angle;
+		orient_strafing_setpoint_pub.publish(orient_strafing_angle_msg);
+
+		std_msgs::Float64 navX_angle_msg;
+		navX_angle_msg.data = navX_angle;
+		orient_strafing_state_pub.publish(navX_angle_msg);
 
 		//Joystick1: rightTrigger
 		if(joystick_states_array[0].rightTrigger >= 0.5)
@@ -439,11 +475,17 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
+
+	orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("orient_strafing/pid_enable", 1);
+	orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("orient_strafing/setpoint", 1);
+	orient_strafing_state_pub = n.advertise<std_msgs::Float64>("orient_strafing/state", 1);
 	JoystickRobotVel = n.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	ros::Subscriber navX_heading = n.subscribe("navx_mxp", 1, &navXCallback);
 	ros::Subscriber joint_states_sub = n.subscribe("/frcrobot_jetson/joint_states", 1, &jointStateCallback);
 
 	ros::ServiceServer robot_orient_service = n.advertiseService("robot_orient", orientCallback);
+
+	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
 
 	DynamicReconfigureWrapper<teleop_joystick_control::TeleopJoystickCompConfig> drw(n_params, config);
 
