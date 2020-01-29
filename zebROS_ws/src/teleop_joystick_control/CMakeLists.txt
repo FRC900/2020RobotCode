@@ -64,15 +64,11 @@ include_directories(
 	)
 
 add_executable(teleop_joystick_comp src/teleop_joystick_comp.cpp)
-set_target_properties(teleop_joystick_comp PROPERTIES OUTPUT_NAME 
-	teleop_joystick_comp PREFIX "")
 target_link_libraries(teleop_joystick_comp
 	${catkin_LIBRARIES}
 	)
 
 add_executable(2020_teleop_joystick_comp src/2020_teleop_joystick_comp.cpp)
-set_target_properties(2020_teleop_joystick_comp PROPERTIES OUTPUT_NAME 
-	2020_teleop_joystick_comp PREFIX "")
 target_link_libraries(2020_teleop_joystick_comp
 	${catkin_LIBRARIES}
 	)
@@ -82,6 +78,11 @@ target_link_libraries(2020_teleop_joystick_comp
 # talon controller messages to be built before the
 # talon controller code tries to use them
 add_dependencies(teleop_joystick_comp
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+	)
+
+add_dependencies(2020_teleop_joystick_comp
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 	)
