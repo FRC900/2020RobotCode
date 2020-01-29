@@ -50,9 +50,9 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   JoystickState.msg
-  PDPData.msg
   MatchSpecificData.msg
   PCMState.msg
+  PDPData.msg
   RobotControllerData.msg
   RobotControllerCANData.msg
 )

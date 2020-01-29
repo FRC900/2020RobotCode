@@ -276,11 +276,11 @@ sudo apt remove --purge -y thunderbird libreoffice-* unattended-upgrade
 mkdir -p /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/include 
 mkdir -p /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/lib/ctre 
 cd /home/ubuntu
-wget -e robots=off -U mozilla -r -np http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/ -A "*5.17.4*,firmware-sim*zip" -R "md5,sha1,pom,jar,*windows*"
+wget -e robots=off -U mozilla -r -np http://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/ -A "*5.18*,firmware-sim*zip" -R "md5,sha1,pom,jar,*windows*"
 cd /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/include 
-find /home/ubuntu/devsite.ctr-electronics.com -name \*headers\*zip | xargs -n 1 unzip -o 
+find /home/ubuntu/devsite.ctr-electronics.com -name \*headers\*zip | grep -v debug | xargs -n 1 unzip -o 
 cd /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/lib/ctre 
-find /home/ubuntu/devsite.ctr-electronics.com -name \*linux\*zip | xargs -n 1 unzip -o 
+find /home/ubuntu/devsite.ctr-electronics.com -name \*linux\*zip | grep -v debug | xargs -n 1 unzip -o 
 rm -rf /home/ubuntu/devsite.ctr-electronics.com 
 
 cd /home/ubuntu 
@@ -301,14 +301,32 @@ cd /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/lib/navx
 unzip -o /home/ubuntu/navx-cpp-3.1.400-linuxathenastatic.zip 
 rm /home/ubuntu/navx-cpp-3.1.400-linuxathenastatic.zip 
 
+# And Rev sparkmax stuff
+cd /home/ubuntu
+wget http://www.revrobotics.com/content/sw/max/sdk/SPARK-MAX-SDK-v1.5.1.zip
+mkdir sparkmax
+cd sparkmax
+unzip ../SPARK-MAX-SDK-v1.5.1.zip
+rm ../SPARK-MAX-SDK-v1.5.1.zip
+mkdir -p /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/lib/rev
+cd /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/lib/rev
+find /home/ubuntu/sparkmax/maven/com/revrobotics/frc/SparkMax-cpp -name \*athena\*zip | grep -v debug | xargs -n 1 unzip -o
+find /home/ubuntu/sparkmax/maven/com/revrobotics/frc/SparkMax-cpp -name \*linux\*zip | grep -v debug | xargs -n 1 unzip -o
+find /home/ubuntu/sparkmax/maven/com/revrobotics/frc/SparkMax-driver -name \*athena\*zip | grep -v debug | xargs -n 1 unzip -o
+find /home/ubuntu/sparkmax/maven/com/revrobotics/frc/SparkMax-driver -name \*linux\*zip | grep -v debug | xargs -n 1 unzip -o
+cd /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/include
+find /home/ubuntu/sparkmax/maven/com/revrobotics/frc/SparkMax-cpp -name \*header\*zip | grep -v debug | xargs -n 1 unzip -o
+find /home/ubuntu/sparkmax/maven/com/revrobotics/frc/SparkMax-driver -name \*header\*zip | grep -v debug | xargs -n 1 unzip -o
+rm -rf /home/ubuntu/sparkmax
+
 # Install wpilib headers by copying them from the local maven dir
 # TODO - need to update to acutal 2020 filenames once they are released
 cd /home/ubuntu 
-wget https://github.com/wpilibsuite/allwpilib/releases/download/v2020.4.1/WPILib_Linux-2019.4.1.tar.gz 
+wget https://github.com/wpilibsuite/allwpilib/releases/download/v2020.2.2/WPILib_Linux-2020.2.2.tar.gz 
 mkdir -p /home/ubuntu/wpilib/2020 
 cd /home/ubuntu/wpilib/2020 
-tar -xzf /home/ubuntu/WPILib_Linux-2020.4.1.tar.gz 
-rm /home/ubuntu/WPILib_Linux-2020.4.1.tar.gz 
+tar -xzf /home/ubuntu/WPILib_Linux-2020.2.2.tar.gz 
+rm /home/ubuntu/WPILib_Linux-2020.2.2.tar.gz 
 cd /home/ubuntu/wpilib/2020/tools 
 python3 ToolsUpdater.py 
 mkdir -p /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/lib/wpilib 
