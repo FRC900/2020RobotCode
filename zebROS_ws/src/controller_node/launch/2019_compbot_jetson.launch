@@ -59,11 +59,12 @@
                 <param name="command_timeout" value="0.5" />
                 <param name="enable_topic" value="pure_pursuit_pid/pid_enable" />
                 <param name="name" value="pure_pursuit_pid" />
+                <param name="orient_state_topic" value="orient_pid/orient_state"/>
             </node>
 
             <node name="x_position_pid" pkg="pid" type="controller" >
                 <param name="node_name" value="x_position_pid" />
-                <param name="Kp" value="10.0" />
+                <param name="Kp" value="1.0" />
                 <param name="Ki" value="0.0" />
                 <param name="Kd" value="0.0" />
                 <param name="upper_limit" value="10" />
@@ -80,7 +81,7 @@
 
             <node name="y_position_pid" pkg="pid" type="controller" >
                 <param name="node_name" value="y_position_pid" />
-                <param name="Kp" value="10.0" />
+                <param name="Kp" value="1.0" />
                 <param name="Ki" value="0.0" />
                 <param name="Kd" value="0.0" />
                 <param name="upper_limit" value="10" />
@@ -97,14 +98,13 @@
 
             <node name="orient_pid" pkg="pid" type="controller" >
                 <param name="node_name" value="orient_pid" />
-                <param name="Kp" value="13.0" />
+                <param name="Kp" value="-1.0" />
                 <param name="Ki" value="0.0" />
                 <param name="Kd" value="0.0" />
                 <param name="upper_limit" value="8" />
                 <param name="lower_limit" value="-8" />
                 <param name="windup_limit" value="10" />
-                <param name="angle_error" value="false" />
-                <param name="angle_wrap" value="false" />
+                <param name="angle_error" value="true" />
                 <param name="max_loop_frequency" value="100.0" />
                 <param name="min_loop_frequency" value="100.0" />
                 <param name="topic_from_controller" value="orient_pid/orient_command" />
