@@ -1,0 +1,3 @@
+bool braked
+float64 winch_set_point
+---

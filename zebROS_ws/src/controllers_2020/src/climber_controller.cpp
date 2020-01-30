@@ -7,12 +7,10 @@ namespace climber_controller
                                      ros::NodeHandle                 &controller_nh)
     {
 		//get interface
-        //hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
+        hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
         //Initialize piston joints
-        /* Ex:
-        push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
-        */
+        brake_joint_ = pos_joint_iface->getHandle("brake_joint");
 
         //Initialize motor joints
         /* Ex:
@@ -62,13 +60,13 @@ namespace climber_controller
     void ClimberController::stopping(const ros::Time &/*time*/) {
     }
 
-	/*
-	bool ClimberController::cmdService(package::ClimberSrv::Request &req, package::ClimberSrv::Response &//response//) {
+	bool ClimberController::cmdService(controllers_2020_msgs::ClimberSrv::Request &req,
+									   controllers_2020_msgs::ClimberSrv::Response &res) {
         if(isRunning())
         {
             //assign request value to command buffer(s)
             //Ex:
-            cmd_buffer_.writeFromNonRT(req.claw_release);
+            cmd_buffer_.writeFromNonRT(new ClimberCommand(req.winch_set_point, req.braked));
         }
         else
         {
@@ -77,7 +75,7 @@ namespace climber_controller
         }
         return true;
     }
-	*/
+
 }//namespace
 
 //DON'T FORGET TO EXPORT THE CLASS SO CONTROLLER_MANAGER RECOGNIZES THIS AS A TYPE
