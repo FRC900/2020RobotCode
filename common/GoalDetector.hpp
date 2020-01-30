@@ -51,7 +51,7 @@ class GoalDetector
 
 		std::vector< GoalFound > return_found(void) const;
 
-		void drawOnFrame(cv::Mat &image,const std::vector< std::vector< cv::Point>> &contours) const;
+		void drawOnFrame(cv::Mat &image,const std::vector< std::vector< cv::Point>> &contours, const std::vector< GoalFound > &goals) const;
 
 		//These are the three functions to call to run GoalDetector
 		//they fill in _contours, _infos, _depth_mins, etc
@@ -59,7 +59,7 @@ class GoalDetector
 
 		//If your objectypes have the same width it's safe to run
 		//getContours and computeConfidences with different types
-		void findBoilers(const cv::Mat& image, const cv::Mat& depth);
+		void findTargets(const cv::Mat& image, const cv::Mat& depth);
 		const std::vector< std::vector< cv::Point > > getContours(const cv::Mat& image);
 
 		bool Valid(void) const;
@@ -68,6 +68,7 @@ class GoalDetector
 		void setRedScale(double red_scale);
 		void setOtsuThreshold(int otsu_threshold);
 		void setMinConfidence(double min_valid_confidence);
+		void setTargetNum(ObjectNum target_num);
 
 	private:
 
@@ -78,12 +79,13 @@ class GoalDetector
 		bool        _isValid;
 		std::vector< GoalFound > _return_found;
 		float       _min_valid_confidence;
-		
+
 		int         _otsu_threshold;
 		int         _blue_scale;
 		int         _red_scale;
 
 		int         _camera_angle;
+		ObjectNum   _target_num;
 
 		float createConfidence(float expectedVal, float expectedStddev, float actualVal);
 		float distanceUsingFOV(ObjectType _goal_shape, const cv::Rect &rect) const;

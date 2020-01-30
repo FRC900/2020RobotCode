@@ -23,6 +23,7 @@
 #include "teraranger_array/RangeArray.h"
 
 #include "goal_detection/GoalDetection.h"
+#include "objtype.hpp"
 
 #include "GoalDetector.hpp"
 #include "goal_detection/GoalDetectionConfig.h"
@@ -111,9 +112,19 @@ namespace goal_detection
 				//gd_->setMinConfidence(config_.min_confidence);
 
 				//Send current color and depth image to the actual GoalDetector
-				gd_->findBoilers(cvFrame->image, cvDepth->image);
+				gd_->setTargetNum(POWER_PORT_2020);
+				gd_->findTargets(cvFrame->image, cvDepth->image);
+				std::vector< GoalFound > gfd_power_port = gd_->return_found();
 
-				const std::vector< GoalFound > gfd = gd_->return_found();
+				gd_->setTargetNum(LOADING_BAY_2020);
+				gd_->findTargets(cvFrame->image, cvDepth->image);
+				std::vector< GoalFound > gfd_loading_bay = gd_->return_found();
+
+				std::vector< GoalFound > gfd;
+				gfd.reserve( gfd_power_port.size() + gfd_loading_bay.size() ); // preallocate memory
+				gfd.insert( gfd.end(), gfd_power_port.begin(), gfd_power_port.end() );
+				gfd.insert( gfd.end(), gfd_loading_bay.begin(), gfd_loading_bay.end() );
+
 				goal_detection::GoalDetection gd_msg;
 
 				gd_msg.header.seq = frameMsg->header.seq;
@@ -143,7 +154,7 @@ namespace goal_detection
 				if (pub_debug_image_.getNumSubscribers() > 0)
 				{
 					cv::Mat thisFrame(cvFrame->image.clone());
-					gd_->drawOnFrame(thisFrame, gd_->getContours(thisFrame));
+					gd_->drawOnFrame(thisFrame, gd_->getContours(thisFrame), gfd);
 					pub_debug_image_.publish(cv_bridge::CvImage(std_msgs::Header(), "bgr8", thisFrame).toImageMsg());
 				}
 
