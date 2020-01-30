@@ -26,7 +26,8 @@ GoalDetector::GoalDetector(const cv::Point2f &fov_size, const cv::Size &frame_si
 	_otsu_threshold(5),
 	_blue_scale(90),
 	_red_scale(80),
-	_camera_angle(0) // in tenths of a degree
+	_camera_angle(0), // in tenths of a degree
+	_target_num(POWER_PORT_2020)
 {
 	if (gui)
 	{
@@ -68,15 +69,15 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2,
     return true;
 }
 
-void GoalDetector::findBoilers(const cv::Mat& image, const cv::Mat& depth) {
+void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 	clear();
 	const vector<vector<Point>> goal_contours = getContours(image);
 	if (goal_contours.size() == 0)
 		return;
-	const vector<DepthInfo> goal_depths = getDepths(depth,goal_contours, POWER_PORT_2020, ObjectType(POWER_PORT_2020).real_height());
+	const vector<DepthInfo> goal_depths = getDepths(depth, goal_contours, _target_num, ObjectType(_target_num).real_height());
 
 	//compute confidences for power port tapes
-	const vector<GoalInfo> power_port_info = getInfo(goal_contours,goal_depths,POWER_PORT_2020);
+	const vector<GoalInfo> power_port_info = getInfo(goal_contours, goal_depths, _target_num);
 	if(power_port_info.size() == 0)
 		return;
 #ifdef VERBOSE
@@ -462,7 +463,7 @@ bool GoalDetector::Valid(void) const
 // Draw debugging info on frame - all non-filtered contours
 // plus their confidence. Highlight the best bounding rect in
 // a different color
-void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours) const
+void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours, const std::vector< GoalFound > &goals) const
 {
 
 	for (size_t i = 0; i < contours.size(); i++)
@@ -511,9 +512,9 @@ void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours
 			line(image, vtx[i], vtx[(i+1)%4], Scalar(153,50,204), 2);
 	}
 	*/
-	for(size_t i = 0; i < _return_found.size(); i++)
+	for(size_t i = 0; i < goals.size(); i++)
 	{
-		const auto lr =_return_found[i].rect;
+		const auto lr =goals[i].rect;
 		rectangle(image, lr, Scalar(0,255,0), 3);
 		/* line(image,
 			 Point(lr.x + lr.width / 2.0, lr.y + lr.height / 2.0),
@@ -569,4 +570,9 @@ void GoalDetector::setOtsuThreshold(int otsu_threshold)
 void GoalDetector::setMinConfidence(double min_valid_confidence)
 {
 	_min_valid_confidence = min_valid_confidence;
+}
+
+void GoalDetector::setTargetNum(ObjectNum target_num)
+{
+	_target_num = target_num;
 }

@@ -244,11 +244,12 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			break;
 		case TEST_TARGET_2020:
 			depth_ = 0;
-			contour_.push_back(Point2f(0, 0))
-			contour_.push_back(Point2f(0, 0.102))
-			contour_.push_back(Point2f(0.102, 0))
-			contour_.push_back(Point2f(0.102, 0.102))
-			name_ = "test_target"
+			contour_.push_back(Point2f(0, 0));
+			contour_.push_back(Point2f(0, 0.102));
+			contour_.push_back(Point2f(0.102, 0));
+			contour_.push_back(Point2f(0.102, 0.102));
+			name_ = "test_target";
+			break;
 		default:
 			cerr << "error initializing object!" << endl;
 	}
