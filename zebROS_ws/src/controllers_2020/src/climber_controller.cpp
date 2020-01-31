@@ -8,37 +8,35 @@ namespace climber_controller
     {
 		//get interface
         hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
+		hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
 
-        //Initialize piston joints
-        brake_joint_ = pos_joint_iface->getHandle("brake_joint");
+		//Initialize piston joints
+		deploy_joint_ = pos_joint_iface->getHandle("climber_deploy_joint");
+        brake_joint_ = pos_joint_iface->getHandle("climber_elevator_brake_joint");
 
         //Initialize motor joints
-        /* Ex:
         //get params from config file
-        XmlRpc::XmlRpcValue intake_motor_params;
-        if ( !controller_nh.getParam("config_value_name", intake_motor_params)) //grabbing the config value under the controller's section in the main config file
+        XmlRpc::XmlRpcValue winch_motor_params;
+        if ( !controller_nh.getParam("winch_joint", winch_motor_params)) //grabbing the config value under the controller's section in the main config file
         {
-            ROS_ERROR_STREAM("Could not read _______ params");
+            ROS_ERROR_STREAM("Could not read climber winch_joint_params");
             return false;
         }
         //initialize motor joint using those config values
-        if ( !motor_name_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_motor_params) {
-            ROS_ERROR("Cannot initialize ______ joint!");
+        if ( !winch_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, winch_motor_params) ) {
+            ROS_ERROR("Cannot initialize winch joint!");
             return false;
         }
-        */
 
 
         //Initialize your ROS server
-        /* Ex:
         climber_service_ = controller_nh.advertiseService("climber_command", &ClimberController::cmdService, this);
-        */
 
         return true;
     }
 
     void ClimberController::starting(const ros::Time &/*time*/) {
-        //give command buffer(s) an initial value
+        //give command buffer(s) an initial value - TODO?
         /* Ex:
         cmd_buffer_.writeFromNonRT(true);
         */
@@ -46,15 +44,28 @@ namespace climber_controller
 
     void ClimberController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
         //grab value from command buffer(s)
-        /* Ex:
-        const bool extend_cmd = *(cmd_buffer_.readFromRT());
-        */
-
+        const ClimberCommand cmd = *(cmd_buffer_.readFromRT());
+		const bool brake_cmd = cmd.brake_;
+		const bool deploy_cmd = cmd.deploy_;
+		const double winch_set_point_cmd = cmd.winch_set_point_;
 
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
-        /* Syntax: push_joint_.setCommand(1.0); */
+        if(brake_cmd == true){
+			brake_joint_.setCommand(1.0);
+		}
+		else {
+			brake_joint_.setCommand(0.0);
+		}
 
-        //for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
+		if(deploy_cmd == true){
+			deploy_joint_.setCommand(1.0);
+		}
+		else {
+			deploy_joint_.setCommand(0.0); //won't actually do anything during the match, lowering the climber is manual. Putting this here so we can deactivate the pcm channel, allowing us to manually undeploy while code is running (probably during testing)
+		}
+
+		//set value of motors
+		winch_joint_.setCommand(winch_set_point_cmd);
     }
 
     void ClimberController::stopping(const ros::Time &/*time*/) {
@@ -66,7 +77,7 @@ namespace climber_controller
         {
             //assign request value to command buffer(s)
             //Ex:
-            cmd_buffer_.writeFromNonRT(new ClimberCommand(req.winch_set_point, req.braked));
+            cmd_buffer_.writeFromNonRT(ClimberCommand(req.winch_set_point, req.climber_deploy, req.climber_elevator_brake));
         }
         else
         {

@@ -1,3 +1,4 @@
-bool braked
 float64 winch_set_point
+bool climber_deploy
+bool climber_elevator_brake
 ---

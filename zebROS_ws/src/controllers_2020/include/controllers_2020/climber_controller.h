@@ -23,15 +23,18 @@ class ClimberCommand
 	public:
 		ClimberCommand()
 			: winch_set_point_(0.0),
-			  braked_(false)
+			  deploy_(false),
+			  brake_(false)
 		{}
-		ClimberCommand(double winch_set_point, bool braked)
+		ClimberCommand(double winch_set_point, bool deploy, bool brake)
 		{
 			winch_set_point_ = winch_set_point;
-			braked_ = braked;
+			deploy_ = deploy;
+			brake_ = brake;
 		}
 		double winch_set_point_;
-		bool braked_;
+		bool deploy_;
+		bool brake_;
 };
 
 //this is the controller class, used to make a controller
@@ -54,8 +57,9 @@ class ClimberController : public controller_interface::MultiInterfaceController<
 			bool cmdService(controllers_2020_msgs::ClimberSrv::Request &req,
 							controllers_2020_msgs::ClimberSrv::Response &res);
         private:
-			hardware_interface::JointHandle brake_joint_; //piston brake
 			talon_controllers::TalonMotionMagicCloseLoopControllerInterface winch_joint_; //TODO correct type?
+			hardware_interface::JointHandle deploy_joint_; //piston to deploy the climber
+			hardware_interface::JointHandle brake_joint_; //piston brake
 
 			ros::ServiceServer climber_service_;
 			realtime_tools::RealtimeBuffer<ClimberCommand> cmd_buffer_;
