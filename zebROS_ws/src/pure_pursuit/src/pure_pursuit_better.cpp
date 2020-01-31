@@ -35,12 +35,12 @@ double PurePursuit::getYaw(const geometry_msgs::Quaternion q)
 {
     double roll, pitch, yaw;
     tf::Quaternion tf_q(
-            q.w,
             q.x,
             q.y,
-            q.z);
+            q.z,
+            q.w);
     tf::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
-    return M_PI - roll;
+    return yaw;
 }
 
 // The idea would be to have other code be responsible for getting current
@@ -116,11 +116,19 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
         geometry_msgs::Pose target_pos;
         if(dist_from_startpoint < dist_from_endpoint)
         {
-            ROS_ERROR_STREAM("Not within path limits : driving to start waypoint"); 
-            target_pos.position.x = path_.poses[0].pose.position.x;
-            target_pos.position.y = path_.poses[0].pose.position.y;
-            target_pos.position.z = 0;
-            target_pos.orientation = path_.poses[0].pose.orientation;
+            if(dist_from_startpoint < start_point_radius_)
+            {
+                ROS_INFO_STREAM("Robot is close enough to start_point to drive");
+                current_waypoint_index = 0;
+            }
+            else
+            {
+                ROS_ERROR_STREAM("Not within path limits : driving to start waypoint"); 
+                target_pos.position.x = path_.poses[0].pose.position.x;
+                target_pos.position.y = path_.poses[0].pose.position.y;
+                target_pos.position.z = 0;
+                target_pos.orientation = path_.poses[0].pose.orientation;
+            }
         }
         else
         {

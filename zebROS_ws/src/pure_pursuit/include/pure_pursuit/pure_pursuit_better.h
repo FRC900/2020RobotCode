@@ -86,11 +86,14 @@ class PurePursuit
         size_t num_waypoints_;
         double path_length_;
         std::vector<double> vec_path_length_;
+        double start_point_radius_;
 
     public:
-        PurePursuit(double lookahead_distance)
+        PurePursuit(double lookahead_distance, 
+                double start_point_radius)
         {
             lookahead_distance_ = lookahead_distance;
+            start_point_radius_ = start_point_radius; 
         }
 
         // load nav_msgs::Path

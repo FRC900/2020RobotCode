@@ -9,8 +9,10 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
+#include <sensor_msgs/Imu.h>
 #include <tf/tf.h>
 #include <pure_pursuit/pure_pursuit_better.h>
+#include <geometry_msgs/Quaternion.h>
 
 class PathAction
 {
@@ -23,6 +25,8 @@ class PathAction
 
 		ros::Subscriber odom_sub_;
 		nav_msgs::Odometry odom_;
+                ros::Subscriber yaw_sub_;
+                geometry_msgs::Quaternion orientation_;
 
 		std::map<std::string, AlignActionAxisState> axis_states_;
                 ros::Publisher combine_cmd_vel_pub_;
@@ -31,6 +35,7 @@ class PathAction
                 double lookahead_distance_;
                 double final_pos_tol_;
                 double server_timeout_;
+                double start_point_radius_;
 
 		bool debug_;
                 double start_time_;
@@ -41,7 +46,8 @@ class PathAction
                         double lookahead_distance,
                         double final_pos_tol,
                         double server_timeout,
-                        int ros_rate)
+                        int ros_rate, 
+                        double start_point_radius)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
@@ -53,6 +59,7 @@ class PathAction
 			final_pos_tol_ = final_pos_tol;
 			server_timeout_ = server_timeout;
                         ros_rate_ = ros_rate;
+                        start_point_radius_ = start_point_radius;
 
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
@@ -60,16 +67,23 @@ class PathAction
 			// TODO - not sure which namespace base_trajectory should go in
 			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/pure_pursuit/base_trajectory/spline_gen", false, service_connection_header);
 
-			odom_sub_ = nh_.subscribe("/frcrobot_jetson/swerve_drive_controller/odom", 1, &PathAction::odomCallback, this);
+			odom_sub_ = nh_.subscribe("/rs_t265/odom/sample", 1, &PathAction::odomCallback, this);
+			yaw_sub_ = nh_.subscribe("/navx_jetson/imu_zeroed", 1, &PathAction::yawCallback, this);
 
                         combine_cmd_vel_pub_ = nh_.advertise<std_msgs::Bool>("pure_pursuit_pid/pid_enable", 1000);
 
-                        pure_pursuit_ = std::make_shared<PurePursuit>(lookahead_distance_);
+                        pure_pursuit_ = std::make_shared<PurePursuit>(lookahead_distance_, start_point_radius_);
                 }
 
 		void odomCallback(const nav_msgs::Odometry &odom_msg)
 		{
 			odom_ = odom_msg;
+                        //odom_.pose.pose.position.y *= -1;
+		}
+
+		void yawCallback(const sensor_msgs::Imu &yaw_msg)
+		{
+                        orientation_ = yaw_msg.orientation;
 		}
 
 		bool addAxis(const AlignActionAxisConfig &axis_config)
@@ -182,6 +196,8 @@ class PathAction
                         start_time_ = ros::Time::now().toSec();
                         while (ros::ok() && !preempted && !timed_out && !succeeded)
                         {
+
+                            // odom_.pose.pose.orientation = orientation_;
                             geometry_msgs::Pose next_waypoint = pure_pursuit_->run(odom_, distance_travelled);
 
 				// TODO - think about what the target point and axis are
@@ -221,6 +237,7 @@ class PathAction
 
 				command_msg.data = PurePursuit::getYaw(next_waypoint.orientation);
 				z_axis.command_pub_.publish(command_msg);
+				// state_msg.data = PurePursuit::getYaw(orientation_);
 				state_msg.data = PurePursuit::getYaw(odom_.pose.pose.orientation);
 				z_axis.state_pub_.publish(state_msg);
 
@@ -294,16 +311,19 @@ int main(int argc, char **argv)
         double final_pos_tol = 0.01;
         double server_timeout = 5.0;
         int ros_rate = 20;
+        double start_point_radius = 0.05;
 	nh.getParam("/pure_pursuit/pure_pursuit/lookahead_distance", lookahead_distance);
 	nh.getParam("/pure_pursuit/pure_pursuit/final_pos_tol", final_pos_tol);
 	nh.getParam("/pure_pursuit/pure_pursuit/server_timeout", server_timeout);
-	nh.getParam("/pure_pursuit/pure_pursuit/ros_rate", server_timeout);
+	nh.getParam("/pure_pursuit/pure_pursuit/ros_rate", ros_rate);
+	nh.getParam("/pure_pursuit/pure_pursuit/start_point_radius", start_point_radius);
 
 	PathAction path_action_server("pure_pursuit_server", nh,
                 lookahead_distance,
                 final_pos_tol,
                 server_timeout,
-                ros_rate);
+                ros_rate, 
+                start_point_radius);
 
 	AlignActionAxisConfig x_axis("x", "x_position_pid/pid_enable", "x_position_pid/x_cmd_pub", "x_position_pid/x_state_pub", "x_position_pid/pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_position_pid/pid_enable", "y_position_pid/y_cmd_pub", "y_position_pid/y_state_pub", "y_position_pid/pid_debug", "y_timeout_param", "y_error_threshold_param");
