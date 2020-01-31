@@ -7,11 +7,13 @@ namespace turret_controller
 									 ros::NodeHandle                 &controller_nh)
 	{
 		hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
+		hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
 		//Initialize piston joints
 		/* Ex:
 		push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 		*/
+		shooter_hood_raise_ = pos_joint_iface->getHandle("shooter_hood_raise");
 
 		XmlRpc::XmlRpcValue turret_params;
 		if ( !controller_nh.getParam("turret_joint", turret_params)) //grabbing the config value under the controller's section in the main config file
@@ -19,12 +21,16 @@ namespace turret_controller
 			ROS_ERROR_STREAM("Could not read turret_params");
 			return false;
 		}
+
 		//initialize motor joint using those config values
 		if ( !turret_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, turret_params) {
-			ROS_ERROR("Cannot initialize turret_joint!");
+			ROS_ERROR("Cannot initialize shooter_hood_raise!");
 			return false;
 		}
-
+		else
+		{
+			ROS_INFO("Initialized turret joint");
+		}
 		//Initialize your ROS server
 		turret_service = controller_nh.advertiseService("turret_command", &TurretController::cmdService, this);
 
@@ -36,7 +42,7 @@ namespace turret_controller
 		/* Ex:
 		cmd_buffer_.writeFromNonRT(true);
 		*/
-		turret_cmd_.writeFromNonRT(true);
+		turret_cmd_.writeFromNonRT(TurretCommand(0,false));
 	}
 
 	void TurretController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
@@ -45,7 +51,13 @@ namespace turret_controller
 		const bool extend_cmd = *(cmd_buffer_.readFromRT());
 		*/
 		const TurretCommand turret_cmd = *(turret_cmd_.readFromRT());
-
+		double shooter_hood_raise_double;
+		if(turret_command_cmd.shooter_arm_extend_ == true){
+			shooter_hood_raise_double = 1;
+		}
+		else {
+			shooter_hood_raise_double = 0;
+		}
 		//Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
 		/* Syntax: push_joint_.setCommand(1.0); */
 

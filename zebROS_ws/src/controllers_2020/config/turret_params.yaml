@@ -5,7 +5,7 @@ turret_controller:
 
     turret_master:
         type: talon_controllers/TalonMotionMagicCloseLoopController
-        joint: fr_angle
+        joint: shooter_hood_raise
         feedback_type: CTRE_MagEncoder_Absolute
         close_loop_values:
             - {p: 2.0, i: 0.002, d: 0.0, f: 1.0, i_zone: 0}

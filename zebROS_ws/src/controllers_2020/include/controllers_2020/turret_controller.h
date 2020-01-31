@@ -20,6 +20,23 @@
 namespace turret_controller
 {
 
+class TurretCommand
+{
+	public:
+		TurretCommand()
+			: set_point_(0.0)
+			, shooter_arm_extend_(false)
+		{
+		}
+		TurretCommand(double set_point, bool shooter_arm_extend)
+		{
+			set_point_ = set_point;
+			shooter_arm_extend_ = shooter_arm_extend;
+		}
+		double set_point_;
+		bool shooter_arm_extend_;
+};
+
 //this is the controller class, so it stores all of the  update() functions and the actual handle from the joint interface
 //if it was only one type, can do controller_interface::Controller<TalonCommandInterface or PositionJointInterface> here
 class TurretController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface> //including both talons and pistons so can copy paste this w/o having to change it if you want to add a talon
@@ -50,11 +67,13 @@ class TurretController : public controller_interface::MultiInterfaceController<h
 			/* Ex:
 			hardware_interface::JointHandle push_joint_; //interface for the piston joint
 			*/
+			hardware_interface::JointHandle shooter_hood_raise_;
 
 			//variable for motor joint
 			/* Ex:
 			talon_controllers::TalonPercentOutputControllerInterface motor_name_joint_; //other types exist FYI
 			*/
+			talon_controllers::TalonMotionMagicCloseLoopControllerInterface turret_joint_;
 
 			//set up your ROS server and buffer
 			/* Ex:
@@ -62,7 +81,6 @@ class TurretController : public controller_interface::MultiInterfaceController<h
             realtime_tools::RealtimeBuffer<bool> cmd_buffer_; //buffer for commands
 			*/
 
-			talon_controllers::TalonMotionMagicCloseLoopControllerInterface turret_joint_;
 			hardware_interface::JointHandle turret_arm_joint_;
 			realtime_tools::RealtimeBuffer<TurretCommand> turret_cmd_;
 }; //class
