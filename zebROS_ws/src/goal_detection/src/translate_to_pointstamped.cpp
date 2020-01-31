@@ -6,7 +6,7 @@ ros::Publisher pub;
 
 void callback(const goal_detection::GoalDetection &msg)
 {
-	size_t num_goals = msg.location.size();
+	size_t num_goals = msg.goals.size();
 	int index;
 	if (num_goals == 0)
 	{
@@ -19,9 +19,9 @@ void callback(const goal_detection::GoalDetection &msg)
 		index = -1;
 		for(size_t i = 0; i < num_goals; i++)
 		{
-			if(msg.location[i].x < min_distance)
+			if(msg.goals[i].location.x < min_distance)
 			{
-				min_distance = msg.location[i].x;
+				min_distance = msg.goals[i].location.x;
 				index = i;
 			}
 		}
@@ -37,8 +37,8 @@ void callback(const goal_detection::GoalDetection &msg)
 	}
 	geometry_msgs::PointStamped goal_location;
 	goal_location.header = msg.header;
-	goal_location.point.x = msg.location[index].x;
-	goal_location.point.y = msg.location[index].y;
+	goal_location.point.x = msg.goals[index].location.x;
+	goal_location.point.y = msg.goals[index].location.y;
 	goal_location.point.z = 0;
 	pub.publish(goal_location);
 }

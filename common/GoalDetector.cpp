@@ -7,7 +7,7 @@ using namespace std;
 using namespace cv;
 
 #define VERBOSE
-#define VERBOSE_BOILER
+#define VERBOSE_DEEP
 
 int camera_angle_common = 25;
 
@@ -86,7 +86,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 
 	//loop through every power port goal found
 	for(size_t i = 0; i < power_port_info.size(); i++) {
-#ifdef VERBOSE_BOILER
+#ifdef VERBOSE_DEEP
 			cout << "i:" << i << endl;
 			cout << power_port_info[i].contour_index << " cidx" << endl;
 #endif
@@ -154,7 +154,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 				}
 				_isValid = true;
 
-#ifdef VERBOSE_BOILER
+#ifdef VERBOSE_DEEP
 				cout << "Number of goals: " << _return_found.size() << endl;
 				for(size_t n = 0; n < _return_found.size(); n++)
 				{
@@ -165,7 +165,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 			}
 			else
 			{
-#ifdef VERBOSE_BOILER
+#ifdef VERBOSE_DEEP
 				cout << "goal " << i << " confidence too low -> " << power_port_info[i].confidence << endl;
 #endif
 			}
@@ -318,7 +318,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		const float confidence_screen_area = createConfidence(1.0, 1.50, actualScreenArea);
 
 		// higher confidence is better
-		const float confidence = (confidence_height + confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
+		const float confidence = (/*confidence_height*/ + confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
 
 #ifdef VERBOSE
 		cout << "-------------------------------------------" << endl;
