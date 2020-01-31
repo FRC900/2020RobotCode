@@ -6,7 +6,11 @@ ros::Publisher pub;
 
 void callback(const field_obj::Detection &msg)
 {
+<<<<<<< HEAD
 	size_t num_goals = msg.objects.size();
+=======
+	size_t num_goals = msg.goals.size();
+>>>>>>> added id to goal message
 	int index;
 	if (num_goals == 0)
 	{
@@ -19,9 +23,15 @@ void callback(const field_obj::Detection &msg)
 		index = -1;
 		for(size_t i = 0; i < num_goals; i++)
 		{
+<<<<<<< HEAD
 			if(msg.objects[i].location.x < min_distance)
 			{
 				min_distance = msg.objects[i].location.x;
+=======
+			if(msg.goals[i].location.x < min_distance)
+			{
+				min_distance = msg.goals[i].location.x;
+>>>>>>> added id to goal message
 				index = i;
 			}
 		}
@@ -37,8 +47,13 @@ void callback(const field_obj::Detection &msg)
 	}
 	geometry_msgs::PointStamped goal_location;
 	goal_location.header = msg.header;
+<<<<<<< HEAD
 	goal_location.point.x = msg.objects[index].location.x;
 	goal_location.point.y = msg.objects[index].location.y;
+=======
+	goal_location.point.x = msg.goals[index].location.x;
+	goal_location.point.y = msg.goals[index].location.y;
+>>>>>>> added id to goal message
 	goal_location.point.z = 0;
 	pub.publish(goal_location);
 }

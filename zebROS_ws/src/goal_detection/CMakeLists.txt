@@ -75,11 +75,19 @@ endif()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
+<<<<<<< HEAD
 #add_message_files(
 #  FILES
 #  GoalDetection.msg
 #  Goal.msg
 #)
+=======
+add_message_files(
+  FILES
+  GoalDetection.msg
+  Goal.msg
+)
+>>>>>>> added id to goal message
 
 ## Generate services in the 'srv' folder
 # add_service_files(
