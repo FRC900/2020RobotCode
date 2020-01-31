@@ -1,9 +1,4 @@
-//TEMPLATE FOR WRITING A CONTROLLER
-//replace "mech" with the name of your mechanism, words_separated_by_underscores
-//replace "Mech" with the name of your mechanism, ThisIsTheFormatForThat
-//replace "package" with the name of the controllers package
-
-#include "package/turret_controller.h"
+#include "controllers_2020/turret_controller.h"
 
 namespace turret_controller
 {
@@ -11,37 +6,27 @@ namespace turret_controller
 									 ros::NodeHandle                 &/*root_nh*/,
 									 ros::NodeHandle                 &controller_nh)
 	{
-		//get interface
-		hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
+		hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
 
 		//Initialize piston joints
 		/* Ex:
 		push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 		*/
 
-		//Initialize motor joints
-		/* Ex:
-
-		//get params from config file
-		XmlRpc::XmlRpcValue intake_motor_params;
-		if ( !controller_nh.getParam("config_value_name", intake_motor_params)) //grabbing the config value under the controller's section in the main config file
+		XmlRpc::XmlRpcValue turret_params;
+		if ( !controller_nh.getParam("turret_joint", turret_params)) //grabbing the config value under the controller's section in the main config file
 		{
-			ROS_ERROR_STREAM("Could not read _______ params");
+			ROS_ERROR_STREAM("Could not read turret_params");
 			return false;
 		}
 		//initialize motor joint using those config values
-		if ( !motor_name_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_motor_params) {
-			ROS_ERROR("Cannot initialize ______ joint!");
+		if ( !turret_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, turret_params) {
+			ROS_ERROR("Cannot initialize turret_joint!");
 			return false;
 		}
 
-		*/
-
-
 		//Initialize your ROS server
-		/* Ex:
-		mech_service_ = controller_nh.advertiseService("mech_command", &MechController::cmdService, this);
-		*/
+		turret_service = controller_nh.advertiseService("turret_command", &TurretController::cmdService, this);
 
 		return true;
 	}
@@ -51,6 +36,7 @@ namespace turret_controller
 		/* Ex:
 		cmd_buffer_.writeFromNonRT(true);
 		*/
+		turret_cmd_.writeFromNonRT(true);
 	}
 
 	void TurretController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
@@ -58,7 +44,7 @@ namespace turret_controller
 		/* Ex:
 		const bool extend_cmd = *(cmd_buffer_.readFromRT());
 		*/
-
+		const TurretCommand turret_cmd = *(turret_cmd_.readFromRT());
 
 		//Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
 		/* Syntax: push_joint_.setCommand(1.0); */
@@ -76,10 +62,11 @@ namespace turret_controller
 			/* Ex:
 			cmd_buffer_.writeFromNonRT(req.claw_release);
 			*/
+			turret_cmd_.writeFromNonRT(TurretCommand());
 		}
 		else
 		{
-			ROS_ERROR_STREAM("Can't accept new commands. MechController is not running.");
+			ROS_ERROR_STREAM("Can't accept new commands. TurretController is not running.");
 			return false;
 		}
 		return true;
@@ -88,4 +75,4 @@ namespace turret_controller
 }//namespace
 
 //DON'T FORGET TO EXPORT THE CLASS SO CONTROLLER_MANAGER RECOGNIZES THIS AS A TYPE
-PLUGINLIB_EXPORT_CLASS(mech_controller::MechController, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(turret_controller::TurretController, controller_interface::ControllerBase)
