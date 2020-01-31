@@ -7,9 +7,19 @@ int main(int argc, char **argv)
 
 
 	ros::NodeHandle nh;
-	ros::ServiceClient client = nh.advertiseService("color_spin_algorithm", rotate);
-	ROS_INFO("Ready to calculate rotation");
-	ros::spin();
+	ros::ServiceClient client = nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm");
+	color_spin::color_algorithm srv;
+	srv.request.fms_color = atoll(argv[1]);
+	srv.request.sensor_color = atoll(argv[2]);
+	if (client.call(srv))
+	{
+		ROS_INFO("rotation: %1f", (float)srv.response.rotate);
+	}
+	else
+	{
+		ROS_ERROR("Failed to call service color_spin algorithm");
+		return 1;
+	}
 
 	return 0;
 

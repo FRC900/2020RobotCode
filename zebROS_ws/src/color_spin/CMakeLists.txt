@@ -151,6 +151,13 @@ add_dependencies(color_spin src/color_spin.cpp)
 target_link_libraries(color_spin
    ${catkin_LIBRARIES}
    )
+add_executable(color_spin_client src/color_spin_client.cpp)
+target_link_libraries(color_spin_client
+   ${catkin_LIBRARIES}
+   )
+add_dependencies(color_spin_client
+   ${catkin_LIBRARIES}
+   )
 #############
 ## Install ##
 #############
