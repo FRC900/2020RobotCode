@@ -73,6 +73,7 @@ find_package(orocos_kdl)
 add_message_files(
   FILES
   GoalDetection.msg
+  Goal.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -148,8 +149,8 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   # include_directories(include)
   include_directories(
     ${catkin_INCLUDE_DIRS}
-    ${OpenCV_INCLUDE_DIRS} 
-    ../../../common 
+    ${OpenCV_INCLUDE_DIRS}
+    ../../../common
     ../../..
   )
 
@@ -167,12 +168,12 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 
   ## Add cmake target dependencies of the executable
   ## same as for the library above
-  add_dependencies(goal_detection_node 
-    ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  add_dependencies(goal_detection_node
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
     ${catkin_EXPORTED_TARGETS}
   )
 
-  add_library(GoalDetection 
+  add_library(GoalDetection
 	src/goal_detect.cpp
     ../../../common/GoalDetector.cpp
     ../../../common/Utilities.cpp
@@ -187,7 +188,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   )
 
   add_dependencies(GoalDetection
-    ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
     ${catkin_EXPORTED_TARGETS}
   )
 

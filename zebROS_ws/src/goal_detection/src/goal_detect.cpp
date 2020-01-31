@@ -23,6 +23,7 @@
 #include "teraranger_array/RangeArray.h"
 
 #include "goal_detection/GoalDetection.h"
+#include "goal_detection/Goal.h"
 #include "objtype.hpp"
 
 #include "GoalDetector.hpp"
@@ -121,11 +122,12 @@ namespace goal_detection
 				std::vector< GoalFound > gfd_loading_bay = gd_->return_found();
 
 				std::vector< GoalFound > gfd;
-				gfd.reserve( gfd_power_port.size() + gfd_loading_bay.size() ); // preallocate memory
+				gfd.reserve( gfd_power_port.size() + gfd_loading_bay.size() );
 				gfd.insert( gfd.end(), gfd_power_port.begin(), gfd_power_port.end() );
 				gfd.insert( gfd.end(), gfd_loading_bay.begin(), gfd_loading_bay.end() );
 
 				goal_detection::GoalDetection gd_msg;
+				goal_detection::Goal goal;
 
 				gd_msg.header.seq = frameMsg->header.seq;
 				gd_msg.header.stamp = frameMsg->header.stamp;
@@ -138,13 +140,23 @@ namespace goal_detection
 					frame_id += "_frame";
 				}
 				gd_msg.header.frame_id = frame_id;
-				for(size_t i = 0; i < gfd.size(); i++)
+				for(size_t i = 0; i < gfd_power_port.size(); i++)
 				{
-					geometry_msgs::Point32 dummy;
-					dummy.x = gfd[i].pos.y;
-					dummy.y = gfd[i].pos.x;
-					dummy.z = gfd[i].pos.z;
-					gd_msg.location.push_back(dummy);
+					goal_detection::Goal dummy;
+					dummy.location.x = gfd_power_port[i].pos.y;
+					dummy.location.y = gfd_power_port[i].pos.x;
+					dummy.location.z = gfd_power_port[i].pos.z;
+					dummy.id = "power_port_2020";
+					gd_msg.goals.push_back(dummy);
+				}
+				for(size_t i = 0; i < gfd_loading_bay.size(); i++)
+				{
+					goal_detection::Goal dummy;
+					dummy.location.x = gfd_loading_bay[i].pos.y;
+					dummy.location.y = gfd_loading_bay[i].pos.x;
+					dummy.location.z = gfd_loading_bay[i].pos.z;
+					dummy.id = "loading_bay_2020";
+					gd_msg.goals.push_back(dummy);
 				}
 
 				gd_msg.valid = gd_->Valid();
@@ -173,9 +185,9 @@ namespace goal_detection
 						child_frame << i;
 						transformStamped.child_frame_id = child_frame.str();
 
-						transformStamped.transform.translation.x = gd_msg.location[i].x;
-						transformStamped.transform.translation.y = gd_msg.location[i].y;
-						transformStamped.transform.translation.z = gd_msg.location[i].z;
+						transformStamped.transform.translation.x = gd_msg.goals[i].location.x;
+						transformStamped.transform.translation.y = gd_msg.goals[i].location.y;
+						transformStamped.transform.translation.z = gd_msg.goals[i].location.z;
 
 						// Can't detect rotation yet, so publish 0 instead
 						tf2::Quaternion q;

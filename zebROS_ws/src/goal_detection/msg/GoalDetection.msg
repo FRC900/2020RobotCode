@@ -1,3 +1,3 @@
 Header header
-geometry_msgs/Point32[] location
-bool valid 
+goal_detection/Goal[] goals
+bool valid
