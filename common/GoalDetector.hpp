@@ -41,6 +41,7 @@ struct GoalFound
 	size_t contour_index;
 	cv::Rect rect;
 	cv::RotatedRect rotated_rect;
+	std::string id;
 };
 
 
@@ -92,6 +93,7 @@ class GoalDetector
 		float distanceUsingFixedHeight(const cv::Rect &rect,const cv::Point &center, float expected_delta_height) const;
 		bool generateThresholdAddSubtract(const cv::Mat& imageIn, cv::Mat& imageOut);
 		void isValid();
+		const std::string getObjectId(ObjectNum type);
 		const std::vector<DepthInfo> getDepths(const cv::Mat &depth, const std::vector< std::vector< cv::Point > > &contours, const ObjectNum &objtype, float expected_height);
 		const std::vector< GoalInfo > getInfo(const std::vector< std::vector< cv::Point > > &contours, const std::vector<DepthInfo> &depth_maxs, ObjectNum objtype);
 };

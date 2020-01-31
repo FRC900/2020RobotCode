@@ -127,7 +127,6 @@ namespace goal_detection
 				gfd.insert( gfd.end(), gfd_loading_bay.begin(), gfd_loading_bay.end() );
 
 				goal_detection::GoalDetection gd_msg;
-				goal_detection::Goal goal;
 
 				gd_msg.header.seq = frameMsg->header.seq;
 				gd_msg.header.stamp = frameMsg->header.stamp;
@@ -140,22 +139,14 @@ namespace goal_detection
 					frame_id += "_frame";
 				}
 				gd_msg.header.frame_id = frame_id;
-				for(size_t i = 0; i < gfd_power_port.size(); i++)
+				for(size_t i = 0; i < gfd.size(); i++)
 				{
 					goal_detection::Goal dummy;
-					dummy.location.x = gfd_power_port[i].pos.y;
-					dummy.location.y = gfd_power_port[i].pos.x;
-					dummy.location.z = gfd_power_port[i].pos.z;
-					dummy.id = "power_port_2020";
-					gd_msg.goals.push_back(dummy);
-				}
-				for(size_t i = 0; i < gfd_loading_bay.size(); i++)
-				{
-					goal_detection::Goal dummy;
-					dummy.location.x = gfd_loading_bay[i].pos.y;
-					dummy.location.y = gfd_loading_bay[i].pos.x;
-					dummy.location.z = gfd_loading_bay[i].pos.z;
-					dummy.id = "loading_bay_2020";
+					dummy.location.x = gfd[i].pos.y;
+					dummy.location.y = gfd[i].pos.x;
+					dummy.location.z = gfd[i].pos.z;
+					dummy.id = gfd[i].id;
+					dummy.confidence = gfd[i].confidence;
 					gd_msg.goals.push_back(dummy);
 				}
 
