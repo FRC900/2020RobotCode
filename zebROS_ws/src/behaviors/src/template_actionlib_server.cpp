@@ -16,15 +16,17 @@
 //include controller service files and other service files
 // e.g. #include "controller_package/ControllerSrv.h"
 // e.g. #include "sensor_msgs/JointState.h" -has linebreak sensor data FYI
-
+#include "frc_msgs/MatchSpecificData.h"
 
 //create the class for the actionlib server
-class ServerNameAction {
+class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
 
 		actionlib::SimpleActionServer<behavior_actions::ThingAction> as_; //create the actionlib server
 		std::string action_name_;
+		char current_color_;
+		ros::ServiceClient Color_Algorithm_Client_;
 
 		//clients to call other actionlib servers
 		//e.g. actionlib::SimpleActionClient<behavior_actions::ElevatorAction> ac_elevator_;
@@ -272,6 +274,11 @@ class ServerNameAction {
 		double wait_for_server_timeout_;
 };
 
+		void ColorCallBack(const frc_msgs::MatchSpecificData & Match_Data){
+		current_color_=Match_Data.controlPanelColor
+
+		}
+};
 int main(int argc, char** argv) {
 	//create node
 	ros::init(argc, argv, "server_name_server");
