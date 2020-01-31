@@ -135,13 +135,13 @@ include_directories(
 
 ## Declare a C++ library
  add_library(controllers_2020
-   src/intake_controller.cpp
    src/indexer_controller.cpp
    src/indexer_test_controller.cpp
    src/shooter_controller.cpp
    src/climber_controller.cpp
    src/control_panel_controller.cpp
- )
+
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

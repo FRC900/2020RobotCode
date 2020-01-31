@@ -1,6 +1,6 @@
 control_panel_controller:
 
-    control_panel_diameter: 3.0
-    wheel_diameter: 1
+    control_panel_diameter: 32.0
+    wheel_diameter: 4
 
 
