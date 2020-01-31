@@ -55,9 +55,9 @@ bool rotate(color_spin::color_algorithm::Request &req,
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "color_spin_algorithm");
+	ros::init(argc, argv, "color_algorithm");
 	ros::NodeHandle nh;
-	ros::ServiceServer service = nh.advertiseService("color_spin_algorithm", rotate);
+	ros::ServiceServer service = nh.advertiseService("color_algorithm", rotate);
 	ROS_INFO("Ready to calculate rotation");
 	ros::spin();
 
