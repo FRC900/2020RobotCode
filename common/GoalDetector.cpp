@@ -22,7 +22,7 @@ GoalDetector::GoalDetector(const cv::Point2f &fov_size, const cv::Size &frame_si
 	_fov_size(fov_size),
 	_frame_size(frame_size),
 	_isValid(false),
-	_min_valid_confidence(0.35),
+	_min_valid_confidence(0.30),
 	_otsu_threshold(5),
 	_blue_scale(90),
 	_red_scale(80),
@@ -98,15 +98,16 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 			if (power_port_info[i].confidence > _min_valid_confidence)
 			{
 				GoalFound goal_found;
-				goal_found.pos.x               = power_port_info[i].pos.x;
-				goal_found.pos.y			   = power_port_info[i].pos.y;
-				goal_found.pos.z			   = power_port_info[i].pos.z;
-				goal_found.distance            = sqrt(goal_found.pos.x * goal_found.pos.x + goal_found.pos.y * goal_found.pos.y);
-				goal_found.angle               = atan2f(goal_found.pos.x, goal_found.pos.y) * 180. / M_PI;
-				goal_found.confidence          = power_port_info[i].confidence;
-				goal_found.contour_index  = power_port_info[i].contour_index;
-				goal_found.rect		   = power_port_info[i].rect;
-				goal_found.rotated_rect   = power_port_info[i].rtRect;
+				goal_found.pos.x             = power_port_info[i].pos.x;
+				goal_found.pos.y			       = power_port_info[i].pos.y;
+				goal_found.pos.z			       = power_port_info[i].pos.z;
+				goal_found.distance          = sqrt(goal_found.pos.x * goal_found.pos.x + goal_found.pos.y * goal_found.pos.y);
+				goal_found.angle             = atan2f(goal_found.pos.x, goal_found.pos.y) * 180. / M_PI;
+				goal_found.confidence        = power_port_info[i].confidence;
+				goal_found.contour_index     = power_port_info[i].contour_index;
+				goal_found.rect		           = power_port_info[i].rect;
+				goal_found.rotated_rect      = power_port_info[i].rtRect;
+				goal_found.id                = getObjectId(_target_num);
 
 				//These are the saved values for the best goal before moving on to
 				//try and find another one.
@@ -318,7 +319,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		const float confidence_screen_area = createConfidence(1.0, 1.50, actualScreenArea);
 
 		// higher confidence is better
-		const float confidence = (/*confidence_height*/ + confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
+		const float confidence = (/*confidence_height + */ confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
 
 #ifdef VERBOSE
 		cout << "-------------------------------------------" << endl;
@@ -514,14 +515,9 @@ void GoalDetector::drawOnFrame(Mat &image, const vector<vector<Point>> &contours
 	*/
 	for(size_t i = 0; i < goals.size(); i++)
 	{
-		const auto lr =goals[i].rect;
+		const auto lr = goals[i].rect;
 		rectangle(image, lr, Scalar(0,255,0), 3);
-		/* line(image,
-			 Point(lr.x + lr.width / 2.0, lr.y + lr.height / 2.0),
-			 Scalar(0, 140, 255), 3, CV_AA);
-		const double center_x = (lr.x + lr.width / 2.0 + rr.x + rr.width / 2.0) / 2.0;
-		const double center_y = (lr.y + lr.height / 2.0 + rr.y + rr.height / 2.0) / 2.0;
-		circle(image, Point(center_x, center_y), 8, Scalar(0, 140, 255), 2, CV_AA); */
+		putText(image, goals[i].id, lr.br(), FONT_HERSHEY_PLAIN, 1, Scalar(0,0,255));
 	}
 }
 
@@ -575,4 +571,17 @@ void GoalDetector::setMinConfidence(double min_valid_confidence)
 void GoalDetector::setTargetNum(ObjectNum target_num)
 {
 	_target_num = target_num;
+}
+
+const string GoalDetector::getObjectId(ObjectNum type)
+{
+	switch (type)
+		{
+		    case POWER_PORT_2020:
+						return "power_port_2020";
+		    case LOADING_BAY_2020:
+		        return "loading_bay_2020";
+		    default:
+						return "unknown_type";
+		}
 }
