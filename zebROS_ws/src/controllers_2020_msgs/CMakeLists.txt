@@ -59,7 +59,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-   ControlPanelSrv.srv
    IntakeSrv.srv
 )
 

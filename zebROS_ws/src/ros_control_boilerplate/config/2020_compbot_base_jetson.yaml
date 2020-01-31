@@ -29,10 +29,6 @@ hardware_interface:
        - {name: climber_feet_retract, type: double_solenoid, local_hardware: false, local_update: true}
        - {name: climber_release_endgame, type: double_solenoid, local_hardware: false, local_update: true}
 
-       - {name: control_panel_arm_joint, type: solenoid, local_hardware: false, local_update: true}
-       - {name: control_panel_joint, type: can_talon_srx, can_id: 32, local: true}
-        
-
        - {name: intake_arm_joint, type: solenoid, local_hardware: false, local_update: true}
        - {name: intake_joint, type: can_talon_srx, can_id: 33, local: true}
 
@@ -91,18 +87,10 @@ cargo_intake_controller:
         type: talon_controllers/TalonPercentOutputController
         invert_output: True 
 
-control_panel_controller:
-        type: control_panel_controller/ControlPanelController
-        control_panel_joint: "control_panel"
-        control_panel:
-                joint: control_panel_joint
-                type: talon_controllers/TalonMotionMagicCloseLoopController
-                feedback_type: CTRE_MagEncoder_Absolute
-
-
 intake_controller:
         type: intake_controller/IntakeController
         intake_joint: "intake"
+        roller_diameter: 1.0
         intake:
                 joint: intake_joint
                 type: talon_controllers/TalonPercentOutputController

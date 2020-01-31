@@ -31,8 +31,6 @@ hardware_interface:
        - {name: climber_feet_retract, type: double_solenoid, pcm: 0, forward_id: 4, reverse_id: 5, local_hardware: true, local_update: false}
        - {name: climber_release_endgame, type: double_solenoid, pcm: 0, forward_id: 6, reverse_id: 7, local_hardware: true, local_update: false}
 
-       - {name: control_panel_arm_joint, type: solenoid, pcm: 0, id: 3, local_hardware: true, local_update: false}
-
        - {name: intake_arm_joint, type: solenoid, pcm: 0, id: 0, local_hardware: true, local_update: false}
 
        - {name: panel_claw, type: solenoid, pcm: 0, id: 2, local_hardware: true, local_update: false}
