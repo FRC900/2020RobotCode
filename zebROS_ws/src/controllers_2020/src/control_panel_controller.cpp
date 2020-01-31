@@ -61,7 +61,7 @@ namespace control_panel_controller
 		control_panel_arm_double = 0;
 	}
 	double rotation_ratio;
-	rotation_ratio = (wheel_diameter_/control_panel_diameter_);
+	rotation_ratio = (control_panel_diameter_/wheel_diameter_);
 	ROS_INFO_STREAM("Control Panel Diameter:" << control_panel_diameter_);
     ROS_INFO_STREAM("Wheel Diameter:" << wheel_diameter_);
 	control_panel_joint_.setCommand(control_panel_cmd.set_point_ * (rotation_ratio)); //set the position command to the control panel motor

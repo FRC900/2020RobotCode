@@ -142,7 +142,8 @@ include_directories(
    src/shooter_controller.cpp
    src/climber_controller.cpp
    src/control_panel_controller.cpp
- )
+   src/intake_controller.cpp 
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

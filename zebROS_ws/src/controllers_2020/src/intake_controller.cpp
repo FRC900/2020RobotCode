@@ -6,35 +6,35 @@ namespace intake_controller
                                      ros::NodeHandle                 &/*root_nh*/,
                                      ros::NodeHandle                 &controller_nh)
     {
-        //get interface
-        //hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
+	hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
+        hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
-        //Initialize piston joints
-        /* Ex:
-        push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
-        */
+        //Initialize intake piston joint
+        intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
         //Initialize motor joints
-        /* Ex:
         //get params from config file
-        XmlRpc::XmlRpcValue intake_motor_params;
-        if ( !controller_nh.getParam("config_value_name", intake_motor_params)) //grabbing the config value under the controller's section in the main config file
+        XmlRpc::XmlRpcValue intake_params;
+        if ( !controller_nh.getParam("intake_joint", intake_params)) //grabbing the config value under the controller's section in the main config file
         {
-            ROS_ERROR_STREAM("Could not read _______ params");
+            ROS_ERROR_STREAM("Could not read intake_params");
             return false;
         }
-        //initialize motor joint using those config values
-        if ( !motor_name_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_motor_params) {
-            ROS_ERROR("Cannot initialize ______ joint!");
-            return false;
-        }
-        */
 
+		controller_nh.getParam("roller_diameter", roller_diameter_);
+        //initialize motor joint using those config values
+        if (!intake_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_params)) {
+            ROS_ERROR("Cannot initialize intake_joint!");
+            return false;
+        }
+	else
+	{
+		ROS_INFO("Initialized intake joint");
+	}
 
         //Initialize your ROS server
-        /* Ex:
         intake_service_ = controller_nh.advertiseService("intake_command", &IntakeController::cmdService, this);
-        */
+        
 	
         return true;
     }
@@ -44,30 +44,32 @@ namespace intake_controller
         /* Ex:
         cmd_buffer_.writeFromNonRT(true);
         */
+	intake_cmd_.writeFromNonRT(IntakeCommand(0,false));
     }
 
     void IntakeController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
         //grab value from command buffer(s)
-        /* Ex:
-        const bool extend_cmd = *(cmd_buffer_.readFromRT());
-        */
-
-
-        //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
-        /* Syntax: push_joint_.setCommand(1.0); */
-
-        //for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
+        const IntakeCommand intake_cmd = *(intake_cmd_.readFromRT());
+	double intake_arm_double;
+	if(intake_cmd.intake_arm_extend_ == true){
+		intake_arm_double = 1;
+	}
+	else {
+		intake_arm_double = 0;
+	}
+	ROS_INFO_STREAM("Roller Diameter (Unused):" << roller_diameter_);
+	intake_joint_.setCommand(intake_cmd.set_power_);
+	intake_arm_joint_.setCommand(intake_cmd.intake_arm_extend_);
     }
 
     void IntakeController::stopping(const ros::Time &/*time*/) {
     }
-    /*
-    bool IntakeController::cmdService(package::IntakeSrv::Request &req, package::IntakeSrv::Response &//response//) {
+    bool IntakeController::cmdService(controllers_2020_msgs::IntakeSrv::Request &req, controllers_2020_msgs::IntakeSrv::Response &/*response*/) {
         if(isRunning())
         {
             //assign request value to command buffer(s)
             //Ex:
-            cmd_buffer_.writeFromNonRT(req.claw_release);
+            intake_cmd_.writeFromNonRT(IntakeCommand(req.power, req.intake_arm_extend));
         }
         else
         {
@@ -76,7 +78,7 @@ namespace intake_controller
         }
         return true;
     }
-    */
+    
 
 }//namespace
 

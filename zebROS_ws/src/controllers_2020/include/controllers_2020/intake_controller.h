@@ -11,10 +11,30 @@
 
 #include <pluginlib/class_list_macros.h> //to compile as a controller
 
+#include <controllers_2020_msgs/IntakeSrv.h>
+
 //REMEMBER TO INCLUDE CUSTOM SERVICE
 
 namespace intake_controller
 {
+
+
+class IntakeCommand
+{
+	public:
+	IntakeCommand()
+		: set_power_(0.0)
+		, intake_arm_extend_(false)
+	{
+	}
+	IntakeCommand(double set_power, bool intake_arm_extend)
+	{
+		set_power_ = set_power;
+		intake_arm_extend_ = intake_arm_extend;
+	}
+	double set_power_;
+	bool intake_arm_extend_;
+};
 
 //this is the controller class, used to make a controller
 class IntakeController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>
@@ -32,8 +52,13 @@ class IntakeController : public controller_interface::MultiInterfaceController<h
             virtual void starting(const ros::Time &time) override;
             virtual void update(const ros::Time & time, const ros::Duration& period) override;
             virtual void stopping(const ros::Time &time) override;
-
+	    bool cmdService (controllers_2020_msgs::IntakeSrv::Request &req, controllers_2020_msgs::IntakeSrv::Response &);
         private:
+	    	talon_controllers::TalonPercentOutputControllerInterface intake_joint_;//intake for intake motor
+		hardware_interface::JointHandle intake_arm_joint_;//interface for intake arm solenoid
+		realtime_tools::RealtimeBuffer<IntakeCommand> intake_cmd_;
+		ros::ServiceServer intake_service_;
+		double roller_diameter_;
 
 
 
