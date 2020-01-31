@@ -25,7 +25,7 @@ hardware_interface:
        # Solenoids which are updated from controllers on the Jetson need
        # to be configured here so they can write to hardware attached
        # to the Rio
-       - {name: climber_deploy_joint, type: solenoid, pcm: 0, id:1, local_hardware: true, local_update: false}
+       - {name: climber_deploy_joint, type: solenoid, pcm: 0, id: 1, local_hardware: true, local_update: false}
        - {name: climber_elevator_brake_joint, type: solenoid, pcm: 0, id: 0, local_hardware: true, local_update: false}
 
        - {name: climber_feet_retract, type: double_solenoid, pcm: 0, forward_id: 4, reverse_id: 5, local_hardware: true, local_update: false}
