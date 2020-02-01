@@ -9,6 +9,7 @@
 #include "actionlib/client/simple_action_client.h"
 #include <atomic>
 #include <ros/console.h>
+#include <cctype>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behaviors/GoToColorAction.h"
@@ -23,9 +24,12 @@ class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
         	ros::Subscriber match_sub_;
+		ros::Subscriber color_sensor_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
+		char goal_color_;
 		char current_color_;
+
 		ros::ServiceClient color_algorithm_client_;
 
 		//clients to call other actionlib servers
@@ -62,7 +66,8 @@ class GoToColorControlPanelAction {
 		//initialize client used to call controllers
 		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
 
-		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1000, ColorCallback);
+		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1000, matchColorCallback);
+		color_sensor_sub_=nh.subscribe("/color_sensor" /*insert topic name*/, 1000, sensorColorCallback);
 		color_algorithm_client_=nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
 	}
 
@@ -271,9 +276,12 @@ class GoToColorControlPanelAction {
 			}
 		}
 
-		void colorCallBack(const frc_msgs::MatchSpecificData & Match_Data){
-		current_color_=Match_Data.controlPanelColor
+		void matchColorCallback(const frc_msgs::MatchSpecificData &match_data){
+			goal_color_= std::toupper(match_data.controlPanelColor);
+		}
 
+		void sensorColorCallback(const /*insert message type here*/ &color_data){
+			current_color_ = std::toupper(color_data./*insert name of data*/);
 		}
 };
 int main(int argc, char** argv) {
