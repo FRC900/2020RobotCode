@@ -11,7 +11,7 @@
 #include <ros/console.h>
 
 //include action files - for this actionlib server and any it sends requests to
-#include "behaviors/ThingAction.h"
+#include "behaviors/GoToColorAction.h"
 
 //include controller service files and other service files
 // e.g. #include "controller_package/ControllerSrv.h"
@@ -22,11 +22,11 @@
 class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
-        ros::Subscriber match_sub_;
-		actionlib::SimpleActionServer<behaviors::ThingAction> as_; //create the actionlib server
+        	ros::Subscriber match_sub_;
+		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
 		char current_color_;
-		ros::ServiceClient Color_Algorithm_Client_;
+		ros::ServiceClient color_algorithm_client_;
 
 		//clients to call other actionlib servers
 		//e.g. actionlib::SimpleActionClient<behaviors::ElevatorAction> ac_elevator_;
@@ -63,7 +63,7 @@ class GoToColorControlPanelAction {
 		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
 
 		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1000, ColorCallback);
-		Color_Algorithm_Client_=nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
+		color_algorithm_client_=nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -98,7 +98,7 @@ class GoToColorControlPanelAction {
 		}
 
 		//define the function to be executed when the actionlib server is called
-		void executeCB(const behaviors::ThingGoalConstPtr &goal)
+		void executeCB(const behaviors::GoToColorGoalConstPtr &goal)
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 
@@ -203,7 +203,7 @@ class GoToColorControlPanelAction {
 
 
 			//log result and set actionlib server state appropriately
-			behaviors::ThingResult result;
+			behaviors::GoToColorResult result;
 
 			if(preempted_) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
@@ -271,7 +271,7 @@ class GoToColorControlPanelAction {
 			}
 		}
 
-		void ColorCallBack(const frc_msgs::MatchSpecificData & Match_Data){
+		void colorCallBack(const frc_msgs::MatchSpecificData & Match_Data){
 		current_color_=Match_Data.controlPanelColor
 
 		}
