@@ -13,7 +13,7 @@
 //REMEMBER TO INCLUDE CUSTOM SERVICE
 #include <controllers_2020_msgs/ClimberSrv.h>
 
-namespace climber_controller
+namespace climber_controller_2020
 {
 
 

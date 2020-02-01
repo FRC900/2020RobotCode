@@ -1,6 +1,6 @@
 #include "controllers_2020/climber_controller.h"
 
-namespace climber_controller
+namespace climber_controller_2020
 {
     bool ClimberController::init(hardware_interface::RobotHW *hw,
                                      ros::NodeHandle                 &/*root_nh*/,
@@ -90,5 +90,5 @@ namespace climber_controller
 }//namespace
 
 //DON'T FORGET TO EXPORT THE CLASS SO CONTROLLER_MANAGER RECOGNIZES THIS AS A TYPE
-PLUGINLIB_EXPORT_CLASS(climber_controller::ClimberController, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(climber_controller_2020::ClimberController, controller_interface::ControllerBase)
 

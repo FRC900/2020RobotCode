@@ -66,7 +66,7 @@ hardware_interface:
 #Set up controllers for main robot mechanisms
  
 climber_controller:
-    type:  climber_controller/ClimberController
+    type:  climber_controller_2020/ClimberController
     winch_joint: "winch"
     winch:
         joint: climber_winch_joint
