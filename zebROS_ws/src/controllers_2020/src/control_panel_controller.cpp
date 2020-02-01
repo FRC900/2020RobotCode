@@ -37,7 +37,6 @@ namespace control_panel_controller
 		}
 
 		control_panel_service_ = controller_nh.advertiseService("control_panel_command", &ControlPanelController::cmdService, this);
-		talon_state_sub_ = controller_nh.subscribe("/frcrobot_jetson/talon_states", 1, &ControlPanelController::talonStateCallback, this);
 
 		return true;
 	}
@@ -76,7 +75,7 @@ namespace control_panel_controller
 		{
 			//assign request value to command buffer(s)
 			double rotation_ratio = (control_panel_diameter_/wheel_diameter_);
-			double set_point = (req.control_panel_rotations * rotation_ratio) + cur_motor_position_;
+			double set_point = (req.control_panel_rotations * rotation_ratio) + control_panel_joint_.getPosition();
 
 			control_panel_cmd_.writeFromNonRT(ControlPanelCommand(set_point , req.panel_arm_extend));
 		}
@@ -86,26 +85,6 @@ namespace control_panel_controller
 			return false;
 		}
 		return true;
-	}
-
-
-	void ControlPanelController::talonStateCallback(const talon_state_msgs::TalonState &talon_state)
-	{
-		static size_t control_panel_motor_idx = std::numeric_limits<size_t>::max();
-		if (control_panel_motor_idx >= talon_state.name.size()) //if not set yet
-		{
-			for (size_t i = 0; i < talon_state.name.size(); i++)
-			{
-				if (talon_state.name[i] == "control_panel_joint")
-				{
-					control_panel_motor_idx = i;
-					break;
-				}
-			}
-		}
-		else {
-			cur_motor_position_ = talon_state.position[control_panel_motor_idx];
-		}
 	}
 }//namespace
 
