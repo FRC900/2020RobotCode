@@ -15,7 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   realtime_tools
   roscpp
   talon_controllers
+  talon_interface
+  talon_state_msgs
   std_msgs
+  std_srvs
   controller_interface
   controllers_2020_msgs
 )
@@ -139,7 +142,12 @@ include_directories(
    src/climber_controller.cpp
    src/intake_controller.cpp 
    src/control_panel_controller.cpp
+<<<<<<< HEAD
 )
+=======
+   src/turret_controller.cpp
+ )
+>>>>>>> Updated config in ros_control_boilerplate, continued writing controller
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

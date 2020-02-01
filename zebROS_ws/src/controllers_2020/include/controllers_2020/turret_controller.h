@@ -25,16 +25,16 @@ class TurretCommand
 	public:
 		TurretCommand()
 			: set_point_(0.0)
-			, shooter_arm_extend_(false)
+			, shooter_hood_raise_(false)
 		{
 		}
-		TurretCommand(double set_point, bool shooter_arm_extend)
+		TurretCommand(double set_point, bool shooter_hood_raise)
 		{
 			set_point_ = set_point;
-			shooter_arm_extend_ = shooter_arm_extend;
+			shooter_hood_raise_ = shooter_hood_raise;
 		}
 		double set_point_;
-		bool shooter_arm_extend_;
+		bool shooter_hood_raise_;
 };
 
 //this is the controller class, so it stores all of the  update() functions and the actual handle from the joint interface
@@ -46,12 +46,12 @@ class TurretController : public controller_interface::MultiInterfaceController<h
             {
             }
 
-			//the four essential functions for a controller: init, starting, update, stopping
+	    //the four essential functions for a controller: init, starting, update, stopping
 
             //if just doing a one-type-of-interface controller (PositionJointInterface vs. TalonCommandInterface), can pass e.g
-			//hardware_interface::PositionJointInterface *pos_joint_iface
-			//to this function and not have to get the interface in the src file
-			virtual bool init(hardware_interface::RobotHW *hw,
+	    //hardware_interface::PositionJointInterface *pos_joint_iface
+	    //to this function and not have to get the interface in the src file
+	    virtual bool init(hardware_interface::RobotHW *hw,
                               ros::NodeHandle             &root_nh,
                               ros::NodeHandle             &controller_nh) override;
             virtual void starting(const ros::Time &time) override;
@@ -59,30 +59,32 @@ class TurretController : public controller_interface::MultiInterfaceController<h
             virtual void stopping(const ros::Time &time) override;
 
 			//ROS server callback function
-            virtual bool cmdService(controllers_2020_msgs::TurretSrv::Request &req,
+            bool cmdService(controllers_2020_msgs::TurretSrv::Request &req,
                                     controllers_2020_msgs::TurretSrv::Response &res);
-
+	    void talonStateCallback(const talon_state_msgs:TalonState &talon_state);
         private:
             //variable for piston joint
 			/* Ex:
 			hardware_interface::JointHandle push_joint_; //interface for the piston joint
 			*/
-			hardware_interface::JointHandle shooter_hood_raise_;
+	    hardware_interface::JointHandle turret_arm_joint_;
 
-			//variable for motor joint
+	    //variable for motor joint
 			/* Ex:
 			talon_controllers::TalonPercentOutputControllerInterface motor_name_joint_; //other types exist FYI
 			*/
-			talon_controllers::TalonMotionMagicCloseLoopControllerInterface turret_joint_;
+   	    talon_controllers::TalonMotionMagicCloseLoopControllerInterface turret_joint_;
 
-			//set up your ROS server and buffer
+	    //set up your ROS server and buffer
 			/* Ex:
             ros::ServiceServer mech_service_; //service for receiving commands
             realtime_tools::RealtimeBuffer<bool> cmd_buffer_; //buffer for commands
 			*/
 
-			hardware_interface::JointHandle turret_arm_joint_;
-			realtime_tools::RealtimeBuffer<TurretCommand> turret_cmd_;
+	    realtime_tools::RealtimeBuffer<TurretCommand> turret_cmd_;
+	    ros::ServiceServer turret_service_;
+
+	    ros::Subscriber talon_state_sub_;
 }; //class
 
 } //namespace
