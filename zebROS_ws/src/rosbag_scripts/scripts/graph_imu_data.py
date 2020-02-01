@@ -51,7 +51,7 @@ def run():
         topicList = readBagTopicList(bag)
 
         # figure out which topic is talon_states and which is pdp_states
-        imuTopic = "zeroed_imu"
+        imuTopic = "/imu/zeroed_imu"
         
         # read Talon data
         imu_data = extract_data(bag, imuTopic , inputFileName)
