@@ -37,6 +37,7 @@ namespace control_panel_controller
 		}
 
 		control_panel_service_ = controller_nh.advertiseService("control_panel_command", &ControlPanelController::cmdService, this);
+		talon_state_sub_ = controller_nh.subscribe("/frcrobot_jetson/talon_states", 1, &ControlPanelController::talonStateCallback, this);
 
 		return true;
 	}
@@ -46,6 +47,7 @@ namespace control_panel_controller
 		/* Ex:
 		   cmd_buffer_.writeFromNonRT(true);
 		   */
+		control_panel_joint_.setSelectedSensorPosition(0.0); //set current encoder position to 0
 		control_panel_cmd_.writeFromNonRT(ControlPanelCommand(0,false));
 	}
 
@@ -62,9 +64,7 @@ namespace control_panel_controller
 		else {
 			control_panel_arm_double = 0;
 		}
-		double rotation_ratio;
-		rotation_ratio = (control_panel_diameter_/wheel_diameter_);
-		control_panel_joint_.setCommand(control_panel_cmd.set_point_ * (rotation_ratio)); //set the position command to the control panel motor
+		control_panel_joint_.setCommand(control_panel_cmd.set_point_); //set the position command to the control panel motor
 		control_panel_arm_joint_.setCommand(control_panel_cmd.panel_arm_extend_);//set the extend/retract command to the control panel solenoid
 	}
 
@@ -75,7 +75,10 @@ namespace control_panel_controller
 		if(isRunning())
 		{
 			//assign request value to command buffer(s)
-			control_panel_cmd_.writeFromNonRT(ControlPanelCommand(req.control_panel_rotations, req.panel_arm_extend));
+			double rotation_ratio = (control_panel_diameter_/wheel_diameter_);
+			double set_point = (req.control_panel_rotations * rotation_ratio) + cur_motor_position_;
+
+			control_panel_cmd_.writeFromNonRT(ControlPanelCommand(set_point , req.panel_arm_extend));
 		}
 		else
 		{
@@ -85,6 +88,25 @@ namespace control_panel_controller
 		return true;
 	}
 
+
+	void ControlPanelController::talonStateCallback(const talon_state_msgs::TalonState &talon_state)
+	{
+		static size_t control_panel_motor_idx = std::numeric_limits<size_t>::max();
+		if (control_panel_motor_idx >= talon_state.name.size()) //if not set yet
+		{
+			for (size_t i = 0; i < talon_state.name.size(); i++)
+			{
+				if (talon_state.name[i] == "control_panel_joint")
+				{
+					control_panel_motor_idx = i;
+					break;
+				}
+			}
+		}
+		else {
+			cur_motor_position_ = talon_state.position[control_panel_motor_idx];
+		}
+	}
 }//namespace
 
 //DON'T FORGET TO EXPORT THE CLASS SO CONTROLLER_MANAGER RECOGNIZES THIS AS A TYPE
