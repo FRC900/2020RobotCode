@@ -74,6 +74,8 @@ hardware_interface:
 #Set up controllers for main robot mechanisms
 control_panel_controller:
         type: control_panel_controller/ControlPanelController
+        control_panel_diameter: 32 #inches
+        wheel_diameter: 4 #inches, compliant wheel
         control_panel_joint: "control_panel"
         control_panel:
                 joint: control_panel_joint
