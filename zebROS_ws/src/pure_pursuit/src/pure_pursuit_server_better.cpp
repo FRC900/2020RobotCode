@@ -36,6 +36,7 @@ class PathAction
                 double final_pos_tol_;
                 double server_timeout_;
                 double start_point_radius_;
+                std::string odom_topic_;
 
 		bool debug_;
                 double start_time_;
@@ -47,7 +48,8 @@ class PathAction
                         double final_pos_tol,
                         double server_timeout,
                         int ros_rate, 
-                        double start_point_radius)
+                        double start_point_radius, 
+                        std::string odom_topic)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
@@ -55,6 +57,7 @@ class PathAction
 		{
 			as_.start();
 
+                        odom_topic_ = odom_topic;
 			lookahead_distance_ = lookahead_distance;
 			final_pos_tol_ = final_pos_tol;
 			server_timeout_ = server_timeout;
@@ -312,18 +315,21 @@ int main(int argc, char **argv)
         double server_timeout = 5.0;
         int ros_rate = 20;
         double start_point_radius = 0.05;
+        std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
 	nh.getParam("/pure_pursuit/pure_pursuit/lookahead_distance", lookahead_distance);
 	nh.getParam("/pure_pursuit/pure_pursuit/final_pos_tol", final_pos_tol);
 	nh.getParam("/pure_pursuit/pure_pursuit/server_timeout", server_timeout);
 	nh.getParam("/pure_pursuit/pure_pursuit/ros_rate", ros_rate);
 	nh.getParam("/pure_pursuit/pure_pursuit/start_point_radius", start_point_radius);
+	nh.getParam("/pure_pursuit/pure_pursuit/odom_topic", odom_topic);
 
 	PathAction path_action_server("pure_pursuit_server", nh,
                 lookahead_distance,
                 final_pos_tol,
                 server_timeout,
                 ros_rate, 
-                start_point_radius);
+                start_point_radius, 
+                odom_topic);
 
 	AlignActionAxisConfig x_axis("x", "x_position_pid/pid_enable", "x_position_pid/x_cmd_pub", "x_position_pid/x_state_pub", "x_position_pid/pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_position_pid/pid_enable", "y_position_pid/y_cmd_pub", "y_position_pid/y_state_pub", "y_position_pid/pid_debug", "y_timeout_param", "y_error_threshold_param");

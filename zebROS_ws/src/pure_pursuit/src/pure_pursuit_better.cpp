@@ -109,7 +109,10 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
         }
     }
 
-    if(minimum_distance == std::numeric_limits<double>::max())
+    // if you're farther away from the path than the length of the path
+    // or if you're not normal to any segment of the path
+    // go to beginning / end of path (whichever is fastest)
+    if(minimum_distance > path_length_)
     {
         double dist_from_startpoint = hypot(current_x -  path_.poses[0].pose.position.x, current_y - path_.poses[0].pose.position.y);
         double dist_from_endpoint = hypot(current_x -  path_.poses[num_waypoints_ - 1].pose.position.x, current_y - path_.poses[num_waypoints_ - 1].pose.position.y);
