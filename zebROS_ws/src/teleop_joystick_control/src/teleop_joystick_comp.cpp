@@ -418,9 +418,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		orient_strafing_angle_msg.data = orient_strafing_angle;
 		orient_strafing_setpoint_pub.publish(orient_strafing_angle_msg);
 
-		std_msgs::Float64 navX_angle_msg;
-		navX_angle_msg.data = navX_angle;
-		orient_strafing_state_pub.publish(navX_angle_msg);
+		std_msgs::Float64 imu_angle_msg;
+		imu_angle_msg.data = imu_angle;
+		orient_strafing_state_pub.publish(imu_angle_msg);
 
 		//Joystick1: directionLeft
 		if(joystick_states_array[0].directionLeftPress)
