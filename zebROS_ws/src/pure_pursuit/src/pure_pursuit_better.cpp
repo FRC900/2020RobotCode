@@ -128,6 +128,7 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
                 target_pos.position.y = path_.poses[0].pose.position.y;
                 target_pos.position.z = 0;
                 target_pos.orientation = path_.poses[0].pose.orientation;
+                return target_pos;
             }
         }
         else
@@ -137,8 +138,8 @@ geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_dist
             target_pos.position.y = path_.poses[num_waypoints_ - 1].pose.position.y;
             target_pos.position.z = 0;
             target_pos.orientation = path_.poses[num_waypoints_ - 1].pose.orientation;
+            return target_pos;
         }
-        return target_pos;
     }
 
     ROS_INFO_STREAM("minimum_distance = " << minimum_distance);
