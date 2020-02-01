@@ -1,4 +1,4 @@
 char sensor_color
 char fms_color
 ---
-float32 rotate
+float64 rotate
