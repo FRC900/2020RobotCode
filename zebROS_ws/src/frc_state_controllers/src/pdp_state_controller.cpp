@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
+
 namespace pdp_state_controller 
 {
 
@@ -47,11 +48,22 @@ bool PDPStateController::init(hardware_interface::PDPStateInterface *hw,
         {
             print(count);
         }*/
+    XmlRpc::XmlRpcValue thingsPluggedIn;
+    if(!controller_nh.getParam("things_plugged_in_pdp_channel", thingsPluggedIn)){
+        ROS_ERROR("No things plugged in specified");
+	}
 	
 	for(int channel = 0; channel <= 15; channel++)
 	{
 		m.current[channel] = 0;
-	}
+		XmlRpc::XmlRpcValue thing_plugged_in = thingsPluggedIn[channel];
+		if(!thing_plugged_in.valid() || thing_plugged_in.getType() != XmlRpc::XmlRpcValue::TypeString)
+			ROS_ERROR("An invalid thing_plugged_in name was specified (expecting a string)");
+		else {
+			std::string thing_string = thing_plugged_in;
+			m.thingsPluggedIn[channel] = thing_string;
+		}
+	}	
 
 	pdp_state_ = hw->getHandle(pdp_name);
 
@@ -85,12 +97,12 @@ void PDPStateController::update(const ros::Time &time, const ros::Duration & )
 			m.totalCurrent = ps->getTotalCurrent();
 			m.totalPower = ps->getTotalPower();
 			m.totalEnergy = ps->getTotalEnergy();
-	
+				
 			for(int channel = 0; channel <= 15; channel++)
 			{
 				m.current[channel] = ps->getCurrent(channel);
 			}
-	
+
 			realtime_pub_->unlockAndPublish();
 			
 		}

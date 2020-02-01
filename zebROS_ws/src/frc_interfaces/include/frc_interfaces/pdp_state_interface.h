@@ -16,7 +16,8 @@ class PDPHWState
 			total_current_(0.0),
 			total_power_(0.0),
 			total_energy_(0.0),
-			current_ {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+			current_ {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, 
+			things_plugged_in_{"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
 		{}
 
 		//access and set
@@ -34,6 +35,15 @@ class PDPHWState
 				return 0.0;
 			}
 		}
+		std::string getThingsPluggedIn(int channel) const{
+			if(channel >= 0 && channel <= 15)
+				return things_plugged_in_[channel];
+			else
+			{
+				ROS_WARN_STREAM("Invalid channel. Cannot read thing_plugged_in.");
+				return "";
+			}
+		}
 
 		void setVoltage(double voltage)				{voltage_ = voltage;}
 		void setTemperature(double temperature)		{temperature_ = temperature;}
@@ -46,6 +56,13 @@ class PDPHWState
 			else
 				ROS_WARN_STREAM("Invalid channel. Cannot set current.");
 		}
+		
+		void setThingsPluggedIn(std::string thing, int channel){
+			if(channel >= 0 && channel <=15)
+				things_plugged_in_[channel] = thing;
+			else
+				ROS_WARN_STREAM("Invalid channel. Cannot set thing_plugged_in.");
+		}
 
 	private:
 		double voltage_;
@@ -54,6 +71,7 @@ class PDPHWState
 		double total_power_;
 		double total_energy_;
 		double current_[16];
+		std::string things_plugged_in_[16];
 };
 
 typedef StateHandle<const PDPHWState> PDPStateHandle;
