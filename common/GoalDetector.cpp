@@ -14,7 +14,7 @@ int camera_angle_common = 25;
 void angleCallback(int value, void *data)
 {
 	std::cout << "running AngleCallback with value " << value << endl;
-	double angle = static_cast<double>(value)/-10;
+	//double angle = static_cast<double>(value)/-10;
 	//gd->setCameraAngle(angle);
 }
 
@@ -290,7 +290,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		//create a trackedobject to get various statistics
 		//including area and x,y,z position of the goal
 		ObjectType goal_actual(contours[i], "Actual Goal", 0);
-		TrackedObject goal_tracked_obj(0, goal_shape, br, depth_maxs[i].depth, _fov_size, _frame_size,-((float)_camera_angle/10.) * M_PI / 180.0);
+		TrackedObject goal_tracked_obj(0, goal_shape, br, depth_maxs[i].depth, _fov_size, _frame_size, -((float)_camera_angle/10.) * M_PI / 180.0);
 
 		// Gets the bounding box area observed divided by the
 		// bounding box area calculated given goal size and distance
@@ -319,7 +319,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		const float confidence_screen_area = createConfidence(1.0, 1.50, actualScreenArea);
 
 		// higher confidence is better
-		const float confidence = (/*confidence_height + */ confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio/2. + confidence_screen_area) / 5.5;
+		const float confidence = (/*confidence_height*/ + confidence_com_x + confidence_com_y + confidence_filled_area + confidence_ratio + confidence_screen_area) / 5;
 
 #ifdef VERBOSE
 		cout << "-------------------------------------------" << endl;
@@ -333,7 +333,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		cout << "confidence: " << confidence << endl;
 		cout << "Height exp/act: " << goal_shape.real_height() << "/" <<  goal_tracked_obj.getPosition().z - goal_shape.height() / 2.0 << endl;
 		cout << "Depth max: " << depth_maxs[i].depth << " " << depth_maxs[i].error << endl;
-		//cout << "Area exp/act: " << (int)exp_area << "/" << br.area() << endl;
+		cout << "Screen Area exp/act: " << (int)exp_area << "/" << br.area() << endl;
 		cout << "Aspect ratio exp/act : " << expectedRatio << "/" << actualRatio << endl;
 		cout << "br: " << br << endl;
 		cout << "com: " << goal_actual.com() << endl;
