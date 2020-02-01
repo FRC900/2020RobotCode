@@ -762,7 +762,7 @@ bool subdivideLength(std::vector<double> &equalLengthTimes,
 
 	// For each cumulative distance
 	// start = prev found time, end = last time
-	// Binary seh to get sample[] within tolerance of desired cumulative disance
+	// Binary search to get sample[] within tolerance of desired cumulative disance
 	// Push that result onto equalLengthTimes
 	double start = 0.0;
 
@@ -824,6 +824,10 @@ bool subdivideLength(std::vector<double> &equalLengthTimes,
 		// it is basically a binary search of the entire range.
 		prevTimeDelta = (start - prevStart) * midTimeInflation;
 		prevStart = start;
+	}
+	if (equalLengthTimes.back() != endTime)
+	{
+		equalLengthTimes.push_back(endTime);
 	}
 	ROS_INFO_STREAM_FILTER(&messageFilter, "iterCount = " << iterCount);
 	return true;
@@ -1210,11 +1214,11 @@ bool RPROP(
 	double bestCost;
 	if (!evaluateSpline(bestCost,
 				bestTrajectory, points,
-				0.2,    // limit of path excursion from straight line b/t waypoints
-				4.5,    // max overall velocity
-				2.5,    // max allowed acceleration
-				0.3682, // wheel radius
-				3.5))   // max allowed centripetal acceleration
+				dMax,    // limit of path excursion from straight line b/t waypoints
+				vMax,    // max overall velocity
+				aMax,    // max allowed acceleration
+				wheelRadius, // wheel radius
+				aCentMax))   // max allowed centripetal acceleration
 	{
 		ROS_ERROR("base_trajectory_node : RPROP initial evaluateSpline() falied");
 		return false;
@@ -1260,11 +1264,11 @@ bool RPROP(
 					double thisCost;
 					if (!evaluateSpline(thisCost,
 								thisTrajectory, points,
-								0.2, // limit of path excursion from straight line b/t waypoints
-								4.5, // max overall velocity
-								2.5, // max allowed acceleration
-								0.3682, // wheel radius
-								3.5)) // max allowed centripetal acceleration
+								dMax, // limit of path excursion from straight line b/t waypoints
+								vMax, // max overall velocity
+								aMax, // max allowed acceleration
+								wheelRadius, // wheel radius
+								aCentMax)) // max allowed centripetal acceleration
 					{
 						ROS_ERROR("base_trajectory_node : RPROP evaluateSpline() failed");
 						return false;
@@ -1382,11 +1386,11 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 	double cost;
 	if (!evaluateSpline(cost,
 				trajectory, msg.points,
-				0.2, // limit of path excursion from straight line b/t waypoints
-				4.5, // max overall velocity
-				2.5, // max allowed acceleration
-				0.3682, // wheel radius
-				3.5)) // max allowed centripetal acceleration
+				pathLimitDistance, // limit of path excursion from straight line b/t waypoints
+				maxVel, // max overall velocity
+				maxLinearAcc, // max allowed acceleration
+				wheelRadius, // wheel radius
+				maxCentAcc)) // max allowed centripetal acceleration
 	{
 		ROS_ERROR("base_trajectory_node : evaluateSpline() returned false");
 		return false;
@@ -1480,7 +1484,7 @@ int main(int argc, char **argv)
 	nh.param("path_distance_limit", pathLimitDistance, 0.2);
 	nh.param("max_vel", maxVel, 4.5);
 	nh.param("max_linear_acc", maxLinearAcc, 2.5);
-	nh.param("wheel_radius", wheelRadius, 0.3682);
+	nh.param("wheel_radius", wheelRadius, 0.03682);
 	nh.param("max_cent_acc", maxCentAcc, 3.5);
 
 	ddr.registerVariable<double>("path_distance_limit", &pathLimitDistance, "how far robot can diverge from straight-line path between waypoints", 0, 2);

@@ -24,6 +24,7 @@ find_package(Eigen3 REQUIRED)
 add_service_files (
 	FILES
 	RobotOrient.srv
+	OrientStrafingAngle.srv
 	)
 
 generate_messages (
@@ -64,9 +65,12 @@ include_directories(
 	)
 
 add_executable(teleop_joystick_comp src/teleop_joystick_comp.cpp)
-set_target_properties(teleop_joystick_comp PROPERTIES OUTPUT_NAME 
-	teleop_joystick_comp PREFIX "")
 target_link_libraries(teleop_joystick_comp
+	${catkin_LIBRARIES}
+	)
+
+add_executable(teleop_joystick_comp_2020 src/teleop_joystick_comp_2020.cpp)
+target_link_libraries(teleop_joystick_comp_2020
 	${catkin_LIBRARIES}
 	)
 
@@ -79,6 +83,11 @@ add_dependencies(teleop_joystick_comp
 	${catkin_EXPORTED_TARGETS}
 	)
 
+add_dependencies(teleop_joystick_comp_2020
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+	)
+
 add_executable(translate_joystick_data_node src/translate_joystick_data.cpp)
 set_target_properties(translate_joystick_data_node PROPERTIES OUTPUT_NAME 
 	translate_joystick_data_node PREFIX "")
@@ -87,6 +96,18 @@ target_link_libraries(translate_joystick_data_node
 	)
 
 add_dependencies(translate_joystick_data_node
+	${${PROJECT_NAME}_EXPORTED_TARGETS}
+	${catkin_EXPORTED_TARGETS}
+	)
+
+add_executable(orient_strafing_node src/orient_strafing.cpp)
+set_target_properties(orient_strafing_node PROPERTIES OUTPUT_NAME 
+	orient_strafing_node PREFIX "")
+target_link_libraries(orient_strafing_node
+	${catkin_LIBRARIES}
+	)
+
+add_dependencies(orient_strafing_node
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 	)
@@ -117,7 +138,7 @@ add_dependencies(teleop_joints_keyboard
 
 # Install ------------------------------------------------------------
 # Install header files
-install(TARGETS teleop_joystick_comp translate_joystick_data_node teleop_joints_keyboard
+install(TARGETS teleop_joystick_comp teleop_joystick_comp_2020 teleop_joints_keyboard
 	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 	RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
