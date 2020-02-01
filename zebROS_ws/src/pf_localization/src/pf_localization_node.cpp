@@ -18,8 +18,8 @@
 
 #define VERBOSE
 
-const std::string rot_topic = "/imu_zero/zeroed_imu";
-const std::string odom_topic = "/teleop/swerve_drive_controller/cmd_vel_out";
+const std::string rot_topic = "/navx_jetson/zeroed_imu";
+const std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/cmd_vel_out";
 const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
 const std::string pub_topic = "predicted_pose";
