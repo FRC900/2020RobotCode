@@ -7,9 +7,9 @@ class TeleopCmdVel
 	public:
 
 		TeleopCmdVel(const teleop_joystick_control::TeleopJoystickCompConfig &config):
-			x_rate_limit_(-max_speed_, max_speed_, config.drive_rate_limit_time),
-			y_rate_limit_(-max_speed_, max_speed_, config.drive_rate_limit_time),
-			rotation_rate_limit_(-max_rot_, max_rot_, config.drive_rate_limit_time)
+			x_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time),
+			y_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time),
+			rotation_rate_limit_(-config.max_rot, config.max_rot_, config.drive_rate_limit_time)
 		{
 			config_ = config;
 
@@ -26,22 +26,19 @@ class TeleopCmdVel
 
 		void setSlowMode(const bool &slow_mode)
 		{
-			if(slow_mode_ == slow_mode)
-				return;
-
-			max_speed_ = slow_mode ? config_.max_speed_slow : config_.max_speed;
-			max_rot_ = slow_mode ? config_.max_rot_slow : config_.max_rot;
-
-			x_rate_limit_.updateMinMax(-max_speed_, max_speed_);
-			y_rate_limit_.updateMinMax(-max_speed_, max_speed_);
-			rotation_rate_limit_.updateMinMax(-max_rot_, max_rot_);
-
 			slow_mode_ = slow_mode;
 		}
 
 		geometry_msgs::Twist generateCmdVel(const frc_msgs::JoystickState &event, const double &navX_angle, const teleop_joystick_control::TeleopJoystickCompConfig &config)
 		{
 			config_ = config;
+
+			max_speed_ = slow_mode_ ? config_.max_speed_slow : config_.max_speed;
+			max_rot_ = slow_mode_ ? config_.max_rot_slow : config_.max_rot;
+
+			x_rate_limit_.updateMinMax(-max_speed_, max_speed_);
+			y_rate_limit_.updateMinMax(-max_speed_, max_speed_);
+			rotation_rate_limit_.updateMinMax(-max_rot_, max_rot_);
 
 			// Raw joystick values for X & Y translation
 			const double leftStickX = event.leftStickX;
