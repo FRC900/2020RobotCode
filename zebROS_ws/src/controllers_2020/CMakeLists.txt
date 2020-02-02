@@ -141,7 +141,11 @@ include_directories(
    src/climber_controller.cpp
    src/intake_controller.cpp 
    src/control_panel_controller.cpp
+<<<<<<< HEAD
    src/turret_controller.cpp
+=======
+
+>>>>>>> Control panel dev (#17)
 )
 
 ## Add cmake target dependencies of the library
