@@ -9,12 +9,10 @@ class TeleopCmdVel
 		TeleopCmdVel(const teleop_joystick_control::TeleopJoystickCompConfig &config):
 			x_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time),
 			y_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time),
-			rotation_rate_limit_(-config.max_rot, config.max_rot_, config.drive_rate_limit_time)
+			rotation_rate_limit_(-config.max_rot, config.max_rot, config.drive_rate_limit_time)
 		{
-			config_ = config;
-
-			max_speed_ = config_.max_speed;
-			max_rot_ = config_.max_rot;
+			max_speed_ = config.max_speed;
+			max_rot_ = config.max_rot;
 
 		}
 
@@ -31,10 +29,8 @@ class TeleopCmdVel
 
 		geometry_msgs::Twist generateCmdVel(const frc_msgs::JoystickState &event, const double &navX_angle, const teleop_joystick_control::TeleopJoystickCompConfig &config)
 		{
-			config_ = config;
-
-			max_speed_ = slow_mode_ ? config_.max_speed_slow : config_.max_speed;
-			max_rot_ = slow_mode_ ? config_.max_rot_slow : config_.max_rot;
+			max_speed_ = slow_mode_ ? config.max_speed_slow : config.max_speed;
+			max_rot_ = slow_mode_ ? config.max_rot_slow : config.max_rot;
 
 			x_rate_limit_.updateMinMax(-max_speed_, max_speed_);
 			y_rate_limit_.updateMinMax(-max_speed_, max_speed_);
@@ -54,16 +50,16 @@ class TeleopCmdVel
 			// 0-100%
 			// Finally, scale it so that 0% corresponds to the minimum
 			// output needed to move the robot and 100% to the max
-			// config_ured speed
-			double magnitude = dead_zone_check(hypot(leftStickX, leftStickY), config_.joystick_deadzone);
+			// configured speed
+			double magnitude = dead_zone_check(hypot(leftStickX, leftStickY), config.joystick_deadzone);
 			//ROS_INFO_STREAM(__LINE__ << " "  << magnitude);
 			if (magnitude != 0)
 			{
-				magnitude = pow(magnitude, config_.joystick_pow);
+				magnitude = pow(magnitude, config.joystick_pow);
 				//ROS_INFO_STREAM(__LINE__ << " "  << magnitude << " " << direction);
-				magnitude *= max_speed_ - config_.min_speed;
+				magnitude *= max_speed_ - config.min_speed;
 				//ROS_INFO_STREAM(__LINE__ << " "  << magnitude);
-				magnitude += config_.min_speed;
+				magnitude += config.min_speed;
 				//ROS_INFO_STREAM(__LINE__ << " "  << magnitude);
 			}
 
@@ -77,12 +73,12 @@ class TeleopCmdVel
 			//ROS_INFO_STREAM(__LINE__ << " "  << xSpeed << " " << ySpeed);
 
 			// Rotation is a bit simpler since it is just one independent axis
-			const double rightStickX = dead_zone_check(event.rightStickX, config_.joystick_deadzone);
+			const double rightStickX = dead_zone_check(event.rightStickX, config.joystick_deadzone);
 
 			// Scale the input by a power function to increase resolution
 			// of the slower settings. Use copysign to preserve the sign
 			// of the original input (keeps the direction correct)
-			double rotation = pow(rightStickX, config_.rotation_pow);
+			double rotation = pow(rightStickX, config.rotation_pow);
 			rotation  = copysign(rotation, event.rightStickX);
 			rotation *= max_rot_;
 
@@ -131,8 +127,6 @@ class TeleopCmdVel
 		rate_limiter::RateLimiter x_rate_limit_;
 		rate_limiter::RateLimiter y_rate_limit_;
 		rate_limiter::RateLimiter rotation_rate_limit_;
-
-		teleop_joystick_control::TeleopJoystickCompConfig config_;
 
 		double dead_zone_check(const double &test_axis, const double &dead_zone)
 		{
