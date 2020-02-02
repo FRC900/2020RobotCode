@@ -7,14 +7,8 @@ namespace turret_controller
 									 ros::NodeHandle                 &controller_nh)
 	{
 		hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
-		hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
-		//Initialize piston joints
-		/* Ex:
-		push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
-		*/
-		turret_arm_joint_ = pos_joint_iface->getHandle("shooter_hood_raise");
-
+		//get turret motor params
 		XmlRpc::XmlRpcValue turret_params;
 		if ( !controller_nh.getParam("turret_joint", turret_params)) //grabbing the config value under the controller's section in the main config file
 		{
@@ -38,45 +32,26 @@ namespace turret_controller
 	}
 
 	void TurretController::starting(const ros::Time &/*time*/) {
-		//give command buffer(s) an initial value
-		/* Ex:
-		cmd_buffer_.writeFromNonRT(true);
-		*/
 		turret_joint_.setSelectedSensorPosition(0.0); //resets the encoder position to 0
-		turret_cmd_.writeFromNonRT(TurretCommand(0,false));
+
+		//give command buffer an initial value
+		cmd_buffer_.writeFromNonRT(0.0);
 	}
 
 	void TurretController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
-		//grab value from command buffer(s)
-		/* Ex:
-		const bool extend_cmd = *(cmd_buffer_.readFromRT());
-		*/
-		const TurretCommand turret_cmd = *(turret_cmd_.readFromRT());
-		double turret_arm_double;
-		if(turret_command_cmd.shooter_hood_raise_ == true){
-			turret_arm_double = 1;
-		}
-		else {
-			turret_arm_double = 0;
-		}
-		//Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
-		/* Syntax: push_joint_.setCommand(1.0); */
-		turret_joint_.setCommand(turret_cmd.set_point_);
-		turret_arm_joint_.setCommand(turret_cmd.shooter_hood_raise_);
-		//for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
+		//grab value from command buffer and write it
+		const double turret_cmd = *(cmd_buffer_.readFromRT());
+		turret_joint_.setCommand(turret_cmd);
 	}
 
 	void TurretController::stopping(const ros::Time &/*time*/) {
 	}
 
-	bool TurretController::cmdService(controllers_2020::TurretSrv::Request &req, package::MechSrv::Response &/*response*/) {
+	bool TurretController::cmdService(controllers_2020_msgs::TurretSrv::Request &req, controllers_2020_msgs::TurretSrv::Response &/*response*/) {
 		if(isRunning())
 		{
-			//assign request value to command buffer(s)
-			/* Ex:
-			cmd_buffer_.writeFromNonRT(req.claw_release);
-			*/
-			turret_cmd_.writeFromNonRT(TurretCommand(req.rotations, req.shooter_hood_raise));
+			//assign request value to command buffer
+			cmd_buffer_.writeFromNonRT(req.set_point);
 		}
 		else
 		{
@@ -86,27 +61,6 @@ namespace turret_controller
 		return true;
 	}
 
-	void TurretController::talonStateCallback(const talon_state_msgs::TalonState &talon_state)
-	{
-		static size_t turret_motor_idx = std:numeric_limits<size_t)::max();
-		if(turret_motor_idx >= talon_state.name.size())
-		{
-			for(size_t i = 0; i < talon_state.name.size(); i++)
-			{
-				if(talon_state.name[i] == "turret_joint")
-				{
-					turret_motor_idx = i;
-					break;
-				}
-			}
-
-		}
-		else
-		{
-			cur_motor_position_ = talon_state.position[turret_motor_idx];
-		}
-
-	}
 
 }//namespace
 
