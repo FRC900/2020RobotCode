@@ -17,7 +17,7 @@ namespace turret_controller
 		}
 
 		//initialize motor joint using those config values
-		if ( !turret_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, turret_params) {
+		if ( !turret_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, turret_params) ){
 			ROS_ERROR("Cannot initialize turret_joint!");
 			return false;
 		}
