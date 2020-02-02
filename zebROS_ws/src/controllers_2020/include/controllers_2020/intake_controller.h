@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <ros/ros.h>
@@ -54,11 +53,10 @@ class IntakeController : public controller_interface::MultiInterfaceController<h
             virtual void stopping(const ros::Time &time) override;
 	    bool cmdService (controllers_2020_msgs::IntakeSrv::Request &req, controllers_2020_msgs::IntakeSrv::Response &);
         private:
-	    	talon_controllers::TalonPercentOutputControllerInterface intake_joint_;//intake for intake motor
-		hardware_interface::JointHandle intake_arm_joint_;//interface for intake arm solenoid
-		realtime_tools::RealtimeBuffer<IntakeCommand> intake_cmd_;
-		ros::ServiceServer intake_service_;
-		double roller_diameter_;
+			talon_controllers::TalonPercentOutputControllerInterface intake_joint_;//intake for intake motor
+			hardware_interface::JointHandle intake_arm_joint_;//interface for intake arm solenoid
+			realtime_tools::RealtimeBuffer<IntakeCommand> intake_cmd_;
+			ros::ServiceServer intake_service_;
 
 
 

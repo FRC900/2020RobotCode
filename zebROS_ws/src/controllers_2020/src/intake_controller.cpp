@@ -21,7 +21,6 @@ namespace intake_controller
             return false;
         }
 
-		controller_nh.getParam("roller_diameter", roller_diameter_);
         //initialize motor joint using those config values
         if (!intake_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_params)) {
             ROS_ERROR("Cannot initialize intake_joint!");
@@ -34,32 +33,27 @@ namespace intake_controller
 
         //Initialize your ROS server
         intake_service_ = controller_nh.advertiseService("intake_command", &IntakeController::cmdService, this);
-        
-	
-        return true;
+
+		return true;
     }
 
     void IntakeController::starting(const ros::Time &/*time*/) {
         //give command buffer(s) an initial value
-        /* Ex:
-        cmd_buffer_.writeFromNonRT(true);
-        */
-	intake_cmd_.writeFromNonRT(IntakeCommand(0,false));
+		intake_cmd_.writeFromNonRT(IntakeCommand(0,false));
     }
 
     void IntakeController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
         //grab value from command buffer(s)
         const IntakeCommand intake_cmd = *(intake_cmd_.readFromRT());
-	double intake_arm_double;
-	if(intake_cmd.intake_arm_extend_ == true){
-		intake_arm_double = 1;
-	}
-	else {
-		intake_arm_double = 0;
-	}
-	ROS_INFO_STREAM("Roller Diameter (Unused):" << roller_diameter_);
-	intake_joint_.setCommand(intake_cmd.set_power_);
-	intake_arm_joint_.setCommand(intake_cmd.intake_arm_extend_);
+		double intake_arm_double;
+		if(intake_cmd.intake_arm_extend_ == true){
+			intake_arm_double = 1;
+		}
+		else {
+			intake_arm_double = 0;
+		}
+		intake_joint_.setCommand(intake_cmd.set_power_);
+		intake_arm_joint_.setCommand(intake_cmd.intake_arm_extend_);
     }
 
     void IntakeController::stopping(const ros::Time &/*time*/) {

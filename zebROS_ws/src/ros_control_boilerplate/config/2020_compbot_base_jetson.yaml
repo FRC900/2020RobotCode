@@ -90,7 +90,6 @@ cargo_intake_controller:
 intake_controller:
         type: intake_controller/IntakeController
         intake_joint: "intake"
-        roller_diameter: 1.0
         intake:
                 joint: intake_joint
                 type: talon_controllers/TalonPercentOutputController
