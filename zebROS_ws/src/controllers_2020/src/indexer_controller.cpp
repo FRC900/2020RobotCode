@@ -43,7 +43,6 @@ namespace indexer_controller
     void IndexerController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
 	    //grab value from command buffer(s)
         const IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
-		
 
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
         /* Syntax: push_joint_.setCommand(1.0); */

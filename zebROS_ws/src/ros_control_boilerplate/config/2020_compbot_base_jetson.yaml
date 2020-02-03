@@ -36,11 +36,7 @@ hardware_interface:
        - {name: indexer_joint, type: can_talon_srx, can_id: 67, local: true} #TODO find actual can id
 
        - {name: control_panel_arm_joint, type: solenoid, local_hardware: false, local_update: true}
-<<<<<<< HEAD
        - {name: control_panel_joint, type: can_talon_srx, can_id: 34, local: true}
-=======
-       - {name: control_panel_joint, type: can_talon_srx, can_id: 32, local: true}
->>>>>>> Control panel dev (#17)
        
        - {name: elevator_master, type: can_talon_srx, can_id: 41, local: true}
        - {name: elevator_follower1, type: can_talon_srx, can_id: 42, local: true}
@@ -177,8 +173,7 @@ indexer_controller:
         voltage_compensation_enable: True
         dynamic_reconfigure: True
 
-
-
+        
 turret_controller:
     type: turret_controller/TurretController
 
