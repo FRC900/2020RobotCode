@@ -121,15 +121,6 @@ control_panel_controller:
                 dynamic_reconfigure: True
 
 
-cargo_intake_controller:
-    type:   cargo_intake_controller/CargoIntakeController
-    
-    cargo_intake_joint: "cargo_intake"
-    cargo_intake:
-        joint: cargo_intake_joint
-        type: talon_controllers/TalonPercentOutputController
-        invert_output: True 
-    
 shooter_controller:
     type: shooter_controller/ShooterController
     shooter_joint: "shooter"
@@ -147,10 +138,6 @@ shooter_controller:
         nominal_output_reverse: 0.0
         voltage_compensation_enable: true
         dynamic_reconfigure: True
-
-    #note: the intake arm (solenoid joint) is currently being grabbed directly from the hardware_interface above
-cargo_outtake_controller:
-    type: cargo_outtake_controller/CargoOuttakeController
 
 climber_controller:
     type:  climber_controller_2020/ClimberController
