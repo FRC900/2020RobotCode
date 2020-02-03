@@ -7,49 +7,42 @@ namespace indexer_controller
                                      ros::NodeHandle                 &controller_nh)
     {
 		//get interface
-        //hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
-
+        //hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>()
+		hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
         //Initialize piston joints
         /* Ex:
         push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
         */
 
         //Initialize motor joints
-        /* Ex:
         //get params from config file
-        XmlRpc::XmlRpcValue intake_motor_params;
-        if ( !controller_nh.getParam("config_value_name", intake_motor_params)) //grabbing the config value under the controller's section in the main config file
+        XmlRpc::XmlRpcValue indexer_params;
+        if ( !controller_nh.getParam("indexer_joint", indexer_params)) //grabbing the config value under the controller's section in the main config file
         {
-            ROS_ERROR_STREAM("Could not read _______ params");
+            ROS_ERROR_STREAM("Could not read indexer params");
             return false;
         }
         //initialize motor joint using those config values
-        if ( !motor_name_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, intake_motor_params) {
-            ROS_ERROR("Cannot initialize ______ joint!");
+        if ( !indexer_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, indexer_params) {
+            ROS_ERROR("Cannot initialize indexer joint!");
             return false;
         }
-        */
 
 
         //Initialize your ROS server
-        /* Ex:
         indexer_service_ = controller_nh.advertiseService("indexer_command", &IndexerController::cmdService, this);
-		*/
+
         return true;
     }
 
     void IndexerController::starting(const ros::Time &/*time*/) {
         //give command buffer(s) an initial value
-        /* Ex:
-        cmd_buffer_.writeFromNonRT(true);
-        */
+        indexer_cmd_.writeFromNonRT(IndexerCommand(0,true));
     }
 
     void IndexerController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
 	    //grab value from command buffer(s)
-        /* Ex:
-        const bool extend_cmd = *(cmd_buffer_.readFromRT());
-        */
+        const bool IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
 
 
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
@@ -60,13 +53,12 @@ namespace indexer_controller
 
     void IndexerController::stopping(const ros::Time &/*time*/) {
     }
-    /*
     bool IndexerController::cmdService(package::IndexerSrv::Request &req, package::IndexerSrv::Response &//response//) {
         if(isRunning())
         {
             //assign request value to command buffer(s)
             //Ex:
-            cmd_buffer_.writeFromNonRT(req.claw_release);
+            cmd_buffer_.writeFromNonRT(req.indexer_running);
         }
         else
         {
@@ -75,7 +67,6 @@ namespace indexer_controller
         }
         return true;
     }
-    */
 
 }//namespace
 

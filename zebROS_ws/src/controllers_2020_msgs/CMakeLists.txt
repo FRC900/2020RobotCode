@@ -64,6 +64,7 @@ add_service_files(
    ControlPanelSrv.srv
    TurretSrv.srv
    ShooterSrv.srv
+   IndexerSrv.srv
 )
 
 ## Generate actions in the 'action' folder

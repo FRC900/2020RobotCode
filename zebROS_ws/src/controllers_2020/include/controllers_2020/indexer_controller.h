@@ -12,10 +12,26 @@
 
 //REMEMBER TO INCLUDE CUSTOM SERVICE
 
+#include <controllers_2020_msgs/IndexerSrv.h>
+
 namespace indexer_controller
 {
-
+	
 //this is the controller class, used to make a controller
+	class IndexerCommand
+	{
+		public:
+			IndexerCommand()
+				:indexer_running_(false)
+		{
+		}
+			IndexerCommand(bool indexer_running)
+			{
+				indexer_running_ = indexer_running;
+			}
+			bool indexer_running_;
+	};
+
 class IndexerController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>
 {
         public:
@@ -31,9 +47,14 @@ class IndexerController : public controller_interface::MultiInterfaceController<
             virtual void starting(const ros::Time &time) override;
             virtual void update(const ros::Time & time, const ros::Duration& period) override;
             virtual void stopping(const ros::Time &time) override;
+			bool cmdService (controllers_2020_msgs::IndexerSrv::Request &req, controllers_2020_msgs::IndexerSrv::Response &/*response*/);
+			//void talonStateCallback(const talon_state_msgs::TalonState &talon_state);
 
         private:
-
+			talon_controllers::TalonVelocityCloseLoopControllerInterface indexer_joint_; //interface for the indexer turning motor
+			realtime_tools::RealtimeBuffer<IndexerCommand> indexer_cmd_;
+			ros::ServiceServer indexer_service_;
+			ros::Subscriber talon_state_sub_;
 
 
 }; //class
