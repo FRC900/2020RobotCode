@@ -189,14 +189,11 @@ include_directories(
 # FILES_MATCHING PATTERN "*.h"
 # PATTERN ".svn" EXCLUDE
 #)
-<<<<<<< HEAD
 install(DIRECTORY include/${PROJECT_NAME}/
  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
  FILES_MATCHING PATTERN "*.h"
  PATTERN ".svn" EXCLUDE
 )
-=======
->>>>>>> Removed shooter hood piston from turret controller, not compiled yet
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

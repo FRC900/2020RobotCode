@@ -142,12 +142,8 @@ include_directories(
    src/climber_controller.cpp
    src/intake_controller.cpp 
    src/control_panel_controller.cpp
-<<<<<<< HEAD
-)
-=======
    src/turret_controller.cpp
  )
->>>>>>> Updated config in ros_control_boilerplate, continued writing controller
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
