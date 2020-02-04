@@ -50,8 +50,9 @@ class IntakeController : public controller_interface::MultiInterfaceController<h
             virtual void starting(const ros::Time &time) override;
             virtual void update(const ros::Time & time, const ros::Duration& period) override;
             virtual void stopping(const ros::Time &time) override;
-	    bool cmdService (controllers_2020_msgs::IntakeSrv::Request &req, controllers_2020_msgs::IntakeSrv::Response &);
         private:
+            bool cmdService (controllers_2020_msgs::IntakeSrv::Request &req, controllers_2020_msgs::IntakeSrv::Response &);
+
 			talon_controllers::TalonPercentOutputControllerInterface intake_joint_;//intake for intake motor
 			hardware_interface::JointHandle intake_arm_joint_;//interface for intake arm solenoid
 			realtime_tools::RealtimeBuffer<IntakeCommand> intake_cmd_;
