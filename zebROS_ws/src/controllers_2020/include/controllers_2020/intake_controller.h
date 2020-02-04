@@ -8,7 +8,6 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <talon_controllers/talon_controller_interface.h>
 
-#include <pluginlib/class_list_macros.h> //to compile as a controller
 
 #include <controllers_2020_msgs/IntakeSrv.h>
 
@@ -22,16 +21,16 @@ class IntakeCommand
 {
 	public:
 	IntakeCommand()
-		: set_power_(0.0)
+		: set_percent_out_(0.0)
 		, intake_arm_extend_(false)
 	{
 	}
-	IntakeCommand(double set_power, bool intake_arm_extend)
+	IntakeCommand(double set_percent_out, bool intake_arm_extend)
 	{
-		set_power_ = set_power;
+		set_percent_out_ = set_percent_out;
 		intake_arm_extend_ = intake_arm_extend;
 	}
-	double set_power_;
+	double set_percent_out_;
 	bool intake_arm_extend_;
 };
 

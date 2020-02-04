@@ -1,4 +1,5 @@
 #include "controllers_2020/intake_controller.h"
+#include <pluginlib/class_list_macros.h> //to compile as a controller
 
 namespace intake_controller
 {
@@ -10,7 +11,7 @@ namespace intake_controller
         hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
         //Initialize intake piston joint
-        intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
+        intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //read from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
         //Initialize motor joints
         //get params from config file
@@ -52,7 +53,7 @@ namespace intake_controller
 		else {
 			intake_arm_double = 0;
 		}
-		intake_joint_.setCommand(intake_cmd.set_power_);
+		intake_joint_.setCommand(intake_cmd.set_percent_out_);
 		intake_arm_joint_.setCommand(intake_cmd.intake_arm_extend_);
     }
 
@@ -63,7 +64,7 @@ namespace intake_controller
         {
             //assign request value to command buffer(s)
             //Ex:
-            intake_cmd_.writeFromNonRT(IntakeCommand(req.power, req.intake_arm_extend));
+            intake_cmd_.writeFromNonRT(IntakeCommand(req.percent_out, req.intake_arm_extend));
         }
         else
         {
@@ -72,7 +73,7 @@ namespace intake_controller
         }
         return true;
     }
-    
+
 
 }//namespace
 
