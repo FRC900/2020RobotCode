@@ -1,14 +1,14 @@
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include "behavior_actions/AutoMode.h" //msg file
-#include "behavior_actions/StopAuto.h" //srv file
-#include "frc_msgs/MatchSpecificData.h"
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+#include <behavior_actions/AutoMode.h> //msg file
+#include <std_srvs/Empty.h>
+#include <frc_msgs/MatchSpecificData.h>
 
-#include "actionlib/client/simple_action_client.h"
-#include "behavior_actions/ElevatorAction.h" //TODO remove this, it's for testing using last year's stuff
+#include <actionlib/client/simple_action_client.h>
+#include <behavior_actions/ElevatorAction.h> //TODO remove this, it's for testing using last year's stuff
 
-#include "thread"
-#include "atomic"
+#include <thread>
+#include <atomic>
 
 //VARIABLES ---------------------------------------------------------
 int auto_mode = -1; //-1 if nothing selected
@@ -25,8 +25,8 @@ std::atomic<int> auto_state(0); //This state is published by the publish thread
 //FUNCTIONS -------
 
 //server callback for stop autonomous execution
-bool stopAuto(behavior_actions::StopAuto::Request &req,
-			  behavior_actions::StopAuto::Response &res)
+bool stopAuto(std_srvs::Empty::Request &req,
+			  std_srvs::Empty::Response &res)
 {
 	ROS_INFO("Auto node - Stopping code");
 	auto_stopped = true;
