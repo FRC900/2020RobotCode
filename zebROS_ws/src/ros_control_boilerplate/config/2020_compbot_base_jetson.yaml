@@ -158,9 +158,10 @@ turret_controller:
         motion_acceleration: 100
         voltage_compensation: true
         dynamic_reconfigure: true
-        #Edit once we know what these do
-        #limit_switch_local_reverse_source: "FeedbackConnector"
-        #limit_switch_local_reverse_normal: "NormallyOpen"
+        limit_switch_local_forward_source: "FeedbackConnector"
+        limit_switch_local_forward_normal: "NormallyOpen"
+        limit_switch_local_reverse_source: "FeedbackConnector"
+        limit_switch_local_reverse_normal: "NormallyOpen"
         softlimit_forward_threshold: 1.0 #Placeholder value
         softlimit_forward_enable: true
         softlimit_reverse_threshold: -1.0 #Placeholder value

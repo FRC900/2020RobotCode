@@ -1,5 +1,7 @@
 #include "controllers_2020/turret_controller.h"
 
+#include <pluginlib/class_list_macros.h> //to compile as a controller
+
 namespace turret_controller
 {
 	bool TurretController::init(hardware_interface::RobotHW *hw,
