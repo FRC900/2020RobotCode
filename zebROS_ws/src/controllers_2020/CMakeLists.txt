@@ -16,7 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   talon_controllers
   talon_interface
-  talon_state_msgs
   std_msgs
   std_srvs
   controller_interface
