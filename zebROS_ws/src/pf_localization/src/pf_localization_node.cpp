@@ -48,17 +48,23 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
   tf2::convert(msg -> orientation, raw);
   tf2::Matrix3x3(raw).getRPY(roll, pitch, yaw);
   rot = degToRad(yaw);
+  #ifdef VERBOSE
+  ROS_INFO("rotCallback called");
+  #endif
 }
 
 void goalCallback(const goal_detection::GoalDetection::ConstPtr& msg){
-  for(const geometry_msgs::Point32& p : msg->location) {
-    measurement.push_back(std::make_pair(p.x, p.y));
+  for(const goal_detection::Goal& p : msg->goals) {
+    measurement.push_back(std::make_pair(p.location.y, p.location.x));
   }
+  #ifdef VERBOSE
+  ROS_INFO("goalCallback called");
+  #endif
 }
 
 void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
-  delta_x = msg->pose.pose.position.x;
-  delta_y = msg->pose.pose.position.y;
+  // delta_x = msg->pose.pose.position.x;
+  // delta_y = msg->pose.pose.position.y;
 }
 
 void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
@@ -66,19 +72,25 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
   double x_vel = msg->twist.linear.x;
   double y_vel = msg->twist.linear.y;
 
-  delta_x = x_vel * timestep;
-  delta_y = y_vel * timestep;
+  delta_x += x_vel * timestep;
+  delta_y += y_vel * timestep;
+
+  #ifdef VERBOSE
+  ROS_INFO("cmdCallback called");
+  #endif
 }
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
 
+  #ifdef VERBOSE
   ROS_INFO_STREAM(nh_.getNamespace());
+  #endif
 
-  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1000, rotCallback);
-  ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 1000, cmdCallback);
-  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 1000, goalCallback);
+  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 10, rotCallback);
+  ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 10, cmdCallback);
+  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 10, goalCallback);
 
   pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
@@ -157,9 +169,11 @@ int main(int argc, char **argv) {
   }
   ROS_INFO_STREAM("\n\n");
   print_particle(pf.predict());
+  ROS_INFO("pf localization initialized");
   #endif
 
 
+  // ros::Rate rate(10);
   while (ros::ok()) {
     pf.set_rotation(rot);
     pf.motion_update(delta_x, delta_y, 0);
@@ -176,6 +190,10 @@ int main(int argc, char **argv) {
     pose.y = prediction.y;
     pose.rot = prediction.rot;
     pub_.publish(pose);
+
+    delta_x = 0;
+    delta_y = 0;
+    // rate.sleep();
   }
 
   return 0;

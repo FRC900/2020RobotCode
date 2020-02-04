@@ -2,12 +2,11 @@
 <launch>
 
   <group ns="pf_localization">
-    <rosparam command="load" file="$(find pf_localization)/config/2019_params.yaml" />
+    <rosparam command="load" file="$(find pf_localization)/config/test_params.yaml" />
     <node name="pf_localization" pkg="pf_localization" type="pf_localization_node" output= "screen">
     </node>
   </group>
-  <group ns="goal_detection">
-    <include file="$(find controller_node)/launch/bag_tape_detection.launch"/>
-  </group>
+
+  <include file="$(find controller_node)/launch/bag_tape_detection.launch"/>
 
 </launch>
