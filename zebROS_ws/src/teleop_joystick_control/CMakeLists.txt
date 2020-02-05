@@ -5,6 +5,7 @@ include ("../cmake_modules/CMakeOpt.cmake")
 
 find_package(catkin REQUIRED COMPONENTS
 	actionlib
+	angles
 	behavior_actions
 	cmake_modules
 	control_msgs
@@ -21,11 +22,17 @@ find_package(catkin REQUIRED COMPONENTS
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3 REQUIRED)
 
+## Generate messages in the 'msg' folder
+add_message_files(
+  FILES
+  SendZeroState.msg
+)
+
 # Generate services in the 'srv' folder
 add_service_files (
 	FILES
 	RobotOrient.srv
-	OrientStrafingAngle.srv
+	SnapStrafingAngle.srv
 	)
 
 generate_messages (

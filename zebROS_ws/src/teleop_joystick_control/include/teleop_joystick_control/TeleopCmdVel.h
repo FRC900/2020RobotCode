@@ -1,4 +1,5 @@
 #include <geometry_msgs/Twist.h>
+#include <angles/angles.h>
 #include "teleop_joystick_control/rate_limiter.h"
 #include "teleop_joystick_control/TeleopJoystickCompConfig.h"
 
@@ -8,8 +9,7 @@ class TeleopCmdVel
 
 		TeleopCmdVel(const teleop_joystick_control::TeleopJoystickCompConfig &config):
 			x_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time),
-			y_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time),
-			rotation_rate_limit_(-config.max_rot, config.max_rot, config.drive_rate_limit_time){}
+			y_rate_limit_(-config.max_speed, config.max_speed, config.drive_rate_limit_time) {}
 
 		void setRobotOrient(const bool &robot_orient, const double &offset_angle)
 		{
@@ -22,14 +22,22 @@ class TeleopCmdVel
 			slow_mode_ = slow_mode;
 		}
 
+		void setTargetHeading(const double &target_heading)
+		{
+			target_heading_ = target_heading;
+		}
+
+		bool changingRotation(void)
+		{
+			return is_rotation_;
+		}
+
 		geometry_msgs::Twist generateCmdVel(const frc_msgs::JoystickState &event, const double &navX_angle, const teleop_joystick_control::TeleopJoystickCompConfig &config)
 		{
 			double max_speed = slow_mode_ ? config.max_speed_slow : config.max_speed;
-			double max_rot = slow_mode_ ? config.max_rot_slow : config.max_rot;
 
 			x_rate_limit_.updateMinMax(-max_speed, max_speed);
 			y_rate_limit_.updateMinMax(-max_speed, max_speed);
-			rotation_rate_limit_.updateMinMax(-max_rot, max_rot);
 
 			// Raw joystick values for X & Y translation
 			const double leftStickX = event.leftStickX;
@@ -67,30 +75,17 @@ class TeleopCmdVel
 			const double ySpeed = y_rate_limit_.applyLimit(magnitude * sin(direction), event.header.stamp);
 			//ROS_INFO_STREAM(__LINE__ << " "  << xSpeed << " " << ySpeed);
 
-			// Rotation is a bit simpler since it is just one independent axis
-			const double rightStickX = dead_zone_check(event.rightStickX, config.joystick_deadzone);
-
-			// Scale the input by a power function to increase resolution
-			// of the slower settings. Use copysign to preserve the sign
-			// of the original input (keeps the direction correct)
-			double rotation = pow(rightStickX, config.rotation_pow);
-			rotation  = copysign(rotation, event.rightStickX);
-			rotation *= max_rot;
-
-			// Rate-limit changes in rotation
-			rotation = rotation_rate_limit_.applyLimit(rotation, event.header.stamp);
-
 			geometry_msgs::Twist vel;
 
 			vel.linear.z = 0;
 			vel.angular.x = 0;
 			vel.angular.y = 0;
+			vel.angular.z = 0;
 
-			if (xSpeed == 0.0 && ySpeed == 0.0 && rotation == 0.0)
+			if (xSpeed == 0.0 && ySpeed == 0.0)
 			{
 				vel.linear.x = 0;
 				vel.linear.y = 0;
-				vel.angular.z = 0;
 			}
 			else // X or Y or rotation != 0 so tell the drive base to move
 			{
@@ -104,22 +99,48 @@ class TeleopCmdVel
 
 				vel.linear.x = rotatedJoyVector[1];
 				vel.linear.y = rotatedJoyVector[0];
-				vel.angular.z = -rotation;
 			}
 
 			return vel;
 		}
 
+		double generateTargetAngle(const frc_msgs::JoystickState &event, teleop_joystick_control::TeleopJoystickCompConfig &config)
+		{
+			double max_rot = slow_mode_ ? config.max_rot_slow : config.max_rot;
+
+			const double rightStickX = dead_zone_check(event.rightStickX, config.joystick_deadzone);
+
+			// Scale the input by a power function to increase resolution
+			// of the slower settings. Use copysign to preserve the sign
+			// of the original input (keeps the direction correct)
+			double rotation = pow(rightStickX, config.rotation_pow);
+			rotation  = copysign(rotation, event.rightStickX);
+			rotation *= max_rot;
+
+			is_rotation_ = (rotation != 0);
+
+			static ros::Time last_stamp = ros::Time::now();
+
+			ros::Duration timestep = event.header.stamp - last_stamp;
+
+			target_heading_ = angles::normalize_angle(target_heading_ + rotation*timestep.toSec());
+
+			last_stamp = event.header.stamp;
+
+			return target_heading_;
+		}
+
 	private:
 
+		bool is_rotation_ = false;
 		bool robot_orient_ = false;
 		bool slow_mode_ = false;
 
 		double offset_angle_;
+		double target_heading_;
 
 		rate_limiter::RateLimiter x_rate_limit_;
 		rate_limiter::RateLimiter y_rate_limit_;
-		rate_limiter::RateLimiter rotation_rate_limit_;
 
 		double dead_zone_check(const double &test_axis, const double &dead_zone)
 		{
