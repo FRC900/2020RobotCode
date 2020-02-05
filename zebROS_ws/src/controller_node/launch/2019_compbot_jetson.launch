@@ -260,6 +260,7 @@
 		<!-- didn't seem to work, retest
 		-->
 		<arg name="camera" value="rs_t265" />
+                <remap from="/frcrobot_jetson/swerve_drive_controller/odom" to="$(arg tf_prefix)/odom_in"/>
 	</include>
 
 	<include file="$(find controller_node)/launch/record_2019_compbot.launch" if="$(arg record)" />
