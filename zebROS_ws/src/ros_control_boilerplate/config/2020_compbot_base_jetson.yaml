@@ -35,7 +35,7 @@ hardware_interface:
        - {name: climber_elevator_brake_joint, type: solenoid, local_hardware: false, local_update: true}
 
        - {name: control_panel_arm_joint, type: solenoid, local_hardware: false, local_update: true}
-       - {name: control_panel_joint, type: can_talon_srx, can_id: 32, local: true}
+       - {name: control_panel_joint, type: can_talon_srx, can_id: 34, local: true}
        
        - {name: elevator_master, type: can_talon_srx, can_id: 41, local: true}
        - {name: elevator_follower1, type: can_talon_srx, can_id: 42, local: true}

@@ -1,6 +1,5 @@
 #include "controllers_2020/shooter_controller.h"
 #include <pluginlib/class_list_macros.h> //to compile as a controller
-#include <std_msgs/Bool.h>
 
 namespace shooter_controller
 {
@@ -44,7 +43,8 @@ namespace shooter_controller
 
         //Initialize your ROS server
         shooter_service_ = controller_nh.advertiseService("shooter_command", &ShooterController::cmdService, this);
-        ready_to_shoot_pub_ = controller_nh.advertise<std_msgs::Bool>("ready_to_shoot", 1);
+        ready_to_shoot_pub_.reset(new realtime_tools::RealtimePublisher<std_msgs::Bool>(controller_nh, "ready_to_shoot", 4));
+
         return true;
     }
 
@@ -57,6 +57,7 @@ namespace shooter_controller
     void ShooterController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
         //grab value from command buffer(s)
         const ShooterCommand shooter_cmd = *(cmd_buffer_.readFromRT());
+        static bool last_hood_command = false;
 
         shooter_joint_.setCommand(shooter_cmd.set_velocity_);
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
@@ -68,20 +69,27 @@ namespace shooter_controller
         {
             shooter_hood_joint_.setCommand(0.0);
         }
-
-        if(((ros::Time::now() - last_command_time_).toSec() > time_to_raise_hood_) &&
-                fabs(shooter_joint_.getSpeed() - shooter_cmd.set_velocity_) < speed_threshhold_ &&
-                fabs(shooter_cmd.set_velocity_) > 1e-6)
+        if(shooter_cmd.shooter_hood_raise_ != last_hood_command)
         {
-            std_msgs::Bool msg;
-            msg.data = true;
-           ready_to_shoot_pub_.publish(msg); 
+            last_command_time_ = ros::Time::now();
         }
-        else
+        last_hood_command = shooter_cmd.shooter_hood_raise_;
+
+        if(ready_to_shoot_pub_->trylock())
         {
-            std_msgs::Bool msg;
-            msg.data = false;
-            ready_to_shoot_pub_.publish(msg);
+            auto &m = ready_to_shoot_pub_->msg_;
+            if(((ros::Time::now() - last_command_time_).toSec() > time_to_raise_hood_) &&
+                    fabs(shooter_joint_.getSpeed() - shooter_cmd.set_velocity_) < speed_threshhold_ &&
+                    fabs(shooter_cmd.set_velocity_) > 1e-6)
+            {
+                m.data = true;
+                ready_to_shoot_pub_->unlockAndPublish(); 
+            }
+            else
+            {
+                m.data = false;
+                ready_to_shoot_pub_->unlockAndPublish();
+            }
         }
     }
 

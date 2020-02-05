@@ -9,6 +9,8 @@
 #include <talon_controllers/talon_controller_interface.h>
 
 #include "controllers_2020_msgs/ShooterSrv.h"
+#include <realtime_tools/realtime_publisher.h>
+#include <std_msgs/Bool.h>
 
 namespace shooter_controller
 {
@@ -56,7 +58,7 @@ class ShooterController : public controller_interface::MultiInterfaceController<
 			ros::ServiceServer shooter_service_;
 		    realtime_tools::RealtimeBuffer<ShooterCommand> cmd_buffer_;
 
-                    ros::Publisher ready_to_shoot_pub_;
+                    std::shared_ptr<realtime_tools::RealtimePublisher<std_msgs::Bool>> ready_to_shoot_pub_; 
                     double time_to_raise_hood_;
                     double speed_threshhold_;
                     ros::Time last_command_time_;
