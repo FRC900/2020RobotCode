@@ -17,9 +17,11 @@
 #include <XmlRpcValue.h>
 
 #define VERBOSE
+#define EXTREME_VERBOSE
+
 
 const std::string rot_topic = "/navx_jetson/zeroed_imu";
-const std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/cmd_vel_out";
+const std::string cmd_topic = "/frcrobot_jetson/swerve_drive_controller/cmd_vel_out";
 const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
 const std::string pub_topic = "predicted_pose";
@@ -48,23 +50,19 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
   tf2::convert(msg -> orientation, raw);
   tf2::Matrix3x3(raw).getRPY(roll, pitch, yaw);
   rot = degToRad(yaw);
-  #ifdef VERBOSE
+  #ifdef EXTREME_VERBOSE
   ROS_INFO("rotCallback called");
   #endif
 }
 
 void goalCallback(const goal_detection::GoalDetection::ConstPtr& msg){
+  measurement.clear();
   for(const goal_detection::Goal& p : msg->goals) {
     measurement.push_back(std::make_pair(p.location.y, p.location.x));
   }
-  #ifdef VERBOSE
+  #ifdef EXTREME_VERBOSE
   ROS_INFO("goalCallback called");
   #endif
-}
-
-void odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
-  // delta_x = msg->pose.pose.position.x;
-  // delta_y = msg->pose.pose.position.y;
 }
 
 void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
@@ -75,7 +73,7 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
   delta_x += x_vel * timestep;
   delta_y += y_vel * timestep;
 
-  #ifdef VERBOSE
+  #ifdef EXTREME_VERBOSE
   ROS_INFO("cmdCallback called");
   #endif
 }
@@ -87,12 +85,6 @@ int main(int argc, char **argv) {
   #ifdef VERBOSE
   ROS_INFO_STREAM(nh_.getNamespace());
   #endif
-
-  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 10, rotCallback);
-  ros::Subscriber odom_sub = nh_.subscribe(odom_topic, 10, cmdCallback);
-  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 10, goalCallback);
-
-  pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
   XmlRpc::XmlRpcValue xml_beacons;
   double f_x_min, f_x_max, f_y_min, f_y_max, i_x_min, i_x_max, i_y_min, i_y_max, p_stdev, r_stdev;
@@ -172,8 +164,14 @@ int main(int argc, char **argv) {
   ROS_INFO("pf localization initialized");
   #endif
 
+  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 10, rotCallback);
+  ros::Subscriber odom_sub = nh_.subscribe(cmd_topic, 10, cmdCallback);
+  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 10, goalCallback);
 
-  // ros::Rate rate(10);
+  pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
+
+
+  ros::Rate rate(10);
   while (ros::ok()) {
     pf.set_rotation(rot);
     pf.motion_update(delta_x, delta_y, 0);
@@ -193,7 +191,8 @@ int main(int argc, char **argv) {
 
     delta_x = 0;
     delta_y = 0;
-    // rate.sleep();
+    rate.sleep();
+    ros::spinOnce();
   }
 
   return 0;

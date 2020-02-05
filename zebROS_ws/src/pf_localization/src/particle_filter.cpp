@@ -87,15 +87,19 @@ void ParticleFilter::resample() {
 Particle ParticleFilter::predict() {
   double weight = 0;
   Particle res {0, 0, 0};
+  double s, c;
   for (Particle& p : particles_) {
     res.x += p.x * p.weight;
     res.y += p.y * p.weight;
-    res.rot += p.rot * p.weight;
+    c += cos(p.rot) * p.weight;
+    c += sin(p.rot) * p.weight;
     weight += p.weight;
   }
   res.x /= weight;
   res.y /= weight;
-  res.rot /= weight;
+  c /= weight;
+  s /= weight;
+  res.rot = atan2(s, c);
   return res;
 }
 
