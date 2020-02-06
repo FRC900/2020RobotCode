@@ -24,15 +24,15 @@ hardware_interface:
        #TODO: Get config values of joints
        - {name: turret_joint, type: can_talon_srx, can_id: 30, local: true}
 
-       - {name: cargo_intake_joint, type: can_talon_srx, can_id: 31, local: true}
-       - {name: cargo_intake_arm_joint, type: solenoid, local_hardware: false, local_update: true}
-       - {name: climber_ski_joint, type: solenoid, local_hardware: false, local_update: true}
+         # - {name: cargo_intake_joint, type: can_talon_srx, can_id: 31, local: true}
+         # - {name: cargo_intake_arm_joint, type: solenoid, local_hardware: false, local_update: true}
+         # - {name: climber_ski_joint, type: solenoid, local_hardware: false, local_update: true}
 
        - {name: intake_arm_joint, type: solenoid, local_hardware: false, local_update: true}
        - {name: intake_joint, type: can_talon_srx, can_id: 33, local: true}
 
        - {name: climber_winch_joint, type: can_talon_srx, can_id: 0, local: true} #TODO fix can id
-       - {name: climber_deploy_joint, type: solenoid, local_hardware: false, local_update: true}
+       - {name: climber_deploy_joint, type: double_solenoid, local_hardware: false, local_update: true}
        - {name: climber_elevator_brake_joint, type: solenoid, local_hardware: false, local_update: true}
 
        - {name: control_panel_arm_joint, type: solenoid, local_hardware: false, local_update: true}
@@ -54,18 +54,15 @@ hardware_interface:
        - {name: pdp, type: pdp}
        - {name: compressor, type: compressor, pcm_id: 0}
 
-       - {name: panel_claw, type: solenoid, local_hardware: false, local_update: true}
-       - {name: panel_push_extend, type: solenoid, local_hardware: false, local_update: true}
+         # - {name: panel_intake_limit_switch_1, type: digital_input, local: false}
+         # - {name: panel_intake_limit_switch_2, type: digital_input, local: false}
+         # - {name: panel_intake_limit_switch_3, type: digital_input, local: false}
+         # - {name: panel_intake_limit_switch_4, type: digital_input, local: false}
 
-       - {name: panel_intake_limit_switch_1, type: digital_input, local: false}
-       - {name: panel_intake_limit_switch_2, type: digital_input, local: false}
-       - {name: panel_intake_limit_switch_3, type: digital_input, local: false}
-       - {name: panel_intake_limit_switch_4, type: digital_input, local: false}
+         # - {name: cargo_intake_linebreak_1, type: digital_input, local: false}
 
-       - {name: cargo_intake_linebreak_1, type: digital_input, local: false}
-
-       - {name: climber_linebreak_1, type: digital_input, local: false}
-       - {name: climber_linebreak_2, type: digital_input, local: false}
+         # - {name: climber_linebreak_1, type: digital_input, local: false}
+         # - {name: climber_linebreak_2, type: digital_input, local: false}
 
        - {name: robot_code_ready_jetson, local: true, type: ready}
        - {name: robot_code_ready_rio, local: false, type: ready} # Probably not really needed?
