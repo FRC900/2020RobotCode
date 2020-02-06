@@ -23,7 +23,7 @@ namespace indexer_controller
             return false;
         }
         //initialize motor joint using those config values
-        if ( !indexer_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, indexer_params) {
+        if ( !indexer_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, indexer_params)) {
             ROS_ERROR("Cannot initialize indexer joint!");
             return false;
         }
@@ -37,28 +37,29 @@ namespace indexer_controller
 
     void IndexerController::starting(const ros::Time &/*time*/) {
         //give command buffer(s) an initial value
-        indexer_cmd_.writeFromNonRT(IndexerCommand(0,true));
+        indexer_cmd_.writeFromNonRT(IndexerCommand(true));
     }
 
     void IndexerController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
 	    //grab value from command buffer(s)
-        const bool IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
-
+        const IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
+		
 
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
         /* Syntax: push_joint_.setCommand(1.0); */
 
         //for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
+		indexer_joint_.setCommand(indexer_cmd.indexer_running_);
     }
 
     void IndexerController::stopping(const ros::Time &/*time*/) {
     }
-    bool IndexerController::cmdService(package::IndexerSrv::Request &req, package::IndexerSrv::Response &//response//) {
+	bool IndexerController::cmdService(controllers_2020_msgs::IndexerSrv::Request &req, controllers_2020_msgs::IndexerSrv::Response &/*response*/) {
         if(isRunning())
         {
             //assign request value to command buffer(s)
             //Ex:
-            cmd_buffer_.writeFromNonRT(req.indexer_running);
+            indexer_cmd_.writeFromNonRT(req.indexer_running);
         }
         else
         {
