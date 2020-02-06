@@ -173,7 +173,7 @@ climber_controller:
         dynamic_reconfigure: True
 
 indexer_controller:
-    type:  indexer_controller_2020/IndexerController
+    type:  indexer_controller/IndexerController
     indexer_joint: "indexer"
     indexer:
         joint: indexer_joint
