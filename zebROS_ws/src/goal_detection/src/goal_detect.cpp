@@ -91,7 +91,8 @@ namespace goal_detection
 
 				pub_debug_image_ = it.advertise("debug_image", 2);
 			}
-
+			// TODO : move this into GoalDetect / object code to replace the old
+			// screen to world / world to screen calcs
 			// Use the camera model to convert the pixel coords at the center of the bounding
 			// box into real-world coords.
 			// pos is the x,y,z coordinates computed using the other method - this is a hack
@@ -103,17 +104,17 @@ namespace goal_detection
 											   const std::string &debug_name) const
 			{
 
+				// Center point of left and right bounding rect
 				const cv::Point2f uv(
 						bounding_rect.tl().x + bounding_rect.width  / 2.0,
 						bounding_rect.tl().y + bounding_rect.height / 2.0
 						);
-
 				const cv::Point3f world_coord_unit = model.projectPixelTo3dRay(uv);
 				const float distance = sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
 				const cv::Point3f world_coord_scaled = world_coord_unit * distance;
 
 				const cv::Point3f adj_world_coord_scaled(world_coord_scaled.x, world_coord_scaled.z, -world_coord_scaled.y);
-#if 1
+#if 0
 				ROS_INFO_STREAM("bounding_rect:" << bounding_rect);
 				ROS_INFO_STREAM("uv:" << uv);
 				ROS_INFO_STREAM("world_coord_unit:" << world_coord_unit);
@@ -123,8 +124,6 @@ namespace goal_detection
 				ROS_INFO_STREAM("adj_world_coord_scaled:" << adj_world_coord_scaled);
 				ROS_INFO_STREAM("adj_distance:" << adj_world_coord_scaled - pos);
 				ROS_INFO_STREAM(debug_name << " : uv : " << uv << " gd_pos : " << pos << " model_pos : " << adj_world_coord_scaled << " difference " << adj_world_coord_scaled - pos);
-				ROS_INFO_STREAM("camera angle: " << config_.camera_angle);
-				ROS_INFO_STREAM("calculated distance: " << distance);
 #endif
 				return adj_world_coord_scaled;
 			}
