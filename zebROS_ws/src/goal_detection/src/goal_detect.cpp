@@ -91,8 +91,7 @@ namespace goal_detection
 
 				pub_debug_image_ = it.advertise("debug_image", 2);
 			}
-			// TODO : move this into GoalDetect / object code to replace the old
-			// screen to world / world to screen calcs
+
 			// Use the camera model to convert the pixel coords at the center of the bounding
 			// box into real-world coords.
 			// pos is the x,y,z coordinates computed using the other method - this is a hack
@@ -104,17 +103,17 @@ namespace goal_detection
 											   const std::string &debug_name) const
 			{
 
-				// Center point of left and right bounding rect
 				const cv::Point2f uv(
 						bounding_rect.tl().x + bounding_rect.width  / 2.0,
 						bounding_rect.tl().y + bounding_rect.height / 2.0
 						);
+
 				const cv::Point3f world_coord_unit = model.projectPixelTo3dRay(uv);
 				const float distance = sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
 				const cv::Point3f world_coord_scaled = world_coord_unit * distance;
 
 				const cv::Point3f adj_world_coord_scaled(world_coord_scaled.x, world_coord_scaled.z, -world_coord_scaled.y);
-#if 0
+#if 1
 				ROS_INFO_STREAM("bounding_rect:" << bounding_rect);
 				ROS_INFO_STREAM("uv:" << uv);
 				ROS_INFO_STREAM("world_coord_unit:" << world_coord_unit);
@@ -124,6 +123,8 @@ namespace goal_detection
 				ROS_INFO_STREAM("adj_world_coord_scaled:" << adj_world_coord_scaled);
 				ROS_INFO_STREAM("adj_distance:" << adj_world_coord_scaled - pos);
 				ROS_INFO_STREAM(debug_name << " : uv : " << uv << " gd_pos : " << pos << " model_pos : " << adj_world_coord_scaled << " difference " << adj_world_coord_scaled - pos);
+				ROS_INFO_STREAM("camera angle: " << config_.camera_angle);
+				ROS_INFO_STREAM("calculated distance: " << distance);
 #endif
 				return adj_world_coord_scaled;
 			}
@@ -181,7 +182,10 @@ namespace goal_detection
 
 				image_geometry::PinholeCameraModel model;
 				model.fromCameraInfo(camera_info_);
-				//ROS_INFO_STREAM("Camera_info " << camera_info_);
+
+				#if 0
+					ROS_INFO_STREAM("Camera_info " << camera_info_);
+				#endif
 
 				for(size_t i = 0; i < gfd.size(); i++)
 				{
@@ -192,51 +196,34 @@ namespace goal_detection
 					dummy.id = gfd[i].id;
 					dummy.confidence = gfd[i].confidence;
 
-					// Center point of left and right bounding rect in world coords
-					const cv::Point3f left_world_coord_scaled = get_world_coord_scaled(model, gfd[i].left_rect, gfd[i].left_pos, "left");
-					const cv::Point3f right_world_coord_scaled = get_world_coord_scaled(model, gfd[i].right_rect, gfd[i].right_pos, "right");
+					// Bounding rect in world coords
+					const cv::Point3f world_coord_scaled = get_world_coord_scaled(model, gfd[i].rect, gfd[i].pos, dummy.id);
 
-					// Midpoint of those two should be the goal coords
-					const cv::Point3f center_world_coord_scaled = (left_world_coord_scaled + right_world_coord_scaled) / 2.0;
-
-#if 0
-					ROS_INFO_STREAM("center gd_pos : " << gfd[i].pos <<
-									" model_pos : " << center_world_coord_scaled <<
-									" difference " << center_world_coord_scaled - gfd[i].pos);
-#endif
-					// TODO : pick a coord frame and stick with it?
-					dummy.x = center_world_coord_scaled.y;
-					dummy.y = center_world_coord_scaled.x;
-					dummy.z = center_world_coord_scaled.z;
+					dummy.location.x = world_coord_scaled.y;
+					dummy.location.y = world_coord_scaled.x;
+					dummy.location.z = world_coord_scaled.z;
 					gd_msg.objects.push_back(dummy);
+
 #if 0
 					ROS_INFO_STREAM("center_world_coord_scaled:" << center_world_coord_scaled);
 					ROS_INFO_STREAM("gfd[i].pos:" << gfd[i].pos);
 					ROS_INFO_STREAM("difference:" << center_world_coord_scaled - gfd[i].pos);
-					// Midpoint along the segment connecting those
-					// two center points
-					const cv::Point2f center_uv(
-							left_uv.x + (right_uv.x - left_uv.x) / 2.0,
-							left_uv.y + (right_uv.y - left_uv.y) / 2.0
-					);
-					const cv::Point3f world_coord = model.projectPixelTo3dRay(center_uv);
+
+					const cv::Point3f world_coord = model.projectPixelTo3dRay(uv);
 					const float distance = sqrt(gfd[i].pos.x * gfd[i].pos.x +
 					                            gfd[i].pos.y * gfd[i].pos.y +
 					                            gfd[i].pos.z * gfd[i].pos.z);
 					ROS_INFO_STREAM("model.fullResolution: " << model.fullResolution());
 
-					ROS_INFO_STREAM("left_rect" << gfd[i].left_rect);
-					ROS_INFO_STREAM("right_rect" << gfd[i].right_rect);
-					ROS_INFO_STREAM("left_uv" << left_uv);
-					ROS_INFO_STREAM("right_uv" << right_uv);
-					ROS_INFO_STREAM("center_uv" << center_uv);
+					ROS_INFO_STREAM("rect" << gfd[i].rect);
+					ROS_INFO_STREAM("uv" << uv);
 
 					const cv::Point3f gd_pos(gfd[i].pos.y, gfd[i].pos.x, gfd[i].pos.z);
 
 					ROS_INFO_STREAM("gd_pos:" << gd_pos);
 					ROS_INFO_STREAM("distance:" << distance);
 					ROS_INFO_STREAM("world_coord (unscaled):" << world_coord);
-					ROS_INFO_STREAM("projectPixelTo3dRay(unscaled):" << model.projectPixelTo3dRay(center_uv));
+					ROS_INFO_STREAM("projectPixelTo3dRay(unscaled):" << model.projectPixelTo3dRay(uv));
 					ROS_INFO_STREAM("world_coord (scaled):" << world_coord * distance);
 					ROS_INFO_STREAM("difference:" << world_coord * distance - gd_pos);
 
@@ -286,33 +273,10 @@ namespace goal_detection
 						br.sendTransform(transformStamped);
 					}
 
-					/*
-					//Transform between a fixed frame and the goal.
-					tf2_ros::Buffer tfBuffer;
-					tf2_ros::TransformListener tfListener(tfBuffer);
-
-					geometry_msgs::TransformStamped transformStampedOdomCamera;
-					try
-					{
-					transformStampedOdomCamera = tfBuffer.lookupTransform("odom", cvFrame->header.frame_id,
-					ros::Time(0));
-					}
-					catch (tf2::TransformException &ex)
-					{
-					ROS_WARN("%s", ex.what());
-					ros::Duration(1.0).sleep();
-					return;
-					}
-
-					geometry_msgs::TransformStamped transformStampedOdomGoal;
-
-					tf2::doTransform(transformStamped, transformStampedOdomGoal, transformStampedOdomCamera);
-
-					br.sendTransform(transformStampedOdomGoal);
-					*/
 				}
 				camera_mutex_.unlock();
 			}
+
 			void camera_info_callback(const sensor_msgs::CameraInfoConstPtr &info)
 			{
 				if (!camera_mutex_.try_lock())  // If the previous message is still being
@@ -347,6 +311,7 @@ namespace goal_detection
 				cv::Mat depthMat(cvFrame->image.size(), CV_32FC1, cv::Scalar(distance_from_terabee_));
 				callback(frameMsg, cv_bridge::CvImage(std_msgs::Header(), "32FC1", depthMat).toImageMsg());
 			}
+
 			typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> RGBDSyncPolicy;
 
 			ros::NodeHandle                                                nh_;
@@ -367,6 +332,6 @@ namespace goal_detection
 			ros::Subscriber                                                camera_info_sub_;
 			sensor_msgs::CameraInfo                                        camera_info_;
 	};
-} // namspace
+} // namespace
 
 PLUGINLIB_EXPORT_CLASS(goal_detection::GoalDetect, nodelet::Nodelet)

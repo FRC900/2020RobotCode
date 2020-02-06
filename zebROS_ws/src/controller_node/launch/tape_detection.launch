@@ -4,11 +4,11 @@
      for various camera and mechanism frames on the robot
 
      Run without arguments to use a live camera
-     Set live_camera:= false to prevent running the ZED 
+     Set live_camera:= false to prevent running the ZED
         camera node, e.g. for debugging from saved bag file
 -->
 <launch>
-  <arg name="live_camera" default="true" />
+  <arg name="live_camera" default="false" />
 
   <!--
 		 ZED needs transforms for its cameras, but we've modified them
