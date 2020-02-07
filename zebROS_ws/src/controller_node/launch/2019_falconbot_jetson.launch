@@ -30,8 +30,10 @@
 		<node name="uptime_jetson" pkg="uptime" type="uptime_node" output="screen" />
 	</group>
 
-	<group ns="navx_jetson">
-		<include file="$(find controller_node)/launch/2019_compbot_jetson_navx.launch" />
+	<group ns="imu">
+		<include file="$(find controller_node)/launch/2019_compbot_jetson_imu.launch">
+			<arg name="primary_imu" value="NAVX" />
+		</include>	
 	</group>
 
 	<group ns="teleop">
