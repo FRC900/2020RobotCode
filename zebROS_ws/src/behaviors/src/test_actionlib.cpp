@@ -596,6 +596,12 @@ int main (int argc, char **argv)
 	{
 		callShooter();
 	}
+	else if(what_to_run == "indexer")
+	{
+		std::cout << "Enter indexer action type (0-position intake, 1-intake a ball, or 2-feed a ball to shooter):";
+		std::cin >> indexer_action;
+		callIndexer(indexer_action);
+	}
 	else {
 		ROS_ERROR("Invalid run argument");
 		return 0;
