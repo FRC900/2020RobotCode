@@ -103,7 +103,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES state_handle
-  CATKIN_DEPENDS hardware_interface roscpp
+  CATKIN_DEPENDS hardware_interface
 #  DEPENDS system_lib
 )
 
