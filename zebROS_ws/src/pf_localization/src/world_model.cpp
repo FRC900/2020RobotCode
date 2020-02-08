@@ -5,6 +5,9 @@
 #include <algorithm>
 
 #include <iostream>
+#include <string>
+
+#include <ros/ros.h>
 
 
 WorldModel::WorldModel(std::vector<std::pair<double, double> > beacons,
@@ -81,7 +84,6 @@ double WorldModel::total_distance(const Particle& p, const std::vector<std::pair
     dists.push_back(distances(b, rel));
   }
   solver_.Solve(dists, assignment);
-
   double res = 0;
   for (size_t i = 0; i < assignment.size(); i++) {
     res += dists[i][assignment[i]];

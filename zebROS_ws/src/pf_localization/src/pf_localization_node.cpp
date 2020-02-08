@@ -17,7 +17,7 @@
 #include <XmlRpcValue.h>
 
 #define VERBOSE
-#define EXTREME_VERBOSE
+// #define EXTREME_VERBOSE
 
 
 const std::string rot_topic = "/navx_jetson/zeroed_imu";
@@ -41,7 +41,7 @@ double degToRad(double deg) {
 
 //formats and prints particle attributes
 void print_particle(Particle p) {
-  ROS_INFO_STREAM(p.x << ", " << p.y << ", " << p.rot << ", " << p.weight << '\n');
+  ROS_INFO_STREAM(p.x << ", " << p.y << ", " << p.rot << ", " << p.weight);
 }
 
 void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
@@ -173,6 +173,7 @@ int main(int argc, char **argv) {
 
   ros::Rate rate(10);
   while (ros::ok()) {
+
     pf.set_rotation(rot);
     pf.motion_update(delta_x, delta_y, 0);
     if (measurement.size() > 0){

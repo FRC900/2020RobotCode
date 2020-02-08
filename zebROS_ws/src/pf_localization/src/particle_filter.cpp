@@ -5,6 +5,7 @@
 #include <utility>
 
 #include <iostream>
+#include <ros/ros.h>
 
 
 ParticleFilter::ParticleFilter(WorldModel w,
@@ -87,7 +88,8 @@ void ParticleFilter::resample() {
 Particle ParticleFilter::predict() {
   double weight = 0;
   Particle res {0, 0, 0};
-  double s, c;
+  double s = 0;
+  double c = 0;
   for (Particle& p : particles_) {
     res.x += p.x * p.weight;
     res.y += p.y * p.weight;
