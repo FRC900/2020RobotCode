@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   behavior_actions
   controllers_2019_msgs
+  controllers_2020_msgs
   frc_msgs
   nav_msgs
   message_generation
@@ -137,6 +138,15 @@ catkin_package(
    CATKIN_DEPENDS actionlib_msgs actionlib behavior_actions nav_msgs roscpp rospy std_msgs teraranger_array tf2_ros
    DEPENDS 
 )
+
+# 2020 actionlib servers
+
+add_executable(indexer_server src/indexer_server.cpp)
+target_link_libraries(indexer_server ${catkin_LIBRARIES})
+add_dependencies(indexer_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
+# 2019 actionlib servers
 
 add_executable(intake_cargo_server src/intake_cargo_server.cpp)
 target_link_libraries(intake_cargo_server ${catkin_LIBRARIES})

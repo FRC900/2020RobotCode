@@ -71,6 +71,8 @@ add_action_files(
 	Climb.action
 	Elevator.action
 	Align.action
+
+	Indexer.action
 )
 
 generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
