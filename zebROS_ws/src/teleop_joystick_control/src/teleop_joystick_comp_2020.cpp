@@ -15,8 +15,11 @@
 #include "teleop_joystick_control/RobotOrient.h"
 #include "teleop_joystick_control/OrientStrafingAngle.h"
 
+#include <controllers_2020_msgs/ClimberSrv.h>
+
 #include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
 #include "teleop_joystick_control/TeleopJoystickCompConfig.h"
+#include "teleop_joystick_control/TeleopJoystickCompDiagnosticsConfig.h"
 
 #include "teleop_joystick_control/TeleopCmdVel.h"
 
@@ -33,10 +36,13 @@ ros::Publisher orient_strafing_setpoint_pub;
 ros::Publisher orient_strafing_state_pub;
 
 teleop_joystick_control::TeleopJoystickCompConfig config;
+teleop_joystick_control::TeleopJoystickCompDiagnosticsConfig diagnostics_config;
 
 ros::Publisher JoystickRobotVel;
 
 ros::ServiceClient BrakeSrv;
+
+ros::ServiceClient climber_controller_client;
 
 double imu_angle;
 
@@ -66,7 +72,7 @@ bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
 }
 
 bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::Request& req,
-										teleop_joystick_control::OrientStrafingAngle::Response&/* res*/)
+		teleop_joystick_control::OrientStrafingAngle::Response&/* res*/)
 {
 	orient_strafing_angle = req.angle;
 	return true;
@@ -270,6 +276,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 	}
 	else if(joystick_id == 1)
 	{
+		static ros::Time last_header_stamp = joystick_states_array[1].header.stamp;
+
 		//Joystick2: buttonA
 		if(joystick_states_array[1].buttonAPress)
 		{
@@ -355,6 +363,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick2: directionLeft
 		if(joystick_states_array[1].directionLeftPress)
 		{
+
 		}
 		if(joystick_states_array[1].directionLeftButton)
 		{
@@ -374,12 +383,16 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		{
 		}
 
+		static double climber_setpoint = 0.0;
+
 		//Joystick2: directionUp
 		if(joystick_states_array[1].directionUpPress)
 		{
 		}
 		if(joystick_states_array[1].directionUpButton)
 		{
+			climber_setpoint += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+			ROS_WARN_STREAM("Calling climber controller with setpoint = " << climber_setpoint);
 		}
 		if(joystick_states_array[1].directionUpRelease)
 		{
@@ -391,10 +404,14 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		}
 		if(joystick_states_array[1].directionDownButton)
 		{
+			climber_setpoint += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+			ROS_WARN_STREAM("Calling climber controller with setpoint = " << climber_setpoint);
 		}
 		if(joystick_states_array[1].directionDownRelease)
 		{
 		}
+
+		last_header_stamp = joystick_states_array[1].header.stamp;
 	}
 }
 
@@ -407,6 +424,7 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "Joystick_controller");
 	ros::NodeHandle n;
 	ros::NodeHandle n_params(n, "teleop_params");
+	ros::NodeHandle n_diagnostics_params(n, "teleop_diagnostics_params");
 	ros::NodeHandle n_swerve_params(n, "/frcrobot_jetson/swerve_drive_controller");
 
 	int num_joysticks = 1;
@@ -463,6 +481,11 @@ int main(int argc, char **argv)
 		ROS_ERROR("Could not read rotate_rate_limit_time in teleop_joystick_comp");
 	}
 
+	if(!n_diagnostics_params.getParam("climber_setpoint_rate", diagnostics_config.climber_setpoint_rate))
+	{
+		ROS_ERROR("Could not read climber_setpoint_rate in teleop_joystick_comp");
+	}
+
 	teleop_cmd_vel = std::make_unique<TeleopCmdVel>(config);
 
 	imu_angle = M_PI / 2.;
@@ -487,7 +510,10 @@ int main(int argc, char **argv)
 
 	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
 
+	climber_controller_client = n.serviceClient<controllers_2020_msgs::ClimberSrv>("/frcrobot_jetson/climber_controller_2020/climber_command");
+
 	DynamicReconfigureWrapper<teleop_joystick_control::TeleopJoystickCompConfig> drw(n_params, config);
+	DynamicReconfigureWrapper<teleop_joystick_control::TeleopJoystickCompDiagnosticsConfig> diagnostics_drw(n_diagnostics_params, diagnostics_config);
 
 	//Read from _num_joysticks_ joysticks
 	// Set up this callback last, since it might use all of the various stuff
