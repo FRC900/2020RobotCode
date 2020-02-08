@@ -1,9 +1,3 @@
-//THIS IS A TEMPLATE FILE. TO USE, COPY IT AND REPLACE:
-// Indexer	with your server's name, e.g. CargoIntake
-// indexer	with your server's name, e.g. cargo_intake
-// Thing		with the name of your action file (if file is Intake.action, replace w/ Intake)
-
-
 #include "ros/ros.h"
 #include "actionlib/server/simple_action_server.h"
 #include "actionlib/client/simple_action_client.h"
@@ -11,11 +5,66 @@
 #include <ros/console.h>
 
 //include action files - for this actionlib server and any it sends requests to
-#include "behaviors/IndexerAction.h"
+#include "behavior_actions/IndexerAction.h"
 
 //include controller service files and other service files
-// e.g. #include "controller_package/ControllerSrv.h"
-// e.g. #include "sensor_msgs/JointState.h" -has linebreak sensor data FYI
+#include "controllers_2020_msgs/IndexerSrv.h"
+#include "sensor_msgs/JointState.h" //for linebreak sensor data
+
+class Linebreak {
+	public:
+		std::string name_;
+		size_t idx_; //index of this linebreak in the joint_states array
+		int true_count_;
+		int false_count_;
+		int debounce_iterations_;
+		bool triggered_;
+
+		//called every time the joint state subscriber is run
+		void update(const sensor_msgs::JointState &joint_state)
+		{
+			//set idx if it hasn't already been set
+			if ( idx_ >= joint_state.name.size() )
+			{
+				for (size_t i = 0; i < joint_state.name.size(); i++)
+				{
+					if (joint_state.name[i] == name_){
+						idx_ = i;
+					}
+				}
+			}
+
+			//update linebreak state
+			if (joint_state.position[idx_] != 0) { //if linebreak true
+				true_count_ += 1;
+				false_count_ = 0;
+			}
+			else {
+				true_count_ = 0;
+				false_count_ += 1;
+			}
+
+			if (true_count_ > debounce_iterations_){
+				triggered_ = true;
+			}
+			else if (false_count_ > debounce_iterations_){
+				triggered_ = false;
+			}
+		}
+
+		Linebreak(std::string name, int debounce_iterations)
+		{
+			name_ = name;
+			idx_ = std::numeric_limits<size_t>::max(); //bigger than any number. Will be this value until we actually set it
+			true_count_ = 0;
+			false_count_ = 0;
+			debounce_iterations_ = debounce_iterations;
+			triggered_ = false;
+		}
+};
+
+
+
 
 
 //create the class for the actionlib server
@@ -23,14 +72,11 @@ class IndexerAction {
 	protected:
 		ros::NodeHandle nh_;
 
-		actionlib::SimpleActionServer<behaviors::IndexerAction> as_; //create the actionlib server
+		actionlib::SimpleActionServer<behavior_actions::IndexerAction> as_; //create the actionlib server
 		std::string action_name_;
 
-		//clients to call other actionlib servers
-		//e.g. actionlib::SimpleActionClient<behaviors::ElevatorAction> ac_elevator_;
-
 		//clients to call controllers
-		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
+		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -38,18 +84,20 @@ class IndexerAction {
 		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
-                //config variables, with defaults
-                double server_timeout_; //overall timeout for your server
-                double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
+		//other variables
+		int n_balls_;
+
+		//config variables, with defaults
+		double server_timeout_; //overall timeout for your server
+		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 
 	public:
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
-		IndexerAction(const std::string &name, server_timeout, wait_for_server_timeout) :
+		IndexerAction(const std::string &name, double server_timeout, double wait_for_server_timeout) :
 			as_(nh_, name, boost::bind(&IndexerAction::executeCB, this, _1), false),
 			action_name_(name),
                         server_timeout_(server_timeout),
                         wait_for_server_timeout_(wait_for_server_timeout)
-			//ac_elevator_("/elevator/elevator_server", true) example how to initialize other action clients, don't forget to add a comma on the previous line
 	{
 		as_.start(); //start the actionlib server
 
@@ -58,8 +106,11 @@ class IndexerAction {
 		service_connection_header["tcp_nodelay"] = "1";
 
 		//initialize client used to call controllers
-		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
+		indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
 
+		//read initial number of balls
+		//TODO
+		n_balls_ = 3;
 	}
 
 		~IndexerAction(void)
@@ -93,8 +144,56 @@ class IndexerAction {
 			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
 		}
 
+
+		void jointStateCallback(const sensor_msgs::JointState &joint_state)
+		{
+			//get index of linebreak sensors for this actionlib server
+			static size_t linebreak_idx = std::numeric_limits<size_t>::max();
+			if ((linebreak_idx >= joint_state.name.size()))
+			{
+				for (size_t i = 0; i < joint_state.name.size(); i++)
+				{
+					if (joint_state.name[i] == "cargo_intake_linebreak_1") //TODO: define this in the hardware interface
+						linebreak_idx = i;
+				}
+			}
+
+			//update linebreak counts based on the value of the linebreak sensor
+			if (linebreak_idx < joint_state.position.size())
+			{
+				bool linebreak_true = (joint_state.position[linebreak_idx] != 0);
+				if(linebreak_true)
+				{
+					linebreak_true_count_ += 1;
+				}
+				else
+				{
+					linebreak_true_count_ = 0;
+				}
+			}
+			else
+			{
+				ROS_WARN_THROTTLE(2.0, "intake_cargo_server : intake line break sensor not found in joint_states");
+				linebreak_true_count_ = 0;
+			}
+		}
+		}
+
+		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
+		bool goToPositionIntake()
+		{
+			return true;
+		}
+
+		//function to send balls towards shooter until linebreak right before shooter is triggered - default state if have 5 balls
+		bool goToPositionShoot()
+		{
+			return true;
+		}
+
+
 		//define the function to be executed when the actionlib server is called
-		void executeCB(const behaviors::IndexerGoalConstPtr &goal)
+		void executeCB(const behavior_actions::IndexerGoalConstPtr &goal)
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 
@@ -103,29 +202,41 @@ class IndexerAction {
 			timed_out_ = false;
 
 
-
-			//wait for all actionlib servers we need
-			/* e.g.
-			if(!ac_elevator_.waitForServer(ros::Duration(wait_for_server_timeout_)))
-			{
-				ROS_ERROR_STREAM(action_name_ << " couldn't find elevator actionlib server");
-				as_.setPreempted();
-				return;
-			}
-			*/
-
 			//wait for all controller servers we need
-			/* e.g.
-			if(! mech_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
+			if(! indexer_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
 			{
-				ROS_ERROR_STREAM(action_name_ << " can't find mech_controller");
+				ROS_ERROR_STREAM(action_name_ << " can't find indexer_controller");
 				as_.setPreempted();
 				return;
 			}
-			*/
+
+
+			//Three possible actions we can do:
+			//0: go to position intake (back up until trigger linebreak sensor just inside the indexer)
+			//1: intake a ball
+			//2: feed one ball to the shooter, then stop at position shoot (go forward until trigger linebreak sensor just before shooter)
+
+			switch(goal->action)
+			{
+				case 0: //go to position intake
+
+
+					break;
+				case 1: //intake a ball
 
 
 
+					break;
+				case 2: //feed a ball to the shooter
+
+
+
+					break;
+				default:
+					ROS_ERROR_STREAM("Indexer server: " << goal->action << " is not a valid action (valid ones are 0,1,2)"
+					preempted_ = true;
+
+			}
 
 
 			//Basic controller call ---------------------------------------
@@ -199,7 +310,7 @@ class IndexerAction {
 
 
 			//log result and set actionlib server state appropriately
-			behaviors::IndexerResult result;
+			behavior_actions::IndexerResult result;
 
 			if(preempted_) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
