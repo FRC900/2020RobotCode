@@ -378,19 +378,6 @@ int main(int argc, char** argv) {
 		indexer_action.wait_for_server_timeout_ = 10;
 	}
 
-	/* e.g.
-	//ros::NodeHandle n_params_intake(n, "actionlib_cargo_intake_params"); //node handle for a lower-down namespace
-
-	if (!n.getParam("/teleop/teleop_params/linebreak_debounce_iterations", linebreak_debounce_iterations))
-		ROS_ERROR("Could not read linebreak_debounce_iterations in intake_server");
-
-	if (!n.getParam("/actionlib_params/wait_for_server_timeout", wait_for_server_timeout))
-		ROS_ERROR("Could not read wait_for_server_timeout_ in intake_sever");
-
-	if (!n_params_intake.getParam("roller_power", roller_power))
-		ROS_ERROR("Could not read roller_power in cargo_intake_server");
-	*/
-
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
