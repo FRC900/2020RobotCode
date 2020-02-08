@@ -63,6 +63,10 @@ void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
 //this is read by the dashboard to display it to the driver
 void publishAutoState(ros::Publisher publisher)
 {
+	//give the thread a name
+	pthread_setname_np(pthread_self(), "auto_state_pub_thread");
+
+	//publish
 	ros::Rate r(10); //TODO config
 	std_msgs::String msg;
 
@@ -268,7 +272,14 @@ int main(int argc, char** argv)
 			//TODO remove test
 			else if(action_data["type"] == "elevator_actionlib_server")
 			{
-				if(!elevator_ac.waitForServer(ros::Duration(5))){ROS_ERROR("couldn't find server");} //for some reason this is necessary, even if the server has been up and running for a while
+				if(!elevator_ac.waitForServer(ros::Duration(5))){
+					ROS_ERROR("Auto node - couldn't find elevator actionlib server");
+					auto_state = ERROR;
+					if(auto_state_pub_thread.joinable()){
+						auto_state_pub_thread.join();
+					}
+					return 1;
+				} //for some reason this is necessary, even if the server has been up and running for a while
 				behavior_actions::ElevatorGoal goal;
 				goal.setpoint_index = (int) action_data["goal"]["setpoint_index"];
 				elevator_ac.sendGoal(goal);
