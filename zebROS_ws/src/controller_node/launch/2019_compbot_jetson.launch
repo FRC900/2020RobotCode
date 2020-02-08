@@ -50,7 +50,7 @@
         <group ns="pure_pursuit">
             <rosparam file="$(find pure_pursuit)/config/pure_pursuit_config.yaml" command="load"/>
 
-            <node name="pure_pursuit_server" pkg="pure_pursuit" type="pure_pursuit_server_better" output="screen"/>
+            <node name="pure_pursuit_server" pkg="pure_pursuit" type="pure_pursuit_server" output="screen"/>
             <node name="base_trajectory_node" pkg="base_trajectory" type="base_trajectory_node" output="screen" > </node>
             <node name="pure_pursuit_publish_pid_cmd_vel_node" pkg="behaviors" type="publish_pid_cmd_vel_node" output="screen">
                 <param name="orient_topic" value="orient_pid/orient_command" />

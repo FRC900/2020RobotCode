@@ -139,32 +139,11 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-# add_executable(pure_pursuit_server src/pure_pursuit_server.cpp src/pure_pursuit.cpp)
-# add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(pure_pursuit_server
-#   ${catkin_LIBRARIES}
-# )
-
-# TODO - clean up at some point, and pick a less goofy (better?) name
-add_executable(pure_pursuit_server_better src/pure_pursuit_server_better.cpp src/pure_pursuit_better.cpp)
-add_dependencies(pure_pursuit_server_better ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(pure_pursuit_server_better
+add_executable(pure_pursuit_server src/pure_pursuit_server.cpp src/pure_pursuit.cpp)
+add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pure_pursuit_server
   ${catkin_LIBRARIES}
 )
-
-# add_executable(pure_pursuit_test_client src/test_client.cpp)
-# add_dependencies(pure_pursuit_test_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(pure_pursuit_test_client
-#   ${catkin_LIBRARIES}
-# )
-# 
-# add_executable(pure_pursuit_test_pp_actionlib src/test_pp_actionlib.cpp)
-# add_dependencies(pure_pursuit_test_pp_actionlib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(pure_pursuit_test_pp_actionlib
-#   ${catkin_LIBRARIES}
-# )
-
 
 #############
 ## Install ##
