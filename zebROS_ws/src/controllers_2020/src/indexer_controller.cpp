@@ -37,7 +37,7 @@ namespace indexer_controller
 
     void IndexerController::starting(const ros::Time &/*time*/) {
         //give command buffer(s) an initial value
-        indexer_cmd_.writeFromNonRT(IndexerCommand(true));
+        indexer_cmd_.writeFromNonRT(IndexerCommand(false));
     }
 
     void IndexerController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
