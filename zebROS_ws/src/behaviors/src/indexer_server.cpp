@@ -11,6 +11,9 @@
 #include "controllers_2020_msgs/IndexerSrv.h"
 #include "sensor_msgs/JointState.h" //for linebreak sensor data
 
+
+int linebreak_debounce_iterations; //global so that main() can read it and the Linebreak class can use it
+
 class Linebreak {
 	public:
 		std::string name_;
@@ -66,7 +69,7 @@ class Linebreak {
 			idx_ = std::numeric_limits<size_t>::max(); //bigger than any number. Will be this until we actually set it
 			true_count_ = 0;
 			false_count_ = 0;
-			debounce_iterations_ = 10; //TODO make config
+			debounce_iterations_ = linebreak_debounce_iterations; //read from global config value
 			triggered_ = false;
 		}
 };
@@ -97,37 +100,7 @@ class IndexerAction {
 		double start_time_;
 
 		//other variables
-		int n_balls_;
 
-		//config variables, with defaults
-		double server_timeout_; //overall timeout for your server
-		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
-
-	public:
-		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
-		IndexerAction(const std::string &name, double server_timeout, double wait_for_server_timeout) :
-			as_(nh_, name, boost::bind(&IndexerAction::executeCB, this, _1), false),
-			action_name_(name),
-                        server_timeout_(server_timeout),
-                        wait_for_server_timeout_(wait_for_server_timeout)
-	{
-		as_.start(); //start the actionlib server
-
-		//do networking stuff
-		std::map<std::string, std::string> service_connection_header;
-		service_connection_header["tcp_nodelay"] = "1";
-
-		//initialize client used to call controllers
-		indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
-
-		//read initial number of balls from config
-		//TODO
-		n_balls_ = 3;
-	}
-
-		~IndexerAction(void)
-		{
-		}
 
 		//Use to make pauses while still checking timed_out_ and preempted_
 		bool pause(const double duration, const std::string &activity)
@@ -352,17 +325,58 @@ class IndexerAction {
 				}
 			}
 		}
+
+	public:
+		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
+		IndexerAction(const std::string &name) :
+			as_(nh_, name, boost::bind(&IndexerAction::executeCB, this, _1), false),
+			action_name_(name)
+		{
+			as_.start(); //start the actionlib server
+
+			//do networking stuff
+			std::map<std::string, std::string> service_connection_header;
+			service_connection_header["tcp_nodelay"] = "1";
+
+			//initialize client used to call controllers
+			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
+		}
+
+		~IndexerAction(void)
+		{
+		}
+
+		//config variables
+		double server_timeout_; //overall timeout for your server
+		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
+		int n_balls_;
+
+
 };
 
 int main(int argc, char** argv) {
 	//create node
 	ros::init(argc, argv, "indexer_server");
+	ros::NodeHandle nh;
+
+	//create the actionlib server
+	IndexerAction indexer_action("indexer_server");
 
 	//get config values
-	ros::NodeHandle n;
+	ros::NodeHandle nh_indexer(nh, "actionlib_indexer_params");
 
-	double server_timeout = 10;
-	double wait_for_server_timeout = 10;
+	if (! nh.getParam("/actionlib_params/linebreak_debounce_iterations", linebreak_debounce_iterations) ){
+		ROS_ERROR("Couldn't read linebreak_debounce_iterations in indexer server");
+		linebreak_debounce_iterations = 10;
+	}
+	if (! nh_indexer.getParam("server_timeout", indexer_action.server_timeout_) ){
+		ROS_ERROR("Couldn't read server_timeout in indexer server");
+		indexer_action.server_timeout_ = 10;
+	}
+	if (! nh_indexer.getParam("wait_for_server_timeout", indexer_action.wait_for_server_timeout_) ){
+		ROS_ERROR("Couldn't read wait_for_server_timeout in indexer server");
+		indexer_action.wait_for_server_timeout_ = 10;
+	}
 
 	/* e.g.
 	//ros::NodeHandle n_params_intake(n, "actionlib_cargo_intake_params"); //node handle for a lower-down namespace
@@ -377,8 +391,6 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Could not read roller_power in cargo_intake_server");
 	*/
 
-	//create the actionlib server
-	IndexerAction indexer_action("indexer_server", server_timeout, wait_for_server_timeout);
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
