@@ -10,6 +10,7 @@
 #include <thread>
 #include <atomic>
 
+
 //VARIABLES ---------------------------------------------------------
 int auto_mode = -1; //-1 if nothing selected
 std::vector<std::string> auto_steps; //stores string of action names to do, read from the auto mode array in the config file
@@ -18,8 +19,14 @@ bool auto_started = false; //set to true when enter auto time period
 bool auto_stopped = false; //set to true if driver stops auto (callback: stopAuto() ) - note: this node will keep doing actions during teleop if not finished and the driver doesn't stop auto
 //All actions check if(auto_started && !auto_stopped) before proceeding.
 
-std::atomic<int> auto_state(0); //This state is published by the publish thread
-//0:not ready, 1:ready, 2:running, 3:done, -1:error
+enum AutoStates {
+	NOT_READY,
+	READY,
+	RUNNING,
+	DONE,
+	ERROR
+};
+std::atomic<int> auto_state(NOT_READY); //This state is published by the publish thread
 
 
 //FUNCTIONS -------
@@ -61,11 +68,12 @@ void publishAutoState(ros::Publisher publisher)
 
 	while(ros::ok()){
 		switch(auto_state){
-			case -1: msg.data = "Error"; break;
-			case 0: msg.data = "Not Ready"; break;
-			case 1: msg.data = "Ready"; break;
-			case 2: msg.data = "Running"; break;
-			case 3: msg.data = "Done"; break;
+			case NOT_READY: msg.data = "Not Ready"; break;
+			case READY: msg.data = "Ready"; break;
+			case RUNNING: msg.data = "Running"; break;
+			case DONE: msg.data = "Done"; break;
+			case ERROR: msg.data = "Error"; break;
+			default: msg.data = "Unknown State"; break;
 		}
 		publisher.publish(msg);
 		r.sleep();
@@ -78,7 +86,7 @@ void publishAutoState(ros::Publisher publisher)
 void waitForActionlibServer(auto &action_client, double timeout, const std::string &activity)
 	//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
 {
-	double request_time = ros::Time::now().toSec();
+	const double request_time = ros::Time::now().toSec();
 	ros::Rate r(10); //TODO config?
 
 	//wait for actionlib server to finish
@@ -131,8 +139,10 @@ int main(int argc, char** argv)
 
 	//publishers
 	//auto state
+#ifdef __linux__
 	ros::Publisher state_pub = nh.advertise<std_msgs::String>("auto_state", 1);
 	std::thread auto_state_pub_thread(publishAutoState, state_pub);
+#endif
 
 	//servers
 	ros::ServiceServer stop_auto_server = nh.advertiseService("stop_auto", stopAuto); //called by teleoop node to stop auto execution during teleop if driver wants
@@ -154,15 +164,17 @@ int main(int argc, char** argv)
 	while( (!auto_started || auto_mode <= 0) && !auto_stopped ) //the auto_mode check is for if we selected an auto mode yet
 	{
 		if(!ros::ok()){
-			auto_state = 3; //done
-			auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+			auto_state = DONE;
+			if(auto_state_pub_thread.joinable()) {
+				auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+			}
 			return 0;
 		}
 
 		ros::spinOnce(); //spin so the subscribers can update
 
 		if(auto_mode > 0){
-			auto_state = 1; //ready
+			auto_state = READY;
 		}
 		if(auto_started && auto_mode <= 0){
 			ROS_ERROR("Auto node - Autonomous period started, please choose an auto mode");
@@ -173,21 +185,25 @@ int main(int argc, char** argv)
 
 	if(auto_stopped){
 		ROS_INFO("Auto node - code stopped before execution");
-		auto_state = 3; //done
-		auto_state_pub_thread.join();
+		auto_state = DONE;
+		if(auto_state_pub_thread.joinable()) {
+			auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+		}
 		return 0;
 	}
 
 	//EXECUTE AUTONOMOUS ACTIONS --------------------------------------------------------------------------
 
 	ROS_INFO_STREAM("Auto node - Executing auto mode " << auto_mode);
-	auto_state = 2; //running
+	auto_state = RUNNING;
 
 	//read sequence of actions from config
 	if(! nh.getParam("auto_mode_" + std::to_string(auto_mode), auto_steps)){
 		ROS_ERROR_STREAM("Couldn't read auto_mode_" + std::to_string(auto_mode) + " config value in auto node");
-		auto_state = -1;
-		auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+		auto_state = ERROR;
+		if(auto_state_pub_thread.joinable()) {
+			auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+		}
 		return 1;
 	}
 
@@ -202,8 +218,10 @@ int main(int argc, char** argv)
 			XmlRpc::XmlRpcValue action_data;
 			if(! nh.getParam(auto_steps[i], action_data)){
 				ROS_ERROR_STREAM("Auto node - Couldn't read data for '" << auto_steps[i] << "' auto action from config file");
-				auto_state = -1;
-				auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+				auto_state = ERROR;
+				if(auto_state_pub_thread.joinable()) {
+					auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+				}
 				return 1;
 			}
 
@@ -225,8 +243,10 @@ int main(int argc, char** argv)
 				}
 				else {
 					ROS_ERROR_STREAM("Auto node - duration is not a double or int in '" << auto_steps[i] << "' action");
-					auto_state = -1;
-					auto_state_pub_thread.join();
+					auto_state = ERROR;
+					if(auto_state_pub_thread.joinable()) {
+						auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+					}
 					return 1;
 				}
 
@@ -254,8 +274,10 @@ int main(int argc, char** argv)
 			else
 			{
 				ROS_ERROR_STREAM("Auto node - Invalid type of action: " << action_data["type"]);
-				auto_state = -1;
-				auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+				auto_state = ERROR;
+				if(auto_state_pub_thread.joinable()) {
+					auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+				}
 				return 1;
 			}
 		}
@@ -268,8 +290,10 @@ int main(int argc, char** argv)
 	else {
 		ROS_INFO("Auto node - Autonomous actions completed!");
 	}
-	auto_state = 3; //done
-	auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+	auto_state = DONE;
+	if(auto_state_pub_thread.joinable()) {
+		auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
+	}
 	return 0;
 }
 
