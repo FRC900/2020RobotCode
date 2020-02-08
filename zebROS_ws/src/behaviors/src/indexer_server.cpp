@@ -14,7 +14,7 @@
 class Linebreak {
 	public:
 		std::string name_;
-		size_t idx_; //index of this linebreak in the joint_states array
+		size_t idx_; //index of this linebreak in the joint_states message
 		int true_count_;
 		int false_count_;
 		int debounce_iterations_;
@@ -24,7 +24,7 @@ class Linebreak {
 		void update(const sensor_msgs::JointState &joint_state)
 		{
 			//set idx if it hasn't already been set
-			if ( idx_ >= joint_state.name.size() )
+			if ( idx_ >= joint_state.name.size() ) //idx_ is infinitely big before it's set
 			{
 				for (size_t i = 0; i < joint_state.name.size(); i++)
 				{
@@ -33,13 +33,16 @@ class Linebreak {
 					}
 				}
 			}
+			else {
+				ROS_ERROR_STREAM("Indexer server - Linebreak named " << name_ << " not found in joint_states");
+			}
 
 			//update linebreak state
 			if (joint_state.position[idx_] != 0) { //if linebreak true
 				true_count_ += 1;
 				false_count_ = 0;
 			}
-			else {
+			else { //if linebreak false
 				true_count_ = 0;
 				false_count_ += 1;
 			}
@@ -55,7 +58,7 @@ class Linebreak {
 		Linebreak(std::string name, int debounce_iterations)
 		{
 			name_ = name;
-			idx_ = std::numeric_limits<size_t>::max(); //bigger than any number. Will be this value until we actually set it
+			idx_ = std::numeric_limits<size_t>::max(); //bigger than any number. Will be this until we actually set it
 			true_count_ = 0;
 			false_count_ = 0;
 			debounce_iterations_ = debounce_iterations;
@@ -108,7 +111,7 @@ class IndexerAction {
 		//initialize client used to call controllers
 		indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
 
-		//read initial number of balls
+		//read initial number of balls from config
 		//TODO
 		n_balls_ = 3;
 	}
