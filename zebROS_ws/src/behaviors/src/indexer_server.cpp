@@ -21,7 +21,7 @@ class Linebreak {
 		bool triggered_;
 
 		//called every time the joint state subscriber is run
-		void update(const sensor_msgs::JointState &joint_state)
+		bool update(const sensor_msgs::JointState &joint_state)
 		{
 			//set idx if it hasn't already been set
 			if ( idx_ >= joint_state.name.size() ) //idx_ is infinitely big before it's set
@@ -32,9 +32,13 @@ class Linebreak {
 						idx_ = i;
 					}
 				}
-			}
-			else {
-				ROS_ERROR_STREAM("Indexer server - Linebreak named " << name_ << " not found in joint_states");
+				//if the index wasn't set, couldn't find it
+				if ( idx_ >= joint_state.name.size() ) {
+					ROS_ERROR_STREAM("Indexer server - Linebreak named " << name_ << " not found in joint_states");
+					true_count_ = 0;
+					false_count_ = 0;
+					return false;
+				}
 			}
 
 			//update linebreak state
@@ -53,15 +57,16 @@ class Linebreak {
 			else if (false_count_ > debounce_iterations_){
 				triggered_ = false;
 			}
+			return true;
 		}
 
-		Linebreak(std::string name, int debounce_iterations)
+		Linebreak(std::string name) //name as found in joint_states
 		{
 			name_ = name;
 			idx_ = std::numeric_limits<size_t>::max(); //bigger than any number. Will be this until we actually set it
 			true_count_ = 0;
 			false_count_ = 0;
-			debounce_iterations_ = debounce_iterations;
+			debounce_iterations_ = 10; //TODO make config
 			triggered_ = false;
 		}
 };
@@ -80,6 +85,10 @@ class IndexerAction {
 
 		//clients to call controllers
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
+
+		//linebreak sensors
+		Linebreak indexer_linebreak{"indexer_linebreak"}; //just inside the entrance to the indexer
+		Linebreak shooter_linebreak{"shooter_linebreak"}; //just before the shooter
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -150,47 +159,28 @@ class IndexerAction {
 
 		void jointStateCallback(const sensor_msgs::JointState &joint_state)
 		{
-			//get index of linebreak sensors for this actionlib server
-			static size_t linebreak_idx = std::numeric_limits<size_t>::max();
-			if ((linebreak_idx >= joint_state.name.size()))
-			{
-				for (size_t i = 0; i < joint_state.name.size(); i++)
-				{
-					if (joint_state.name[i] == "cargo_intake_linebreak_1") //TODO: define this in the hardware interface
-						linebreak_idx = i;
-				}
+			//update all linebreak sensors
+			if (! indexer_linebreak.update(joint_state) ) {
+				ROS_ERROR("indexer linebreak update failed, preempting indexer server");
+				preempted_ = true;
 			}
-
-			//update linebreak counts based on the value of the linebreak sensor
-			if (linebreak_idx < joint_state.position.size())
-			{
-				bool linebreak_true = (joint_state.position[linebreak_idx] != 0);
-				if(linebreak_true)
-				{
-					linebreak_true_count_ += 1;
-				}
-				else
-				{
-					linebreak_true_count_ = 0;
-				}
+			if (! shooter_linebreak.update(joint_state) ) {
+				ROS_ERROR("shooter linebreak update failed, preempting indexer server");
+				preempted_ = true;
 			}
-			else
-			{
-				ROS_WARN_THROTTLE(2.0, "intake_cargo_server : intake line break sensor not found in joint_states");
-				linebreak_true_count_ = 0;
-			}
-		}
 		}
 
 		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
 		bool goToPositionIntake()
 		{
+			//TODO actually do stuff
 			return true;
 		}
 
 		//function to send balls towards shooter until linebreak right before shooter is triggered - default state if have 5 balls
 		bool goToPositionShoot()
 		{
+			//TODO actually do stuff
 			return true;
 		}
 
@@ -203,7 +193,6 @@ class IndexerAction {
 			start_time_ = ros::Time::now().toSec();
 			preempted_ = false;
 			timed_out_ = false;
-
 
 			//wait for all controller servers we need
 			if(! indexer_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
@@ -236,12 +225,12 @@ class IndexerAction {
 
 					break;
 				default:
-					ROS_ERROR_STREAM("Indexer server: " << goal->action << " is not a valid action (valid ones are 0,1,2)"
+					ROS_ERROR_STREAM("Indexer server: invalid goal. " << goal->action << " is not a valid action (valid ones are 0,1,2)");
 					preempted_ = true;
-
+					break;
 			}
 
-
+/*
 			//Basic controller call ---------------------------------------
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
@@ -288,24 +277,6 @@ class IndexerAction {
 
 
 
-			//Basic actionlib server call -------------------------------------
-			if(!preempted_ && !timed_out_ && ros::ok())
-			{
-				ROS_INFO("what this is doing");
-				//Call actionlib server
-				/* e.g.
-				behaviors::ElevatorGoal elevator_goal;
-				elevator_goal.place_cargo = true;
-				ac_elevator_.sendGoal(elevator_goal);
-				*/
-				//wait for actionlib server
-				//e.g. waitForActionlibServer(ac_elevator_, 30, "calling elevator server"); //method defined below. Args: action client, timeout in sec, description of activity
-			}
-			//preempt handling or pause if necessary (see basic controller call)
-
-
-
-
 
 			//Finish -----------------------------------------------
 
@@ -317,19 +288,19 @@ class IndexerAction {
 
 			if(preempted_) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = false;
 				as_.setPreempted(result);
 			}
 			else if(timed_out_) {
 				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
-				result.timed_out_ = true;
+				result.timed_out = true;
 				result.success = false;
 				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
 			}
 			else { //implies succeeded
 				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = true;
 				as_.setSucceeded(result);
 			}
@@ -390,8 +361,8 @@ int main(int argc, char** argv) {
 	//get config values
 	ros::NodeHandle n;
 
-        double server_timeout = 10;
-        double wait_for_server_timeout = 10;
+	double server_timeout = 10;
+	double wait_for_server_timeout = 10;
 
 	/* e.g.
 	//ros::NodeHandle n_params_intake(n, "actionlib_cargo_intake_params"); //node handle for a lower-down namespace
