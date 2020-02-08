@@ -70,7 +70,10 @@ void ratio_xyCB(const std_msgs::Float64& msg) {
 }
 void orientStateCB(const std_msgs::Float64& msg) {
         time_since_orient_state = ros::Time::now();
-        current_angle = msg.data;
+		if(msg.data == msg.data)
+			current_angle = msg.data;
+		else
+			current_angle = 0;
 }
 
 int main(int argc, char ** argv)
