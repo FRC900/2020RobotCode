@@ -28,6 +28,11 @@ namespace indexer_controller
             return false;
         }
 
+		if(!controller_nh.getParam("indexer_speed", indexer_speed_))
+		{
+			ROS_ERROR("Cannot read indexer speed");
+			return false;
+		}
 
         //Initialize your ROS server
         indexer_service_ = controller_nh.advertiseService("indexer_command", &IndexerController::cmdService, this);
@@ -44,11 +49,13 @@ namespace indexer_controller
 	    //grab value from command buffer(s)
         const IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
 
-        //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
-        /* Syntax: push_joint_.setCommand(1.0); */
-
-        //for motors, it's the same syntax, but the meaning of the argument passed to setCommand() differs based on what motor mode you're using
-		indexer_joint_.setCommand(indexer_cmd.indexer_running_);
+		if(indexer_cmd.indexer_running_)
+		{
+			indexer_joint_.setCommand(indexer_speed_);
+		}
+		else {
+			indexer_joint_.setCommand(0);
+		}
     }
 
     void IndexerController::stopping(const ros::Time &/*time*/) {

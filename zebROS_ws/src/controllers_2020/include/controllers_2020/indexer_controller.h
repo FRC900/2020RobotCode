@@ -56,7 +56,7 @@ class IndexerController : public controller_interface::MultiInterfaceController<
 			ros::ServiceServer indexer_service_;
 			ros::Subscriber talon_state_sub_;
 
-
+			double indexer_speed_;
 }; //class
 
 } //namespace
