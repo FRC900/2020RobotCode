@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   behavior_actions
   controllers_2019_msgs
+  controllers_2020_msgs
   frc_msgs
   nav_msgs
   message_generation
@@ -71,9 +72,8 @@ include_directories(
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+#add_service_files(
+# FILES
 #   Service2.srv
 # )
 
@@ -161,6 +161,10 @@ add_dependencies(outtake_cargo_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXP
 add_executable(outtake_hatch_panel_server src/outtake_hatch_panel_server.cpp)
 target_link_libraries(outtake_hatch_panel_server ${catkin_LIBRARIES})
 add_dependencies(outtake_hatch_panel_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(intake_powercell_server src/intake_powercell_server.cpp)
+target_link_libraries(intake_powercell_server ${catkin_LIBRARIES})
+add_dependencies(intake_powercell_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(test_actionlib src/test_actionlib.cpp)
 target_link_libraries(test_actionlib ${catkin_LIBRARIES})
