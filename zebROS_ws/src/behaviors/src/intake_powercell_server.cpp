@@ -106,11 +106,11 @@ class PowerCellIntakeAction {
 			//set ending state of controller no matter what happened: arm up and roller motors stopped
 			//define command to send to powercell intake controller
 			if(linebreak_true_count_ > linebreak_debounce_iterations) {
-				srv.request.percent_out = holding_power;
+				srv.request.percent_out = roller_power;
 				srv.request.intake_arm_extend = false;
 			}
 			else {
-				srv.request.percent_out = holding_power; //TODO: change this. This currently just sets holding power no matter what, but this probably should change once we have a linebreak mount
+				srv.request.percent_out = roller_power; //TODO: change this. This currently just sets holding power no matter what, but this probably should change once we have a linebreak mount
 				srv.request.intake_arm_extend = false;
 			}
 			//send request to controller
