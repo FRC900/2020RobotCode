@@ -50,6 +50,42 @@ bool callElevator(int setpoint_idx)
 
 }
 
+bool callIntakePowercell()
+{
+	//create client to call actionlib server
+	actionlib::SimpleActionClient<behavior_actions::IntakeAction> intake_powercell_ac("/powercell_intake/powercell_intake_server", true);
+
+	ROS_INFO("Waiting for powercell intake server to start.");
+	if(!intake_powercell_ac.waitForServer(ros::Duration(server_wait_timeout)))
+	{
+		ROS_ERROR("Could not find server within %f seconds.", server_wait_timeout);
+	}
+
+	ROS_INFO("Sending goal to intake powercell server.");
+	//send a goal to the action
+	behavior_actions::IntakeGoal intake_powercell_goal;
+	intake_powercell_ac.sendGoal(intake_powercell_goal);
+
+	//wait for the action to return
+	bool finished_before_timeout = intake_powercell_ac.waitForResult(ros::Duration(server_exec_timeout));
+
+	if (finished_before_timeout)
+	{
+		actionlib::SimpleClientGoalState state = intake_powercell_ac.getState();
+		ROS_INFO("Action finished with state: %s", state.toString().c_str());
+		if(intake_powercell_ac.getResult()->timed_out)
+		{
+			ROS_INFO("Intake cargo server timed out!");
+		}
+		return true;
+	}
+	else
+	{
+		ROS_INFO("Action did not finish before the time out.");
+		return false;
+	}
+
+}	
 bool callIntakeCargo()
 {
 	//create client to call actionlib server
@@ -397,6 +433,9 @@ int main (int argc, char **argv)
 				test_idx++;
 			}
 		}
+	}
+	else if(what_to_run == "intake_powercell"){
+		callIntakePowercell();
 	}
 	else if(what_to_run == "intake_cargo") {
 		callIntakeCargo();
