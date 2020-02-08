@@ -82,12 +82,7 @@ endif()
 #  Goal.msg
 #)
 =======
-add_message_files(
-  FILES
-  GoalDetection.msg
-  Goal.msg
-)
->>>>>>> added id to goal message
+>>>>>>> fixed remaining merge conflicts
 
 ## Generate services in the 'srv' folder
 # add_service_files(
