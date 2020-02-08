@@ -73,7 +73,10 @@ void publishAutoState(ros::Publisher publisher)
 			case RUNNING: msg.data = "Running"; break;
 			case DONE: msg.data = "Done"; break;
 			case ERROR: msg.data = "Error"; break;
-			default: msg.data = "Unknown State"; break;
+			default:
+				msg.data = "Unknown State";
+				ROS_ERROR("Unknown auto state - weirdness in auto_node");
+				break;
 		}
 		publisher.publish(msg);
 		r.sleep();
