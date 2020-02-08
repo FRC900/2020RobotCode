@@ -1,7 +1,7 @@
 //THIS IS A TEMPLATE FILE. TO USE, COPY IT AND REPLACE:
-// AlignShoot	with your server's name, e.g. CargoIntake
-// align_shoot	with your server's name, e.g. cargo_intake
-// AlignShoot		with the name of your action file (if file is Intake.action, replace w/ Intake)
+// AlignThenShoot	with your server's name, e.g. CargoIntake
+// align_then_shoot	with your server's name, e.g. cargo_intake
+// AlignThenShoot		with the name of your action file (if file is Intake.action, replace w/ Intake)
 
 
 #include "ros/ros.h"
@@ -11,7 +11,7 @@
 #include <ros/console.h>
 
 //include action files - for this actionlib server and any it sends requests to
-#include "behaviors/AlignShootAction.h"
+#include "behaviors/AlignThenShootAction.h"
 
 //include controller service files and other service files
 // e.g. #include "controller_package/ControllerSrv.h"
@@ -19,16 +19,16 @@
 
 
 //create the class for the actionlib server
-class AlignShootAction {
+class AlignThenShootAction {
 	protected:
 		ros::NodeHandle nh_;
 
-		actionlib::SimpleActionServer<behaviors::AlignShootAction> as_; //create the actionlib server
+		actionlib::SimpleActionServer<behaviors::AlignThenShootAction> as_; //create the actionlib server
 		std::string action_name_;
 
 		//clients to call other actionlib servers
 		actionlib::SimpleActionClient<behavior_actions::ShooterAction> ac_shooter_;
-		actionlib::SimpleActionClient<behaviors::AlignAction> ac_align_; //TODO: Check Action name
+		actionlib::SimpleActionClient<behavior_actions::AlignToShootAction> ac_align_; //TODO: Check Action name
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -45,12 +45,14 @@ class AlignShootAction {
 
 	public:
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
-		AlignShootAction(const std::string &name, server_timeout, wait_for_server_timeout) :
-			as_(nh_, name, boost::bind(&AlignShootAction::executeCB, this, _1), false),
+		AlignThenShootAction(const std::string &name, server_timeout, wait_for_server_timeout) :
+			as_(nh_, name, boost::bind(&AlignThenShootAction::executeCB, this, _1), false),
 			action_name_(name),
                         server_timeout_(server_timeout),
-                        wait_for_server_timeout_(wait_for_server_timeout)
-			//ac_elevator_("/elevator/elevator_server", true) example how to initialize other action clients, don't forget to add a comma on the previous line
+                        wait_for_server_timeout_(wait_for_server_timeout),
+						ac_align_("/align/align_server", true), //TODO: Check name
+						ac_shooter_("/shooter/shooter_server", true)
+			//example how to initialize other action clients, don't forget to add a comma on the previous line
 	{
 		as_.start(); //start the actionlib server
 
@@ -63,7 +65,7 @@ class AlignShootAction {
 
 	}
 
-		~AlignShootAction(void)
+		~AlignThenShootAction(void)
 		{
 		}
 
@@ -77,12 +79,12 @@ class AlignShootAction {
 				if(as_.isPreemptRequested() || !ros::ok())
 				{
 					preempted_ = true;
-					ROS_ERROR_STREAM("align_shoot_server: preempt during pause() - " << activity);
+					ROS_ERROR_STREAM("align_then_shoot_server: preempt during pause() - " << activity);
 				}
 				else if ((ros::Time::now().toSec() - start_time_) >= server_timeout_)
 				{
 					timed_out_ = true;
-					ROS_ERROR_STREAM("align_shoot_server: timeout during pause() - " << activity);
+					ROS_ERROR_STREAM("align_then_shoot_server: timeout during pause() - " << activity);
 				}
 
 				if((ros::Time::now().toSec() - pause_start_time) >= duration)
@@ -95,7 +97,7 @@ class AlignShootAction {
 		}
 
 		//define the function to be executed when the actionlib server is called
-		void executeCB(const behaviors::AlignShootGoalConstPtr &goal)
+		void executeCB(const behaviors::AlignThenShootGoalConstPtr &goal)
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 
@@ -106,14 +108,12 @@ class AlignShootAction {
 
 //TODO:use dis
 			//wait for all actionlib servers we need
-			/* e.g.
-			if(!ac_elevator_.waitForServer(ros::Duration(wait_for_server_timeout_)))
+			if(!ac_align_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
-				ROS_ERROR_STREAM(action_name_ << " couldn't find elevator actionlib server");
+				ROS_ERROR_STREAM(action_name_ << " couldn't find align actionlib server");
 				as_.setPreempted();
 				return;
 			}
-			*/
 
 			//wait for all controller servers we need
 			/* e.g.
@@ -132,7 +132,7 @@ class AlignShootAction {
 			//Basic controller call ---------------------------------------
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
-				ROS_INFO("align_shoot_server: what this is doing");
+				ROS_INFO("align_then_shoot_server: what this is doing");
 				//call controller client, if failed set preempted_ = true, and log an error msg
 
 
@@ -200,7 +200,7 @@ class AlignShootAction {
 
 
 			//log result and set actionlib server state appropriately
-			behaviors::AlignShootResult result;
+			behaviors::AlignThenShootResult result;
 
 			if(preempted_) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
@@ -272,7 +272,7 @@ class AlignShootAction {
 
 int main(int argc, char** argv) {
 	//create node
-	ros::init(argc, argv, "align_shoot_server");
+	ros::init(argc, argv, "align_then_shoot_server");
 
 	//get config values
 	ros::NodeHandle n;
@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
 	*/
 
 	//create the actionlib server
-	AlignShootAction align_shoot_action("align_shoot_server", server_timeout, wait_for_server_timeout);
+	AlignThenShootAction align_then_shoot_action("align_then_shoot_server", server_timeout, wait_for_server_timeout);
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
