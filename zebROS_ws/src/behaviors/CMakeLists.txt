@@ -139,6 +139,11 @@ catkin_package(
    DEPENDS 
 )
 
+add_executable(auto_node src/auto_node.cpp)
+target_link_libraries(auto_node ${catkin_LIBRARIES})
+add_dependencies(auto_node ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
 # 2020 actionlib servers
 
 add_executable(indexer_server src/indexer_server.cpp)
