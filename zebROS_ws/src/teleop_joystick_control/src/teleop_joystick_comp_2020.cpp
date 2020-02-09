@@ -278,6 +278,18 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 	{
 		static ros::Time last_header_stamp = joystick_states_array[1].header.stamp;
 
+		static controllers_2020_msgs::ClimberSrv climber_diagnostics;
+		static bool climber_diagnostics_initialized = false;
+
+		if(!climber_diagnostics_initialized)
+		{
+			climber_diagnostics.request.winch_set_point = 0.0;
+			climber_diagnostics.request.climber_deploy = true;
+			climber_diagnostics.request.climber_elevator_brake = true;
+
+			climber_diagnostics_initialized = true;
+		}
+
 		//Joystick2: buttonA
 		if(joystick_states_array[1].buttonAPress)
 		{
@@ -363,7 +375,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick2: directionLeft
 		if(joystick_states_array[1].directionLeftPress)
 		{
-
+			climber_diagnostics.request.climber_deploy = !climber_diagnostics.request.climber_deploy;
+			ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << (climber_diagnostics.request.climber_deploy ? "true" : "false"));
+			climber_controller_client.call(climber_diagnostics);
 		}
 		if(joystick_states_array[1].directionLeftButton)
 		{
@@ -375,6 +389,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick2: directionRight
 		if(joystick_states_array[1].directionRightPress)
 		{
+			climber_diagnostics.request.climber_elevator_brake = !climber_diagnostics.request.climber_elevator_brake;
+			ROS_WARN_STREAM("Calling climber controller with climber_elevator_brake = " << (climber_diagnostics.request.climber_elevator_brake ? "true" : "false"));
+			climber_controller_client.call(climber_diagnostics);
 		}
 		if(joystick_states_array[1].directionRightButton)
 		{
@@ -383,16 +400,15 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		{
 		}
 
-		static double climber_setpoint = 0.0;
-
 		//Joystick2: directionUp
-		if(joystick_states_array[1].directionUpPress)
+		if(joystick_states_array[0].directionUpPress)
 		{
 		}
 		if(joystick_states_array[1].directionUpButton)
 		{
-			climber_setpoint += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			ROS_WARN_STREAM("Calling climber controller with setpoint = " << climber_setpoint);
+			climber_diagnostics.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+			ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_diagnostics.request.winch_set_point);
+			climber_controller_client.call(climber_diagnostics);
 		}
 		if(joystick_states_array[1].directionUpRelease)
 		{
@@ -404,8 +420,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		}
 		if(joystick_states_array[1].directionDownButton)
 		{
-			climber_setpoint += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			ROS_WARN_STREAM("Calling climber controller with setpoint = " << climber_setpoint);
+			climber_diagnostics.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+			ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_diagnostics.request.winch_set_point);
+			climber_controller_client.call(climber_diagnostics);
 		}
 		if(joystick_states_array[1].directionDownRelease)
 		{
