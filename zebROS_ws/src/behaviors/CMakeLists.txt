@@ -151,7 +151,6 @@ add_executable(indexer_server src/indexer_server.cpp)
 target_link_libraries(indexer_server ${catkin_LIBRARIES})
 add_dependencies(indexer_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-
 # 2019 actionlib servers
 
 add_executable(intake_cargo_server src/intake_cargo_server.cpp)
