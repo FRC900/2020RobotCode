@@ -22,14 +22,17 @@ namespace indexer_controller
 	{
 		public:
 			IndexerCommand()
-				:indexer_running_(false)
+				:indexer_forward_(false),
+				indexer_reverse_(false)
 		{
 		}
-			IndexerCommand(bool indexer_running)
+			IndexerCommand(bool indexer_forward, bool indexer_reverse)
 			{
-				indexer_running_ = indexer_running;
+				indexer_forward_ = indexer_forward;
+				indexer_reverse_ = indexer_reverse;
 			}
-			bool indexer_running_;
+			bool indexer_forward_;
+			bool indexer_reverse_;
 	};
 
 class IndexerController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>

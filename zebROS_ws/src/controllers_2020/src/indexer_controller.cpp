@@ -22,7 +22,12 @@ namespace indexer_controller
             ROS_ERROR_STREAM("Could not read indexer params");
             return false;
         }
-        //initialize motor joint using those config values
+		
+		controller_nh.getParam("indexer_speed",indexer_speed_);
+
+		ROS_INFO_STREAM("Indexer Speed:" << indexer_speed_);
+		
+		//initialize motor joint using those config values
         if ( !indexer_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, indexer_params)) {
             ROS_ERROR("Cannot initialize indexer joint!");
             return false;
@@ -42,20 +47,31 @@ namespace indexer_controller
 
     void IndexerController::starting(const ros::Time &/*time*/) {
         //give command buffer(s) an initial value
-        indexer_cmd_.writeFromNonRT(IndexerCommand(false));
+        indexer_cmd_.writeFromNonRT(IndexerCommand(false,false));
     }
 
     void IndexerController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
 	    //grab value from command buffer(s)
         const IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
-
-		if(indexer_cmd.indexer_running_)
+		const bool forward_cmd = indexer_cmd.indexer_forward_;
+		const bool reverse_cmd = indexer_cmd.indexer_reverse_;
+		if(forward_cmd == true && reverse_cmd == false)
 		{
 			indexer_joint_.setCommand(indexer_speed_);
 		}
-		else {
+		else if(forward_cmd == false && reverse_cmd == true)
+		{
+			indexer_joint_.setCommand(-indexer_speed_);
+		}
+		else if(forward_cmd == false && reverse_cmd == false)
+		{
 			indexer_joint_.setCommand(0);
 		}
+		else {
+			ROS_ERROR_STREAM("Indexer cannot be both running forward and in reverse!!");
+			indexer_joint_.setCommand(0);
+		}
+
     }
 
     void IndexerController::stopping(const ros::Time &/*time*/) {
@@ -65,7 +81,7 @@ namespace indexer_controller
         {
             //assign request value to command buffer(s)
             //Ex:
-            indexer_cmd_.writeFromNonRT(req.indexer_running);
+            indexer_cmd_.writeFromNonRT(IndexerCommand(req.indexer_forward, req.indexer_reverse));
         }
         else
         {

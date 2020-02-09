@@ -1,2 +1,3 @@
-bool indexer_running
+bool indexer_forward
+bool indexer_reverse
 ---
