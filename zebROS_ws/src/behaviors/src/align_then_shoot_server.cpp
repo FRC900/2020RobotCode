@@ -130,6 +130,7 @@ class AlignThenShootAction {
 
 
 			//Basic controller call ---------------------------------------
+			/*
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
 				ROS_INFO("align_then_shoot_server: what this is doing");
@@ -171,9 +172,8 @@ class AlignThenShootAction {
 			pause(sec_to_pause, "what we're pausing for");
 			*/
 
-
-
-
+			*/
+				
 
 			//Basic actionlib server call -------------------------------------
 			if(!preempted_ && !timed_out_ && ros::ok())
