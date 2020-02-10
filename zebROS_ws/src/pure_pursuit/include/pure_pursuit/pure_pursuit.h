@@ -16,6 +16,8 @@
 #include <control_toolbox/pid.h>
 #include <tf/transform_datatypes.h>
 #include <tf/tf.h>
+#include <geometry_msgs/Pose.h>
+#include <math.h>
 
 namespace tf2{
 	template <>
@@ -77,32 +79,33 @@ namespace tf2{
 
 class PurePursuit
 {
-public:
-  PurePursuit(ros::NodeHandle nh)
-  {
-      nh_ = nh;
-  }
+    private:
+        nav_msgs::Path path_;
 
-  bool setup();
+        double lookahead_distance_;
+        size_t num_waypoints_;
+        double path_length_;
+        std::vector<double> vec_path_length_;
+        double start_point_radius_;
 
-  void loadPath(nav_msgs::Path path);
+    public:
+        PurePursuit(double lookahead_distance, 
+                double start_point_radius)
+        {
+            lookahead_distance_ = lookahead_distance;
+            start_point_radius_ = start_point_radius; 
+        }
 
-  // contains the main control loop
-  geometry_msgs::Twist run(nav_msgs::Odometry odom);
+        // load nav_msgs::Path
+        void loadPath(const nav_msgs::Path path);
 
-private:
-  nav_msgs::Path path_;
-  bool goal_reached_;
-  geometry_msgs::Twist cmd_vel_;
+        // get yaw from geometry_msgs quaternion 
+        static double getYaw(const geometry_msgs::Quaternion q);
 
-  // ROS infrastructure
-  ros::NodeHandle nh_;
+        // path length getter
+        double getPathLength();
 
-  double lookahead_distance_;
-  double max_velocity_, max_accel_;
-  double pos_tol_, final_pos_tol_;
-  size_t num_waypoints_;
-  control_toolbox::Pid pid_controller_;
-  ros::Time time_of_last_cycle_;
+        // contains the main control loop
+        geometry_msgs::Pose run(nav_msgs::Odometry odom, double &distance_travelled);
 };
 

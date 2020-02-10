@@ -2,7 +2,7 @@
  * 2. find path point closest to the position of the robot
  * 3. find the goal point -- that is, point which the robot should drive to (based on lookahead distance)
  */
-#include "pure_pursuit/pure_pursuit_better.h"
+#include "pure_pursuit/pure_pursuit.h"
 #include "ros/ros.h"
 
 //TODO - make const T

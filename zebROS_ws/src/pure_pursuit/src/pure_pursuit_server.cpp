@@ -11,7 +11,7 @@
 #include <tf/transform_datatypes.h>
 #include <sensor_msgs/Imu.h>
 #include <tf/tf.h>
-#include <pure_pursuit/pure_pursuit_better.h>
+#include <pure_pursuit/pure_pursuit.h>
 #include <geometry_msgs/Quaternion.h>
 
 class PathAction

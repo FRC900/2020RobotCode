@@ -484,11 +484,17 @@ int main (int argc, char **argv)
 	}
 	else if(what_to_run == "path")
 	{
+			std::cout << "Enter x1: ";
             std::cin >> path_x_setpoint;
+			std::cout << "Enter y1: ";
             std::cin >> path_y_setpoint;
+			std::cout << "Enter z1: ";
             std::cin >> path_z_setpoint;
+			std::cout << "Enter x2: ";
             std::cin >> path_x2_setpoint;
+			std::cout << "Enter y2: ";
             std::cin >> path_y2_setpoint;
+			std::cout << "Enter z2: ";
             std::cin >> path_z2_setpoint;
             ROS_WARN_STREAM("path_x_setpoint: " << path_x_setpoint);
             ROS_WARN_STREAM("path_y_setpoint: " << path_y_setpoint);
