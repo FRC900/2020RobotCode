@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+'''
+Python code to run TF SSD object detction code
+'''
+
 import cv2
 import glob
 import numpy as np
