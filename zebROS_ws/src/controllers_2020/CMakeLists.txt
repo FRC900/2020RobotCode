@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(controllers_2020)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+include("../cmake_modules/CMakeOpt.cmake")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -142,7 +142,7 @@ include_directories(
    src/intake_controller.cpp 
    src/control_panel_controller.cpp
    src/turret_controller.cpp
- )
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

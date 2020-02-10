@@ -9,9 +9,9 @@ include ("../cmake_modules/CMakeOpt.cmake")
 if (DEFINED CMAKE_TOOLCHAIN_FILE)
   find_package(catkin REQUIRED COMPONENTS
     roscpp
-    message_filters
-    message_generation
     geometry_msgs
+    field_obj
+    message_filters
 	nodelet
     std_msgs
     sensor_msgs
@@ -22,9 +22,9 @@ else()
   find_package(catkin REQUIRED COMPONENTS
     roscpp
 	image_transport
-    message_filters
 	dynamic_reconfigure_wrapper
-    message_generation
+    field_obj
+    message_filters
     geometry_msgs
 	nodelet
     std_msgs
@@ -70,10 +70,11 @@ find_package(orocos_kdl)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  GoalDetection.msg
-)
+#add_message_files(
+#  FILES
+#  GoalDetection.msg
+#  Goal.msg
+#)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -90,11 +91,11 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#  geometry_msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -148,8 +149,8 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   # include_directories(include)
   include_directories(
     ${catkin_INCLUDE_DIRS}
-    ${OpenCV_INCLUDE_DIRS} 
-    ../../../common 
+    ${OpenCV_INCLUDE_DIRS}
+    ../../../common
     ../../..
   )
 
@@ -167,12 +168,12 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 
   ## Add cmake target dependencies of the executable
   ## same as for the library above
-  add_dependencies(goal_detection_node 
-    ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+  add_dependencies(goal_detection_node
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
     ${catkin_EXPORTED_TARGETS}
   )
 
-  add_library(GoalDetection 
+  add_library(GoalDetection
 	src/goal_detect.cpp
     ../../../common/GoalDetector.cpp
     ../../../common/Utilities.cpp
@@ -187,7 +188,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   )
 
   add_dependencies(GoalDetection
-    ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
     ${catkin_EXPORTED_TARGETS}
   )
 

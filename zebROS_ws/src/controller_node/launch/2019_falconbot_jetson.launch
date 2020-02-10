@@ -30,15 +30,15 @@
 		<node name="uptime_jetson" pkg="uptime" type="uptime_node" output="screen" />
 	</group>
 
-	<group ns="navx_jetson">
-		<include file="$(find controller_node)/launch/2019_compbot_jetson_navx.launch" />
+	<group ns="imu">
+		<include file="$(find controller_node)/launch/2019_compbot_jetson_imu.launch">
+			<arg name="primary_imu" value="NAVX" />
+		</include>
 	</group>
 
 	<group ns="teleop">
 		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
-		<node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen" >
-			<remap from="navx_mxp" to="/navx_jetson/zeroed_imu"/>
-		</node>
+                <node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen" />
 
 		<group ns="translator0">
 			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen"/>
