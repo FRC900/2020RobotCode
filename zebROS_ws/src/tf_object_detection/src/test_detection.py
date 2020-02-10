@@ -1,6 +1,7 @@
 '''
 Python code to run TF SSD object detction code
 '''
+#!/usr/bin/env python
 import cv2
 import glob
 import numpy as np

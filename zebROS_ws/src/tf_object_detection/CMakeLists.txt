@@ -9,6 +9,10 @@ project(tf_object_detection)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  cv_bridge
+  sensor_msgs
+  std_msgs
+  field_obj
 )
 
 ## System dependencies are found with CMake's conventions
