@@ -2,11 +2,11 @@
  * 2. find path point closest to the position of the robot
  * 3. find the goal point -- that is, point which the robot should drive to (based on lookahead distance)
  */
-#include "pure_pursuit/pure_pursuit.h"
+#include "path_follower/path_follower.h"
 #include "ros/ros.h"
 
 //TODO - make const T
-void PurePursuit::loadPath(const nav_msgs::Path path)
+void PathFollower::loadPath(const nav_msgs::Path path)
 {
     path_ = path;
     num_waypoints_ = path_.poses.size();
@@ -26,12 +26,12 @@ void PurePursuit::loadPath(const nav_msgs::Path path)
     }
 }
 
-double PurePursuit::getPathLength()
+double PathFollower::getPathLength()
 {
     return path_length_;
 }
 
-double PurePursuit::getYaw(const geometry_msgs::Quaternion q)
+double PathFollower::getYaw(const geometry_msgs::Quaternion q)
 {
     double roll, pitch, yaw;
     tf::Quaternion tf_q(
@@ -47,7 +47,7 @@ double PurePursuit::getYaw(const geometry_msgs::Quaternion q)
 // position and passing it in to run. run would then return a pose (x_pos, y_pos,
 // orientation) and whoever called run would be responsible for sending that
 // where it needs to go.
-geometry_msgs::Pose PurePursuit::run(nav_msgs::Odometry odom, double &total_distance_travelled)
+geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_distance_travelled)
 {
     ROS_INFO_STREAM("----------------------------------------------");
     ROS_INFO_STREAM("current_position = " << odom.pose.pose.position.x

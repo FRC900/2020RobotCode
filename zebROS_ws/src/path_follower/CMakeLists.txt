@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pure_pursuit)
+project(path_follower)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -114,7 +114,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  # LIBRARIES pure_pursuit
+  # LIBRARIES path_follower
   CATKIN_DEPENDS geometry_msgs base_trajectory roscpp rospy std_msgs std_srvs actionlib_msgs nav_msgs 
   DEPENDS system_lib
 )
@@ -139,9 +139,9 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(pure_pursuit_server src/pure_pursuit_server.cpp src/pure_pursuit.cpp)
-add_dependencies(pure_pursuit_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(pure_pursuit_server
+add_executable(path_follower_server src/path_follower_server.cpp src/path_follower.cpp)
+add_dependencies(path_follower_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(path_follower_server
   ${catkin_LIBRARIES}
 )
 
@@ -185,7 +185,7 @@ target_link_libraries(pure_pursuit_server
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_pure_pursuit.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_path_follower.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

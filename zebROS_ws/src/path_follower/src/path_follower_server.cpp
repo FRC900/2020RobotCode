@@ -1,9 +1,9 @@
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
 #include <base_trajectory/GenerateSpline.h>
-#include <pure_pursuit/PathAction.h>
-#include <pure_pursuit/PathGoal.h>
-#include <pure_pursuit/axis_state.h>
+#include <path_follower/PathAction.h>
+#include <path_follower/PathGoal.h>
+#include <path_follower/axis_state.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -11,14 +11,14 @@
 #include <tf/transform_datatypes.h>
 #include <sensor_msgs/Imu.h>
 #include <tf/tf.h>
-#include <pure_pursuit/pure_pursuit.h>
+#include <path_follower/path_follower.h>
 #include <geometry_msgs/Quaternion.h>
 
 class PathAction
 {
 	protected:
 		ros::NodeHandle nh_;
-		actionlib::SimpleActionServer<pure_pursuit::PathAction> as_;
+		actionlib::SimpleActionServer<path_follower::PathAction> as_;
 		std::string action_name_;
 
 		ros::ServiceClient spline_gen_cli_;
@@ -31,7 +31,7 @@ class PathAction
 		std::map<std::string, AlignActionAxisState> axis_states_;
                 ros::Publisher combine_cmd_vel_pub_;
 
-                std::shared_ptr<PurePursuit> pure_pursuit_;
+                std::shared_ptr<PathFollower> path_follower_;
                 double lookahead_distance_;
                 double final_pos_tol_;
                 double server_timeout_;
@@ -68,14 +68,14 @@ class PathAction
 			service_connection_header["tcp_nodelay"] = "1";
 
 			// TODO - not sure which namespace base_trajectory should go in
-			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/pure_pursuit/base_trajectory/spline_gen", false, service_connection_header);
+			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/path_follower/base_trajectory/spline_gen", false, service_connection_header);
 
 			odom_sub_ = nh_.subscribe(odom_topic_, 1, &PathAction::odomCallback, this);
 			yaw_sub_ = nh_.subscribe("/navx_jetson/imu_zeroed", 1, &PathAction::yawCallback, this);
 
-                        combine_cmd_vel_pub_ = nh_.advertise<std_msgs::Bool>("pure_pursuit_pid/pid_enable", 1000);
+                        combine_cmd_vel_pub_ = nh_.advertise<std_msgs::Bool>("path_follower_pid/pid_enable", 1000);
 
-                        pure_pursuit_ = std::make_shared<PurePursuit>(lookahead_distance_, start_point_radius_);
+                        path_follower_ = std::make_shared<PathFollower>(lookahead_distance_, start_point_radius_);
                 }
 
 		void odomCallback(const nav_msgs::Odometry &odom_msg)
@@ -141,7 +141,7 @@ class PathAction
 				ROS_WARN_STREAM_THROTTLE(1, name << " error: " << axis.error_ << " aligned: " << axis.aligned_);
 		}
 
-		void executeCB(const pure_pursuit::PathGoalConstPtr &goal)
+		void executeCB(const path_follower::PathGoalConstPtr &goal)
 		{
 			bool preempted = false;
 			bool timed_out = false;
@@ -160,7 +160,7 @@ class PathAction
                         }
                         if(!spline_gen_cli_.call(spline_gen_srv))
                         {
-                            ROS_ERROR_STREAM("Can't call spline gen service in pure_pursuit_server");
+                            ROS_ERROR_STREAM("Can't call spline gen service in path_follower_server");
                             
                         }
                         int num_waypoints = spline_gen_srv.response.path.poses.size();
@@ -191,17 +191,17 @@ class PathAction
 			ros::Rate r(ros_rate_);
 
                         // send path to pure pursuit
-			pure_pursuit_->loadPath(spline_gen_srv.response.path);
+			path_follower_->loadPath(spline_gen_srv.response.path);
 
 			//in loop, send PID enable commands to rotation, x, y
                         double distance_travelled = 0;
-                        double total_distance = pure_pursuit_->getPathLength();
+                        double total_distance = path_follower_->getPathLength();
                         start_time_ = ros::Time::now().toSec();
                         while (ros::ok() && !preempted && !timed_out && !succeeded)
                         {
 
                             // odom_.pose.pose.orientation = orientation_;
-                            geometry_msgs::Pose next_waypoint = pure_pursuit_->run(odom_, distance_travelled);
+                            geometry_msgs::Pose next_waypoint = path_follower_->run(odom_, distance_travelled);
 
 				// TODO - think about what the target point and axis are
 				// We want to end up driving to a point on the path some
@@ -238,10 +238,10 @@ class PathAction
 				auto &z_axis = z_axis_it->second;
 				z_axis.enable_pub_.publish(enable_msg);
 
-				command_msg.data = PurePursuit::getYaw(next_waypoint.orientation);
+				command_msg.data = PathFollower::getYaw(next_waypoint.orientation);
 				z_axis.command_pub_.publish(command_msg);
-				// state_msg.data = PurePursuit::getYaw(orientation_);
-				state_msg.data = PurePursuit::getYaw(odom_.pose.pose.orientation);
+				// state_msg.data = PathFollower::getYaw(orientation_);
+				state_msg.data = PathFollower::getYaw(odom_.pose.pose.orientation);
 				z_axis.state_pub_.publish(state_msg);
 
                                 if(as_.isPreemptRequested() || !ros::ok()) {
@@ -282,7 +282,7 @@ class PathAction
                         z_axis.enable_pub_.publish(enable_msg);
 
 			//log result and set actionlib server state appropriately
-                        pure_pursuit::PathResult result;
+                        path_follower::PathResult result;
 
 			if(preempted) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
@@ -307,7 +307,7 @@ class PathAction
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "pure_pursuit_server");
+	ros::init(argc, argv, "path_follower_server");
 	ros::NodeHandle nh;
 
         double lookahead_distance = 0.1;
@@ -316,14 +316,14 @@ int main(int argc, char **argv)
         int ros_rate = 20;
         double start_point_radius = 0.05;
         std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
-	nh.getParam("/pure_pursuit/pure_pursuit/lookahead_distance", lookahead_distance);
-	nh.getParam("/pure_pursuit/pure_pursuit/final_pos_tol", final_pos_tol);
-	nh.getParam("/pure_pursuit/pure_pursuit/server_timeout", server_timeout);
-	nh.getParam("/pure_pursuit/pure_pursuit/ros_rate", ros_rate);
-	nh.getParam("/pure_pursuit/pure_pursuit/start_point_radius", start_point_radius);
-	nh.getParam("/pure_pursuit/pure_pursuit/odom_topic", odom_topic);
+	nh.getParam("/path_follower/path_follower/lookahead_distance", lookahead_distance);
+	nh.getParam("/path_follower/path_follower/final_pos_tol", final_pos_tol);
+	nh.getParam("/path_follower/path_follower/server_timeout", server_timeout);
+	nh.getParam("/path_follower/path_follower/ros_rate", ros_rate);
+	nh.getParam("/path_follower/path_follower/start_point_radius", start_point_radius);
+	nh.getParam("/path_follower/path_follower/odom_topic", odom_topic);
 
-	PathAction path_action_server("pure_pursuit_server", nh,
+	PathAction path_action_server("path_follower_server", nh,
                 lookahead_distance,
                 final_pos_tol,
                 server_timeout,

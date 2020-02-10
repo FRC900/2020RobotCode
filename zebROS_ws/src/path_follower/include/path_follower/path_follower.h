@@ -77,7 +77,7 @@ namespace tf2{
 }
 
 
-class PurePursuit
+class PathFollower
 {
     private:
         nav_msgs::Path path_;
@@ -89,7 +89,7 @@ class PurePursuit
         double start_point_radius_;
 
     public:
-        PurePursuit(double lookahead_distance, 
+        PathFollower(double lookahead_distance, 
                 double start_point_radius)
         {
             lookahead_distance_ = lookahead_distance;

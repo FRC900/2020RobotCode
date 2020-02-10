@@ -5,7 +5,7 @@
 #include <behavior_actions/ElevatorAction.h>
 #include <behavior_actions/ClimbAction.h>
 #include <behavior_actions/AlignAction.h>
-#include <pure_pursuit/PathAction.h>
+#include <path_follower/PathAction.h>
 #include <behavior_actions/enumerated_elevator_indices.h>
 #include <boost/algorithm/string.hpp>
 #include <string>
@@ -272,7 +272,7 @@ bool callAlignHatch()
 bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setpoint, double path_x2_setpoint, double path_y2_setpoint, double path_z2_setpoint)
 {
         ROS_INFO_STREAM("path_x_setpoint = " << path_x_setpoint);
-	actionlib::SimpleActionClient<pure_pursuit::PathAction> path_ac("/pure_pursuit/pure_pursuit_server", true);
+	actionlib::SimpleActionClient<path_follower::PathAction> path_ac("/path_follower/path_follower_server", true);
 
 	ROS_INFO("Waiting for pure pursuit server to start.");
 	if(!path_ac.waitForServer(ros::Duration(server_wait_timeout)))
@@ -282,7 +282,7 @@ bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setp
 	}
 
 	ROS_INFO("callPath: Sending goal to the server.");
-	pure_pursuit::PathGoal path_goal;
+	path_follower::PathGoal path_goal;
 	path_goal.points.resize(3);
 	path_goal.points[0].x = 0;
 	path_goal.points[0].y = 0;

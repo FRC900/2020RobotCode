@@ -77,7 +77,7 @@
   <exec_depend>message_generation</exec_depend> 
   <depend>teraranger_array</depend>
   <depend>tf2_ros</depend>
-  <depend>pure_pursuit</depend>
+  <depend>path_follower</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

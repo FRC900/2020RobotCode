@@ -1,4 +1,4 @@
-pure_pursuit:
+path_follower:
     lookahead_distance: 0.4
     odom_topic: "/frcrobot_jetson/swerve_drive_controller/odom"
     target_frame: "initial_pose"
