@@ -5,47 +5,51 @@
 bool rotate(color_spin::color_algorithm::Request &req,
 		color_spin::color_algorithm::Response &res)
 {
-  if (req.sensor_color == "r") {
-	  if (req.fms_color == "y") {
+
+  req.sensor_color = toupper(req.sensor_color[0]);
+  req.fms_color = toupper(req.fms_color[0]);
+
+  if (req.sensor_color == "R") {
+	  if (req.fms_color == "Y") {
 		  res.rotate = .125;
 		}
-	  else if (req.fms_color == "c") {
+	  else if (req.fms_color == "C") {
 		  res.rotate = .25;
 		}
-	  else if (req.fms_color == "g") {
+	  else if (req.fms_color == "G") {
 		  res.rotate = -.125;
 		}
 	  }
-  else if (req.sensor_color == "y") {
-	  if (req.fms_color == "r") {
+  else if (req.sensor_color == "Y") {
+	  if (req.fms_color == "R") {
 		  res.rotate = -.125;
 		}
-	  else if (req.fms_color == "c") {
+	  else if (req.fms_color == "C") {
 		  res.rotate = .125;
 		}
-	  else if (req.fms_color == "g") {
+	  else if (req.fms_color == "G") {
 		  res.rotate = .25;
 		}
 	  }
-  else if (req.sensor_color == "c") {
-	  if (req.fms_color == "r") {
+  else if (req.sensor_color == "C") {
+	  if (req.fms_color == "R") {
 		  res.rotate = .25;
 		}
-	  else if (req.fms_color == "y") {
+	  else if (req.fms_color == "Y") {
 		  res.rotate = -.125;
 		}
-	  else if (req.fms_color == "g") {
+	  else if (req.fms_color == "G") {
 		  res.rotate = -.125;
 		}
 	  }
-  else if (req.sensor_color == "g") {
-	  if (req.fms_color == "r") {
+  else if (req.sensor_color == "G") {
+	  if (req.fms_color == "R") {
 		  res.rotate = .125;
 		}
-	  else if (req.fms_color == "y") {
+	  else if (req.fms_color == "Y") {
 		  res.rotate = .25;
 		}
-	  else if (req.fms_color == "c") {
+	  else if (req.fms_color == "C") {
 		  res.rotate = -.125;
 		}
 	  }
