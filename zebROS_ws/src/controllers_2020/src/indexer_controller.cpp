@@ -22,20 +22,18 @@ namespace indexer_controller
             ROS_ERROR_STREAM("Could not read indexer params");
             return false;
         }
-		
-		controller_nh.getParam("indexer_speed",indexer_speed_);
 
-		ROS_INFO_STREAM("Indexer Speed:" << indexer_speed_);
-		
 		//initialize motor joint using those config values
         if ( !indexer_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, indexer_params)) {
             ROS_ERROR("Cannot initialize indexer joint!");
             return false;
         }
 
+		//get indexer speed
 		if(!controller_nh.getParam("indexer_speed", indexer_speed_))
 		{
 			ROS_ERROR("Cannot read indexer speed");
+			indexer_speed_ = 0; //TODO fix default value
 			return false;
 		}
 
