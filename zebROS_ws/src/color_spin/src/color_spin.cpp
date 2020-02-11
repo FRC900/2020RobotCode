@@ -51,8 +51,11 @@ bool rotate(color_spin::color_algorithm::Request &req,
 		}
 	  else if (req.fms_color == "C") {
 		  res.rotate = -.125;
-		}
+ 		}
 	  }
+  else {
+		  ROS_INFO("Invalid Sensor Color Input");
+	   }
   ROS_INFO("request = x=%1s, y=%1s", req.sensor_color.c_str(), req.fms_color.c_str());
   ROS_INFO("sending response = [x%1f]", (float)res.rotate);
   return true;
