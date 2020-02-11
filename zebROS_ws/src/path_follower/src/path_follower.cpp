@@ -68,10 +68,11 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
 
     double magnitude_projection; // distance from the waypoint to the point on the path
     double distance_to_travel; // distance from the point on the path, along the path
+	int last_index = num_waypoints_ - 1;
 
     // Find point in path closest to odometry reading
     ROS_INFO_STREAM("num_waypoints = " << num_waypoints_);
-    for(size_t i = 0; i < num_waypoints_ - 1; i++)
+    for(size_t i = 0; i < last_index; i++)
     {
         ROS_INFO_STREAM("test_point = " << path_.poses[i].pose.position.x << ", " << path_.poses[i].pose.position.y << ", " << getYaw(path_.poses[i].pose.orientation));
         // The line segment between this waypoint and the next waypoint
@@ -82,16 +83,18 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
 
         dx = end_x - start_x;
         dy = end_y - start_y;
+		double distance_between_waypoints_square = dx*dx + dy*dy;
         double innerProduct = (current_x - start_x)*dx + (current_y - start_y)*dy;
         // If the current position is normal to this segment
-        if(0 <= innerProduct && innerProduct <= dx*dx + dy*dy)
+        if(0 <= innerProduct && innerProduct <= distance_between_waypoints_square)
         {
+			double distance_between_waypoints = sqrt(distance_between_waypoints_square);
             // Find location of projection onto path
             // Distance from waypoint to projection onto path
-            magnitude_projection = innerProduct / hypot(dx, dy);
+            magnitude_projection = innerProduct / distance_between_waypoints;
             // Find path location
-            current_x_path = start_x + magnitude_projection*(dx/hypot(dx, dy));
-            current_y_path = start_y + magnitude_projection*(dy/hypot(dx, dy));
+            current_x_path = start_x + magnitude_projection*(dx/distance_between_waypoints);
+            current_y_path = start_y + magnitude_projection*(dy/distance_between_waypoints);
             ROS_INFO_STREAM("current path point = " << current_x_path << ", " << current_y_path);
 
             // Update minimum distance from path
@@ -102,7 +105,7 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
                 minimum_distance = distance_from_path;
                 current_waypoint_index = i;
                 ROS_INFO_STREAM("dx, dy = " << dx << ", " << dy << "; magnitude_projection = " << magnitude_projection);
-                distance_to_travel = hypot(dx, dy) - magnitude_projection; // Current value is distance that the robot will travel to reach the next waypoint
+                distance_to_travel = distance_between_waypoints - magnitude_projection; // Current value is distance that the robot will travel to reach the next waypoint
             }
         }
     }
@@ -113,7 +116,7 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
     if(minimum_distance > path_length_)
     {
         double dist_from_startpoint = hypot(current_x -  path_.poses[0].pose.position.x, current_y - path_.poses[0].pose.position.y);
-        double dist_from_endpoint = hypot(current_x -  path_.poses[num_waypoints_ - 1].pose.position.x, current_y - path_.poses[num_waypoints_ - 1].pose.position.y);
+        double dist_from_endpoint = hypot(current_x -  path_.poses[last_index].pose.position.x, current_y - path_.poses[last_index].pose.position.y);
         geometry_msgs::Pose target_pos;
         if(dist_from_startpoint < dist_from_endpoint)
         {
@@ -135,10 +138,10 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
         else
         {
             ROS_ERROR_STREAM("Not within path limits : driving to end waypoint"); 
-            target_pos.position.x = path_.poses[num_waypoints_ - 1].pose.position.x;
-            target_pos.position.y = path_.poses[num_waypoints_ - 1].pose.position.y;
+            target_pos.position.x = path_.poses[last_index].pose.position.x;
+            target_pos.position.y = path_.poses[last_index].pose.position.y;
             target_pos.position.z = 0;
-            target_pos.orientation = path_.poses[num_waypoints_ - 1].pose.orientation;
+            target_pos.orientation = path_.poses[last_index].pose.orientation;
             return target_pos;
         }
     }
@@ -147,28 +150,29 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
 
     // Determine next waypoint
     size_t end_i = current_waypoint_index + 1; // the waypoint after the point normal to the position of the robot
-    for(; end_i < num_waypoints_ - 1; end_i++)
+    for(; end_i < last_index; end_i++)
     {
         ROS_INFO_STREAM("index = " << end_i << ", distance_to_travel = " << distance_to_travel);
         start_x = path_.poses[end_i].pose.position.x;
         start_y = path_.poses[end_i].pose.position.y;
         end_x = path_.poses[end_i+1].pose.position.x;
         end_y = path_.poses[end_i+1].pose.position.y;
+		double dist = hypot(end_x-start_x, end_y-start_y);
 
-        if(distance_to_travel + hypot(end_x - start_x, end_y - start_y) < lookahead_distance_)
-            distance_to_travel += hypot(end_x - start_x, end_y - start_y);
+        if(distance_to_travel + dist < lookahead_distance_)
+            distance_to_travel += dist;
         else
             break;
     }
     ROS_INFO_STREAM("index before end point: " << end_i);
 
     double final_x, final_y, final_orientation;
-    if(end_i == num_waypoints_ - 1) // if the lookahead distance is after the path has ended
+    if(end_i == last_index) // if the lookahead distance is after the path has ended
     {
         ROS_INFO_STREAM("Current index is " << end_i << "; going to the end of the path");
-        final_x = path_.poses[num_waypoints_ - 1].pose.position.x; 
-        final_y = path_.poses[num_waypoints_ - 1].pose.position.y;
-        final_orientation = getYaw(path_.poses[num_waypoints_ - 1].pose.orientation);
+        final_x = path_.poses[last_index].pose.position.x;
+        final_y = path_.poses[last_index].pose.position.y;
+        final_orientation = getYaw(path_.poses[last_index].pose.orientation);
     }
     else //if we're still in the path
     {
@@ -178,14 +182,15 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
         // Add fraction of distance between waypoints to find final x and y
         dx = path_.poses[end_i + 1].pose.position.x - path_.poses[end_i].pose.position.x;
         dy = path_.poses[end_i + 1].pose.position.y - path_.poses[end_i].pose.position.y;
-        final_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / hypot(dx, dy));
-        final_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / hypot(dx, dy));
+		double distance_between_waypoints = hypot(dx, dy);
+        final_x = path_.poses[end_i].pose.position.x + (lookahead_distance_ - distance_to_travel) * (dx / distance_between_waypoints);
+        final_y = path_.poses[end_i].pose.position.y + (lookahead_distance_ - distance_to_travel) * (dy / distance_between_waypoints);
 
         // Determine target orientation
         double start_yaw = getYaw(path_.poses[end_i].pose.orientation);
         double end_yaw = getYaw(path_.poses[end_i + 1].pose.orientation);
         ROS_INFO_STREAM("start yaw = " << start_yaw << ", end_yaw = " << end_yaw << ", dx = " << dx << ", dy = " << dy);
-        final_orientation = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / hypot(dx, dy));
+        final_orientation = start_yaw + (end_yaw - start_yaw) * ((lookahead_distance_ - distance_to_travel) / distance_between_waypoints);
     }
     ROS_INFO_STREAM("drive to coordinates: (" << final_x << ", " << final_y << ")");
     ROS_INFO_STREAM("drive to orientation: " << final_orientation);

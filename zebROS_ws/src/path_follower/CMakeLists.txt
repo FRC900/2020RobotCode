@@ -114,8 +114,8 @@ generate_messages(
 catkin_package(
   # INCLUDE_DIRS include
   # LIBRARIES path_follower
-  CATKIN_DEPENDS geometry_msgs base_trajectory roscpp rospy std_msgs std_srvs actionlib_msgs nav_msgs 
-  DEPENDS system_lib
+  CATKIN_DEPENDS geometry_msgs base_trajectory roscpp std_msgs std_srvs actionlib_msgs nav_msgs 
+  # DEPENDS system_lib
 )
 
 ###########
@@ -159,7 +159,7 @@ target_link_libraries(path_follower_server
 # )
 
 ## Mark executables and/or libraries for installation
-# install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+# install(TARGETS ${PROJECT_NAME} path_follower_server 
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

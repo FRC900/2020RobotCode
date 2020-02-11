@@ -347,7 +347,7 @@ int main (int argc, char **argv)
 	if(what_to_run.length() == 0)
 	{
 		ROS_ERROR("You need to specify the run functionality with: rosrun behaviors test_actionlib run:=____");
-		ROS_ERROR("Possible values for run: all, intake_cargo, outtake_cargo, intake_hatch_panel, outtake_hatch_panel, elevator, climber0, climber1, climber2, climber3");
+		ROS_ERROR("Possible values for run: all, intake_cargo, outtake_cargo, intake_hatch_panel, outtake_hatch_panel, elevator, climber0, climber1, climber2, climber3, path");
 		ROS_ERROR("Note: 'all' will not run the climber");
 		return 0;
 	}

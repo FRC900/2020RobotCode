@@ -49,7 +49,7 @@ class PathAction
                         double server_timeout,
                         int ros_rate, 
                         double start_point_radius, 
-                        std::string odom_topic)
+                        const std::string& odom_topic)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
