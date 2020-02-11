@@ -6,7 +6,7 @@
 #include "ros/ros.h"
 
 //TODO - make const T
-void PathFollower::loadPath(const nav_msgs::Path path)
+void PathFollower::loadPath(const nav_msgs::Path& path)
 {
     path_ = path;
     num_waypoints_ = path_.poses.size();
@@ -34,12 +34,12 @@ double PathFollower::getPathLength()
 double PathFollower::getYaw(const geometry_msgs::Quaternion q)
 {
     double roll, pitch, yaw;
-    tf::Quaternion tf_q(
+    tf2::Quaternion tf_q(
             q.x,
             q.y,
             q.z,
             q.w);
-    tf::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
+    tf2::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
     return yaw;
 }
 
@@ -55,7 +55,6 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
 
     double current_x = odom.pose.pose.position.x;
     double current_y = odom.pose.pose.position.y;
-    double normal_found = false;
     double current_x_path, current_y_path;
     size_t current_waypoint_index; //the index BEFORE the point on the path
     double minimum_distance = std::numeric_limits<double>::max();
@@ -87,7 +86,6 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
         // If the current position is normal to this segment
         if(0 <= innerProduct && innerProduct <= dx*dx + dy*dy)
         {
-            normal_found = true;
             // Find location of projection onto path
             // Distance from waypoint to projection onto path
             magnitude_projection = innerProduct / hypot(dx, dy);
@@ -193,7 +191,8 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
     ROS_INFO_STREAM("drive to orientation: " << final_orientation);
 
     // Convert back to quaternion
-    geometry_msgs::Quaternion q_final = tf::createQuaternionMsgFromRollPitchYaw(0.0, 0.0, final_orientation);
+	tf2::Quaternion q_final_tf = tf2::Quaternion(tf2Scalar(0), tf2Scalar(0), tf2Scalar(final_orientation));
+	geometry_msgs::Quaternion q_final = tf2::toMsg(q_final_tf);
 
     // Return Pose of target position
     geometry_msgs::Pose target_pos;

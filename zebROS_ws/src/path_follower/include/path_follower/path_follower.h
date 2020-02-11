@@ -14,8 +14,8 @@
 #include <nav_msgs/Odometry.h>
 #include <string>
 #include <control_toolbox/pid.h>
-#include <tf/transform_datatypes.h>
-#include <tf/tf.h>
+//#include <tf/transform_datatypes.h>
+//#include <tf/tf.h>
 #include <geometry_msgs/Pose.h>
 #include <math.h>
 
@@ -97,7 +97,7 @@ class PathFollower
         }
 
         // load nav_msgs::Path
-        void loadPath(const nav_msgs::Path path);
+        void loadPath(const nav_msgs::Path& path);
 
         // get yaw from geometry_msgs quaternion 
         static double getYaw(const geometry_msgs::Quaternion q);

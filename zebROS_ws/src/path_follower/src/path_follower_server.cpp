@@ -92,7 +92,7 @@ class PathAction
 		bool addAxis(const AlignActionAxisConfig &axis_config)
 		{
 			// TODO - give defaults so these aren't random values if getParam fails
-			double timeout;
+			double timeout = 10;
 			if (!nh_.getParam(axis_config.timeout_param_, timeout))
 			{
 				ROS_ERROR_STREAM("Could not read param "
@@ -100,7 +100,7 @@ class PathAction
 								 << " in align_server");
 				//return false;
 			}
-			double error_threshold;
+			double error_threshold = 1; //TODO this is not being used
 			if (!nh_.getParam(axis_config.error_threshold_param_, error_threshold))
 			{
 				ROS_ERROR_STREAM("Could not read param "
@@ -179,14 +179,7 @@ class PathAction
                         }
                         
                         //debug
-                        double roll, pitch, yaw;
-                        tf::Quaternion end_z(
-                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.w,
-                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.x,
-                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.y,
-                                spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation.z);
-                        tf::Matrix3x3(end_z).getRPY(roll, pitch, yaw);
-                        ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y << ", " << yaw);
+                        ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y << ", " << PathFollower::getYaw(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation));
 
 			ros::Rate r(ros_rate_);
 

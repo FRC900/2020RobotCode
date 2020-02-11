@@ -3,18 +3,17 @@ project(path_follower)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
+include ("../cmake_modules/CMakeOpt.cmake")
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rospy
   geometry_msgs
   base_trajectory
   std_msgs
   std_srvs
-  tf
   tf2
   tf2_ros
   message_filters
@@ -113,7 +112,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+  # INCLUDE_DIRS include
   # LIBRARIES path_follower
   CATKIN_DEPENDS geometry_msgs base_trajectory roscpp rospy std_msgs std_srvs actionlib_msgs nav_msgs 
   DEPENDS system_lib
