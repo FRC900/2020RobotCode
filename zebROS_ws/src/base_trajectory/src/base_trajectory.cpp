@@ -293,6 +293,8 @@ void setFirstLastPointAcceleration(const std::vector<double> &p1, const std::vec
 								   const std::vector<double> &v1, const std::vector<double> &v2,
 								   std::vector<double> &accelerations)
 {
+	if (accelerations.size() >= 3)
+		return;
 	// Rename vars to match notation in the paper
 	const double Ax  = p1[0];
 	const double Ay  = p1[1];
@@ -306,9 +308,12 @@ void setFirstLastPointAcceleration(const std::vector<double> &p1, const std::vec
 	const double xaccel = 6.0 * Ax + 2.0 * tAx + 4.0 * tBx - 6.0 * Bx;
 	const double yaccel = 6.0 * Ay + 2.0 * tAy + 4.0 * tBy - 6.0 * By;
 
-	accelerations.push_back(xaccel); // x
-	accelerations.push_back(yaccel); // y
-	accelerations.push_back(0.); // theta
+	if (accelerations.size() == 0)
+		accelerations.push_back(xaccel); // x
+	if (accelerations.size() == 1)
+		accelerations.push_back(yaccel); // y
+	if (accelerations.size() == 2)
+		accelerations.push_back(0.); // theta
 }
 
 bool initSpline(Trajectory &trajectory,
@@ -430,163 +435,172 @@ bool initSpline(Trajectory &trajectory,
 	return true;
 }
 
+// Generate a spline which hits the positions / velocities / accelerations
+// defined in points + optParams, and return the trajectory in
+// trajectory
 bool generateSpline(      std::vector<trajectory_msgs::JointTrajectoryPoint> points,
 					const std::vector<OptParams> &optParams,
+					const std::vector<std::string> &jointNames,
 					Trajectory &trajectory)
 {
-	// Hard code 3 dimensions for paths to
-	// follow - x&y translation and z rotation
-	static std::vector<std::string> jointNames = {"x_linear_joint", "y_linear_joint", "z_rotation_joint"};
+	// x, y, theta position/velocity/acceleration
 	const size_t nJoints = jointNames.size();
+
+	// Offset x and y by the amount determined by the optimizer
+	// Paper says to make the coord system based off the
+	// tangent direction (perp & parallel to tangent)
+	// We'll see if that makes a difference
+	for (size_t i = 1; i < (points.size() - 1); i++)
+	{
+		points[i].positions[0] += optParams[i].posX_;
+		points[i].positions[1] += optParams[i].posY_;
+	}
+
+	// Give a default starting velocity if not specified
+	while (points[0].velocities.size() < nJoints)
+	{
+		points[0].velocities.push_back(0.);
+	}
+
+	// Same for end velocity
+	while (points.back().velocities.size() < nJoints)
+	{
+		points.back().velocities.push_back(0.);
+	}
 
 	// Auto - generate velocities and accelerations for splines
 	// based on a simple heuristic. This is becoming less simple
 	// by the moment.
-	if (points[0].velocities.size() == 0)
+	// Velocities of intermediate points are tangent
+	// to the bisection of the angle between the incoming
+	// and outgoing line segments.
+	// Length of the tangent is min distance to either
+	// previous or next waypoint
+	// See http://www2.informatik.uni-freiburg.de/~lau/students/Sprunk2008.pdf
+	// sectopm 4.1.1 and
+	// http://ais.informatik.uni-freiburg.de/teaching/ws09/robotics2/projects/mr2-p6-paper.pdf
+	// section 3.2 (equation 2 & 3) for details
+	//
+	double prevAngle = getLineAngle(points[0].positions, points[1].positions);
+	double prevLength = hypot(points[1].positions[0] - points[0].positions[0],
+							  points[1].positions[1] - points[0].positions[1]);
+
+	for (size_t i = 1; i < (points.size() - 1); i++)
 	{
-		// Offset x and y by the amount determined by the optimizer
-		// Paper says to make the coord system based off the
-		// tangent direction (perp & parallel to tangent)
-		// We'll see if that makes a difference
-		for (size_t i = 1; i < (points.size() - 1); i++)
-		{
-			points[i].positions[0] += optParams[i].posX_;
-			points[i].positions[1] += optParams[i].posY_;
-		}
+		const auto &mi   = points[i].positions;
+		const auto &mip1 = points[i + 1].positions;
 
-		// Starting with 0 velocity for the initial condition
-		// TODO - handle arbitrary starting velocity
-		for(size_t i = 0; i < nJoints; i++)
-		{
-			points[0].velocities.push_back(0.);
-		}
-		// Velocities of intermediate points are tangent
-		// to the bisection of the angle between the incoming
-		// and outgoing line segments.
-		// Length of the tangent is min distance to either
-		// previous or next waypoint
-		// See http://www2.informatik.uni-freiburg.de/~lau/students/Sprunk2008.pdf
-		// sectopm 4.1.1 and
-		// http://ais.informatik.uni-freiburg.de/teaching/ws09/robotics2/projects/mr2-p6-paper.pdf
-		// section 3.2 (equation 2 & 3) for details
-		//
-		double prevAngle = getLineAngle(points[0].positions, points[1].positions);
-		double prevLength = hypot(points[1].positions[0] - points[0].positions[0],
-								   points[1].positions[1] - points[0].positions[1]);
+		const double currAngle = getLineAngle(mi, mip1);
+		double deltaAngle = currAngle - prevAngle;
+		if (deltaAngle < -M_PI)
+			deltaAngle += 2.0 * M_PI;
+		const double angle = angles::normalize_angle_positive(prevAngle + deltaAngle / 2.0);
 
-		for (size_t i = 1; i < (points.size() - 1); i++)
-		{
-			const auto &mi   = points[i].positions;
-			const auto &mip1 = points[i + 1].positions;
+		const double currLength = hypot(mip1[0] - mi[0], mip1[1] - mi[1]);
 
-			const double currAngle = getLineAngle(mi, mip1);
-			double deltaAngle = currAngle - prevAngle;
-			if (deltaAngle < -M_PI)
-				deltaAngle += 2.0 * M_PI;
-			const double angle = angles::normalize_angle_positive(prevAngle + deltaAngle / 2.0);
+		// Adding a scaling factor here controls the velocity
+		// at the waypoints.  Bigger than 1 ==> curvier path with
+		// higher speeds.  Less than 1 ==> tigher turns to stay
+		// closer to straight paths.
+		const double length = std::min(prevLength, currLength) * .75 + optParams[i].length_;
 
-			const double currLength = hypot(mip1[0] - mi[0], mip1[1] - mi[1]);
-
-			// Adding a scaling factor here controls the velocity
-			// at the waypoints.  Bigger than 1 ==> curvier path with
-			// higher speeds.  Less than 1 ==> tigher turns to stay
-			// closer to straight paths.
-			const double length = std::min(prevLength, currLength) * .75 + optParams[i].length_;
-
+		// Don't overwrite requested input velocities
+		if (points[i].velocities.size() == 0)
 			points[i].velocities.push_back(length * cos(angle)); // x
+		if (points[i].velocities.size() == 1)
 			points[i].velocities.push_back(length * sin(angle)); // y
+		if (points[i].velocities.size() == 2)
 			points[i].velocities.push_back(0.0); // theta TODO : what if there is rotation both before and after this waypoint?
 
 #if 0
-			ROS_INFO_STREAM_FILTER(&messageFilter, "prevAngle " << prevAngle << " prevLength " << prevLength);
-			ROS_INFO_STREAM_FILTER(&messageFilter, "currAngle " << currAngle << " currLength " << currLength);
-			ROS_INFO_STREAM_FILTER(&messageFilter, "currAngle - prevAngle = " << currAngle - prevAngle << " angles::normalize_angle_positive(currAngle - prevAngle) = " << angles::normalize_angle_positive(currAngle - prevAngle));
-			ROS_INFO_STREAM_FILTER(&messageFilter, "angle " << angle << " length " << length);
+		ROS_INFO_STREAM_FILTER(&messageFilter, "prevAngle " << prevAngle << " prevLength " << prevLength);
+		ROS_INFO_STREAM_FILTER(&messageFilter, "currAngle " << currAngle << " currLength " << currLength);
+		ROS_INFO_STREAM_FILTER(&messageFilter, "currAngle - prevAngle = " << currAngle - prevAngle << " angles::normalize_angle_positive(currAngle - prevAngle) = " << angles::normalize_angle_positive(currAngle - prevAngle));
+		ROS_INFO_STREAM_FILTER(&messageFilter, "angle " << angle << " length " << length);
 #endif
-			// Update for next step
-			prevAngle = currAngle;
-			prevLength = currLength;
-		}
+		// Update for next step
+		prevAngle = currAngle;
+		prevLength = currLength;
+	}
 
-		// End position is also 0 velocity
-		// TODO - handle input end velocity
-		for(size_t i = 0; i < nJoints; i++)
-		{
-			points.back().velocities.push_back(0.);
-		}
+	// Guess for acceleration term is explained in
+	// http://www2.informatik.uni-freiburg.de/~lau/students/Sprunk2008.pdf
+	// section 4.2.1.  Basically, pretend there are cubic splines
+	// (bezier splines in this case) between two points.  These are splines
+	// which just connect the two points, and use the velocity at
+	// those points calculated above.  This gives reasonable curvature along
+	// the path between the two points. Taking the
+	// weighted average of the 2nd derivatives of the pretend cubic
+	// splines at the given point, and using that to generate
+	// a quintic spline does a reasonable job of preserving
+	// smoothness while also making the curve continuous.
+	//
+	// First and last point don't have a prev / next point
+	// to connect to, so just grab the 2nd derivitave off
+	// the point they are adjacent to
+	setFirstLastPointAcceleration(points[0].positions, points[1].positions,
+			points[0].velocities, points[1].velocities,
+			points[0].accelerations);
 
-		// Guess for acceleration term is explained in
-		// http://www2.informatik.uni-freiburg.de/~lau/students/Sprunk2008.pdf
-		// section 4.2.1.  Basically, pretend there are cubic splines
-		// (bezier splines in this case) between two points.  These are splines
-		// which just connect the two points, and use the velocity at
-		// those points calculated above.  This gives reasonable curvature along
-		// the path between the two points. Taking the
-		// weighted average of the 2nd derivatives of the pretend cubic
-		// splines at the given point, and using that to generate
-		// a quintic spline does a reasonable job of preserving
-		// smoothness while also making the curve continuous.
-		//
-		// First and last point don't have a prev / next point
-		// to connect to, so just grab the 2nd derivitave off
-		// the point they are adjacent to
-		setFirstLastPointAcceleration(points[0].positions, points[1].positions,
-				points[0].velocities, points[1].velocities,
-				points[0].accelerations);
+	const size_t last = points.size() - 1;
+	setFirstLastPointAcceleration(points[last-1].positions, points[last].positions,
+			points[last-1].velocities, points[last].velocities,
+			points[last].accelerations);
+	// For interior points, weight the average of the
+	// 2nd derivative of each of the pretend cubic
+	// splines and use them as the acceleration for
+	// the to-be-generated quintic spline.
+	for (size_t i = 1; i < (points.size() - 1); i++)
+	{
+		if (points[i].accelerations.size() >= nJoints)
+			continue;
 
-		const size_t last = points.size() - 1;
-		setFirstLastPointAcceleration(points[last-1].positions, points[last].positions,
-				points[last-1].velocities, points[last].velocities,
-				points[last].accelerations);
-		// For interior points, weight the average of the
-		// 2nd derivative of each of the pretend cubic
-		// splines and use them as the acceleration for
-		// the to-be-generated quintic spline.
-		for (size_t i = 1; i < (points.size() - 1); i++)
-		{
-			const double Ax = points[i-1].positions[0];
-			const double Ay = points[i-1].positions[1];
-			const double tAx = points[i-1].velocities[0];
-			const double tAy = points[i-1].velocities[1];
+		const double Ax = points[i-1].positions[0];
+		const double Ay = points[i-1].positions[1];
+		const double tAx = points[i-1].velocities[0];
+		const double tAy = points[i-1].velocities[1];
 
-			const double Bx = points[i].positions[0];
-			const double By = points[i].positions[1];
-			const double tBx = points[i].velocities[0];
-			const double tBy = points[i].velocities[1];
+		const double Bx = points[i].positions[0];
+		const double By = points[i].positions[1];
+		const double tBx = points[i].velocities[0];
+		const double tBy = points[i].velocities[1];
 
-			const double Cx = points[i+1].positions[0];
-			const double Cy = points[i+1].positions[1];
-			const double tCx = points[i+1].velocities[0];
-			const double tCy = points[i+1].velocities[1];
+		const double Cx = points[i+1].positions[0];
+		const double Cy = points[i+1].positions[1];
+		const double tCx = points[i+1].velocities[0];
+		const double tCy = points[i+1].velocities[1];
 
-			// L2 distance between A and B
-			const double dab = hypot(Bx - Ax, By - Ay);
-			// L2 distance between B and C
-			const double dbc = hypot(Cx - Bx, Cy - By);
+		// L2 distance between A and B
+		const double dab = hypot(Bx - Ax, By - Ay);
+		// L2 distance between B and C
+		const double dbc = hypot(Cx - Bx, Cy - By);
 
-			// Weighting factors
-			const double alpha = dbc / (dab + dbc);
-			const double beta  = dab / (dab + dbc);
+		// Weighting factors
+		const double alpha = dbc / (dab + dbc);
+		const double beta  = dab / (dab + dbc);
 
-			const double xaccel = alpha * ( 6.0 * Ax + 2.0 * tAx + 4.0 * tBx - 6.0 * Bx) +
-								  beta  * (-6.0 * Bx - 4.0 * tBx - 2.0 * tCx + 6.0 * Cx);
-			const double yaccel = alpha * ( 6.0 * Ay + 2.0 * tAy + 4.0 * tBy - 6.0 * By) +
-								  beta  * (-6.0 * By - 4.0 * tBy - 2.0 * tCy + 6.0 * Cy);
+		const double xaccel = alpha * ( 6.0 * Ax + 2.0 * tAx + 4.0 * tBx - 6.0 * Bx) +
+							  beta  * (-6.0 * Bx - 4.0 * tBx - 2.0 * tCx + 6.0 * Cx);
+		const double yaccel = alpha * ( 6.0 * Ay + 2.0 * tAy + 4.0 * tBy - 6.0 * By) +
+							  beta  * (-6.0 * By - 4.0 * tBy - 2.0 * tCy + 6.0 * Cy);
 
+		// Don't overwrite requested input accelerations
+		if (points[i].accelerations.size() == 0)
 			points[i].accelerations.push_back(xaccel); // x
+		if (points[i].accelerations.size() == 1)
 			points[i].accelerations.push_back(yaccel); // y
+		if (points[i].accelerations.size() == 2)
 			points[i].accelerations.push_back(0.); // theta
 
 #if 0
-			ROS_INFO_STREAM_FILTER(&messageFilter, "dab = " << dab << " dbc = " << dbc);
-			ROS_INFO_STREAM_FILTER(&messageFilter, "Ax = " << Ax << " tAx = " << tAx <<
-			                " Bx = " << Bx << " tBx = " << tBx <<
-			                " Cx = " << Cx << " tCx = " << tCx);
-			ROS_INFO_STREAM_FILTER(&messageFilter, "Ay = " << Ay << " tAy = " << tAy <<
-			                " By = " << By << " tBy = " << tBy <<
-			                " Cy = " << Cy << " tCy = " << tCy);
+		ROS_INFO_STREAM_FILTER(&messageFilter, "dab = " << dab << " dbc = " << dbc);
+		ROS_INFO_STREAM_FILTER(&messageFilter, "Ax = " << Ax << " tAx = " << tAx <<
+						" Bx = " << Bx << " tBx = " << tBx <<
+						" Cx = " << Cx << " tCx = " << tCx);
+		ROS_INFO_STREAM_FILTER(&messageFilter, "Ay = " << Ay << " tAy = " << tAy <<
+						" By = " << By << " tBy = " << tBy <<
+						" Cy = " << Cy << " tCy = " << tCy);
 #endif
-		}
 	}
 
 	return initSpline(trajectory, jointNames, points);
@@ -906,7 +920,8 @@ bool getPathLength(Trajectory &arcLengthTrajectory,
 }
 
 // evaluate spline - inputs are spline coeffs (Trajectory), waypoints, dmax, vmax, amax, acentmax
-//                   returns time taken to drive spline, cost, possibly waypoints
+//                   returns cost for the path in cost, true if the evaluation succeeds and false
+//                   if it fails
 bool evaluateSpline(double &cost,
 					const Trajectory &trajectory,
 					const std::vector<trajectory_msgs::JointTrajectoryPoint> &points,
@@ -1066,12 +1081,12 @@ bool evaluateSpline(double &cost,
 	return true;
 }
 
+// Convert from Trajectory type into the correct output
+// message type
 void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &out_msg,
 		const Trajectory &trajectory,
 		const std::vector<std::string> &jointNames)
 {
-	// Convert from Trajectory type into the correct output
-	// message type
 	out_msg.orient_coefs.resize(trajectory[0].size());
 	out_msg.x_coefs.resize(trajectory[0].size());
 	out_msg.y_coefs.resize(trajectory[0].size());
@@ -1195,6 +1210,7 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 bool RPROP(
 		Trajectory &bestTrajectory,
 		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points,
+		const std::vector<std::string> &jointNames,
 		double dMax, // limit of path excursion from straight line b/t waypoints
 		double vMax, // max overall velocity
 		double aMax, // max allowed acceleration
@@ -1204,7 +1220,7 @@ bool RPROP(
 	// initialize params to 0 offset in x, y and tangent
 	// length for all spline points
 	std::vector<OptParams> bestOptParams(points.size());
-	if (!generateSpline(points, bestOptParams, bestTrajectory))
+	if (!generateSpline(points, bestOptParams, jointNames, bestTrajectory))
 	{
 		ROS_ERROR("base_trajectory_node : RPROP initial generateSpline() falied");
 		return false;
@@ -1255,7 +1271,7 @@ bool RPROP(
 					// to the last iteration
 					Trajectory thisTrajectory;
 					optParams[i][j] += dparam;
-					if (!generateSpline(points, optParams, thisTrajectory))
+					if (!generateSpline(points, optParams, jointNames, thisTrajectory))
 					{
 						ROS_ERROR("base_trajectory_node : RPROP generateSpline() falied");
 						return false;
@@ -1323,6 +1339,8 @@ bool RPROP(
 bool callback(base_trajectory::GenerateSpline::Request &msg,
 			  base_trajectory::GenerateSpline::Response &out_msg)
 {
+	const std::vector<std::string> jointNames = {"x_linear_joint", "y_linear_joint", "z_rotation_joint"};
+	const size_t nJoints = jointNames.size();
 	const auto startTime = ros::Time::now();
 	// Hold current position if trajectory is empty
 	if (msg.points.empty())
@@ -1335,7 +1353,7 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 		ROS_WARN("Only one point passed into base_trajectory - adding a starting position of 0,0,0");
 		msg.points.push_back(msg.points[0]);
 		msg.points[0].positions.clear();
-		for (size_t i = 0; i < 3; i++)
+		for (size_t i = 0; i < nJoints; i++)
 			msg.points[i].positions.push_back(0);
 		msg.points[0].velocities.clear();
 		msg.points[0].accelerations.clear();
@@ -1346,26 +1364,27 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 	for (size_t i = 0; i < msg.points.size(); ++i)
 		msg.points[i].time_from_start = ros::Duration(static_cast<double>(i));
 
-	// TODO - operate in two modes
+	// Operate in two modes
 	// 1 - if velocity and accelerations are empty, run a full optimization
 	// 2 - if both are set, just generate a spline based on them, then
 	//     convert that into an optimal path to follow
+	bool runOptimization = false;
 	for (size_t i = 0; i < msg.points.size(); ++i)
 	{
-		if (msg.points[i].positions.size() != 3)
+		if (msg.points[i].positions.size() != nJoints)
 		{
 			ROS_ERROR_STREAM("Input point " << i << " must have 3 positions (x, y, orientation)");
 			return false;
 		}
 		if (msg.points[i].velocities.size())
 		{
-			if (msg.points[i].velocities.size() != 3)
+			if (msg.points[i].velocities.size() != nJoints)
 			{
 				ROS_ERROR_STREAM("Input point " << i << " must have 0 or 3 velocities (x, y, orientation)");
 				return false;
 			}
 			if ((msg.points[i].accelerations.size() != 0) &&
-				(msg.points[i].accelerations.size() != 3))
+				(msg.points[i].accelerations.size() != nJoints))
 			{
 				ROS_ERROR_STREAM("Input point " << i << " must have 0 or 3 accelerations (x, y, orientation)");
 				return false;
@@ -1376,70 +1395,69 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 			ROS_ERROR_STREAM("Input point " << i << " must have 0 accelerations since there are also 0 velocities for that point)");
 			return false;
 		}
+
+		// Optimization will be run to find the best velocity and acceleration
+		// values for each intermediate point. This should only happen
+		// if the velocities aren't specified for those points.
+		if ((i > 0) && (i < msg.points.size() - 1))
+		{
+			// For intermediate points, if a velocity
+			// isn't defined run the optimization
+			if (msg.points[i].velocities.size() == 0)
+				runOptimization = true;
+		}
+		else
+		{
+			// For start and end points, velocities can be set to specify initial
+			// conditions.  In that case, if the accelerations are empty
+			// run optimization.  This works since due to the check above
+			// if the velocities are empty the accelerations will also be.
+			if (msg.points[i].accelerations.size() == 0)
+				runOptimization = true;
+		}
 	}
 
 	std::vector<OptParams> optParams(msg.points.size());
 	Trajectory trajectory;
-	if (!generateSpline(msg.points, optParams, trajectory))
+	if (!generateSpline(msg.points, optParams, jointNames, trajectory))
 		return false;
 
-	double cost;
-	if (!evaluateSpline(cost,
-				trajectory, msg.points,
-				pathLimitDistance, // limit of path excursion from straight line b/t waypoints
-				maxVel, // max overall velocity
-				maxLinearAcc, // max allowed acceleration
-				wheelRadius, // wheel radius
-				maxCentAcc)) // max allowed centripetal acceleration
+	if (runOptimization)
 	{
-		ROS_ERROR("base_trajectory_node : evaluateSpline() returned false");
-		return false;
+		double cost;
+		if (!evaluateSpline(cost,
+					trajectory, msg.points,
+					pathLimitDistance, // limit of path excursion from straight line b/t waypoints
+					maxVel, // max overall velocity
+					maxLinearAcc, // max allowed acceleration
+					wheelRadius, // wheel radius
+					maxCentAcc)) // max allowed centripetal acceleration
+		{
+			ROS_ERROR("base_trajectory_node : evaluateSpline() returned false");
+			return false;
+		}
+
+		base_trajectory::GenerateSpline::Response tmp_msg;
+		trajectoryToSplineResponseMsg(tmp_msg, trajectory, jointNames);
+		writeMatlabCode(tmp_msg);
+		messageFilter.disable();
+		fflush(stdout);
+
+		if (!RPROP(trajectory,
+					msg.points,
+					jointNames,
+					pathLimitDistance, // limit of path excursion from straight line b/t waypoints
+					maxVel, // max overall velocity
+					maxLinearAcc, // max allowed acceleration
+					wheelRadius, // wheel radius
+					maxCentAcc)) // max allowed centripetal acceleration
+		{
+			ROS_ERROR("base_trajectory_node : RPROP() returned false");
+			return false;
+		}
+		messageFilter.enable();
 	}
 
-#if 0
-	// Test using middle switch auto spline
-	out_msg.x_coefs[1].spline[0] = 6.0649999999999995;
-	out_msg.x_coefs[1].spline[1] = -15.510000000000002;
-	out_msg.x_coefs[1].spline[2] = 10.205;
-	out_msg.x_coefs[1].spline[3] = 0.42;
-	out_msg.x_coefs[1].spline[4] = 0.10999999999999999;
-	out_msg.x_coefs[1].spline[5] = 0.18;
-
-	out_msg.y_coefs[1].spline[0] = 1.9250000000000025;
-	out_msg.y_coefs[1].spline[1] = -5.375;
-	out_msg.y_coefs[1].spline[2] = 4.505000000000003;
-	out_msg.y_coefs[1].spline[3] = -0.8149999999999998;
-	out_msg.y_coefs[1].spline[4] = 2.4299999999999997;
-	out_msg.y_coefs[1].spline[5] = 0.45;
-
-	out_msg.orient_coefs[1].spline[0] = 0.0;
-	out_msg.orient_coefs[1].spline[1] = 0.0;
-	out_msg.orient_coefs[1].spline[2] = 0.0;
-	out_msg.orient_coefs[1].spline[3] = 0.0;
-	out_msg.orient_coefs[1].spline[4] = 0.0;
-	out_msg.orient_coefs[1].spline[5] = -3.14159;
-	out_msg.end_points[1] = 1.0; // change me to 4 to match end time in yaml and break point_gen
-#endif
-	base_trajectory::GenerateSpline::Response tmp_msg;
-	const std::vector<std::string> jointNames = {"x_linear_joint", "y_linear_joint", "z_rotation_joint"};
-	trajectoryToSplineResponseMsg(tmp_msg, trajectory, jointNames);
-	writeMatlabCode(tmp_msg);
-	messageFilter.disable();
-	fflush(stdout);
-
-	if (!RPROP(trajectory,
-				msg.points,
-				pathLimitDistance, // limit of path excursion from straight line b/t waypoints
-				maxVel, // max overall velocity
-				maxLinearAcc, // max allowed acceleration
-				wheelRadius, // wheel radius
-				maxCentAcc)) // max allowed centripetal acceleration
-	{
-		ROS_ERROR("base_trajectory_node : RPROP() returned false");
-		return false;
-	}
-
-	messageFilter.enable();
 	trajectoryToSplineResponseMsg(out_msg, trajectory, jointNames);
 	writeMatlabCode(out_msg);
 	fflush(stdout);
