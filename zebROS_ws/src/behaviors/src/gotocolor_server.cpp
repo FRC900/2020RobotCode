@@ -18,17 +18,19 @@
 // e.g. #include "controller_package/ControllerSrv.h"
 // e.g. #include "sensor_msgs/JointState.h" -has linebreak sensor data FYI
 #include "frc_msgs/MatchSpecificData.h"
+#include "color_spin/color_algorithm.h"
+#include "controllers_2020_msgs/ControlPanelSrv.h"
 
 //create the class for the actionlib server
 class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
-        	ros::Subscriber match_sub_;
+        ros::Subscriber match_sub_;
 		ros::Subscriber color_sensor_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
-		char goal_color_;
-		char current_color_;
+		string goal_color_;
+		string current_color_;
 
 		ros::ServiceClient color_algorithm_client_;
 
@@ -37,7 +39,7 @@ class GoToColorControlPanelAction {
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
-
+		ros::ServiceClient control_panel_controller_client_;
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
 		bool timed_out_;
@@ -69,6 +71,7 @@ class GoToColorControlPanelAction {
 		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1000, matchColorCallback);
 		color_sensor_sub_=nh.subscribe("/color_sensor" /*insert topic name*/, 1000, sensorColorCallback);
 		color_algorithm_client_=nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
+		control_panel_controller_client_=nh.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -111,8 +114,6 @@ class GoToColorControlPanelAction {
 			preempted_ = false;
 			timed_out_ = false;
 
-
-
 			//wait for all actionlib servers we need
 			/* e.g.
 			if(!ac_elevator_.waitForServer(ros::Duration(wait_for_server_timeout_)))
@@ -134,32 +135,42 @@ class GoToColorControlPanelAction {
 			*/
 
 
-
-
+			if(! control_panel_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
+			{
+				ROS_ERROR_STREAM(action_name_ << " can't find control_panel_controller");
+				as_.setPreempted();
+				return;
+			}
 
 			//Basic controller call ---------------------------------------
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
-				ROS_INFO("server_name_server: what this is doing");
-				//call controller client, if failed set preempted_ = true, and log an error msg
-
-
-
-				//if necessary, run a loop to wait for the controller to finish
+				color_spin::color_algorithm spin_srv;
+				spin_srv.request.sensor_color = current_color_;
+				spin_srv.request.fms_color = goal_color_;
+				double panel_rotations;
+				if(color_algorithm_client_.call(spin_srv))
+				{
+					panel_rotations = srv.response.rotate;
+				} else {
+					ROS_ERROR_STREAM(action_name_ << ": preempt while calling color algorithm");
+					preempted_ = true;
+				}
+				
 				while(!preempted_ && !timed_out_ && ros::ok())
 				{
 					//check preempted_
 					if(as_.isPreemptRequested() || !ros::ok()) {
-						ROS_ERROR_STREAM(action_name_ << ": preempt while calling ______ controller");
+						ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
 						preempted_ = true;
 					}
 					//test if succeeded, if so, break out of the loop
-					else if(test here) {
+					else if(goal_color_ == current_color_) {
 						break;
 					}
 					//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
 					else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
-						ROS_ERROR_STREAM(action_name_ << ": timed out while calling ______ controller");
+						ROS_ERROR_STREAM(action_name_ << ": timed out while calling control panel controller");
 						timed_out_ = true;
 					}
 					//otherwise, pause then loop again
