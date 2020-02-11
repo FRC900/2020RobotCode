@@ -6,6 +6,7 @@ include("../cmake_modules/CMakeOpt.cmake")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   message_filters
@@ -14,6 +15,12 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   goal_detection
 )
+else()
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  message_generation
+)
+endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -112,6 +119,8 @@ catkin_package(
 ## Build ##
 ###########
 
+if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -149,6 +158,8 @@ include_directories(
  target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
  )
+
+endif()
 
 #############
 ## Install ##
