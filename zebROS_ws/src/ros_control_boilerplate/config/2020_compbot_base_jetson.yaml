@@ -83,7 +83,6 @@ hardware_interface:
 # /frcrobot/talon_states
 
 #Set up controllers for main robot mechanisms
-<<<<<<< HEAD
 intake_controller:
         type: intake_controller/IntakeController
         intake_joint: "intake"
@@ -92,8 +91,6 @@ intake_controller:
                 type: talon_controllers/TalonPercentOutputController
                 invert_output: False
 
-=======
->>>>>>> Control panel dev (#17)
 control_panel_controller:
         type: control_panel_controller/ControlPanelController
         control_panel_diameter: 32 #inches
