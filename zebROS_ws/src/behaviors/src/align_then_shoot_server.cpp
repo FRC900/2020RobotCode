@@ -11,7 +11,9 @@
 #include <ros/console.h>
 
 //include action files - for this actionlib server and any it sends requests to
-#include "behaviors/AlignThenShootAction.h"
+#include "behavior_actions/AlignThenShootAction.h"
+#include "behavior_actions/AlignToShootAction.h"
+#include "behavior_actions/ShooterAction.h"
 
 //include controller service files and other service files
 // e.g. #include "controller_package/ControllerSrv.h"
@@ -57,8 +59,8 @@ class AlignThenShootAction {
 		as_.start(); //start the actionlib server
 
 		//do networking stuff
-		std::map<std::string, std::string> service_connection_header;
-		service_connection_header["tcp_nodelay"] = "1";
+		//std::map<std::string, std::string> service_connection_header;
+		//service_connection_header["tcp_nodelay"] = "1";
 
 		//initialize client used to call controllers
 		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
@@ -110,89 +112,54 @@ class AlignThenShootAction {
 			//wait for all actionlib servers we need
 			if(!ac_align_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
-				ROS_ERROR_STREAM(action_name_ << " couldn't find align actionlib server");
+				ROS_ERROR_STREAM(ac_align_ << " couldn't find align actionlib server");
 				as_.setPreempted();
 				return;
 			}
 
-			//wait for all controller servers we need
-			/* e.g.
-			if(! mech_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
+			if(!ac_shooter_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
-				ROS_ERROR_STREAM(action_name_ << " can't find mech_controller");
+				ROS_ERROR_STREAM(ac_shooter_ << " couldn't find align actionlib server");
 				as_.setPreempted();
 				return;
 			}
-			*/
-
-
-
-
-
-			//Basic controller call ---------------------------------------
-			/*
-			if(!preempted_ && !timed_out_ && ros::ok())
-			{
-				ROS_INFO("align_then_shoot_server: what this is doing");
-				//call controller client, if failed set preempted_ = true, and log an error msg
-
-
-
-				//if necessary, run a loop to wait for the controller to finish
-				while(!preempted_ && !timed_out_ && ros::ok())
-				{
-					//check preempted_
-					if(as_.isPreemptRequested() || !ros::ok()) {
-						ROS_ERROR_STREAM(action_name_ << ": preempt while calling ______ controller");
-						preempted_ = true;
-					}
-					//test if succeeded, if so, break out of the loop
-					else if(test here) {
-						break;
-					}
-					//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
-					else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
-						ROS_ERROR_STREAM(action_name_ << ": timed out while calling ______ controller");
-						timed_out_ = true;
-					}
-					//otherwise, pause then loop again
-					else {
-						r.sleep();
-					}
-				}
-			}
-			//preempt handling (skip this and set final state at end if only 1 possble final state)
-			/*
-			if(preempted_ || timed_out_ || !ros::ok())
-			{}
-			*/
-
-			//if necessary, pause a bit between doing things (between piston firings usually)
-			/* e.g.
-			pause(sec_to_pause, "what we're pausing for");
-			*/
-
-			*/
-				
 
 			//Basic actionlib server call -------------------------------------
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
 				ROS_INFO("what this is doing");
 				//Call actionlib server
-				/* e.g.
-				behaviors::ElevatorGoal elevator_goal;
-				elevator_goal.place_cargo = true;
-				ac_elevator_.sendGoal(elevator_goal);
-				*/
+				behavior_actions::AlignGoal align_goal;
+				align_goal.has_cargo = true;
+				ac_align_.sendGoal(align_goal);
 				//wait for actionlib server
-				//e.g. waitForActionlibServer(ac_elevator_, 30, "calling elevator server"); //method defined below. Args: action client, timeout in sec, description of activity
+				waitForActionlibServer(ac_align_, 30, "calling align server"); //method defined below. Args: action client, timeout in sec, description of activity
+				//preempt handling
+				if(preempted_ || timed_out_ || !ros::ok())
+				{
+					ac_align_.cancelGoalsAtAndBeforeTime(ros::Time::now());
+				}
+
+
 			}
-			//preempt handling or pause if necessary (see basic controller call)
+			
+			if(!preempted_ && !timed_out_ && ros::ok())
+			{
+				ROS_INFO("what this is doing");
+				//Call actionlib server
+				behavior_actions::ShooterGoal shooter_goal;
+				shooter_goal.has_cargo = true; //TODO: ask sahil ab actual actions??
+				ac_shooter_.sendGoal(shooter_goal);
+				//wait for actionlib server
+				waitForActionlibServer(ac_shooter_, 30, "calling align server"); //method defined below. Args: action client, timeout in sec, description of activity
+				//preempt handling
+				if(preempted_ || timed_out_ || !ros::ok())
+				{
+					ac_shooter_.cancelGoalsAtAndBeforeTime(ros::Time::now());
+				}
 
 
-
-
+			}		
 
 			//Finish -----------------------------------------------
 

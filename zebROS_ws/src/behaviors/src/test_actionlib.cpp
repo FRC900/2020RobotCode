@@ -268,7 +268,40 @@ bool callAlignHatch()
 	}
 }
 
+bool callAlignThenShoot()
+{
+	actionlib::SimpleActionClient<behavior_actions::AlignThenShootAction> align_then_shoot_ac("/align_then_shoot/align_then_shoot_server", true);
 
+	ROS_INFO("Waiting for align then shoot server to start.");
+	if(!align_then_shoot_ac.waitForServer(ros::Duration(server_wait_timeout)))
+	{
+		ROS_ERROR("callAlignThenShoot : Could not find server.");
+		return false;
+	}
+
+	ROS_INFO("callAlignThenShoot : Sending goal to the server.");
+	behavior_actions::AlignThenShootGoal align_then_shoot_goal;
+	align_then_shoot_ac.sendGoal(align_then_shoot_goal);
+
+	//wait for the action to return
+	bool finished_before_timeout = align_then_shoot_ac.waitForResult(ros::Duration(server_exec_timeout));
+
+	if (finished_before_timeout)
+	{
+		actionlib::SimpleClientGoalState state = align_then_shoot_ac.getState();
+		ROS_INFO("callAlignThenShoot : Action finished with state: %s",state.toString().c_str());
+		if(align_then_shoot_ac.getResult()->timed_out)
+		{
+			ROS_INFO("callAlignThenShoot : Align then shoot server timed out!");
+		}
+		return true;
+	}
+	else
+	{
+		ROS_INFO("callAlignThenShoot : Action did not finish before the time out.");
+		return false;
+	}
+}
 
 
 int main (int argc, char **argv)

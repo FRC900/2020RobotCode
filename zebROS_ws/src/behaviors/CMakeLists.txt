@@ -162,9 +162,16 @@ add_executable(outtake_hatch_panel_server src/outtake_hatch_panel_server.cpp)
 target_link_libraries(outtake_hatch_panel_server ${catkin_LIBRARIES})
 add_dependencies(outtake_hatch_panel_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(align_then_shoot_server src/align_then_shoot_server.cpp)
+target_link_libraries(align_then_shoot_server ${catkin_LIBRARIES})
+add_dependencies(align_then_shoot_server ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 add_executable(test_actionlib src/test_actionlib.cpp)
 target_link_libraries(test_actionlib ${catkin_LIBRARIES})
 add_dependencies(test_actionlib ${behaviors_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+
+
 #add_executable(dummy src/dummy.cpp)
 #target_link_libraries(
 #    dummy
