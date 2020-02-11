@@ -494,6 +494,8 @@ bool generateSpline(      std::vector<trajectory_msgs::JointTrajectoryPoint> poi
 		double deltaAngle = currAngle - prevAngle;
 		if (deltaAngle < -M_PI)
 			deltaAngle += 2.0 * M_PI;
+		else if (deltaAngle > M_PI)
+			deltaAngle -= 2.0 * M_PI;
 		const double angle = angles::normalize_angle_positive(prevAngle + deltaAngle / 2.0);
 
 		const double currLength = hypot(mip1[0] - mi[0], mip1[1] - mi[1]);
@@ -512,7 +514,7 @@ bool generateSpline(      std::vector<trajectory_msgs::JointTrajectoryPoint> poi
 		if (points[i].velocities.size() == 2)
 			points[i].velocities.push_back(0.0); // theta TODO : what if there is rotation both before and after this waypoint?
 
-#if 0
+#if 1
 		ROS_INFO_STREAM_FILTER(&messageFilter, "prevAngle " << prevAngle << " prevLength " << prevLength);
 		ROS_INFO_STREAM_FILTER(&messageFilter, "currAngle " << currAngle << " currLength " << currLength);
 		ROS_INFO_STREAM_FILTER(&messageFilter, "currAngle - prevAngle = " << currAngle - prevAngle << " angles::normalize_angle_positive(currAngle - prevAngle) = " << angles::normalize_angle_positive(currAngle - prevAngle));
