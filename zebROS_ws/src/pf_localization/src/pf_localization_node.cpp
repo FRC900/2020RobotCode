@@ -2,7 +2,7 @@
 #include "world_model.hpp"
 #include "particle.hpp"
 #include "pf_localization/pf_pose.h"
-#include "goal_detection/GoalDetection.h"
+#include "field_obj/Detection.h"
 #include "nav_msgs/Odometry.h"
 
 #include <tf2/LinearMath/Matrix3x3.h>
