@@ -8,7 +8,7 @@ bool rotate(color_spin::color_algorithm::Request &req,
 
   req.sensor_color = toupper(req.sensor_color[0]);
   req.fms_color = toupper(req.fms_color[0]);
-
+/*
   if (req.sensor_color == "R") {
 	  if (req.fms_color == "Y") {
 		  res.rotate = .125;
@@ -39,7 +39,7 @@ bool rotate(color_spin::color_algorithm::Request &req,
 		  res.rotate = -.125;
 		}
 	  else if (req.fms_color == "G") {
-		  res.rotate = -.125;
+		  res.rotate = .125;
 		}
 	  }
   else if (req.sensor_color == "G") {
@@ -55,7 +55,53 @@ bool rotate(color_spin::color_algorithm::Request &req,
 	  }
   else {
 		  ROS_INFO("Invalid Sensor Color Input");
-	   }
+	   }*/
+
+  switch(req.sensor_color){
+	  case R:
+		 switch(req.fms_color){
+			 case R:
+				 ROS_INFO("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+			 case C:
+				 res.rotate = .25;
+			 case G:
+				 res.rotate = -.125;
+			 case Y:
+				 res.rotate = .125;
+		 }
+	 case G:
+		 switch(req.fms_color){
+			 case R:
+				 res.rotate = .125;
+			 case C:
+				 res.rotate = -.125;
+			 case G:
+ 				 ROS_INFO("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+			 case Y:
+				 res.rotate = .25;
+		 }
+	 case C:
+		 switch(req.fms_color){
+			 case R:
+				 res.rotate = .25;
+			 case C:
+				 ROS_INFO("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+			 case G:
+				 res.rotate = .125;
+			 case Y:
+				 res.rotate = -.125;
+	 	 }
+	 case Y:
+		 switch(req.fms_color){
+			 case R:
+				 res.rotate = -.125;
+			 case C:
+				 res.rotate = .125;
+			 case G:
+				 res.rotate = .25;
+			 case Y:
+				 ROS_INFO("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+		 }
   ROS_INFO("request = x=%1s, y=%1s", req.sensor_color.c_str(), req.fms_color.c_str());
   ROS_INFO("sending response = [x%1f]", (float)res.rotate);
   return true;
