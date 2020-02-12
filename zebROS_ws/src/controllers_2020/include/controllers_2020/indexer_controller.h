@@ -48,15 +48,12 @@ class IndexerController : public controller_interface::MultiInterfaceController<
 		virtual void update(const ros::Time &time, const ros::Duration &period) override;
 		virtual void stopping(const ros::Time &time) override;
 		bool cmdService (controllers_2020_msgs::IndexerSrv::Request &req, controllers_2020_msgs::IndexerSrv::Response &/*response*/);
-		//void talonStateCallback(const talon_state_msgs::TalonState &talon_state);
 
 	private:
 		talon_controllers::TalonVelocityCloseLoopControllerInterface indexer_joint_; //interface for the indexer turning motor
 		realtime_tools::RealtimeBuffer<IndexerCommand> indexer_cmd_;
 		ros::ServiceServer indexer_service_;
-		ros::Subscriber talon_state_sub_;
 
-		double indexer_speed_;
 }; //class
 
 } //namespace

@@ -7,12 +7,7 @@ bool IndexerController::init(hardware_interface::RobotHW *hw,
 							 ros::NodeHandle             &controller_nh)
 {
 	//get interface
-	//hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>()
 	hardware_interface::TalonCommandInterface *const talon_command_iface = hw->get<hardware_interface::TalonCommandInterface>();
-	//Initialize piston joints
-	/* Ex:
-	push_joint_ = pos_joint_iface->getHandle("joint_name"); //joint_name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
-	*/
 
 	//Initialize motor joints
 	//get params from config file
@@ -27,14 +22,6 @@ bool IndexerController::init(hardware_interface::RobotHW *hw,
 	if ( !indexer_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, indexer_params))
 	{
 		ROS_ERROR("Cannot initialize indexer joint!");
-		return false;
-	}
-
-	//get indexer speed
-	if (!controller_nh.getParam("indexer_speed", indexer_speed_))
-	{
-		ROS_ERROR("Cannot read indexer speed");
-		indexer_speed_ = 0; //TODO fix default value
 		return false;
 	}
 
@@ -66,7 +53,6 @@ bool IndexerController::cmdService(controllers_2020_msgs::IndexerSrv::Request &r
 	if (isRunning())
 	{
 		//assign request value to command buffer(s)
-		//Ex:
 		indexer_cmd_.writeFromNonRT(IndexerCommand(req.indexer_velocity));
 	}
 	else
