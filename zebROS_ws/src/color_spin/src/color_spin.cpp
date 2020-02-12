@@ -57,53 +57,42 @@ bool rotate(color_spin::color_algorithm::Request &req,
 		  ROS_INFO("Invalid Sensor Color Input");
 	   }*/
 
-  switch(req.sensor_color[0]){
+  switch(req.sensor_color[0])
+  {
 	  case 'R':
-		 switch(req.fms_color[0]){
-			 case 'R':
-				 ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
-			 case 'C':
-				 res.rotate = .25;
-			 case 'G':
-				 res.rotate = -.125;
-			 case 'Y':
-				 res.rotate = .125;
+		 switch(req.fms_color[0])
+		 {
+			 default: ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+			 case 'C': res.rotate = .25;
+			 case 'G': res.rotate = -.125;
+			 case 'Y': res.rotate = .125;
 		 }
 	 case 'G':
-		 switch(req.fms_color[0]){
-			 case 'R':
-				 res.rotate = .125;
-			 case 'C':
-				 res.rotate = -.125;
-			 case 'G':
- 				 ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
-			 case 'Y':
-				 res.rotate = .25;
+		 switch(req.fms_color[0])
+		 {
+			 case 'R': res.rotate = .125;
+			 case 'C': res.rotate = -.125;
+			 default: ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+			 case 'Y': res.rotate = .25;
 		 }
 	 case 'C':
-		 switch(req.fms_color[0]){
-			 case 'R':
-				 res.rotate = .25;
-			 case 'C':
-				 ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
-			 case 'G':
-				 res.rotate = .125;
-			 case 'Y':
-				 res.rotate = -.125;
-	 	 }
+		 switch(req.fms_color[0])
+		 {
+			 case 'R': res.rotate = .25;
+			 default: ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+			 case 'G': res.rotate = .125;
+			 case 'Y': res.rotate = -.125;
+		 }
 	 case 'Y':
-		 switch(req.fms_color[0]){
-			 case 'R':
-				 res.rotate = -.125;
-			 case 'C':
-				 res.rotate = .125;
-			 case 'G':
-				 res.rotate = .25;
-			 case 'Y':
-				 ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+		 switch(req.fms_color[0])
+		 {
+			 case 'R': res.rotate = -.125;
+			 case 'C': res.rotate = .125;
+			 case 'G': res.rotate = .25;
+			 default: ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
 		 }
 	}
-  ROS_INFO("request = x=%1s, y=%1s", req.sensor_color.c_str(), req.fms_color.c_str());
+  ROS_INFO("request = Sensor_Color=%1s, FMS_Color=%1s", req.sensor_color.c_str(), req.fms_color.c_str());
   ROS_INFO("sending response = [x%1f]", (float)res.rotate);
   return true;
 }
