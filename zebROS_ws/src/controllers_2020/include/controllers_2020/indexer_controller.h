@@ -22,17 +22,14 @@ class IndexerCommand
 {
 	public:
 		IndexerCommand()
-			: indexer_forward_(false)
-			, indexer_reverse_(false)
+			: indexer_velocity_(0)
 		{
 		}
-		IndexerCommand(bool indexer_forward, bool indexer_reverse)
+		IndexerCommand(double indexer_velocity)
 		{
-			indexer_forward_ = indexer_forward;
-			indexer_reverse_ = indexer_reverse;
+			indexer_velocity_ = indexer_velocity;
 		}
-		bool indexer_forward_;
-		bool indexer_reverse_;
+		double indexer_velocity_;
 };
 
 class IndexerController : public controller_interface::MultiInterfaceController<hardware_interface::PositionJointInterface, hardware_interface::TalonCommandInterface>

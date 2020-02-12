@@ -47,33 +47,15 @@ bool IndexerController::init(hardware_interface::RobotHW *hw,
 void IndexerController::starting(const ros::Time &/*time*/)
 {
 	//give command buffer(s) an initial value
-	indexer_cmd_.writeFromNonRT(IndexerCommand(false, false));
+	indexer_cmd_.writeFromNonRT(IndexerCommand(0));
 }
 
 void IndexerController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/)
 {
 	//grab value from command buffer(s)
 	const IndexerCommand indexer_cmd = *(indexer_cmd_.readFromRT());
-	const bool forward_cmd = indexer_cmd.indexer_forward_;
-	const bool reverse_cmd = indexer_cmd.indexer_reverse_;
-	if (forward_cmd == true && reverse_cmd == false)
-	{
-		indexer_joint_.setCommand(indexer_speed_);
-	}
-	else if (forward_cmd == false && reverse_cmd == true)
-	{
-		indexer_joint_.setCommand(-indexer_speed_);
-	}
-	else if (forward_cmd == false && reverse_cmd == false)
-	{
-		indexer_joint_.setCommand(0);
-	}
-	else
-	{
-		ROS_ERROR_STREAM("Indexer cannot be both running forward and in reverse!!");
-		indexer_joint_.setCommand(0);
-	}
-
+	const double velocity_cmd = indexer_cmd.indexer_velocity_;
+	indexer_joint_.setCommand(velocity_cmd);
 }
 
 void IndexerController::stopping(const ros::Time &/*time*/)
@@ -85,7 +67,7 @@ bool IndexerController::cmdService(controllers_2020_msgs::IndexerSrv::Request &r
 	{
 		//assign request value to command buffer(s)
 		//Ex:
-		indexer_cmd_.writeFromNonRT(IndexerCommand(req.indexer_forward, req.indexer_reverse));
+		indexer_cmd_.writeFromNonRT(IndexerCommand(req.indexer_velocity));
 	}
 	else
 	{
