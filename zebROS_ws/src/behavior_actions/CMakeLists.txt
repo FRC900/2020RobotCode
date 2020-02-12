@@ -72,6 +72,7 @@ add_action_files(
 	Elevator.action
 	Align.action
 	AlignThenShoot.action
+	Shooter.action
 )
 
 generate_messages(DEPENDENCIES actionlib_msgs std_msgs)

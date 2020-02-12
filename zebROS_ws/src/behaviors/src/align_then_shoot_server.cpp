@@ -1,4 +1,5 @@
-//THIS IS A TEMPLATE FILE. TO USE, COPY IT AND REPLACE:
+//THIS IS A TEMPLATE FILE. TO USE, 
+//COPY IT AND REPLACE:
 // AlignThenShoot	with your server's name, e.g. CargoIntake
 // align_then_shoot	with your server's name, e.g. cargo_intake
 // AlignThenShoot		with the name of your action file (if file is Intake.action, replace w/ Intake)
@@ -12,7 +13,7 @@
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/AlignThenShootAction.h"
-#include "behavior_actions/AlignToShootAction.h"
+#include "behavior_actions/AlignAction.h"
 #include "behavior_actions/ShooterAction.h"
 
 //include controller service files and other service files
@@ -25,12 +26,12 @@ class AlignThenShootAction {
 	protected:
 		ros::NodeHandle nh_;
 
-		actionlib::SimpleActionServer<behaviors::AlignThenShootAction> as_; //create the actionlib server
+		actionlib::SimpleActionServer<behavior_actions::AlignThenShootAction> as_; //create the actionlib server
 		std::string action_name_;
 
 		//clients to call other actionlib servers
 		actionlib::SimpleActionClient<behavior_actions::ShooterAction> ac_shooter_;
-		actionlib::SimpleActionClient<behavior_actions::AlignToShootAction> ac_align_; //TODO: Check Action name
+		actionlib::SimpleActionClient<behavior_actions::AlignAction> ac_align_; //TODO: Check Action name
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -41,9 +42,9 @@ class AlignThenShootAction {
 		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
-                //config variables, with defaults
-                double server_timeout_; //overall timeout for your server
-                double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
+        //config variables, with defaults
+        double server_timeout_; //overall timeout for your server
+        double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 
 	public:
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
