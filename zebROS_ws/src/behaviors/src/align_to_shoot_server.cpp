@@ -23,6 +23,7 @@ class AlignToShootAction {
 		ros::Subscriber goal_detection_data_sub;
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
+		ros::ServiceClient turret_controller_client_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -51,11 +52,11 @@ class AlignToShootAction {
 		std::map<std::string, std::string> service_connection_header;
 		service_connection_header["tcp_nodelay"] = "1";
 
-		goal_detection_data_sub_ = nh_.subscribe("/goal_detection/src/goal_detect", 1, /**/, this);
+		goal_detection_data_sub_ = nh_.subscribe("/goal_detection/src/goal_detect", 1, &AlignToShootAction::goalDetectionCallback, this);
 
 		//initialize client used to call controllers
 		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
-
+		turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
 	}
 
 		~AlignToShootAction(void)
