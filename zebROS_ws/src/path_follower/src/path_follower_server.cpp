@@ -25,31 +25,31 @@ class PathAction
 
 		ros::Subscriber odom_sub_;
 		nav_msgs::Odometry odom_;
-                ros::Subscriber yaw_sub_;
-                geometry_msgs::Quaternion orientation_;
+		ros::Subscriber yaw_sub_;
+		geometry_msgs::Quaternion orientation_;
 
 		std::map<std::string, AlignActionAxisState> axis_states_;
-                ros::Publisher combine_cmd_vel_pub_;
+		ros::Publisher combine_cmd_vel_pub_;
 
-                std::shared_ptr<PathFollower> path_follower_;
-                double lookahead_distance_;
-                double final_pos_tol_;
-                double server_timeout_;
-                double start_point_radius_;
-                std::string odom_topic_;
+		std::shared_ptr<PathFollower> path_follower_;
+		double lookahead_distance_;
+		double final_pos_tol_;
+		double server_timeout_;
+		double start_point_radius_;
+		std::string odom_topic_;
 
 		bool debug_;
-                double start_time_;
-                int ros_rate_;
+		double start_time_;
+		int ros_rate_;
 
 	public:
 		PathAction(const std::string &name, ros::NodeHandle nh,
-                        double lookahead_distance,
-                        double final_pos_tol,
-                        double server_timeout,
-                        int ros_rate, 
-                        double start_point_radius, 
-                        const std::string& odom_topic)
+				   double lookahead_distance,
+				   double final_pos_tol,
+				   double server_timeout,
+				   int ros_rate,
+				   double start_point_radius,
+				   const std::string &odom_topic)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
@@ -57,12 +57,12 @@ class PathAction
 		{
 			as_.start();
 
-                        odom_topic_ = odom_topic;
+			odom_topic_ = odom_topic;
 			lookahead_distance_ = lookahead_distance;
 			final_pos_tol_ = final_pos_tol;
 			server_timeout_ = server_timeout;
-                        ros_rate_ = ros_rate;
-                        start_point_radius_ = start_point_radius;
+			ros_rate_ = ros_rate;
+			start_point_radius_ = start_point_radius;
 
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
@@ -73,20 +73,20 @@ class PathAction
 			odom_sub_ = nh_.subscribe(odom_topic_, 1, &PathAction::odomCallback, this);
 			yaw_sub_ = nh_.subscribe("/navx_jetson/imu_zeroed", 1, &PathAction::yawCallback, this);
 
-                        combine_cmd_vel_pub_ = nh_.advertise<std_msgs::Bool>("path_follower_pid/pid_enable", 1000);
+			combine_cmd_vel_pub_ = nh_.advertise<std_msgs::Bool>("path_follower_pid/pid_enable", 1000);
 
-                        path_follower_ = std::make_shared<PathFollower>(lookahead_distance_, start_point_radius_);
-                }
+			path_follower_ = std::make_shared<PathFollower>(lookahead_distance_, start_point_radius_);
+		}
 
 		void odomCallback(const nav_msgs::Odometry &odom_msg)
 		{
 			odom_ = odom_msg;
-                        //odom_.pose.pose.position.y *= -1;
+			//odom_.pose.pose.position.y *= -1;
 		}
 
 		void yawCallback(const sensor_msgs::Imu &yaw_msg)
 		{
-                        orientation_ = yaw_msg.orientation;
+			orientation_ = yaw_msg.orientation;
 		}
 
 		bool addAxis(const AlignActionAxisConfig &axis_config)
@@ -147,57 +147,57 @@ class PathAction
 			bool timed_out = false;
 			bool succeeded = false;
 
-			// Generate the waypoints of the spline 
+			// Generate the waypoints of the spline
 			base_trajectory::GenerateSpline spline_gen_srv;
 			const size_t point_num = goal->points.size();
 			spline_gen_srv.request.points.resize(point_num);
-                        for(size_t i = 0; i < point_num; i++)
-                        {
-                            spline_gen_srv.request.points[i].positions.resize(3);
-                            spline_gen_srv.request.points[i].positions[0] = goal->points[i].x;
-                            spline_gen_srv.request.points[i].positions[1] = goal->points[i].y;
-                            spline_gen_srv.request.points[i].positions[2] = goal->points[i].z;
-                        }
-                        if(!spline_gen_cli_.call(spline_gen_srv))
-                        {
-                            ROS_ERROR_STREAM("Can't call spline gen service in path_follower_server");
-                            
-                        }
-                        size_t num_waypoints = spline_gen_srv.response.path.poses.size();
+			for (size_t i = 0; i < point_num; i++)
+			{
+				spline_gen_srv.request.points[i].positions.resize(3);
+				spline_gen_srv.request.points[i].positions[0] = goal->points[i].x;
+				spline_gen_srv.request.points[i].positions[1] = goal->points[i].y;
+				spline_gen_srv.request.points[i].positions[2] = goal->points[i].z;
+			}
+			if (!spline_gen_cli_.call(spline_gen_srv))
+			{
+				ROS_ERROR_STREAM("Can't call spline gen service in path_follower_server");
 
-                        //debug
-                        for(size_t i = 0; i < spline_gen_srv.response.end_points.size(); i++)
-                        {
-                            ROS_INFO_STREAM("end point at " << i << " is " << spline_gen_srv.response.end_points[i]);
-                        }
+			}
+			size_t num_waypoints = spline_gen_srv.response.path.poses.size();
 
-                        //replacement for actual transforms, for now
-                        for(size_t i = 0; i < num_waypoints; i++) //TODO hacky fix
-                        {
-                            spline_gen_srv.response.path.poses[i].pose.position.x += odom_.pose.pose.position.x;
-                            spline_gen_srv.response.path.poses[i].pose.position.y += odom_.pose.pose.position.y;
-                        }
-                        
-                        //debug
-                        ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y << ", " << PathFollower::getYaw(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation));
+			//debug
+			for (size_t i = 0; i < spline_gen_srv.response.end_points.size(); i++)
+			{
+				ROS_INFO_STREAM("end point at " << i << " is " << spline_gen_srv.response.end_points[i]);
+			}
+
+			//replacement for actual transforms, for now
+			for (size_t i = 0; i < num_waypoints; i++) //TODO hacky fix
+			{
+				spline_gen_srv.response.path.poses[i].pose.position.x += odom_.pose.pose.position.x;
+				spline_gen_srv.response.path.poses[i].pose.position.y += odom_.pose.pose.position.y;
+			}
+
+			//debug
+			ROS_INFO_STREAM(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y << ", " << PathFollower::getYaw(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.orientation));
 
 			ros::Rate r(ros_rate_);
 
-                        // send path to pure pursuit
-			if(!path_follower_->loadPath(spline_gen_srv.response.path))
+			// send path to pure pursuit
+			if (!path_follower_->loadPath(spline_gen_srv.response.path))
 			{
 				ROS_ERROR_STREAM("Failed to load path");
 				preempted = true;
 			}
 
 			//in loop, send PID enable commands to rotation, x, y
-                        double distance_travelled = 0;
-                        start_time_ = ros::Time::now().toSec();
-                        while (ros::ok() && !preempted && !timed_out && !succeeded)
-                        {
+			double distance_travelled = 0;
+			start_time_ = ros::Time::now().toSec();
+			while (ros::ok() && !preempted && !timed_out && !succeeded)
+			{
 
-                            // odom_.pose.pose.orientation = orientation_;
-                            geometry_msgs::Pose next_waypoint = path_follower_->run(odom_, distance_travelled);
+				// odom_.pose.pose.orientation = orientation_;
+				geometry_msgs::Pose next_waypoint = path_follower_->run(odom_, distance_travelled);
 
 				// TODO - think about what the target point and axis are
 				// We want to end up driving to a point on the path some
@@ -212,8 +212,8 @@ class PathAction
 				std_msgs::Float64 command_msg;
 				std_msgs::Float64 state_msg;
 
-                                combine_cmd_vel_pub_.publish(enable_msg);
-                                
+				combine_cmd_vel_pub_.publish(enable_msg);
+
 				auto x_axis_it = axis_states_.find("x");
 				auto &x_axis = x_axis_it->second;
 				x_axis.enable_pub_.publish(enable_msg);
@@ -240,59 +240,64 @@ class PathAction
 				state_msg.data = PathFollower::getYaw(odom_.pose.pose.orientation);
 				z_axis.state_pub_.publish(state_msg);
 
-                                if(as_.isPreemptRequested() || !ros::ok()) {
-                                    ROS_ERROR_STREAM(action_name_ << ": preempted");
-                                    preempted = true;
-                                }
-                                else if((fabs(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x - odom_.pose.pose.position.x) < final_pos_tol_) &&
-                                        (fabs(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y - odom_.pose.pose.position.y) < final_pos_tol_))
-                                {
-                                    ROS_INFO_STREAM(action_name_ << ": succeeded");
-                                    ROS_INFO_STREAM("endpoint_x = " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", odom_x = " << odom_.pose.pose.position.x);
-                                    succeeded = true;
-                                }
-                                else if(ros::Time::now().toSec() - start_time_ > server_timeout_) {
-                                    ROS_ERROR_STREAM(action_name_ << ": timed out");
-                                    timed_out = true;
-                                }
+				if (as_.isPreemptRequested() || !ros::ok())
+				{
+					ROS_ERROR_STREAM(action_name_ << ": preempted");
+					preempted = true;
+				}
+				else if ((fabs(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x - odom_.pose.pose.position.x) < final_pos_tol_) &&
+						 (fabs(spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.y - odom_.pose.pose.position.y) < final_pos_tol_))
+				{
+					ROS_INFO_STREAM(action_name_ << ": succeeded");
+					ROS_INFO_STREAM("endpoint_x = " << spline_gen_srv.response.path.poses[num_waypoints - 1].pose.position.x << ", odom_x = " << odom_.pose.pose.position.x);
+					succeeded = true;
+				}
+				else if (ros::Time::now().toSec() - start_time_ > server_timeout_)
+				{
+					ROS_ERROR_STREAM(action_name_ << ": timed out");
+					timed_out = true;
+				}
 
 				ros::spinOnce();
 				r.sleep();
 			}
 
-                        std_msgs::Bool enable_msg;
-                        enable_msg.data = false;
+			std_msgs::Bool enable_msg;
+			enable_msg.data = false;
 
-                        combine_cmd_vel_pub_.publish(enable_msg);
+			combine_cmd_vel_pub_.publish(enable_msg);
 
-                        auto x_axis_it = axis_states_.find("x");
-                        auto &x_axis = x_axis_it->second;
-                        x_axis.enable_pub_.publish(enable_msg);
+			auto x_axis_it = axis_states_.find("x");
+			auto &x_axis = x_axis_it->second;
+			x_axis.enable_pub_.publish(enable_msg);
 
-                        auto y_axis_it = axis_states_.find("y");
-                        auto &y_axis = y_axis_it->second;
-                        y_axis.enable_pub_.publish(enable_msg);
+			auto y_axis_it = axis_states_.find("y");
+			auto &y_axis = y_axis_it->second;
+			y_axis.enable_pub_.publish(enable_msg);
 
-                        auto z_axis_it = axis_states_.find("z");
-                        auto &z_axis = z_axis_it->second;
-                        z_axis.enable_pub_.publish(enable_msg);
+			auto z_axis_it = axis_states_.find("z");
+			auto &z_axis = z_axis_it->second;
+			z_axis.enable_pub_.publish(enable_msg);
 
 			//log result and set actionlib server state appropriately
-                        path_follower::PathResult result;
+			path_follower::PathResult result;
 
-			if(preempted) {
+			if (preempted)
+			{
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
 				result.timed_out = false;
 				result.success = false;
 				as_.setPreempted(result);
 			}
-			else if(timed_out) {
+			else if (timed_out)
+			{
 				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
 				result.timed_out = true;
 				result.success = false;
 				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
 			}
-			else { //implies succeeded
+			else   //implies succeeded
+			{
 				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
 				result.timed_out = false;
 				result.success = true;
@@ -306,12 +311,12 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "path_follower_server");
 	ros::NodeHandle nh;
 
-        double lookahead_distance = 0.1;
-        double final_pos_tol = 0.01;
-        double server_timeout = 5.0;
-        int ros_rate = 20;
-        double start_point_radius = 0.05;
-        std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
+	double lookahead_distance = 0.1;
+	double final_pos_tol = 0.01;
+	double server_timeout = 5.0;
+	int ros_rate = 20;
+	double start_point_radius = 0.05;
+	std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
 	nh.getParam("/path_follower/path_follower/lookahead_distance", lookahead_distance);
 	nh.getParam("/path_follower/path_follower/final_pos_tol", final_pos_tol);
 	nh.getParam("/path_follower/path_follower/server_timeout", server_timeout);
@@ -320,12 +325,12 @@ int main(int argc, char **argv)
 	nh.getParam("/path_follower/path_follower/odom_topic", odom_topic);
 
 	PathAction path_action_server("path_follower_server", nh,
-                lookahead_distance,
-                final_pos_tol,
-                server_timeout,
-                ros_rate, 
-                start_point_radius, 
-                odom_topic);
+								  lookahead_distance,
+								  final_pos_tol,
+								  server_timeout,
+								  ros_rate,
+								  start_point_radius,
+								  odom_topic);
 
 	AlignActionAxisConfig x_axis("x", "x_position_pid/pid_enable", "x_position_pid/x_cmd_pub", "x_position_pid/x_state_pub", "x_position_pid/pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_position_pid/pid_enable", "y_position_pid/y_cmd_pub", "y_position_pid/y_state_pub", "y_position_pid/pid_debug", "y_timeout_param", "y_error_threshold_param");
