@@ -163,10 +163,10 @@ class PathAction
                             ROS_ERROR_STREAM("Can't call spline gen service in path_follower_server");
                             
                         }
-                        int num_waypoints = spline_gen_srv.response.path.poses.size();
+                        size_t num_waypoints = spline_gen_srv.response.path.poses.size();
 
                         //debug
-                        for(int i = 0; i < spline_gen_srv.response.end_points.size(); i++)
+                        for(size_t i = 0; i < spline_gen_srv.response.end_points.size(); i++)
                         {
                             ROS_INFO_STREAM("end point at " << i << " is " << spline_gen_srv.response.end_points[i]);
                         }
@@ -184,11 +184,14 @@ class PathAction
 			ros::Rate r(ros_rate_);
 
                         // send path to pure pursuit
-			path_follower_->loadPath(spline_gen_srv.response.path);
+			if(!path_follower_->loadPath(spline_gen_srv.response.path))
+			{
+				ROS_ERROR_STREAM("Failed to load path");
+				preempted = true;
+			}
 
 			//in loop, send PID enable commands to rotation, x, y
                         double distance_travelled = 0;
-                        double total_distance = path_follower_->getPathLength();
                         start_time_ = ros::Time::now().toSec();
                         while (ros::ok() && !preempted && !timed_out && !succeeded)
                         {

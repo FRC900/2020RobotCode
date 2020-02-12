@@ -5,11 +5,14 @@
 #include "path_follower/path_follower.h"
 #include "ros/ros.h"
 
-//TODO - make const T
-void PathFollower::loadPath(const nav_msgs::Path& path)
+bool PathFollower::loadPath(const nav_msgs::Path& path)
 {
     path_ = path;
     num_waypoints_ = path_.poses.size();
+	if(num_waypoints_ == 0)
+	{
+		return false;
+	}
     path_length_ = 0;
     vec_path_length_.push_back(0); // Path length at the first waypoint is 0
     ROS_INFO_STREAM("0: (" << path_.poses[0].pose.position.x << ", " << path_.poses[0].pose.position.y << ")"); 
@@ -24,9 +27,10 @@ void PathFollower::loadPath(const nav_msgs::Path& path)
         path_length_ += hypot(end_x - start_x, end_y - start_y);
         vec_path_length_.push_back(path_length_);
     }
+	return true;
 }
 
-double PathFollower::getPathLength()
+const double PathFollower::getPathLength()
 {
     return path_length_;
 }
@@ -56,7 +60,7 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
     double current_x = odom.pose.pose.position.x;
     double current_y = odom.pose.pose.position.y;
     double current_x_path, current_y_path;
-    size_t current_waypoint_index; //the index BEFORE the point on the path
+    size_t current_waypoint_index = 0; //the index BEFORE the point on the path
     double minimum_distance = std::numeric_limits<double>::max();
 
     double start_x;
@@ -67,7 +71,20 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
     double dy;
 
     double magnitude_projection; // distance from the waypoint to the point on the path
-    double distance_to_travel; // distance from the point on the path, along the path
+    double distance_to_travel = 0; // distance from the point on the path, along the path
+	if(num_waypoints_ == 0)
+	{
+		ROS_ERROR_STREAM("No waypoints in path");
+		geometry_msgs::Pose target_pos;
+		target_pos.position.x = 0;
+		target_pos.position.y = 0;
+		target_pos.position.z = 0;
+		target_pos.orientation.x = 0;
+		target_pos.orientation.y = 0;
+		target_pos.orientation.z = 0;
+		target_pos.orientation.w = 1;
+		return target_pos; //TODO: better way to handle errors? This will just time out the server
+	}
 	int last_index = num_waypoints_ - 1;
 
     // Find point in path closest to odometry reading
@@ -122,9 +139,18 @@ geometry_msgs::Pose PathFollower::run(nav_msgs::Odometry odom, double &total_dis
         {
             if(dist_from_startpoint < start_point_radius_)
             {
-                ROS_INFO_STREAM("Robot is close enough to start_point to drive");
-                current_waypoint_index = 0;
-            }
+				ROS_INFO_STREAM("Robot is close enough to start_point to drive");
+				current_waypoint_index = 0;
+
+				//set distance_to_travel equal to the length of the first segment
+				start_x = path_.poses[0].pose.position.x;
+				start_y = path_.poses[0].pose.position.y;
+				end_x = path_.poses[1].pose.position.x;
+				end_y = path_.poses[1].pose.position.y;
+				dx = end_x - start_x;
+				dy = end_y - start_y;
+				distance_to_travel = hypot(dx, dy);
+			}
             else
             {
                 ROS_ERROR_STREAM("Not within path limits : driving to start waypoint"); 

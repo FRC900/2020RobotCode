@@ -10,7 +10,7 @@ ros::Time time_since_orient;
 ros::Time time_since_x;
 ros::Time time_since_y;
 ros::Time time_since_pid_enable;
-ros::Time time_since_orient_state;
+ros::Time time_at_last_orient_state;
 ros::Time current_time;
 
 std::string orient_topic;
@@ -69,7 +69,7 @@ void ratio_xyCB(const std_msgs::Float64& msg) {
 	ratio_xy = msg.data;
 }
 void orientStateCB(const std_msgs::Float64& msg) {
-        time_since_orient_state = ros::Time::now();
+        time_at_last_orient_state = ros::Time::now();
 		if(msg.data == msg.data)
 			current_angle = msg.data;
 		else
@@ -174,7 +174,7 @@ int main(int argc, char ** argv)
 			}
 			time_since_x = ros::Time::now();
                         double rotate_angle;
-                        if((current_time - time_since_orient_state).toSec() < command_timeout)
+                        if((current_time - time_at_last_orient_state).toSec() < command_timeout)
                         {
                             rotate_angle = -1 * current_angle;
                         }

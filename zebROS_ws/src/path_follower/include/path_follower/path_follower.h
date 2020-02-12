@@ -97,13 +97,13 @@ class PathFollower
         }
 
         // load nav_msgs::Path
-        void loadPath(const nav_msgs::Path& path);
+        bool loadPath(const nav_msgs::Path& path);
 
         // get yaw from geometry_msgs quaternion 
         static double getYaw(const geometry_msgs::Quaternion q);
 
         // path length getter
-        double getPathLength();
+        const double getPathLength();
 
         // contains the main control loop
         geometry_msgs::Pose run(nav_msgs::Odometry odom, double &distance_travelled);
