@@ -29,6 +29,7 @@ struct GoalInfo
 	cv::Point com;
 	cv::Rect br;
 	cv::RotatedRect rtRect;
+	float depth;
 };
 
 //This contains all the necessary info for a goal
@@ -42,6 +43,7 @@ struct GoalFound
 	cv::Rect rect;
 	cv::RotatedRect rotated_rect;
 	std::string id;
+	float depth;
 };
 
 

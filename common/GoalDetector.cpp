@@ -81,7 +81,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 	if(power_port_info.size() == 0)
 		return;
 #ifdef VERBOSE
-	cout << power_port_info.size() << " power port goals found" << endl;
+	cout << power_port_info.size() << " goals found" << endl;
 #endif
 
 	//loop through every power port goal found
@@ -107,6 +107,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 				goal_found.contour_index     = power_port_info[i].contour_index;
 				goal_found.rect		           = power_port_info[i].rect;
 				goal_found.rotated_rect      = power_port_info[i].rtRect;
+				goal_found.depth             = power_port_info[i].depth;
 				goal_found.id                = getObjectId(_target_num);
 
 				//These are the saved values for the best goal before moving on to
@@ -160,7 +161,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 				for(size_t n = 0; n < _return_found.size(); n++)
 				{
 					cout << "Goal " << n + 1 << " " << _return_found[n].contour_index << " pos: " << _return_found[n].pos <<
-						" distance: " << _return_found[n].distance << " angle: " << _return_found[n].angle << " confidence: " << _return_found[n].confidence << endl;
+						" distance: " << _return_found[n].depth << " angle: " << _return_found[n].angle << " confidence: " << _return_found[n].confidence << endl;
 				}
 #endif
 			}
@@ -358,6 +359,7 @@ const vector<GoalInfo> GoalDetector::getInfo(const vector<vector<Point>> &contou
 		goal_info.depth_error   = depth_maxs[i].error;
 		goal_info.com           = goal_actual.com();
 		goal_info.br            = br;
+		goal_info.depth         = depth_maxs[i].depth;
 		//goal_info.rtRect        = rr;
 		//goal_info.lineStart     = start_line;
 		//goal_info.lineEnd       = end_line;

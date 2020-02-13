@@ -101,7 +101,7 @@ namespace goal_detection
 			cv::Point3f get_world_coord_scaled(const image_geometry::PinholeCameraModel &model,
 											   const cv::Rect &bounding_rect,
 											   const cv::Point3f &pos,
-											   const std::string &debug_name) const
+											   const std::string &debug_name, const float depth) const
 			{
 
 				// Center point of left and right bounding rect
@@ -111,7 +111,7 @@ namespace goal_detection
 						);
 				const cv::Point3f world_coord_unit = model.projectPixelTo3dRay(uv);
 				const float distance = sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
-				const cv::Point3f world_coord_scaled = world_coord_unit * distance;
+				const cv::Point3f world_coord_scaled = world_coord_unit * depth;
 
 				const cv::Point3f adj_world_coord_scaled(world_coord_scaled.x, world_coord_scaled.z, -world_coord_scaled.y);
 #if 0
@@ -196,7 +196,7 @@ namespace goal_detection
 					dummy.confidence = gfd[i].confidence;
 
 					// Bounding rect in world coords
-					const cv::Point3f world_coord_scaled = get_world_coord_scaled(model, gfd[i].rect, gfd[i].pos, dummy.id);
+					const cv::Point3f world_coord_scaled = get_world_coord_scaled(model, gfd[i].rect, gfd[i].pos, dummy.id, gfd[i].depth);
 
 					dummy.location.x = world_coord_scaled.y;
 					dummy.location.y = world_coord_scaled.x;
