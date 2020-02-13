@@ -602,6 +602,10 @@ int main (int argc, char **argv)
 		std::cin >> indexer_action;
 		callIndexer(indexer_action);
 	}
+	else if(what_to_run == "shooter")
+	{
+		callShooter();
+	}
 	else {
 		ROS_ERROR("Invalid run argument");
 		return 0;
