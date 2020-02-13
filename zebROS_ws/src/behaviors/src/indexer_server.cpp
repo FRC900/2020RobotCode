@@ -23,7 +23,14 @@ class Linebreak {
 		int debounce_iterations_;
 		bool triggered_;
 
-		//called every time the joint state subscriber is run
+		//pulse detection stuff
+		bool prev_state_;
+		int prev_toggle_; //-1 for falling edge, 0 initially, 1 for rising edge
+		bool rising_edge_happened_; //neither of these set to false unless resetPulseDetection() is called. We need this to be persistent so we can detect a rising edge even if it's followed by lots of toggles afterwards
+		bool falling_edge_happened_;
+		bool pulsed_; //if rising edge followed by falling edge
+
+		//called every time the joint state subscriber callback is run
 		bool update(const sensor_msgs::JointState &joint_state)
 		{
 			//set idx if it hasn't already been set
@@ -45,6 +52,8 @@ class Linebreak {
 			}
 
 			//update linebreak state
+			prev_state_ = triggered_;
+
 			if (joint_state.position[idx_] != 0) { //if linebreak true
 				true_count_ += 1;
 				false_count_ = 0;
@@ -60,7 +69,32 @@ class Linebreak {
 			else if (false_count_ > debounce_iterations_){
 				triggered_ = false;
 			}
+
+			//do pulse detection stuff
+			if(prev_state_ == false && triggered_ == true){
+				rising_edge_happened_ = true;
+				prev_toggle_ = 1;
+			}
+			else if(prev_state_ == true && triggered_ == false){
+				//if rising edge had happened before the falling edge happened, we got a pulse
+				if(prev_toggle_ == 1){ //1 means rising edge
+					pulsed_ = true;
+				}
+
+				falling_edge_happened_ = true;
+				prev_toggle_ = -1;
+			}
+
+
 			return true;
+		}
+
+		void resetPulseDetection()
+		{
+			prev_toggle_ = 0;
+			rising_edge_happened_ = false;
+			falling_edge_happened_ = false;
+			pulsed_ = false;
 		}
 
 		Linebreak(std::string name) //name as found in joint_states
@@ -71,6 +105,12 @@ class Linebreak {
 			false_count_ = 0;
 			debounce_iterations_ = linebreak_debounce_iterations; //read from global config value
 			triggered_ = false;
+
+			prev_state_ = false;
+			prev_toggle_ = 0;
+			rising_edge_happened_ = false;
+			falling_edge_happened_ = false;
+			pulsed_ = false;
 		}
 };
 
@@ -153,6 +193,8 @@ class IndexerAction {
 		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
 		bool goToPositionIntake()
 		{
+			ROS_INFO("Indexer server - going to position intake");
+
 			if (n_balls_ > 0 && !indexer_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
 				//set velocity to reverse
 				controllers_2020_msgs::IndexerSrv srv;
@@ -185,8 +227,10 @@ class IndexerAction {
 		//function to send balls towards shooter until linebreak right before shooter is triggered - default state if have 5 balls
 		bool goToPositionShoot()
 		{
+			ROS_INFO("Indexer server - going to position shoot.");
+
 			if (n_balls_ > 0 && !shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
-				//set velocity to reverse
+				//set velocity to forwards
 				controllers_2020_msgs::IndexerSrv srv;
 				srv.request.indexer_velocity = indexer_speed_; //TODO make sure positive means forward
 				if ( !indexer_controller_client_.call(srv) )
@@ -241,29 +285,106 @@ class IndexerAction {
 			switch(goal->action)
 			{
 				case 0: //go to position intake
-                                    ROS_INFO_STREAM("Going to position intake in indexer actionlib server");
+                {
+					ROS_INFO_STREAM("Going to position intake in indexer actionlib server");
+					if(!preempted_ && !timed_out_ && ros::ok())
+					{
+						goToPositionIntake();
+					}
+				}
+					break;
+				case 1: //intake a ball
+                { //braces here fix a cross-initialization error
+
+					ROS_INFO_STREAM("Intaking a ball in indexer actionlib server");
+
+					//make sure we're at position intake in case balls shifted around
 					if(!preempted_ && !timed_out_ && ros::ok())
 					{
 						goToPositionIntake();
 					}
 
-					break;
-				case 1: //intake a ball
-                                    ROS_INFO_STREAM("Intaking a ball in indexer actionlib server");
+					if(!preempted_ && !timed_out_ && ros::ok())
+					{
+						//set velocity forward if we're allowed to (e.g. if that won't force a ball into the shooter)
+						if(!shooter_linebreak_.triggered_)
+						{
+							controllers_2020_msgs::IndexerSrv srv;
+							srv.request.indexer_velocity = indexer_speed_; //TODO check that positive means forward
+							if(!indexer_controller_client_.call(srv))
+							{
+								preempted_ = true;
+								ROS_ERROR("Indexer server - indexer controller call failed when trying to set velocity forward to intake.");
+							}
+						}
+						else {
+							//error out because we weren't able to move the indexer forward
+							preempted_ = true;
+							ROS_ERROR("Indexer server - couldn't start intaking a ball because there was a ball at the shooter");
+						}
 
 
+					}
 
+					//wait for ball to be intaked - ball is intaked if the indexer linebreak pulses on then off
+					indexer_linebreak_.resetPulseDetection(); //clear previous checks for rising/falling edges
+					while(!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
+					{
+						ROS_INFO("Indexer server - Waiting for ball to be fully intaked");
+						if(indexer_linebreak_.pulsed_)
+						{
+							ROS_INFO("Indexer server - successfully intaked the ball!");
+							n_balls_++;
+							break;
+						}
+
+						checkPreemptedAndTimedOut("waiting for ball to be fully intaked");
+						if(!preempted_ && !timed_out_){
+							r_.sleep();
+						}
+					}
+					//check if we exited the while loop because the shooter linebreak got triggered - means the intake didn't complete successfully
+					if(shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
+					{
+						preempted_ = true;
+						ROS_ERROR("Indexer server - couldn't finish intaking a ball because there was a ball at the shooter");
+					}
+
+					//go to positionIntake or positionShoot based on how many balls we have
+					if(!preempted_ && !timed_out_ && ros::ok())
+					{
+						if(n_balls_ < 5)
+						{
+							goToPositionIntake();
+						}
+						else
+						{
+							goToPositionShoot();
+						}
+					}
+
+					//no matter what happened, set the velocity of the indexer to 0 at the end
+					controllers_2020_msgs::IndexerSrv srv;
+					srv.request.indexer_velocity = 0;
+					if(!indexer_controller_client_.call(srv))
+					{
+						ROS_ERROR("Indexer server - indexer controller call failed when setting final state (for the intake a ball action)");
+					}
+				}
 					break;
 				case 2: //feed a ball to the shooter
-                                    ROS_INFO_STREAM("Feeding a ball to the shooter in indexer actionlib server");
+                {
+					ROS_INFO_STREAM("Feeding a ball to the shooter in indexer actionlib server");
 
 
-
+				}
 					break;
 				default:
+				{
 					ROS_ERROR_STREAM("Indexer server: invalid goal. " << goal->action << " is not a valid action (valid ones are 0,1,2)");
 					preempted_ = true;
 					break;
+				}
 			}
 
 /*
