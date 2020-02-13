@@ -69,7 +69,7 @@ add_action_files(
 	Climb.action
 	Elevator.action
 	Align.action
-
+	Shooter.action
 	Indexer.action
 )
 
