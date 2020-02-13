@@ -6,12 +6,49 @@
 #include <behavior_actions/ClimbAction.h>
 #include <behavior_actions/AlignAction.h>
 #include <path_follower/PathAction.h>
+#include <behavior_actions/IndexerAction.h>
 #include <behavior_actions/enumerated_elevator_indices.h>
 #include <boost/algorithm/string.hpp>
 #include <string>
 
 double server_wait_timeout = 20.0; //how long to wait for a server to exist before exiting, in sec.
 double server_exec_timeout = 20.0; //how long to wait for an actionlib server call to finish before timing out, in sec. Used for all actionlib calls
+
+bool callIndexer()
+{
+	//create client to call actionlib server
+	actionlib::SimpleActionClient<behavior_actions::IndexerAction> indexer_ac("/indexer/indexer_server", true);
+
+	ROS_INFO("Waiting for indexer server to start.");
+	if(!indexer_ac.waitForServer(ros::Duration(server_wait_timeout)))
+	{
+		ROS_ERROR("Could not find server within %f seconds.", server_wait_timeout);
+	}
+
+	ROS_INFO("Sending goal to indexer server.");
+	// send a goal to the action
+	behavior_actions::IndexerGoal indexer_goal;
+	indexer_ac.sendGoal(indexer_goal);
+
+	//wait for the action to return
+	bool finished_before_timeout = indexer_ac.waitForResult(ros::Duration(server_exec_timeout));
+
+	if (finished_before_timeout)
+	{
+		actionlib::SimpleClientGoalState state = indexer_ac.getState();
+		ROS_INFO("Action finished with state: %s",state.toString().c_str());
+		if(indexer_ac.getResult()->timed_out)
+		{
+			ROS_INFO("Indexer server timed out!");
+		}
+		return true;
+	}
+	else
+	{
+		ROS_INFO("Action did not finish before the time out.");
+		return false;
+	}
+}
 
 bool callElevator(int setpoint_idx)
 {
@@ -334,12 +371,13 @@ int main (int argc, char **argv)
 	 */
 	std::string what_to_run;
 	std::string elevator_setpoint;
-        double path_x_setpoint;
-        double path_y_setpoint;
-        double path_z_setpoint;
-        double path_x2_setpoint;
-        double path_y2_setpoint;
-        double path_z2_setpoint;
+	double path_x_setpoint;
+	double path_y_setpoint;
+	double path_z_setpoint;
+	double path_x2_setpoint;
+	double path_y2_setpoint;
+	double path_z2_setpoint;
+	int indexer_action;
 
 	what_to_run = ros::getROSArg(argc, argv, "run"); //if can't find the argument, will default to an empty string of length 0
 	boost::algorithm::to_lower(what_to_run); //convert to lower case
@@ -347,7 +385,7 @@ int main (int argc, char **argv)
 	if(what_to_run.length() == 0)
 	{
 		ROS_ERROR("You need to specify the run functionality with: rosrun behaviors test_actionlib run:=____");
-		ROS_ERROR("Possible values for run: all, intake_cargo, outtake_cargo, intake_hatch_panel, outtake_hatch_panel, elevator, climber0, climber1, climber2, climber3, path");
+		ROS_ERROR("Possible values for run: all, indexer, intake_cargo, outtake_cargo, intake_hatch_panel, outtake_hatch_panel, elevator, climber0, climber1, climber2, climber3");
 		ROS_ERROR("Note: 'all' will not run the climber");
 		return 0;
 	}
@@ -402,9 +440,14 @@ int main (int argc, char **argv)
 		elevator_setpoint = "N/A";
 	}
 
+	if(what_to_run == "indexer"){
+		indexer_action = std::stoi(ros::getROSArg(argc, argv, "action")); //if can't find the argument, will default to an empty string of length 0
+		//stoi converts a string to an int
+	}
+
 	ROS_WARN("what_to_run: %s", what_to_run.c_str());
 	ROS_WARN("setpoint: %s", elevator_setpoint.c_str());
-
+	ROS_WARN_STREAM("indexer_action: " << indexer_action);
 
 	//Actually run stuff ---------------------------------
 

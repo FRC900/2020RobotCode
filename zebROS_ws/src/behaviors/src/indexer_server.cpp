@@ -90,13 +90,13 @@ class IndexerAction {
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
 
 		//linebreak sensors
-		Linebreak indexer_linebreak{"indexer_linebreak"}; //just inside the entrance to the indexer
-		Linebreak shooter_linebreak{"shooter_linebreak"}; //just before the shooter
+		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
+		Linebreak shooter_linebreak_{"shooter_linebreak"}; //just before the shooter
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
 		bool timed_out_;
-		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
+		ros::Rate r_{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
 		//other variables
@@ -109,17 +109,7 @@ class IndexerAction {
 
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
-				if(as_.isPreemptRequested() || !ros::ok())
-				{
-					preempted_ = true;
-					ROS_ERROR_STREAM("indexer_server: preempt during pause() - " << activity);
-				}
-				else if ((ros::Time::now().toSec() - start_time_) >= server_timeout_)
-				{
-					timed_out_ = true;
-					ROS_ERROR_STREAM("indexer_server: timeout during pause() - " << activity);
-				}
-
+				checkPreemptedAndTimedOut("pausing during - " + activity);
 				if((ros::Time::now().toSec() - pause_start_time) >= duration)
 				{
 					return true; //pause worked like expected
@@ -129,15 +119,29 @@ class IndexerAction {
 			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
 		}
 
+		void checkPreemptedAndTimedOut(const std::string &activity)
+		{
+			if(as_.isPreemptRequested() || !ros::ok())
+			{
+				preempted_ = true;
+				ROS_ERROR_STREAM("indexer_server: preempt during - " << activity);
+			}
+			else if ((ros::Time::now().toSec() - start_time_) >= server_timeout_)
+			{
+				timed_out_ = true;
+				ROS_ERROR_STREAM("indexer_server: timeout during - " << activity);
+			}
+		}
+
 
 		void jointStateCallback(const sensor_msgs::JointState &joint_state)
 		{
 			//update all linebreak sensors
-			if (! indexer_linebreak.update(joint_state) ) {
+			if (! indexer_linebreak_.update(joint_state) ) {
 				ROS_ERROR("indexer linebreak update failed, preempting indexer server");
 				preempted_ = true;
 			}
-			if (! shooter_linebreak.update(joint_state) ) {
+			if (! shooter_linebreak_.update(joint_state) ) {
 				ROS_ERROR("shooter linebreak update failed, preempting indexer server");
 				preempted_ = true;
 			}
@@ -146,14 +150,64 @@ class IndexerAction {
 		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
 		bool goToPositionIntake()
 		{
-			//TODO actually do stuff
+			if (n_balls_ > 0 && !indexer_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
+				//set velocity to reverse
+				controllers_2020_msgs::IndexerSrv srv;
+				srv.request.indexer_velocity = -indexer_speed_; //TODO make sure negative means backward
+				if ( !indexer_controller_client_.call(srv) )
+				{
+					ROS_ERROR("Indexer controller failed in indexer server, in goToPositionIntake()");
+					preempted_ = true;
+				}
+
+				//keep going backwards until indexer linebreak is triggered (until ball right in front of intake)
+				while (!indexer_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
+				{
+					checkPreemptedAndTimedOut("going to position intake");
+					if(!preempted_ && !timed_out_){
+						r_.sleep(); //sleep if we didn't preempt or timeout
+					}
+				}
+
+				//no matter what happened, stop the indexer now
+				srv.request.indexer_velocity = 0;
+				indexer_controller_client_.call(srv);
+			}
+			if(preempted_ || timed_out_){
+				return false;
+			}
 			return true;
 		}
 
 		//function to send balls towards shooter until linebreak right before shooter is triggered - default state if have 5 balls
 		bool goToPositionShoot()
 		{
-			//TODO actually do stuff
+			if (n_balls_ > 0 && !shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
+				//set velocity to reverse
+				controllers_2020_msgs::IndexerSrv srv;
+				srv.request.indexer_velocity = indexer_speed_; //TODO make sure positive means forward
+				if ( !indexer_controller_client_.call(srv) )
+				{
+					ROS_ERROR("Indexer controller failed in indexer server, in goToPositionShoot()");
+					preempted_ = true;
+				}
+
+				//keep going forwards until shooter linebreak is triggered (until ball right in front of shooter)
+				while (!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
+				{
+					checkPreemptedAndTimedOut("going to position shoot");
+					if(!preempted_ && !timed_out_){
+						r_.sleep(); //sleep if we didn't preempt or timeout
+					}
+				}
+
+				//no matter what happened, stop the indexer now
+				srv.request.indexer_velocity = 0;
+				indexer_controller_client_.call(srv);
+			}
+			if(preempted_ || timed_out_){
+				return false;
+			}
 			return true;
 		}
 
@@ -321,7 +375,7 @@ class IndexerAction {
 				}
 				else { //if didn't succeed and nothing went wrong, keep waiting
 					ros::spinOnce();
-					r.sleep();
+					r_.sleep();
 				}
 			}
 		}
@@ -350,7 +404,7 @@ class IndexerAction {
 		double server_timeout_; //overall timeout for your server
 		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 		int n_balls_;
-
+		double indexer_speed_;
 
 };
 
@@ -376,6 +430,14 @@ int main(int argc, char** argv) {
 	if (! nh_indexer.getParam("wait_for_server_timeout", indexer_action.wait_for_server_timeout_) ){
 		ROS_ERROR("Couldn't read wait_for_server_timeout in indexer server");
 		indexer_action.wait_for_server_timeout_ = 10;
+	}
+	if (! nh_indexer.getParam("initial_n_balls", indexer_action.n_balls_) ){
+		ROS_ERROR("Couldn't read initial_n_balls in indexer server");
+		indexer_action.n_balls_ = 0;
+	}
+	if (! nh_indexer.getParam("indexer_speed", indexer_action.indexer_speed_) ){
+		ROS_ERROR("Couldn't read indexer_speed in indexer server");
+		indexer_action.wait_for_server_timeout_ = 4; //TODO fix
 	}
 
 
