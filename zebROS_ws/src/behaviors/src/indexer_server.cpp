@@ -2,15 +2,11 @@
 #include "actionlib/server/simple_action_server.h"
 #include "actionlib/client/simple_action_client.h"
 #include <atomic>
-<<<<<<< HEAD
 #include <thread>
-=======
->>>>>>> Wrote go to position intake action (case 0)
 #include <ros/console.h>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/IndexerAction.h"
-<<<<<<< HEAD
 #include "behavior_actions/IntakeAction.h"
 
 //include controller service files and other service files
@@ -23,24 +19,11 @@ int linebreak_debounce_iterations; //global so that main() can set it and the Li
 
 class Linebreak {
 	private:
-=======
-
-//include controller service files and other service files
-#include "controllers_2020_msgs/IndexerSrv.h"
-#include "sensor_msgs/JointState.h" //for linebreak sensor data
-
-
-int linebreak_debounce_iterations; //global so that main() can read it and the Linebreak class can use it
-
-class Linebreak {
-	public:
->>>>>>> Wrote go to position intake action (case 0)
 		std::string name_;
 		size_t idx_; //index of this linebreak in the joint_states message
 		int true_count_;
 		int false_count_;
 		int debounce_iterations_;
-<<<<<<< HEAD
 
 	public: //all need to be std::atomic because code running asynchronously might want to access it
 		std::atomic<bool> triggered_;
@@ -53,11 +36,6 @@ class Linebreak {
 		std::atomic<bool> pulsed_; //if rising edge followed by falling edge
 
 		//called every time the joint state subscriber callback is run
-=======
-		bool triggered_;
-
-		//called every time the joint state subscriber is run
->>>>>>> Wrote go to position intake action (case 0)
 		bool update(const sensor_msgs::JointState &joint_state)
 		{
 			//set idx if it hasn't already been set
@@ -79,11 +57,8 @@ class Linebreak {
 			}
 
 			//update linebreak state
-<<<<<<< HEAD
 			prev_state_ = triggered_.load();
 
-=======
->>>>>>> Wrote go to position intake action (case 0)
 			if (joint_state.position[idx_] != 0) { //if linebreak true
 				true_count_ += 1;
 				false_count_ = 0;
@@ -99,7 +74,6 @@ class Linebreak {
 			else if (false_count_ > debounce_iterations_){
 				triggered_ = false;
 			}
-<<<<<<< HEAD
 
 			//do pulse detection stuff
 			if(prev_state_ == false && triggered_ == true){
@@ -128,11 +102,6 @@ class Linebreak {
 			pulsed_ = false;
 		}
 
-=======
-			return true;
-		}
-
->>>>>>> Wrote go to position intake action (case 0)
 		Linebreak(std::string name) //name as found in joint_states
 		{
 			name_ = name;
@@ -141,15 +110,12 @@ class Linebreak {
 			false_count_ = 0;
 			debounce_iterations_ = linebreak_debounce_iterations; //read from global config value
 			triggered_ = false;
-<<<<<<< HEAD
 
 			prev_state_ = false;
 			prev_toggle_ = 0;
 			rising_edge_happened_ = false;
 			falling_edge_happened_ = false;
 			pulsed_ = false;
-=======
->>>>>>> Wrote go to position intake action (case 0)
 		}
 };
 
@@ -167,7 +133,6 @@ class IndexerAction {
 
 		//clients to call controllers
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
-<<<<<<< HEAD
 		ros::ServiceClient intake_controller_client_;
 
 		//clients for actionlib servers
@@ -175,8 +140,6 @@ class IndexerAction {
 
 		//subscribers
 		ros::Subscriber joint_states_sub_;
-=======
->>>>>>> Wrote go to position intake action (case 0)
 
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
@@ -198,23 +161,16 @@ class IndexerAction {
 
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
-<<<<<<< HEAD
-=======
-				checkPreemptedAndTimedOut("pausing during - " + activity);
->>>>>>> Wrote go to position intake action (case 0)
 				if((ros::Time::now().toSec() - pause_start_time) >= duration)
 				{
 					return true; //pause worked like expected
 				}
-<<<<<<< HEAD
 
 				checkPreemptedAndTimedOut("pausing during - " + activity);
 				if(!preempted_ && !timed_out_)
 				{
 					r_.sleep();
 				}
-=======
->>>>>>> Wrote go to position intake action (case 0)
 			}
 
 			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
@@ -251,11 +207,8 @@ class IndexerAction {
 		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
 		bool goToPositionIntake()
 		{
-<<<<<<< HEAD
 			ROS_INFO("Indexer server - going to position intake");
 
-=======
->>>>>>> Wrote go to position intake action (case 0)
 			if (n_balls_ > 0 && !indexer_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
 				//set velocity to reverse
 				controllers_2020_msgs::IndexerSrv srv;
@@ -288,15 +241,10 @@ class IndexerAction {
 		//function to send balls towards shooter until linebreak right before shooter is triggered - default state if have 5 balls
 		bool goToPositionShoot()
 		{
-<<<<<<< HEAD
 			ROS_INFO("Indexer server - going to position shoot.");
 
 			if (n_balls_ > 0 && !shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
 				//set velocity to forwards
-=======
-			if (n_balls_ > 0 && !shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok()){
-				//set velocity to reverse
->>>>>>> Wrote go to position intake action (case 0)
 				controllers_2020_msgs::IndexerSrv srv;
 				srv.request.indexer_velocity = indexer_speed_; //TODO make sure positive means forward
 				if ( !indexer_controller_client_.call(srv) )
@@ -351,16 +299,12 @@ class IndexerAction {
 			switch(goal->action)
 			{
 				case 0: //go to position intake
-<<<<<<< HEAD
                 {
 					ROS_INFO_STREAM("Going to position intake in indexer actionlib server");
-=======
->>>>>>> Wrote go to position intake action (case 0)
 					if(!preempted_ && !timed_out_ && ros::ok())
 					{
 						goToPositionIntake();
 					}
-<<<<<<< HEAD
 				}
 					break;
 				case 1: //intake a ball
@@ -511,72 +455,6 @@ class IndexerAction {
 			{
 				ROS_ERROR("Indexer server - indexer controller call failed when setting final state (for the intake a ball action)");
 			}
-=======
-
-					break;
-				case 1: //intake a ball
-
-
-
-					break;
-				case 2: //feed a ball to the shooter
-
-
-
-					break;
-				default:
-					ROS_ERROR_STREAM("Indexer server: invalid goal. " << goal->action << " is not a valid action (valid ones are 0,1,2)");
-					preempted_ = true;
-					break;
-			}
-
-/*
-			//Basic controller call ---------------------------------------
-			if(!preempted_ && !timed_out_ && ros::ok())
-			{
-				ROS_INFO("indexer_server: what this is doing");
-				//call controller client, if failed set preempted_ = true, and log an error msg
-
-
-
-				//if necessary, run a loop to wait for the controller to finish
-				while(!preempted_ && !timed_out_ && ros::ok())
-				{
-					//check preempted_
-					if(as_.isPreemptRequested() || !ros::ok()) {
-						ROS_ERROR_STREAM(action_name_ << ": preempt while calling ______ controller");
-						preempted_ = true;
-					}
-					//test if succeeded, if so, break out of the loop
-					else if(test here) {
-						break;
-					}
-					//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
-					else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
-						ROS_ERROR_STREAM(action_name_ << ": timed out while calling ______ controller");
-						timed_out_ = true;
-					}
-					//otherwise, pause then loop again
-					else {
-						r.sleep();
-					}
-				}
-			}
-			//preempt handling (skip this and set final state at end if only 1 possble final state)
-			/*
-			if(preempted_ || timed_out_ || !ros::ok())
-			{}
-			*/
-
-			//if necessary, pause a bit between doing things (between piston firings usually)
-			/* e.g.
-			pause(sec_to_pause, "what we're pausing for");
-			*/
-
-
-
-
->>>>>>> Wrote go to position intake action (case 0)
 
 
 			//Finish -----------------------------------------------
@@ -658,12 +536,8 @@ class IndexerAction {
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
 		IndexerAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&IndexerAction::executeCB, this, _1), false),
-<<<<<<< HEAD
 			action_name_(name),
 			ac_intake_("/intake/intake_server", true)
-=======
-			action_name_(name)
->>>>>>> Wrote go to position intake action (case 0)
 		{
 			as_.start(); //start the actionlib server
 
@@ -671,7 +545,6 @@ class IndexerAction {
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
 
-<<<<<<< HEAD
 			//initialize clients used to call controllers
 			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
 			intake_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeSrv>("/frcrobot_jetson/intake_controller/intake_command", false, service_connection_header);
@@ -680,17 +553,12 @@ class IndexerAction {
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
 
 
-=======
-			//initialize client used to call controllers
-			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
->>>>>>> Wrote go to position intake action (case 0)
 		}
 
 		~IndexerAction(void)
 		{
 		}
 
-<<<<<<< HEAD
 		//function to run num balls publish thread - needs to be public b/c the thread is run from main()
 		void publishNumBallsThread(ros::Publisher num_balls_pub)
 		{
@@ -709,12 +577,6 @@ class IndexerAction {
 		double server_timeout_; //overall timeout for your server
 		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 		std::atomic<int> n_balls_;
-=======
-		//config variables
-		double server_timeout_; //overall timeout for your server
-		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
-		int n_balls_;
->>>>>>> Wrote go to position intake action (case 0)
 		double indexer_speed_;
 
 };
@@ -727,13 +589,10 @@ int main(int argc, char** argv) {
 	//create the actionlib server
 	IndexerAction indexer_action("indexer_server");
 
-<<<<<<< HEAD
 	//start the num balls publishing thread
 	ros::Publisher num_balls_pub = nh.advertise<std_msgs::UInt8>("num_power_cells", 1); //declared here so we can use the node handle
 	std::thread num_balls_pub_thread(&IndexerAction::publishNumBallsThread, &indexer_action, num_balls_pub);
 
-=======
->>>>>>> Wrote go to position intake action (case 0)
 	//get config values
 	ros::NodeHandle nh_indexer(nh, "actionlib_indexer_params");
 
@@ -749,25 +608,17 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Couldn't read wait_for_server_timeout in indexer server");
 		indexer_action.wait_for_server_timeout_ = 10;
 	}
-<<<<<<< HEAD
 	int initial_n_balls;
 	if (! nh_indexer.getParam("initial_n_balls", initial_n_balls) ){
 		ROS_ERROR("Couldn't read initial_n_balls in indexer server");
 		initial_n_balls = 0;
 	}
 	indexer_action.n_balls_ = initial_n_balls;
-=======
-	if (! nh_indexer.getParam("initial_n_balls", indexer_action.n_balls_) ){
-		ROS_ERROR("Couldn't read initial_n_balls in indexer server");
-		indexer_action.n_balls_ = 0;
-	}
->>>>>>> Wrote go to position intake action (case 0)
 	if (! nh_indexer.getParam("indexer_speed", indexer_action.indexer_speed_) ){
 		ROS_ERROR("Couldn't read indexer_speed in indexer server");
 		indexer_action.wait_for_server_timeout_ = 4; //TODO fix
 	}
 
-<<<<<<< HEAD
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
 	ros::waitForShutdown();
@@ -778,11 +629,5 @@ int main(int argc, char** argv) {
 		num_balls_pub_thread.join();
 	}
 
-=======
-
-	ros::AsyncSpinner Spinner(2);
-	Spinner.start();
-	ros::waitForShutdown();
->>>>>>> Wrote go to position intake action (case 0)
 	return 0;
 }
