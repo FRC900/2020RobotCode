@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   behavior_actions
   controllers_2019_msgs
+  controllers_2020_msgs
   frc_msgs
   field_obj
   nav_msgs
