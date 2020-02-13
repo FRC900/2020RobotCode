@@ -1,0 +1,3 @@
+actionlib_gotocolor_params:
+        drive_forward_speed: 0.2
+        climb_wait_time: 1
