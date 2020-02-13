@@ -6,6 +6,7 @@
 #include <behavior_actions/ClimbAction.h>
 #include <behavior_actions/AlignAction.h>
 #include <behavior_actions/enumerated_elevator_indices.h>
+#include <behavior_actions/AlignThenShootAction.h>
 #include <boost/algorithm/string.hpp>
 #include <string>
 

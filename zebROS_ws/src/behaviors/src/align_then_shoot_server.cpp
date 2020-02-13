@@ -13,7 +13,7 @@
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/AlignThenShootAction.h"
-#include "behavior_actions/AlignAction.h"
+#include "behavior_actions/AlignToShootAction.h"
 #include "behavior_actions/ShooterAction.h"
 
 //include controller service files and other service files
@@ -31,7 +31,7 @@ class AlignThenShootAction {
 
 		//clients to call other actionlib servers
 		actionlib::SimpleActionClient<behavior_actions::ShooterAction> ac_shooter_;
-		actionlib::SimpleActionClient<behavior_actions::AlignAction> ac_align_; //TODO: Check Action name
+		actionlib::SimpleActionClient<behavior_actions::AlignToShootAction> ac_align_to_shoot_; //TODO: Check Action name
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -42,18 +42,17 @@ class AlignThenShootAction {
 		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
-        //config variables, with defaults
+	public:
+		 //config variables, with defaults
         double server_timeout_; //overall timeout for your server
         double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 
-	public:
+
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
-		AlignThenShootAction(const std::string &name, server_timeout, wait_for_server_timeout) :
+		AlignThenShootAction(const std::string &name):
 			as_(nh_, name, boost::bind(&AlignThenShootAction::executeCB, this, _1), false),
 			action_name_(name),
-                        server_timeout_(server_timeout),
-                        wait_for_server_timeout_(wait_for_server_timeout),
-						ac_align_("/align/align_server", true), //TODO: Check name
+						ac_align_to_shoot_("/align_to_shoot_action/align_to_shoot_server", true), //TODO: Check name
 						ac_shooter_("/shooter/shooter_server", true)
 			//example how to initialize other action clients, don't forget to add a comma on the previous line
 	{
@@ -100,7 +99,7 @@ class AlignThenShootAction {
 		}
 
 		//define the function to be executed when the actionlib server is called
-		void executeCB(const behaviors::AlignThenShootGoalConstPtr &goal)
+		void executeCB(const behavior_actions::AlignThenShootGoalConstPtr &goal)
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 
@@ -111,16 +110,16 @@ class AlignThenShootAction {
 
 //TODO:use dis
 			//wait for all actionlib servers we need
-			if(!ac_align_.waitForServer(ros::Duration(wait_for_server_timeout_)))
+			if(!ac_align_to_shoot_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
-				ROS_ERROR_STREAM(ac_align_ << " couldn't find align actionlib server");
+				ROS_ERROR_STREAM("AlignThenShoot server couldn't find AlignToShoot actionlib server");
 				as_.setPreempted();
 				return;
 			}
 
 			if(!ac_shooter_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
-				ROS_ERROR_STREAM(ac_shooter_ << " couldn't find align actionlib server");
+				ROS_ERROR_STREAM("AlignThenShoot server couldn't find Shooter actionlib server");
 				as_.setPreempted();
 				return;
 			}
@@ -130,15 +129,14 @@ class AlignThenShootAction {
 			{
 				ROS_INFO("what this is doing");
 				//Call actionlib server
-				behavior_actions::AlignGoal align_goal;
-				align_goal.has_cargo = true;
-				ac_align_.sendGoal(align_goal);
+				behavior_actions::AlignToShootGoal align_to_shoot_goal;
+				ac_align_to_shoot_.sendGoal(align_to_shoot_goal);
 				//wait for actionlib server
-				waitForActionlibServer(ac_align_, 30, "calling align server"); //method defined below. Args: action client, timeout in sec, description of activity
+				waitForActionlibServer(ac_align_to_shoot_, 30, "calling align server"); //method defined below. Args: action client, timeout in sec, description of activity
 				//preempt handling
 				if(preempted_ || timed_out_ || !ros::ok())
 				{
-					ac_align_.cancelGoalsAtAndBeforeTime(ros::Time::now());
+					ac_align_to_shoot_.cancelGoalsAtAndBeforeTime(ros::Time::now());
 				}
 
 
@@ -149,7 +147,6 @@ class AlignThenShootAction {
 				ROS_INFO("what this is doing");
 				//Call actionlib server
 				behavior_actions::ShooterGoal shooter_goal;
-				shooter_goal.has_cargo = true; //TODO: ask sahil ab actual actions??
 				ac_shooter_.sendGoal(shooter_goal);
 				//wait for actionlib server
 				waitForActionlibServer(ac_shooter_, 30, "calling align server"); //method defined below. Args: action client, timeout in sec, description of activity
@@ -168,23 +165,22 @@ class AlignThenShootAction {
 
 
 			//log result and set actionlib server state appropriately
-			behaviors::AlignThenShootResult result;
-
+			behavior_actions::AlignThenShootResult result;
 			if(preempted_) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = false;
 				as_.setPreempted(result);
 			}
 			else if(timed_out_) {
 				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
-				result.timed_out_ = true;
+				result.timed_out = true;
 				result.success = false;
 				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
 			}
 			else { //implies succeeded
 				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = true;
 				as_.setSucceeded(result);
 			}
@@ -262,7 +258,7 @@ int main(int argc, char** argv) {
 	*/
 
 	//create the actionlib server
-	AlignThenShootAction align_then_shoot_action("align_then_shoot_server", server_timeout, wait_for_server_timeout);
+	AlignThenShootAction align_then_shoot_action("align_then_shoot_server");
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();

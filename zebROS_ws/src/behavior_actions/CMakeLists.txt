@@ -73,6 +73,7 @@ add_action_files(
 	Align.action
 	AlignThenShoot.action
 	Shooter.action
+	AlignToShoot.action
 )
 
 generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
