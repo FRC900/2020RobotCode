@@ -238,7 +238,10 @@ class IndexerAction {
 			switch(goal->action)
 			{
 				case 0: //go to position intake
-
+					if(!preempted_ && !timed_out_ && ros::ok())
+					{
+						goToPositionIntake();
+					}
 
 					break;
 				case 1: //intake a ball
