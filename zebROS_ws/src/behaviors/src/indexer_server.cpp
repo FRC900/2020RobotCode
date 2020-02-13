@@ -238,6 +238,7 @@ class IndexerAction {
 			switch(goal->action)
 			{
 				case 0: //go to position intake
+                                    ROS_INFO_STREAM("Going to position intake in indexer actionlib server");
 					if(!preempted_ && !timed_out_ && ros::ok())
 					{
 						goToPositionIntake();
@@ -245,11 +246,13 @@ class IndexerAction {
 
 					break;
 				case 1: //intake a ball
+                                    ROS_INFO_STREAM("Intaking a ball in indexer actionlib server");
 
 
 
 					break;
 				case 2: //feed a ball to the shooter
+                                    ROS_INFO_STREAM("Feeding a ball to the shooter in indexer actionlib server");
 
 
 
