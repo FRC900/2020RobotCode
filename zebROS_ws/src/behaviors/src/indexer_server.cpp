@@ -141,6 +141,9 @@ class IndexerAction {
 		//subscribers
 		ros::Subscriber joint_states_sub_;
 
+		//subscribers
+		ros::Subscriber joint_states_sub_;
+
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
 		Linebreak shooter_linebreak_{"shooter_linebreak"}; //just before the shooter

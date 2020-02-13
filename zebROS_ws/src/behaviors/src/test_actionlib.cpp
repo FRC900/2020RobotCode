@@ -606,6 +606,12 @@ int main (int argc, char **argv)
 	{
 		callShooter();
 	}
+	else if(what_to_run == "indexer")
+	{
+		std::cout << "Enter indexer action type (0,1,or 2):";
+		std::cin >> indexer_action;
+		callIndexer(indexer_action);
+	}
 	else {
 		ROS_ERROR("Invalid run argument");
 		return 0;
