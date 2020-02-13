@@ -145,10 +145,6 @@ class IndexerAction {
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
 		Linebreak shooter_linebreak_{"shooter_linebreak"}; //just before the shooter
 
-		//linebreak sensors
-		Linebreak indexer_linebreak{"indexer_linebreak"}; //just inside the entrance to the indexer
-		Linebreak shooter_linebreak{"shooter_linebreak"}; //just before the shooter
-
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
 		bool timed_out_;
