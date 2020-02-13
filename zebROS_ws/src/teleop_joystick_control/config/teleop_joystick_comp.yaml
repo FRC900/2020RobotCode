@@ -22,3 +22,4 @@ teleop_diagnostics_params:
     turret_setpoint_rate: 0.6981 #Rate of change in position of turret in radians/second
     turret_angle_limit: 1.047 #Bilateral limit on turret angle in radians
     intake_setpoint_rate: 0.1 #Rate of change in intake percent out (percent/second)
+    indexer_setpoint_rate: 10.472 #Rate of change in indexer angular velocity in radians/second^2 (100 rpm/second)

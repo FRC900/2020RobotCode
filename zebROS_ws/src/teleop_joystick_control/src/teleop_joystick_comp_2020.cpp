@@ -16,6 +16,7 @@
 #include "teleop_joystick_control/OrientStrafingAngle.h"
 
 #include <controllers_2020_msgs/ClimberSrv.h>
+#include <controllers_2020_msgs/IndexerSrv.h>
 #include <controllers_2020_msgs/IntakeSrv.h>
 #include <controllers_2020_msgs/ShooterSrv.h>
 #include <controllers_2020_msgs/TurretSrv.h>
@@ -46,6 +47,7 @@ ros::Publisher JoystickRobotVel;
 ros::ServiceClient BrakeSrv;
 
 ros::ServiceClient climber_controller_client;
+ros::ServiceClient indexer_controller_client;
 ros::ServiceClient intake_controller_client;
 ros::ServiceClient shooter_controller_client;
 ros::ServiceClient turret_controller_client;
@@ -285,6 +287,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		static ros::Time last_header_stamp = joystick_states_array[1].header.stamp;
 
 		static controllers_2020_msgs::ClimberSrv climber_diagnostics;
+		static controllers_2020_msgs::IndexerSrv indexer_diagnostics;
 		static controllers_2020_msgs::IntakeSrv intake_diagnostics;
 		static controllers_2020_msgs::ShooterSrv shooter_diagnostics;
 		static controllers_2020_msgs::TurretSrv turret_diagnostics;
@@ -298,10 +301,18 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			climber_diagnostics.request.climber_deploy = true;
 			climber_diagnostics.request.climber_elevator_brake = true;
 
+			//Initialize the indexer command
+			indexer_diagnostics.request.indexer_velocity = 0.0;
+
+			//Initialize the intake command
+			intake_diagnostics.request.intake_arm_extend = false;
+			intake_diagnostics.request.percent_out = 0.0;
+
 			//Initialize the shooter command
 			shooter_diagnostics.request.shooter_hood_raise = false;
 			shooter_diagnostics.request.set_velocity = 0.0;
 
+			//Initialize the turret command
 			turret_diagnostics.request.set_point = 0.0;
 
 			diagnostics_initialized = true;
@@ -330,6 +341,11 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick2: rightStickY
 		if(abs(joystick_states_array[1].rightStickY) > 0.5) //TODO Make a trigger point config value
 		{
+			indexer_diagnostics.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[1].leftStickY)
+					*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+			ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = " << indexer_diagnostics.request.indexer_velocity
+					<< " (" << (indexer_diagnostics.request.indexer_velocity*30/M_PI) << " rpm)");
+			indexer_controller_client.call(indexer_diagnostics);
 		}
 
 		//Joystick2: rightStickX
@@ -354,6 +370,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick2: stickRight
 		if(joystick_states_array[1].stickRightPress)
 		{
+			indexer_diagnostics.request.indexer_velocity = 0.0;
+			ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = 0.0 Stopping indexer!");
+			indexer_controller_client.call(indexer_diagnostics);
 		}
 		if(joystick_states_array[1].stickRightButton)
 		{
@@ -621,6 +640,10 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Could not read intake_setpoint_rate in teleop_joystick_comp");
 	}
+	if(!n_diagnostics_params.getParam("indexer_setpoint_rate", diagnostics_config.indexer_setpoint_rate))
+	{
+		ROS_ERROR("Could not read intake_setpoint_rate in teleop_joystick_comp");
+	}
 
 	teleop_cmd_vel = std::make_unique<TeleopCmdVel>(config);
 
@@ -647,6 +670,7 @@ int main(int argc, char **argv)
 	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
 
 	climber_controller_client = n.serviceClient<controllers_2020_msgs::ClimberSrv>("/frcrobot_jetson/climber_controller_2020/climber_command");
+	indexer_controller_client = n.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command");
 	intake_controller_client = n.serviceClient<controllers_2020_msgs::IntakeSrv>("/frcrobot_jetson/intake_controller/intake_command");
 	shooter_controller_client = n.serviceClient<controllers_2020_msgs::ShooterSrv>("/frcrobot_jetson/shooter_controller/shooter_command");
 	turret_controller_client = n.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/shooter_command");
