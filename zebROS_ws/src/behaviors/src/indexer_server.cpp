@@ -89,6 +89,9 @@ class IndexerAction {
 		//clients to call controllers
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
 
+		//subscribers
+		ros::Subscriber joint_states_sub_;
+
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
 		Linebreak shooter_linebreak_{"shooter_linebreak"}; //just before the shooter
@@ -398,8 +401,11 @@ class IndexerAction {
 			std::map<std::string, std::string> service_connection_header;
 			service_connection_header["tcp_nodelay"] = "1";
 
-			//initialize client used to call controllers
+			//initialize clients used to call controllers
 			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
+
+			//initialize subscribers
+			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
 		}
 
 		~IndexerAction(void)
