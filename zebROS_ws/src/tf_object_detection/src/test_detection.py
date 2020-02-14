@@ -133,7 +133,7 @@ def main():
       sess = tf.Session(graph=detection_graph)
 
     sub = rospy.Subscriber("c920/rect_image", Image, run_inference_for_single_image)
-    pub = rospy.Publisher("tf_obj_detection", Detection)
+    pub = rospy.Publisher("tf_obj_detection", Detection, queue_size=10)
 
     try:
         rospy.spin()
