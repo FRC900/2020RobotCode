@@ -7,3 +7,6 @@
 [submodule "navXTimeSync"]
 	path = navXTimeSync
 	url = https://github.com/FRC900/navXTimeSync.git
+[submodule "models"]
+	path = models
+	url = https://github.com/tensorflow/models.git
