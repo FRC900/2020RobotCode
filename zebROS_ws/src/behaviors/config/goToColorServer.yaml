@@ -5,3 +5,4 @@ actionlib_gotocolor_params:
         back_up_wait: .5
         back_up_speed: .5
         avg_current_limit: .01
+        num_drive_motors: 4

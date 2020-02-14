@@ -64,6 +64,8 @@ class GoToColorControlPanelAction {
 		double avg_current;
 		double avg_current_limit;
 
+		int num_drive_motors;
+
 		std::atomic<double> cmd_vel_forward_speed_;
                 std::atomic<bool> stopped_;
 
@@ -378,7 +380,7 @@ class GoToColorControlPanelAction {
 					current_sum += talon_state.output_current[i];
 				}
 			}
-			avg_current = current_sum/4; //4 drive motor talons???
+			avg_current = current_sum/num_drive_motors;
 		}
 };
 int main(int argc, char** argv) {
@@ -438,6 +440,12 @@ int main(int argc, char** argv) {
         {
                 ROS_ERROR("Could not read avg_current_limit in go_to_color_control_panel_server");
                 avg_current_limit = .01;
+        }
+	
+	if (!n.getParam("/actionlib_gotocolor_params/num_drive_motors", num_drive_motors))
+        {
+                ROS_ERROR("Could not read num_drive_motors in go_to_color_control_panel_server");
+                num_drive_motors = 4;
         }
 
 	//create the actionlib server
