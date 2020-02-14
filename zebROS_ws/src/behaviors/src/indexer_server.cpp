@@ -6,9 +6,11 @@
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/IndexerAction.h"
+#include "behavior_actions/IntakeAction.h"
 
 //include controller service files and other service files
 #include "controllers_2020_msgs/IndexerSrv.h"
+#include "controllers_2020_msgs/IntakeSrv.h"
 #include "sensor_msgs/JointState.h" //for linebreak sensor data
 
 
@@ -128,6 +130,10 @@ class IndexerAction {
 
 		//clients to call controllers
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
+		ros::ServiceClient intake_controller_client_;
+
+		//clients for actionlib servers
+		actionlib::SimpleActionClient<behavior_actions::IntakeAction> ac_intake_; //only used for preempting the intake actionlib server
 
 		//subscribers
 		ros::Subscriber joint_states_sub_;
@@ -152,10 +158,15 @@ class IndexerAction {
 
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
-				checkPreemptedAndTimedOut("pausing during - " + activity);
 				if((ros::Time::now().toSec() - pause_start_time) >= duration)
 				{
 					return true; //pause worked like expected
+				}
+
+				checkPreemptedAndTimedOut("pausing during - " + activity);
+				if(!preempted_ && !timed_out_)
+				{
+					r_.sleep();
 				}
 			}
 
@@ -298,12 +309,6 @@ class IndexerAction {
 
 					ROS_INFO_STREAM("Intaking a ball in indexer actionlib server");
 
-					//make sure we're at position intake in case balls shifted around
-					if(!preempted_ && !timed_out_ && ros::ok())
-					{
-						goToPositionIntake();
-					}
-
 					if(!preempted_ && !timed_out_ && ros::ok())
 					{
 						//set velocity forward if we're allowed to (e.g. if that won't force a ball into the shooter)
@@ -321,6 +326,17 @@ class IndexerAction {
 							//error out because we weren't able to move the indexer forward
 							preempted_ = true;
 							ROS_ERROR("Indexer server - couldn't start intaking a ball because there was a ball at the shooter");
+							//stop the intake
+							ROS_WARN("Indexer server - stopping the intake");
+
+							ac_intake_.cancelGoalsAtAndBeforeTime(ros::Time::now());
+
+							controllers_2020_msgs::IntakeSrv srv;
+							srv.request.percent_out = 0;
+							srv.request.intake_arm_extend = false;
+							if(!intake_controller_client_.call(srv)){
+								ROS_ERROR("Indexer server - controller call to stop intake failed");
+							}
 						}
 
 
@@ -348,6 +364,17 @@ class IndexerAction {
 					{
 						preempted_ = true;
 						ROS_ERROR("Indexer server - couldn't finish intaking a ball because there was a ball at the shooter");
+						//stop the intake
+						ROS_WARN("Indexer server - stopping the intake");
+
+						ac_intake_.cancelGoalsAtAndBeforeTime(ros::Time::now());
+
+						controllers_2020_msgs::IntakeSrv srv;
+						srv.request.percent_out = 0;
+						srv.request.intake_arm_extend = false;
+						if(!intake_controller_client_.call(srv)){
+							ROS_ERROR("Indexer server - controller call to stop intake failed");
+						}
 					}
 
 					//go to positionIntake or positionShoot based on how many balls we have
@@ -363,18 +390,48 @@ class IndexerAction {
 						}
 					}
 
-					//no matter what happened, set the velocity of the indexer to 0 at the end
-					controllers_2020_msgs::IndexerSrv srv;
-					srv.request.indexer_velocity = 0;
-					if(!indexer_controller_client_.call(srv))
-					{
-						ROS_ERROR("Indexer server - indexer controller call failed when setting final state (for the intake a ball action)");
-					}
 				}
 					break;
 				case 2: //feed a ball to the shooter
                 {
 					ROS_INFO_STREAM("Feeding a ball to the shooter in indexer actionlib server");
+
+					if(n_balls_ > 0 && !preempted_ && !timed_out_ && ros::ok())
+					{
+						//set indexer velocity forwards
+						controllers_2020_msgs::IndexerSrv srv;
+						srv.request.indexer_velocity = indexer_speed_; //TODO check that positive means forwards
+						if(!indexer_controller_client_.call(srv)){
+							ROS_ERROR("Indexer server - controller call for setting indexer velocity forward for shooting failed");
+							preempted_ = true;
+						}
+
+						//wait until get a falling edge on the shooter linebreak - means a ball has been shot
+						shooter_linebreak_.resetPulseDetection(); //so we can detect a NEW falling edge
+						while(!preempted_ && !timed_out_ && ros::ok())
+						{
+							if(shooter_linebreak_.falling_edge_happened_)
+							{
+								ROS_INFO("Indexer server - successfully shot a ball!");
+								n_balls_--;
+								break;
+							}
+
+							checkPreemptedAndTimedOut("moving forwards, waiting for ball to be shot");
+							if(!preempted_ && !timed_out_)
+							{
+								r_.sleep();
+							}
+						}
+
+						//go to position shoot to get ready for the next ball shoot
+						if(!preempted_ && !timed_out_ && ros::ok())
+						{
+							goToPositionShoot(); //won't do anything if we don't have any balls
+						}
+					}
+
+
 
 
 				}
@@ -387,52 +444,14 @@ class IndexerAction {
 				}
 			}
 
-/*
-			//Basic controller call ---------------------------------------
-			if(!preempted_ && !timed_out_ && ros::ok())
+
+			//no matter what happened, set the velocity of the indexer to 0 at the end
+			controllers_2020_msgs::IndexerSrv srv;
+			srv.request.indexer_velocity = 0;
+			if(!indexer_controller_client_.call(srv))
 			{
-				ROS_INFO("indexer_server: what this is doing");
-				//call controller client, if failed set preempted_ = true, and log an error msg
-
-
-
-				//if necessary, run a loop to wait for the controller to finish
-				while(!preempted_ && !timed_out_ && ros::ok())
-				{
-					//check preempted_
-					if(as_.isPreemptRequested() || !ros::ok()) {
-						ROS_ERROR_STREAM(action_name_ << ": preempt while calling ______ controller");
-						preempted_ = true;
-					}
-					//test if succeeded, if so, break out of the loop
-					else if(test here) {
-						break;
-					}
-					//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
-					else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
-						ROS_ERROR_STREAM(action_name_ << ": timed out while calling ______ controller");
-						timed_out_ = true;
-					}
-					//otherwise, pause then loop again
-					else {
-						r.sleep();
-					}
-				}
+				ROS_ERROR("Indexer server - indexer controller call failed when setting final state (for the intake a ball action)");
 			}
-			//preempt handling (skip this and set final state at end if only 1 possble final state)
-			/*
-			if(preempted_ || timed_out_ || !ros::ok())
-			{}
-			*/
-
-			//if necessary, pause a bit between doing things (between piston firings usually)
-			/* e.g.
-			pause(sec_to_pause, "what we're pausing for");
-			*/
-
-
-
-
 
 
 			//Finish -----------------------------------------------
@@ -514,7 +533,8 @@ class IndexerAction {
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
 		IndexerAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&IndexerAction::executeCB, this, _1), false),
-			action_name_(name)
+			action_name_(name),
+			ac_intake_("/intake/intake_server", true)
 		{
 			as_.start(); //start the actionlib server
 
@@ -524,6 +544,7 @@ class IndexerAction {
 
 			//initialize clients used to call controllers
 			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
+			intake_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeSrv>("/frcrobot_jetson/intake_controller/intake_command", false, service_connection_header);
 
 			//initialize subscribers
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
