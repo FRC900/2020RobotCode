@@ -12,8 +12,6 @@ from sensor_msgs.msg import Image
 from field_obj.msg import Detection, Object
 from cv_bridge import CvBridge, CvBridgeError
 
-from PIL import Image
-
 bridge = CvBridge()
 
 detection_graph, sess, pub = None, None, None
