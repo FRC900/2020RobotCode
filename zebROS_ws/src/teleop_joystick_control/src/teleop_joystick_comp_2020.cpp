@@ -519,7 +519,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		}
 
 		//Joystick2: directionUp
-		if(joystick_states_array[0].directionUpPress)
+		if(joystick_states_array[1].directionUpPress)
 		{
 		}
 		if(joystick_states_array[1].directionUpButton)
