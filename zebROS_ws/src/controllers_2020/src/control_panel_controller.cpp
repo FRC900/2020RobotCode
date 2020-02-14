@@ -64,7 +64,7 @@ namespace control_panel_controller
 		{
 			//assign request value to command buffer(s)
 			double rotation_ratio = (control_panel_diameter_/wheel_diameter_);
-			double set_point = (req.control_panel_rotations * rotation_ratio) + control_panel_joint_.getPosition();
+			double set_point = (req.control_panel_rotations * rotation_ratio) + (*control_panel_cmd_.readFromRT()).set_point_; //buffer still has the old set point in it
 
 			control_panel_cmd_.writeFromNonRT(ControlPanelCommand(set_point));
 		}
