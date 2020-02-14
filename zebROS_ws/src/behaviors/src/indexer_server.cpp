@@ -12,25 +12,27 @@
 #include "controllers_2020_msgs/IndexerSrv.h"
 #include "controllers_2020_msgs/IntakeSrv.h"
 #include "sensor_msgs/JointState.h" //for linebreak sensor data
+#include "std_msgs/UInt8.h"
 
-
-int linebreak_debounce_iterations; //global so that main() can read it and the Linebreak class can use it
+int linebreak_debounce_iterations; //global so that main() can set it and the Linebreak class can use it
 
 class Linebreak {
-	public:
+	private:
 		std::string name_;
 		size_t idx_; //index of this linebreak in the joint_states message
 		int true_count_;
 		int false_count_;
 		int debounce_iterations_;
-		bool triggered_;
+
+	public: //all need to be std::atomic because code running asynchronously might want to access it
+		std::atomic<bool> triggered_;
 
 		//pulse detection stuff
-		bool prev_state_;
-		int prev_toggle_; //-1 for falling edge, 0 initially, 1 for rising edge
-		bool rising_edge_happened_; //neither of these set to false unless resetPulseDetection() is called. We need this to be persistent so we can detect a rising edge even if it's followed by lots of toggles afterwards
-		bool falling_edge_happened_;
-		bool pulsed_; //if rising edge followed by falling edge
+		std::atomic<bool> prev_state_;
+		std::atomic<int> prev_toggle_; //-1 for falling edge, 0 initially, 1 for rising edge
+		std::atomic<bool> rising_edge_happened_; //neither of these set to false unless resetPulseDetection() is called. We need this to be persistent so we can detect a rising edge even if it's followed by lots of toggles afterwards
+		std::atomic<bool> falling_edge_happened_;
+		std::atomic<bool> pulsed_; //if rising edge followed by falling edge
 
 		//called every time the joint state subscriber callback is run
 		bool update(const sensor_msgs::JointState &joint_state)
@@ -54,7 +56,7 @@ class Linebreak {
 			}
 
 			//update linebreak state
-			prev_state_ = triggered_;
+			prev_state_ = triggered_.load();
 
 			if (joint_state.position[idx_] != 0) { //if linebreak true
 				true_count_ += 1;
@@ -137,6 +139,9 @@ class IndexerAction {
 
 		//subscribers
 		ros::Subscriber joint_states_sub_;
+
+		//publishers
+		ros::Publisher num_balls_pub_;
 
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
@@ -269,6 +274,11 @@ class IndexerAction {
 			return true;
 		}
 
+
+		//function to run num balls publish thread
+		void publishNumBallsThread()
+		{
+		}
 
 		//define the function to be executed when the actionlib server is called
 		void executeCB(const behavior_actions::IndexerGoalConstPtr &goal)
@@ -548,6 +558,9 @@ class IndexerAction {
 
 			//initialize subscribers
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
+
+			//initialize publishers
+			num_balls_pub_ = nh_.advertise<std_msgs::UInt8>("num_power_cells", 1);
 		}
 
 		~IndexerAction(void)
@@ -557,7 +570,7 @@ class IndexerAction {
 		//config variables
 		double server_timeout_; //overall timeout for your server
 		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
-		int n_balls_;
+		std::atomic<int> n_balls_;
 		double indexer_speed_;
 
 };
@@ -585,10 +598,12 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Couldn't read wait_for_server_timeout in indexer server");
 		indexer_action.wait_for_server_timeout_ = 10;
 	}
-	if (! nh_indexer.getParam("initial_n_balls", indexer_action.n_balls_) ){
+	int initial_n_balls;
+	if (! nh_indexer.getParam("initial_n_balls", initial_n_balls) ){
 		ROS_ERROR("Couldn't read initial_n_balls in indexer server");
-		indexer_action.n_balls_ = 0;
+		initial_n_balls = 0;
 	}
+	indexer_action.n_balls_ = initial_n_balls;
 	if (! nh_indexer.getParam("indexer_speed", indexer_action.indexer_speed_) ){
 		ROS_ERROR("Couldn't read indexer_speed in indexer server");
 		indexer_action.wait_for_server_timeout_ = 4; //TODO fix
