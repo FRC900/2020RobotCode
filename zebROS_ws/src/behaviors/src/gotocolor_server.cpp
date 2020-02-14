@@ -373,12 +373,12 @@ class GoToColorControlPanelAction {
 			double current_sum = 0;
 			for(size_t i = 0; i < talon_state.name.size(); i++)
 			{
-				if(talon_state.name[i] == "")
+				if(talon_state.name[i] == "") //Insert drive motor talon names
 				{
-					current_sum += talon_state.current[i];
+					current_sum += talon_state.output_current[i];
 				}
 			}
-			avg_current = current_sum/4;
+			avg_current = current_sum/4; //4 drive motor talons???
 		}
 };
 int main(int argc, char** argv) {
