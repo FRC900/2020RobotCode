@@ -16,6 +16,7 @@
 #include "teleop_joystick_control/OrientStrafingAngle.h"
 
 #include <controllers_2020_msgs/ClimberSrv.h>
+#include <controllers_2020_msgs/ControlPanelSrv.h>
 #include <controllers_2020_msgs/IndexerSrv.h>
 #include <controllers_2020_msgs/IntakeSrv.h>
 #include <controllers_2020_msgs/ShooterSrv.h>
@@ -47,6 +48,7 @@ ros::Publisher JoystickRobotVel;
 ros::ServiceClient BrakeSrv;
 
 ros::ServiceClient climber_controller_client;
+ros::ServiceClient control_panel_controller_client;
 ros::ServiceClient indexer_controller_client;
 ros::ServiceClient intake_controller_client;
 ros::ServiceClient shooter_controller_client;
@@ -287,6 +289,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		static ros::Time last_header_stamp = joystick_states_array[1].header.stamp;
 
 		static controllers_2020_msgs::ClimberSrv climber_diagnostics;
+		static controllers_2020_msgs::ControlPanelSrv control_panel_diagnostics;
 		static controllers_2020_msgs::IndexerSrv indexer_diagnostics;
 		static controllers_2020_msgs::IntakeSrv intake_diagnostics;
 		static controllers_2020_msgs::ShooterSrv shooter_diagnostics;
@@ -300,6 +303,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			climber_diagnostics.request.winch_set_point = 0.0;
 			climber_diagnostics.request.climber_deploy = true;
 			climber_diagnostics.request.climber_elevator_brake = true;
+
+			//Initialize the control panel command
+			control_panel_diagnostics.request.control_panel_rotations = 0.0;
 
 			//Initialize the indexer command
 			indexer_diagnostics.request.indexer_velocity = 0.0;
@@ -384,6 +390,10 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick2: buttonA
 		if(joystick_states_array[1].buttonAPress)
 		{
+			control_panel_diagnostics.request.control_panel_rotations = diagnostics_config.control_panel_increment;
+			ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_diagnostics.request.control_panel_rotations);
+			control_panel_controller_client.call(control_panel_diagnostics);
+			control_panel_diagnostics.request.control_panel_rotations = 0.0;
 		}
 		if(joystick_states_array[1].buttonAButton)
 		{
@@ -643,6 +653,10 @@ int main(int argc, char **argv)
 	if(!n_diagnostics_params.getParam("indexer_setpoint_rate", diagnostics_config.indexer_setpoint_rate))
 	{
 		ROS_ERROR("Could not read intake_setpoint_rate in teleop_joystick_comp");
+	}
+	if(!n_diagnostics_params.getParam("control_panel_increment", diagnostics_config.control_panel_increment))
+	{
+		ROS_ERROR("Could not read control_panel_increment in teleop_joystick_comp");
 	}
 
 	teleop_cmd_vel = std::make_unique<TeleopCmdVel>(config);
