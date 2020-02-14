@@ -285,7 +285,7 @@ class ShooterAction {
 
 		ready_to_shoot_sub_ = nh_.subscribe("/frcrobot_jetson/shooter_controller/ready_to_shoot", 5, &ShooterAction::shooterReadyCB, this);
 		goal_sub_ = nh_.subscribe("/goal_sub", 5, &ShooterAction::goalDetectionCB, this);
-		num_balls_sub_ = nh_.subscribe("/indexer_actionlib_server/num_balls", 5, &ShooterAction::numBallsCB, this);
+		num_balls_sub_ = nh_.subscribe("/indexer/num_power_cells", 5, &ShooterAction::numBallsCB, this);
 	}
 
 		~ShooterAction(void)
