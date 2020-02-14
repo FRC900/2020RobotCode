@@ -1,3 +1,7 @@
 actionlib_gotocolor_params:
         drive_forward_speed: 0.2
         climb_wait_time: 1
+        friction_wait_time: 0.2
+        back_up_wait: .5
+        back_up_speed: .5
+        avg_current_limit: .01

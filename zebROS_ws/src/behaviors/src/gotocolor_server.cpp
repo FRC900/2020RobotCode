@@ -22,16 +22,18 @@
 #include "controllers_2020_msgs/ControlPanelSrv.h"
 #include "controllers_2020_msgs/ClimberSrv.h"
 #include "geometry_msgs/Twist.h"
+#include <talon_state_msgs/TalonState.h>
 
 //create the class for the actionlib server
 class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
-        ros::Subscriber match_sub_;
+        	ros::Subscriber match_sub_;
+		ros::Subscriber talon_states_sub_;
 		ros::Subscriber color_sensor_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
-		string goal_color_;
+		string goal_color_ = "";
 		string current_color_;
 
 		ros::ServiceClient color_algorithm_client_;
@@ -53,8 +55,15 @@ class GoToColorControlPanelAction {
 		double start_time_;
 
 		double climb_wait;
+		double friction_wait;
+		double back_up_wait;
 
 		double drive_forward_speed;
+		double back_up_speed;
+
+		double avg_current;
+		double avg_current_limit;
+
 		std::atomic<double> cmd_vel_forward_speed_;
                 std::atomic<bool> stopped_;
 
@@ -80,15 +89,16 @@ class GoToColorControlPanelAction {
 		//initialize client used to call controllers
 		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
 
-		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1000, matchColorCallback);
-		color_sensor_sub_=nh.subscribe("/color_sensor" /*insert topic name*/, 1000, sensorColorCallback);
-		
+		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
+		color_sensor_sub_=nh.subscribe("/color_sensor" /*insert topic name*/, 1, &GoToColorControlPanelAction::sensorColorCallback, this);
+		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
+
 		color_algorithm_client_=nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
 		control_panel_controller_client_=nh.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
 		climber_controller_client_=nh.serviceClient<controllers_2020_msgs::ClimberSrv>("climber_controller", false, service_connection_header);
-		
+
 		//initialize the publisher used to send messages to the drive base
-                cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);	
+                cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -121,7 +131,7 @@ class GoToColorControlPanelAction {
 
 			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
 		}
-		
+
 		// Basic thread which spams cmd_vel to the drive base to
                 // continually drive forward during the climb
                 void cmdVelThread()
@@ -155,28 +165,11 @@ class GoToColorControlPanelAction {
 			preempted_ = false;
 			timed_out_ = false;
 
-			std::thread cmdVelThread(std::bind(&GoToColorControlPanelAction::cmdVelThread, this));
-			cmd_vel_foward_speed_ = 0;
-			//wait for all actionlib servers we need
-			/* e.g.
-			if(!ac_elevator_.waitForServer(ros::Duration(wait_for_server_timeout_)))
+			if(goal_color_ = "")
 			{
-				ROS_ERROR_STREAM(action_name_ << " couldn't find elevator actionlib server");
-				as_.setPreempted();
+				ROS_ERROR_STREAM("Can't spin to color, match data hasn't given a color");
 				return;
 			}
-			*/
-
-			//wait for all controller servers we need
-			/* e.g.
-			if(! mech_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
-			{
-				ROS_ERROR_STREAM(action_name_ << " can't find mech_controller");
-				as_.setPreempted();
-				return;
-			}
-			*/
-
 
 			if(! control_panel_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
 			{
@@ -192,24 +185,48 @@ class GoToColorControlPanelAction {
 				return;
 			}
 
+			std::thread cmdVelThread(std::bind(&GoToColorControlPanelAction::cmdVelThread, this));
+			cmd_vel_foward_speed_ = 0;
+
 			//Extend the climber to deploy the mechanism
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
 				controller_2020_msgs::ClimberSrv climb_srv;
-				climb_srv.request.//???;
+				climb_srv.request.winch_set_point = 0;
+				climb_srv.request.climber_deploy = true;
+				climb_srv.request.climber_elevator_break = true;
 				if(!climber_controller_client_.call(climb_srv))
 				{
 					ROS_ERROR_STREAM(action_name_ << ": preempt while calling climb service");
+					preempted = true;
 				}
-			}				
+			}
 
 			pause(climb_wait,"Extending climber");
 
-			double panel_rotations;
-
 			if(!preempted_ && !timed_out_ && ros::ok())
 				cmd_vel_forward_speed_ = drive_forward_speed; //Drive forward while we rotate
-			
+
+			//Drive forward until we hit the wheel
+			while(avg_current < avg_current_limit && !preempted_ && !timed_out_ && ros::ok())
+			{
+				//check preempted_
+				if(as_.isPreemptRequested() || !ros::ok()) {
+					ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
+					preempted_ = true;
+				}
+				//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
+				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
+					ROS_ERROR_STREAM(action_name_ << ": timed out while calling control panel controller");
+					timed_out_ = true;
+				}
+				//otherwise, pause then loop again
+				else {
+					r.sleep();
+				}
+			}
+
+			double panel_rotations;
 			//Loop while calling rotation
 			while(!preempted_ && !timed_out_ && ros::ok() && goal_color_ != current_color_)
 			{
@@ -223,11 +240,11 @@ class GoToColorControlPanelAction {
 					ROS_ERROR_STREAM(action_name_ << ": preempt while calling color algorithm");
 					preempted_ = true;
 				}
-					
-				controller_2020_msgs::ControlPanelSrv panel_srv;
+                      
 				if(!preempted_ && !timed_out_ && ros::ok())
 				{
-					panel_srv.request. = ;
+					controller_2020_msgs::ControlPanelSrv panel_srv;
+                                        panel_srv.request.control_panel_rotations = panel_rotations; //Might need to be negative, but hopefully not ?
 					if(!control_panel_controller_client_.call(panel_srv)) {
 						ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
 						preempted_ = true;
@@ -249,27 +266,30 @@ class GoToColorControlPanelAction {
 					r.sleep();
 				}
 			}
+	
+			pause(friction_wait, "Holding friction while wheel stops"); //Pause a bit so we can hold friction while the wheel stops spinning
 
-			
-			stopped_ = true; //Stop driving forward
-			
-			//Retract the climber
+			//Drive backwards
 			if(!preempted_ && !timed_out_ && ros::ok())
-			{
-				controller_2020_msgs::ClimberSrv climb_srv;
-				climb_srv.request.//???;
-				if(!climber_controller_client_.call(climb_srv))
-				{
-					ROS_ERROR_STREAM(action_name_ << ": preempt while calling climb service");
-				}
-			}				
+				cmd_vel_forward_speed_ = -back_up_speed; //Drive forward while we rotate
 
-			pause(climb_wait,"Retracting climber");
+			pause(back_up_wait, "Backing up");
 
 			//Finish -----------------------------------------------
+			stopped_ = true; //Stop driving
+			
+			//Retract the climber
+			controller_2020_msgs::ClimberSrv climb_srv;
+			climb_srv.request.winch_set_point = 0;	
+			climb_srv.request.climber_deploy = false;
+			climb_srv.request.climber_elevator_break = true;
+			if(!climber_controller_client_.call(climb_srv))
+			{
+				ROS_ERROR_STREAM(action_name_ << ": preempt while calling climb service");
+				preempted_ = true;
+			}
 
-			//set final state using client calls - if you did preempt handling before, put a check here so don't override that
-
+			pause(climb_wait,"Retracting climber");
 
 			//log result and set actionlib server state appropriately
 			behaviors::GoToColorResult result;
@@ -347,6 +367,19 @@ class GoToColorControlPanelAction {
 		void sensorColorCallback(const /*insert message type here*/ &color_data){
 			current_color_ = std::toupper(color_data./*insert name of data*/);
 		}
+
+		void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
+		{
+			double current_sum = 0;
+			for(size_t i = 0; i < talon_state.name.size(); i++)
+			{
+				if(talon_state.name[i] == "")
+				{
+					current_sum += talon_state.current[i];
+				}
+			}
+			avg_current = current_sum/4;
+		}
 };
 int main(int argc, char** argv) {
 	//create node
@@ -377,11 +410,34 @@ int main(int argc, char** argv) {
                 drive_forward_speed = 0.2;
         }
 
-
 	if (!n.getParam("/actionlib_gotocolor_params/climb_wait_time", climb_wait))
         {
                 ROS_ERROR("Could not read climb_wait_time in go_to_color_control_panel_server");
                 climb_wait = 1;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/friction_wait_time", friction_wait))
+        {
+                ROS_ERROR("Could not read friction_wait_time in go_to_color_control_panel_server");
+                friction_wait = .2;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/back_up_time", back_up_wait))
+        {
+                ROS_ERROR("Could not read back_up_time in go_to_color_control_panel_server");
+                back_up_wait = .5;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/back_up_speed", back_up_speed))
+        {
+                ROS_ERROR("Could not read back_up_time in go_to_color_control_panel_server");
+                back_up_speed = .5;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/avg_current_limit", avg_current_limit))
+        {
+                ROS_ERROR("Could not read avg_current_limit in go_to_color_control_panel_server");
+                avg_current_limit = .01;
         }
 
 	//create the actionlib server
