@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="tf_object_detection" name="tf_object_detection" type="test_detection.py" output="screen">
+  </node>
+</launch>

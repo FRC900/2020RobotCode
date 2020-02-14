@@ -1,7 +1,5 @@
-'''
-Python code to run TF SSD object detction code
-'''
 #!/usr/bin/env python
+
 import cv2
 import glob
 import numpy as np
@@ -10,7 +8,6 @@ import sys
 import tensorflow as tf
 
 import rospy
-import cv2
 from sensor_msgs.msg import Image
 from field_obj.msg import Detection, Object
 from cv_bridge import CvBridge, CvBridgeError
