@@ -12,7 +12,5 @@ private:
 public:
 	ConvertCoords(image_geometry::PinholeCameraModel model);
 	cv::Point3f screen_to_world( const cv::Rect &bounding_rect, const std::string &debug_name, const float depth ) const;
-	cv::Point3f screen_to_world( const cv::Point2f &uv ) const;
 	cv::Point2f world_to_screen( const cv::Point3f &pos, const std::string &debug_name ) const;
-	double angle_from_center( const cv::Point3f &pos, const cv::Point3f &center ) const;
 };

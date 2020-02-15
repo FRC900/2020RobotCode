@@ -34,27 +34,8 @@ cv::Point3f ConvertCoords::screen_to_world( const cv::Rect &bounding_rect, const
   return adj_world_coord_scaled;
 }
 
-cv::Point3f ConvertCoords::screen_to_world( const cv::Point2f &uv ) const {
-  const cv::Point3f world_coord_unit = model_.projectPixelTo3dRay(uv);
-  const cv::Point3f adj_world_coord_scaled(world_coord_unit.x, world_coord_unit.z, -world_coord_unit.y);
-
-  return adj_world_coord_scaled;
-}
-
 cv::Point2f ConvertCoords::world_to_screen( const cv::Point3f &pos, const std::string &debug_name ) const {
   const cv::Point2f screen_coord = model_.project3dToPixel(pos);
 
   return screen_coord;
-}
-
-double ConvertCoords::angle_from_center( const cv::Point3f &pos, const cv::Point3f &center) const {
-  cv::Point2f v1(pos.y, pos.x);
-  cv::Point2f v2(center.y, center.x);
-
-  double cos_theta = v1.dot(v2) / (cv::norm(v1) * cv::norm(v2));
-    if (cos_theta > 1.0)
-        return 0.0;
-    else if (cos_theta < -1.0)
-        return CV_PI;
-    return std::acos(cos_theta);
 }

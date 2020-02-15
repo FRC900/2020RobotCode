@@ -157,7 +157,6 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   ## Declare a C++ executable
   add_executable(goal_detection_node
     src/goal_detect_node.cpp
-    src/convert_coords.cpp
   )
 
   ## Specify libraries to link a library or executable target against
@@ -181,6 +180,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     ../../../common/track3d.cpp
     ../../../common/kalman.cpp
     ../../../common/hungarian.cpp
+    src/convert_coords.cpp
   )
 
   target_link_libraries(GoalDetection

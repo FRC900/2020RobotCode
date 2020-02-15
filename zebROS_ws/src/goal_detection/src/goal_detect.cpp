@@ -162,14 +162,12 @@ namespace goal_detection
 					dummy.confidence = gfd[i].confidence;
 
 					// Bounding rect in world coords
-					const cv::Point2f center((double)cvFrame->image.rows / 2, (double)cvFrame->image.cols / 2);
-					const cv::Point3f center_ray = cc.screen_to_world(center);
 					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, dummy.id, gfd[i].depth);
-					const double angle = cc.angle_from_center(world_coord_scaled, center_ray);
 
 					dummy.location.x = world_coord_scaled.y;
 					dummy.location.y = world_coord_scaled.x;
 					dummy.location.z = world_coord_scaled.z;
+					dummy.angle = atan2f(world_coord_scaled.x, world_coord_scaled.y) * 180. / M_PI;
 					gd_msg.objects.push_back(dummy);
 
 #if 0
