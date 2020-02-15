@@ -4,6 +4,7 @@ import cv2
 import glob
 import numpy as np
 import os
+import rospkg
 import sys
 import tensorflow as tf
 
@@ -21,12 +22,16 @@ detection_graph, sess, pub = None, None, None
 # These are 'borrowed' from the tensorflow models object
 # detection directory
 from os.path import dirname, abspath, join
-THIS_DIR = dirname(__file__)
+rospack = rospkg.RosPack()
+THIS_DIR = rospack.get_path('tf_object_detection') + '/src/'
 CODE_DIR = abspath(join(THIS_DIR, 'modules'))
 sys.path.append(CODE_DIR)
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
+
+sub_topic = "c920/rect_image"
+pub_topic = "tf_obj_detection"
 
 # Takes a image, and using the tensorflow session and graph
 # provided, runs inference on the image. This returns a list
@@ -41,7 +46,7 @@ def run_inference_for_single_image(msg):
 
   with detection_graph.as_default():
     # Get handles to input and output tensors
-    ops = tf.get_default_graph().get_operations()
+    ops = tf.compat.v1.get_default_graph().get_operations()
     all_tensor_names = {output.name for op in ops for output in op.outputs}
     tensor_dict = {}
     for key in [
@@ -67,7 +72,7 @@ def run_inference_for_single_image(msg):
       # Follow the convention by adding back the batch dimension
       tensor_dict['detection_masks'] = tf.expand_dims(
           detection_masks_reframed, 0)
-    image_tensor = tf.get_default_graph().get_tsensor_by_name('image_tensor:0')
+    image_tensor = tf.compat.v1.get_default_graph().get_tensor_by_name('image_tensor:0')
 
     # Run inference
     output_dict = sess.run(tensor_dict,
@@ -84,11 +89,11 @@ def run_inference_for_single_image(msg):
     detection = Detection()
     for i in range(num_detections):
         obj = Object()
-        obj.location.x = (detection_boxes[i][0] + detection[i][1]) / 2
-        obj.location.y = (detection_boxes[i][2] + detection[i][3]) / 2
+        obj.location.x = (detection_boxes[i][0] + detection_boxes[i][1]) / 2
+        obj.location.y = (detection_boxes[i][2] + detection_boxes[i][3]) / 2
         obj.confidence = detection_scores[i]
         obj.id = str(detection_classes[i])
-        msg.objects.append(obj)
+        detection.objects.append(obj)
 
     pub.publish(detection)
 
@@ -111,16 +116,17 @@ def vis(output_dict):
 
 def main():
     global THIS_DIR
+    global detection_graph, sess, pub
     print THIS_DIR
 
     rospy.init_node('tf_object_detection', anonymous = True)
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     # This shouldn't need to change
-    PATH_TO_FROZEN_GRAPH = os.path.join(THIS_DIR, 'frozen_inference_graph.pb')
+    PATH_TO_FROZEN_GRAPH = THIS_DIR + 'frozen_inference_graph.pb'
 
     # List of the strings that is used to add correct label for each box.
-    PATH_TO_LABELS = os.path.join(THIS_DIR, '2020Game_label_map.pbtxt')
+    PATH_TO_LABELS = THIS_DIR + '2020Game_label_map.pbtxt'
     category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
     # Init TF detection graph and session
@@ -129,11 +135,14 @@ def main():
       od_graph_def = tf.GraphDef()
       with tf.gfile.GFile(PATH_TO_FROZEN_GRAPH, 'rb') as fid:
         serialized_graph = fid.read()
+        od_graph_def.ParseFromString(serialized_graph)
         tf.import_graph_def(od_graph_def, name='')
-      sess = tf.Session(graph=detection_graph)
 
-    sub = rospy.Subscriber("c920/rect_image", Image, run_inference_for_single_image)
-    pub = rospy.Publisher("tf_obj_detection", Detection, queue_size=10)
+    with detection_graph.as_default():
+        sess = tf.Session(graph=detection_graph)
+
+    sub = rospy.Subscriber(sub_topic, Image, run_inference_for_single_image)
+    pub = rospy.Publisher(pub_topic, Detection, queue_size=10)
 
     try:
         rospy.spin()

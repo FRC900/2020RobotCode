@@ -1,4 +1,11 @@
 <launch>
   <node pkg="tf_object_detection" name="tf_object_detection" type="test_detection.py" output="screen">
   </node>
+  
+  <node pkg="tf_object_detection" name="pub_video" type="pub_video.py" output="screen">
+    <remap from="output" to="c920/rect_image" />
+    <param name="fps" value="25" />
+    <param name="loop" value="False" />
+    <param name="start_paused" value="True" />
+  </node>
 </launch>
