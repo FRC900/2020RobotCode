@@ -54,6 +54,7 @@ class PowerCellIntakeAction {
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 
 			//wait for all actionlib servers we need
+			//TODO wait for indexer actionlib server
 
 			//wait for all controller services we need
 			if(! powercell_intake_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout)))
@@ -64,7 +65,7 @@ class PowerCellIntakeAction {
 			}
 
 			//define variables that will be reused for each controller call/actionlib server call
-			ros::Rate r(100);
+			ros::Rate r(10);
 
 			//define variables that will be set true if the actionlib action is to be ended
 			//this will cause subsequent controller calls to be skipped, if the template below is copy-pasted
@@ -72,7 +73,7 @@ class PowerCellIntakeAction {
 			bool preempted = false;
 			bool timed_out = false;
 			linebreak_true_count_ = 0; //when this gets higher than linebreak_debounce_iterations, we'll consider the gamepiece intooket
-			
+
 			//send command to lower arm and run roller to the powercell intake controller ------
 			ROS_WARN("%s: lowering arm and spinning roller in",action_name_.c_str());
 			//define request to send to powercell intake controller
@@ -82,7 +83,7 @@ class PowerCellIntakeAction {
 			//send request to controller
 			if(!powercell_intake_controller_client_.call(srv))
 			{
-				ROS_ERROR("%s: Srv intake call failed", action_name_.c_str());
+				ROS_ERROR("%s: powercell intake controller call failed when starting the intake", action_name_.c_str());
 				preempted = true;
 			}
 
