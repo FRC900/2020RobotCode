@@ -163,7 +163,7 @@ class AlignToShootAction {
 			{
 
 				ROS_ERROR_STREAM(action_name_ << " can't find turret_controller");
-				as_.setPreempted();
+				preempted_ = true;
 				return;
 			}
 
@@ -177,7 +177,7 @@ class AlignToShootAction {
 				if(!turret_controller_client_.call(srv))
 				{
 					ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
-					as_.setPreempted();
+					preempted_ = true;
 				}
 
 				double start_turret_time = ros::Time::now().toSec();
