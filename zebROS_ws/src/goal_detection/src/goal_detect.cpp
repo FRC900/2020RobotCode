@@ -162,7 +162,10 @@ namespace goal_detection
 					dummy.confidence = gfd[i].confidence;
 
 					// Bounding rect in world coords
-					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, gfd[i].pos, dummy.id, gfd[i].depth);
+					const cv::Point2f center((double)cvFrame->image.rows / 2, (double)cvFrame->image.cols / 2);
+					const cv::Point3f center_ray = cc.screen_to_world(center);
+					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, dummy.id, gfd[i].depth);
+					const double angle = cc.angle_from_center(world_coord_scaled, center_ray);
 
 					dummy.location.x = world_coord_scaled.y;
 					dummy.location.y = world_coord_scaled.x;
@@ -170,11 +173,11 @@ namespace goal_detection
 					gd_msg.objects.push_back(dummy);
 
 #if 0
-					ROS_INFO_STREAM("center_world_coord_scaled:" << center_world_coord_scaled);
-					ROS_INFO_STREAM("gfd[i].pos:" << gfd[i].pos);
-					ROS_INFO_STREAM("difference:" << center_world_coord_scaled - gfd[i].pos);
+					const cv::Point3f world_cocv::Point2f ConvertCoords::world_to_screen( const cv::Point3f &pos, const std::string &debug_name ) const {
+  const cv::Point2f screen_coord = model_.project3dToPixel(pos);
 
-					const cv::Point3f world_coord = model.projectPixelTo3dRay(uv);
+  return screen_coord;
+}ord = model.projectPixelTo3dRay(uv);
 					const float distance = sqrt(gfd[i].pos.x * gfd[i].pos.x +
 					                            gfd[i].pos.y * gfd[i].pos.y +
 					                            gfd[i].pos.z * gfd[i].pos.z);
