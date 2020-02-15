@@ -19,7 +19,6 @@ namespace turret_controller
 		}
 
 		//get turret zero timeout param
-		turret_zero_timeout_;
 		if ( !controller_nh.getParam("turret_zero_timeout", turret_zero_timeout_)) //grabbing the config value under the controller's section in the main config file
 		{
 			ROS_ERROR_STREAM("Could not read turret_zero_timeout");
@@ -27,7 +26,6 @@ namespace turret_controller
 		}
 
 		//get turret zero percent out param
-		turret_zero_percent_output_;
 		if ( !controller_nh.getParam("turret_zero_percent_output", turret_zero_percent_output_)) //grabbing the config value under the controller's section in the main config file
 		{
 			ROS_ERROR_STREAM("Could not read turret_zero_percent_output");
