@@ -155,7 +155,7 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth) {
 				cout << "Number of goals: " << _return_found.size() << endl;
 				for(size_t n = 0; n < _return_found.size(); n++)
 				{
-					cout << "Goal " << n + 1 << " " << _return_found[n].contour_index <<
+					cout << "Goal " << n << " " << _return_found[n].contour_index <<
 						" distance: " << _return_found[n].distance << " confidence: "<< _return_found[n].confidence << endl;
 				}
 #endif

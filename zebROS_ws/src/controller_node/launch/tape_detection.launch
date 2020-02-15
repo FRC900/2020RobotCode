@@ -8,7 +8,7 @@
         camera node, e.g. for debugging from saved bag file
 -->
 <launch>
-  <arg name="live_camera" default="false" />
+  <arg name="live_camera" default="true" />
 
   <!--
 		 ZED needs transforms for its cameras, but we've modified them

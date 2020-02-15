@@ -19,7 +19,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <cv_bridge/cv_bridge.h>
-#include <image_geometry/pinhole_camera_model.h>
 
 #include "teraranger_array/RangeArray.h"
 
@@ -161,39 +160,11 @@ namespace goal_detection
 					// Bounding rect in world coords
 					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, dummy.id, gfd[i].distance);
 
-					dummy.location.x = world_coord_scaled.y;
+					dummy.location.x = world_coord_scaled.z;
 					dummy.location.y = world_coord_scaled.x;
-					dummy.location.z = world_coord_scaled.z;
+					dummy.location.z = world_coord_scaled.y;
 					dummy.angle = atan2f(world_coord_scaled.x, world_coord_scaled.y) * 180. / M_PI;
 					gd_msg.objects.push_back(dummy);
-
-#if 0
-					const cv::Point3f world_cocv::Point2f ConvertCoords::world_to_screen( const cv::Point3f &pos, const std::string &debug_name ) const {
-  const cv::Point2f screen_coord = model_.project3dToPixel(pos);
-
-  return screen_coord;
-}ord = model.projectPixelTo3dRay(uv);
-					const float distance = sqrt(gfd[i].pos.x * gfd[i].pos.x +
-					                            gfd[i].pos.y * gfd[i].pos.y +
-					                            gfd[i].pos.z * gfd[i].pos.z);
-					ROS_INFO_STREAM("model.fullResolution: " << model.fullResolution());
-
-					ROS_INFO_STREAM("rect" << gfd[i].rect);
-					ROS_INFO_STREAM("uv" << uv);
-
-					const cv::Point3f gd_pos(gfd[i].pos.y, gfd[i].pos.x, gfd[i].pos.z);
-
-					ROS_INFO_STREAM("gd_pos:" << gd_pos);
-					ROS_INFO_STREAM("distance:" << distance);
-					ROS_INFO_STREAM("world_coord (unscaled):" << world_coord);
-					ROS_INFO_STREAM("projectPixelTo3dRay(unscaled):" << model.projectPixelTo3dRay(uv));
-					ROS_INFO_STREAM("world_coord (scaled):" << world_coord * distance);
-					ROS_INFO_STREAM("difference:" << world_coord * distance - gd_pos);
-
-					const cv::Point3f adj_world_coord(world_coord.z * distance, world_coord.x * distance, -world_coord.y * distance);
-					ROS_INFO_STREAM("adj_world_coord:" << adj_world_coord);
-					ROS_INFO_STREAM("adj_distance:" << adj_world_coord - gd_pos);
-#endif
 				}
 
 				pub_.publish(gd_msg);
