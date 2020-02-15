@@ -63,7 +63,6 @@ class AlignToShootAction {
 		robot_heading_sub_ = nh_.subscribe("/imu/data", 1, &AlignToShootAction::robotHeadingCallback, this);
 
 		//initialize client used to call controllers
-		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
 		turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
 	}
 
@@ -123,7 +122,7 @@ class AlignToShootAction {
 			{
 				for (size_t i = 0; i < talon_state.name.size(); i++)
 				{
-					if (talon_state.name[i] == "turret_joint") //TODO
+					if (talon_state.name[i] == "turret_joint")
 					{
 						turret_idx = i;
 						break;
@@ -138,6 +137,15 @@ class AlignToShootAction {
 		double getTurretPosition()
 		{
 			//use goal_msg and angle of robot to determine turret position
+			// will need to implement zed -> robot -> turret transforms, and probably do that transform in the goalDetectionCallback
+			// atan(local_goal_msg.objects[0].location.y / local_goal_msg.objects[0].location.x)
+			// use confidence to determine which object to target?
+			// is the "id" field in the Object message the type of object being detected? or something else
+			field_obj::Detection local_goal_msg;
+			{
+				std::lock_guard<std::mutex> l(goal_msg_mutex_);
+				local_goal_msg = goal_msg_;
+			}
 			return 2;
 		}
 
@@ -183,14 +191,16 @@ class AlignToShootAction {
 						preempted_ = true;
 					}
 					//test if succeeded, if so, break out of the loop
-					else if(cur_turret_position_ - srv.request.set_point < max_turret_position_error_) {
-						break;
+					else if(fabs(cur_turret_position_ - srv.request.set_point) < max_turret_position_error_) {
+						ROS_INFO_STREAM(action_name_ << ": succeeded to call turret controller");
 						aligned_ = true;
+						break;
 					}
 					//check timed out 
 					else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
 						ROS_ERROR_STREAM(action_name_ << ": timed out while calling turret controller");
 						timed_out_ = true;
+						r.sleep();
 					}
 					else if((ros::Time::now().toSec() - start_turret_time > turn_turret_timeout_))
 					{
@@ -300,17 +310,17 @@ int main(int argc, char** argv) {
 	if (!n_params_align.getParam("wait_for_server_timeout", align_to_shoot_action.wait_for_server_timeout_))
 	{
 		ROS_ERROR("Could not read wait_for_server_timeout in align_server");
-		align_to_shoot_action.wait_for_server_timeout_ = 10;
+		align_to_shoot_action.wait_for_server_timeout_ = 1;
 	}
 	if (!n_params_align.getParam("turn_turret_timeout", align_to_shoot_action.turn_turret_timeout_))
 	{
 		ROS_ERROR("Could not read turn_turret_timeout in align_server");
-		align_to_shoot_action.turn_turret_timeout_ = 10;
+		align_to_shoot_action.turn_turret_timeout_ = 1;
 	}
 	if (!n_params_align.getParam("max_turret_position_error", align_to_shoot_action.max_turret_position_error_))
 	{
 		ROS_ERROR("Could not read max_turret_position_error in align_server");
-		align_to_shoot_action.max_turret_position_error_ = 10;
+		align_to_shoot_action.max_turret_position_error_ = 1e-2;
 	}
 
 	ros::AsyncSpinner Spinner(2);
