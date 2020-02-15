@@ -441,7 +441,7 @@ class IndexerAction {
 					break;
 				default:
 				{
-					ROS_ERROR_STREAM("Indexer server: invalid goal. " << goal->action << " is not a valid action (valid ones are 0,1,2)");
+					ROS_ERROR_STREAM("Indexer server: invalid goal. " << (int) goal->action << " is not a valid action (valid ones are 0,1,2)");
 					preempted_ = true;
 					break;
 				}
