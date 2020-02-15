@@ -2,6 +2,7 @@
 #include "actionlib/server/simple_action_server.h"
 #include "actionlib/client/simple_action_client.h"
 #include <atomic>
+#include <thread>
 #include <ros/console.h>
 
 //include action files - for this actionlib server and any it sends requests to
@@ -274,11 +275,6 @@ class IndexerAction {
 			return true;
 		}
 
-
-		//function to run num balls publish thread
-		void publishNumBallsThread()
-		{
-		}
 
 		//define the function to be executed when the actionlib server is called
 		void executeCB(const behavior_actions::IndexerGoalConstPtr &goal)
@@ -559,12 +555,31 @@ class IndexerAction {
 			//initialize subscribers
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
 
-			//initialize publishers
-			num_balls_pub_ = nh_.advertise<std_msgs::UInt8>("num_power_cells", 1);
+
+			//start the num balls publishing thread
+			std::thread num_balls_pub_thread(std::bind(&IndexerAction::publishNumBallsThread, this));
 		}
 
 		~IndexerAction(void)
 		{
+		}
+
+		//function to run num balls publish thread
+		void publishNumBallsThread()
+		{
+			//initialize publisher
+			//num_balls_pub_ = nh_.advertise<std_msgs::UInt8>("num_power_cells", 1);
+
+			//std_msgs::UInt8 msg;
+
+			ros::Rate r(15); //TODO keep this rate? Config?
+
+			while(ros::ok())
+			{
+				//msg.data = 2;
+				//num_balls_pub_.publish(msg);
+				r.sleep();
+			}
 		}
 
 		//config variables
@@ -608,7 +623,6 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Couldn't read indexer_speed in indexer server");
 		indexer_action.wait_for_server_timeout_ = 4; //TODO fix
 	}
-
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
