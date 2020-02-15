@@ -130,7 +130,7 @@ endif()
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES goal_detection
  CATKIN_DEPENDS roscpp message_runtime geometry_msgs std_msgs sensor_msgs
  #  DEPENDS system_lib
@@ -151,11 +151,13 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     ${OpenCV_INCLUDE_DIRS}
     ../../../common
     ../../..
+    include
   )
 
   ## Declare a C++ executable
   add_executable(goal_detection_node
     src/goal_detect_node.cpp
+    src/convert_coords.cpp
   )
 
   ## Specify libraries to link a library or executable target against
