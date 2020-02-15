@@ -31,7 +31,11 @@ https://github.com/IntelRealSense/librealsense/blob/master/third-party/libtm/lib
   <arg name="initial_reset"         default="false"/>
   <arg name="unite_imu_method"      default=""/>
 
-  <arg name="publish_odom_tf"     default="true"/>
+  <arg name="odom_frame_id"            default="$(arg tf_prefix)_odom_frame"/>
+  <arg name="topic_odom_in"            default="/frcrobot_jetson/swerve_drive_controller/odom"/>
+  <arg name="calib_odom_file"          default="$(find controller_node)/config/swerve_info.json"/>
+  <arg name="publish_odom_tf"          default="true"/>
+
   
   <group ns="$(arg camera)">
     <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
@@ -58,7 +62,10 @@ https://github.com/IntelRealSense/librealsense/blob/master/third-party/libtm/lib
       <arg name="initial_reset"            value="$(arg initial_reset)"/>
       <arg name="unite_imu_method"         value="$(arg unite_imu_method)"/>
 
-      <arg name="publish_odom_tf"          value="$(arg publish_odom_tf)"/>
+	  <arg name="odom_frame_id"            value="$(arg odom_frame_id)"/> 
+	  <arg name="topic_odom_in"            value="$(arg topic_odom_in)"/> 
+	  <arg name="calib_odom_file"          value="$(arg calib_odom_file)"/> 
+	  <arg name="publish_odom_tf"          value="$(arg publish_odom_tf)"/>
     </include>
   </group>
 </launch>

@@ -79,7 +79,7 @@
 				<remap from="/frcrobot_rio/joystick_states_raw" to="/frcrobot_rio/joystick_states_raw1"/>
 			</node>
 		</group>
-		
+
 		<group ns="button_box_translator" if="$(arg button_box)">
 			<node name="translate_button_box_data_node" pkg="teleop_joystick_control" type="translate_button_box_data_node" output="screen"/>
 		</group>
@@ -159,9 +159,9 @@
 	<include file="$(find controller_node)/launch/tape_detection.launch">
 		<arg name="camera_model" value="zed2" />
 	</include>
-        <!-- <include file="$(find controller_node)/launch/multiflex_example.launch" />-->
+	<!-- <include file="$(find controller_node)/launch/multiflex_example.launch" />-->
 
-		<!--
+	<!--
 	<include file="$(find controller_node)/launch/tape_detection_c920.launch" />
 -->
 <!--
@@ -190,11 +190,9 @@
 			<remap from="pid_enable" to="orient_pid/pid_enable"/>
 		</node>
 	</group>
-        -->
-
-	<include file="$(find realsense2_camera)/launch/rs_t265.launch" >
-		<!-- didn't seem to work, retest
 		-->
+    
+	<include file="$(find controller_node)/launch/rs_t265.launch" >
 		<arg name="camera" value="rs_t265" />
 	</include>
 
