@@ -19,31 +19,25 @@ struct DepthInfo
 //this contains all the info we need to decide between goals once we are certain if it is a goal
 struct GoalInfo
 {
-	cv::Point3f pos;
 	float confidence;
 	float distance;
-	float angle;
 	cv::Rect rect;
 	size_t contour_index;
 	bool depth_error;
 	cv::Point com;
 	cv::Rect br;
 	cv::RotatedRect rtRect;
-	float depth;
 };
 
 //This contains all the necessary info for a goal
 struct GoalFound
 {
-	cv::Point3f pos;
 	float distance;
-	float angle;
 	float confidence;
 	size_t contour_index;
 	cv::Rect rect;
 	cv::RotatedRect rotated_rect;
 	std::string id;
-	float depth;
 };
 
 

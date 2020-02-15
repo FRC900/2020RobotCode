@@ -155,14 +155,11 @@ namespace goal_detection
 				for(size_t i = 0; i < gfd.size(); i++)
 				{
 					field_obj::Object dummy;
-					dummy.location.x = gfd[i].pos.y;
-					dummy.location.y = gfd[i].pos.x;
-					dummy.location.z = gfd[i].pos.z;
 					dummy.id = gfd[i].id;
 					dummy.confidence = gfd[i].confidence;
 
 					// Bounding rect in world coords
-					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, dummy.id, gfd[i].depth);
+					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, dummy.id, gfd[i].distance);
 
 					dummy.location.x = world_coord_scaled.y;
 					dummy.location.y = world_coord_scaled.x;
