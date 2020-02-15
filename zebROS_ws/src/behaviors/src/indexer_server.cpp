@@ -141,9 +141,6 @@ class IndexerAction {
 		//subscribers
 		ros::Subscriber joint_states_sub_;
 
-		//publishers
-		ros::Publisher num_balls_pub_;
-
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
 		Linebreak shooter_linebreak_{"shooter_linebreak"}; //just before the shooter
@@ -556,28 +553,22 @@ class IndexerAction {
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
 
 
-			//start the num balls publishing thread
-			std::thread num_balls_pub_thread(std::bind(&IndexerAction::publishNumBallsThread, this));
 		}
 
 		~IndexerAction(void)
 		{
 		}
 
-		//function to run num balls publish thread
-		void publishNumBallsThread()
+		//function to run num balls publish thread - needs to be public b/c the thread is run from main()
+		void publishNumBallsThread(ros::Publisher num_balls_pub)
 		{
-			//initialize publisher
-			//num_balls_pub_ = nh_.advertise<std_msgs::UInt8>("num_power_cells", 1);
-
-			//std_msgs::UInt8 msg;
-
-			ros::Rate r(15); //TODO keep this rate? Config?
+			std_msgs::UInt8 msg;
+			ros::Rate r(10); //TODO keep this rate? Config?
 
 			while(ros::ok())
 			{
-				//msg.data = 2;
-				//num_balls_pub_.publish(msg);
+				msg.data = n_balls_;
+				num_balls_pub.publish(msg);
 				r.sleep();
 			}
 		}
@@ -597,6 +588,10 @@ int main(int argc, char** argv) {
 
 	//create the actionlib server
 	IndexerAction indexer_action("indexer_server");
+
+	//start the num balls publishing thread
+	ros::Publisher num_balls_pub = nh.advertise<std_msgs::UInt8>("num_power_cells", 1); //declared here so we can use the node handle
+	std::thread num_balls_pub_thread(&IndexerAction::publishNumBallsThread, &indexer_action, num_balls_pub);
 
 	//get config values
 	ros::NodeHandle nh_indexer(nh, "actionlib_indexer_params");
@@ -627,5 +622,12 @@ int main(int argc, char** argv) {
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
 	ros::waitForShutdown();
+
+	//stop the num balls publish thread
+	if(num_balls_pub_thread.joinable())
+	{
+		num_balls_pub_thread.join();
+	}
+
 	return 0;
 }
