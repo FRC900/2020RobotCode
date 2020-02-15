@@ -40,10 +40,22 @@ class TurretController : public controller_interface::MultiInterfaceController<h
                                     controllers_2020_msgs::TurretSrv::Response &res);
         private:
 
-			talon_controllers::TalonMotionMagicCloseLoopControllerInterface turret_joint_; //variable for motor joint
+			talon_controllers::TalonControllerInterface turret_joint_; //variable for motor joint
 
 			realtime_tools::RealtimeBuffer<double> cmd_buffer_;
 			ros::ServiceServer turret_service_;
+
+			bool zeroed_;
+			bool last_zeroed_;
+			double last_position_;
+
+			double turret_zero_timeout_;
+			double turret_zero_percent_output_;
+
+			//double last_setpoint_;
+			hardware_interface::TalonMode last_mode_;
+
+			ros::Time last_time_down_;
 }; //class
 
 } //namespace
