@@ -15,7 +15,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
 
-category_index, detection_graph, sess, pub = None, None, None, None
+category_index, detection_graph, sess, pub, pub_debug = None, None, None, None, None
 
 # This is needed since the modules are in a subdir of
 # the python script
@@ -114,12 +114,11 @@ def vis(output_dict, image_np):
             min_score_thresh=0.35,
             groundtruth_box_visualization_color='yellow')
 
-    cv2.imshow('img', cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
-    key = cv2.waitKey(5) & 0xFF
+    pub_debug.publish(bridge.cv2_to_imgmsg(image_np, encoding="rgb8"))
 
 def main():
     global THIS_DIR
-    global detection_graph, sess, pub, category_index
+    global detection_graph, sess, pub, category_index, pub_debug
 
     rospy.init_node('tf_object_detection', anonymous = True)
 
@@ -145,6 +144,7 @@ def main():
 
     sub = rospy.Subscriber(sub_topic, Image, run_inference_for_single_image)
     pub = rospy.Publisher(pub_topic, Detection, queue_size=10)
+    pub_debug = rospy.Publisher("/tf_object_detection/debug_image", Image, queue_size=10)
 
     try:
         rospy.spin()
