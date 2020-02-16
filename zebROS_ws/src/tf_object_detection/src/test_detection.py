@@ -15,7 +15,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
 
-detection_graph, sess, pub = None, None, None
+category_index, detection_graph, sess, pub = None, None, None, None
 
 # This is needed since the modules are in a subdir of
 # the python script
@@ -79,45 +79,47 @@ def run_inference_for_single_image(msg):
                            feed_dict={image_tensor: image})
 
     # all outputs are float32 numpy arrays, so convert types as appropriate
-    num_detections = int(output_dict['num_detections'][0])
-    detection_classes = output_dict['detection_classes'][0].astype(np.int64)
-    detection_boxes = output_dict['detection_boxes'][0]
-    detection_scores = output_dict['detection_scores'][0]
+    output_dict['num_detections'] = int(output_dict['num_detections'][0])
+    output_dict['detection_classes'] = output_dict[
+        'detection_classes'][0].astype(np.int64)
+    output_dict['detection_boxes'] = output_dict['detection_boxes'][0]
+    output_dict['detection_scores'] = output_dict['detection_scores'][0]
     if 'detection_masks' in output_dict:
-        detection_masks = output_dict['detection_masks'][0]
+      output_dict['detection_masks'] = output_dict['detection_masks'][0]
 
     detection = Detection()
-    for i in range(num_detections):
+    for i in range(output_dict['num_detections']):
         obj = Object()
-        obj.location.x = (detection_boxes[i][0] + detection_boxes[i][1]) / 2
-        obj.location.y = (detection_boxes[i][2] + detection_boxes[i][3]) / 2
-        obj.confidence = detection_scores[i]
-        obj.id = str(detection_classes[i])
+        obj.location.x = ((output_dict['detection_boxes'][i][1] + output_dict['detection_boxes'][i][3]) / 2) * image.shape[2]
+        obj.location.y = ((output_dict['detection_boxes'][i][0] + output_dict['detection_boxes'][i][2]) / 2) * image.shape[1]
+        obj.confidence = output_dict['detection_scores'][i]
+        obj.id = str(output_dict['detection_classes'][i])
         detection.objects.append(obj)
 
     pub.publish(detection)
 
-def vis(output_dict):
+    vis(output_dict, image_np)
+
+def vis(output_dict, image_np):
     vis_util.visualize_boxes_and_labels_on_image_array(
-        image_np,
-        detection_boxes,
-        detection_classes,
-        detection_scores,
-        category_index,
-        instance_masks= detection_masks,
-        use_normalized_coordinates=True,
-        line_thickness=4,
-        max_boxes_to_draw=50,
-        min_score_thresh=0.35,
-        groundtruth_box_visualization_color='yellow')
+            image_np,
+            output_dict['detection_boxes'],
+            output_dict['detection_classes'],
+            output_dict['detection_scores'],
+            category_index,
+            instance_masks=output_dict.get('detection_masks'),
+            use_normalized_coordinates=True,
+            line_thickness=4,
+            max_boxes_to_draw=50,
+            min_score_thresh=0.35,
+            groundtruth_box_visualization_color='yellow')
 
     cv2.imshow('img', cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
     key = cv2.waitKey(5) & 0xFF
 
 def main():
     global THIS_DIR
-    global detection_graph, sess, pub
-    print THIS_DIR
+    global detection_graph, sess, pub, category_index
 
     rospy.init_node('tf_object_detection', anonymous = True)
 
@@ -127,7 +129,6 @@ def main():
 
     # List of the strings that is used to add correct label for each box.
     PATH_TO_LABELS = THIS_DIR + '2020Game_label_map.pbtxt'
-    category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
     # Init TF detection graph and session
     detection_graph = tf.Graph()
@@ -140,6 +141,7 @@ def main():
 
     with detection_graph.as_default():
         sess = tf.Session(graph=detection_graph)
+    category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
     sub = rospy.Subscriber(sub_topic, Image, run_inference_for_single_image)
     pub = rospy.Publisher(pub_topic, Detection, queue_size=10)

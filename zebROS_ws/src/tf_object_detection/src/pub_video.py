@@ -7,6 +7,8 @@ import cv2
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
+show_video = False
+
 class Video2ROS:
     def __init__(self):
         rospy.init_node('pub_video', anonymous=False)
@@ -27,10 +29,11 @@ class Video2ROS:
             except CvBridgeError, e:
                 print e
 
-            #display_image = frame.copy()
-            #cv2.imshow("Video Playback", display_image)
+            if show_video:
+                display_image = frame.copy()
+                cv2.imshow("Video Playback", display_image)
 
-            self.keystroke = cv2.waitKey(100)
+            self.keystroke = cv2.waitKey(25)
 
     def cleanup(self):
             print "Shutting down video pub node."
