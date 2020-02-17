@@ -424,6 +424,10 @@ class IndexerAction {
 							{
 								ROS_INFO("Indexer server - successfully shot a ball!");
 								n_balls_--;
+								if(n_balls_ < 0)
+								{
+									ROS_ERROR_STREAM("Indexer server - num balls less than zero. We think we have " << n_balls_);
+								}
 								break;
 							}
 
