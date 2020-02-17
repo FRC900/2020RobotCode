@@ -11,8 +11,8 @@
 //include controller service files and other service files
 #include "controllers_2020_msgs/TurretSrv.h"
 
-#include <field_obj/Detection.h>
-#include <talon_state_msgs/TalonState.h>
+#include "field_obj/Detection.h"
+#include "talon_state_msgs/TalonState.h"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <sensor_msgs/Imu.h>
@@ -34,10 +34,8 @@ class AlignToShootAction
 		ros::Subscriber talon_states_sub_;
 		std::atomic<double> cur_turret_position_;
 
-#if 0
 		ros::Subscriber robot_heading_sub_;
 		std::atomic<double> robot_yaw_;
-#endif
 
 		//clients to call controllers
 		ros::ServiceClient turret_controller_client_;
@@ -105,7 +103,6 @@ class AlignToShootAction
 			goal_msg_ = msg;
 		}
 
-#if 0
 		void robotHeadingCallback(const sensor_msgs::Imu &msg)
 		{
 			const tf2::Quaternion imuQuat(msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w);
@@ -117,7 +114,6 @@ class AlignToShootAction
 			if (yaw == yaw) // ignore NaN results
 				robot_yaw_ = yaw;
 		}
-#endif
 
 		void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 		{
@@ -176,53 +172,49 @@ class AlignToShootAction
 			}
 
 			ros::Rate r(10);
-			// Try over and over again to get the turret to its desired position (update position each time)
-			while (!aligned_ && !preempted_ && !timed_out_ && ros::ok())
+			ROS_INFO_STREAM(action_name_ << ": calling turret controller");
+			//call controller client, if failed set preempted_ = true, and log an error msg
+			controllers_2020_msgs::TurretSrv srv;
+			srv.request.set_point = getTurretPosition();
+			if (!turret_controller_client_.call(srv))
 			{
-				ROS_INFO_STREAM(action_name_ << ": calling turret controller");
-				//call controller client, if failed set preempted_ = true, and log an error msg
-				controllers_2020_msgs::TurretSrv srv;
-				srv.request.set_point = getTurretPosition();
-				if (!turret_controller_client_.call(srv))
+				ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
+				preempted_ = true;
+			}
+
+			const double start_turret_time = ros::Time::now().toSec();
+			bool turret_timed_out = false; //This determines if this service call timed out, not if the entire server timed out
+			//if necessary, run a loop to wait for the controller to finish
+			while (!preempted_ && !timed_out_ && !turret_timed_out && ros::ok())
+			{
+				//check preempted_
+				if (as_.isPreemptRequested() || !ros::ok())
 				{
-					ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
+					ROS_ERROR_STREAM(action_name_ << ": preempt while calling turret controller");
 					preempted_ = true;
 				}
-
-				double start_turret_time = ros::Time::now().toSec();
-				bool turret_timed_out = false; //This determines if this service call timed out, not if the entire server timed out
-				//if necessary, run a loop to wait for the controller to finish
-				while (!preempted_ && !timed_out_ && !turret_timed_out && ros::ok())
+				//test if succeeded, if so, break out of the loop
+				else if (fabs(cur_turret_position_ - srv.request.set_point) < max_turret_position_error_)
 				{
-					//check preempted_
-					if (as_.isPreemptRequested() || !ros::ok())
-					{
-						ROS_ERROR_STREAM(action_name_ << ": preempt while calling turret controller");
-						preempted_ = true;
-					}
-					//test if succeeded, if so, break out of the loop
-					else if (fabs(cur_turret_position_ - srv.request.set_point) < max_turret_position_error_)
-					{
-						ROS_INFO_STREAM(action_name_ << ": succeeded to call turret controller");
-						aligned_ = true;
-						break;
-					}
-					//check timed out
-					else if (ros::Time::now().toSec() - start_time_ > server_timeout_)
-					{
-						ROS_ERROR_STREAM(action_name_ << ": timed out while calling turret controller");
-						timed_out_ = true;
-						r.sleep();
-					}
-					else if ((ros::Time::now().toSec() - start_turret_time > turn_turret_timeout_))
-					{
-						ROS_WARN_STREAM(action_name_ << ": turret controller timed out; running again");
-					}
-					//otherwise, pause then loop again
-					else
-					{
-						r.sleep();
-					}
+					ROS_INFO_STREAM(action_name_ << ": succeeded to call turret controller");
+					aligned_ = true;
+					break;
+				}
+				//check timed out
+				else if (ros::Time::now().toSec() - start_time_ > server_timeout_)
+				{
+					ROS_ERROR_STREAM(action_name_ << ": timed out while calling turret controller");
+					timed_out_ = true;
+					r.sleep();
+				}
+				else if ((ros::Time::now().toSec() - start_turret_time > turn_turret_timeout_))
+				{
+					ROS_WARN_STREAM(action_name_ << ": turret controller timed out; running again");
+				}
+				//otherwise, pause then loop again
+				else
+				{
+					r.sleep();
 				}
 			}
 
@@ -299,7 +291,6 @@ class AlignToShootAction
 				}
 				else   //if didn't succeed and nothing went wrong, keep waiting
 				{
-					ros::spinOnce();
 					r.sleep();
 				}
 			}
