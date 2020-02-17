@@ -145,6 +145,7 @@ class AlignToShootAction
 			// Use atan2(y,x) instead of atan.
 			// Make sure the ID is a goal rather than the loading bay tape
 			// If there's more than one goal something is wrong, so there shouldn't be a choice there - the only two real options are "there is a goal" or "there isn't a goal"
+			// We may also have to worry about cases where the camera can see the target but the turret can't hit it.  That may mean returning two values from this function - one for turret angle, another for robot angle.
 			field_obj::Detection local_goal_msg;
 			{
 				std::lock_guard<std::mutex> l(goal_msg_mutex_);
