@@ -18,7 +18,8 @@
 #include <sensor_msgs/Imu.h>
 
 //create the class for the actionlib server
-class AlignToShootAction {
+class AlignToShootAction
+{
 	protected:
 		ros::NodeHandle nh_;
 
@@ -33,8 +34,10 @@ class AlignToShootAction {
 		ros::Subscriber talon_states_sub_;
 		std::atomic<double> cur_turret_position_;
 
+#if 0
 		ros::Subscriber robot_heading_sub_;
 		std::atomic<double> robot_yaw_;
+#endif
 
 		//clients to call controllers
 		ros::ServiceClient turret_controller_client_;
@@ -43,7 +46,6 @@ class AlignToShootAction {
 		bool preempted_;
 		bool timed_out_;
 		bool aligned_;
-		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
 	public:
@@ -51,20 +53,20 @@ class AlignToShootAction {
 		AlignToShootAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&AlignToShootAction::executeCB, this, _1), false),
 			action_name_(name)
-	{
-		as_.start(); //start the actionlib server
+		{
+			as_.start(); //start the actionlib server
 
-		//do networking stuff
-		std::map<std::string, std::string> service_connection_header;
-		service_connection_header["tcp_nodelay"] = "1";
+			//do networking stuff
+			std::map<std::string, std::string> service_connection_header;
+			service_connection_header["tcp_nodelay"] = "1";
 
-		goal_detection_data_sub_ = nh_.subscribe("/goal_detection/goal_detect_msg", 1, &AlignToShootAction::goalDetectionCallback, this);
-		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &AlignToShootAction::talonStateCallback, this);
-		robot_heading_sub_ = nh_.subscribe("/imu/data", 1, &AlignToShootAction::robotHeadingCallback, this);
+			goal_detection_data_sub_ = nh_.subscribe("/goal_detection/goal_detect_msg", 1, &AlignToShootAction::goalDetectionCallback, this);
+			talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &AlignToShootAction::talonStateCallback, this);
+			//robot_heading_sub_ = nh_.subscribe("/imu/data", 1, &AlignToShootAction::robotHeadingCallback, this);
 
-		//initialize client used to call controllers
-		turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
-	}
+			//initialize client used to call controllers
+			turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
+		}
 
 		~AlignToShootAction(void)
 		{
@@ -75,9 +77,9 @@ class AlignToShootAction {
 		{
 			const double pause_start_time = ros::Time::now().toSec();
 
-			while(!preempted_ && !timed_out_ && ros::ok())
+			while (!preempted_ && !timed_out_ && ros::ok())
 			{
-				if(as_.isPreemptRequested() || !ros::ok())
+				if (as_.isPreemptRequested() || !ros::ok())
 				{
 					preempted_ = true;
 					ROS_ERROR_STREAM("align_to_shoot_server: preempt during pause() - " << activity);
@@ -88,7 +90,7 @@ class AlignToShootAction {
 					ROS_ERROR_STREAM("align_to_shoot_server: timeout during pause() - " << activity);
 				}
 
-				if((ros::Time::now().toSec() - pause_start_time) >= duration)
+				if ((ros::Time::now().toSec() - pause_start_time) >= duration)
 				{
 					return true; //pause worked like expected
 				}
@@ -103,6 +105,7 @@ class AlignToShootAction {
 			goal_msg_ = msg;
 		}
 
+#if 0
 		void robotHeadingCallback(const sensor_msgs::Imu &msg)
 		{
 			const tf2::Quaternion imuQuat(msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w);
@@ -114,6 +117,7 @@ class AlignToShootAction {
 			if (yaw == yaw) // ignore NaN results
 				robot_yaw_ = yaw;
 		}
+#endif
 
 		void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 		{
@@ -129,7 +133,8 @@ class AlignToShootAction {
 					}
 				}
 			}
-			else {
+			else
+			{
 				cur_turret_position_ = talon_state.position[turret_idx];
 			}
 		}
@@ -138,9 +143,12 @@ class AlignToShootAction {
 		{
 			//use goal_msg and angle of robot to determine turret position
 			// will need to implement zed -> robot -> turret transforms, and probably do that transform in the goalDetectionCallback
-			// atan(local_goal_msg.objects[0].location.y / local_goal_msg.objects[0].location.x)
 			// use confidence to determine which object to target?
 			// is the "id" field in the Object message the type of object being detected? or something else
+			// Need to check that we are detecting a target, from the length of the goal detect message
+			// Use atan2(y,x) instead of atan.
+			// Make sure the ID is a goal rather than the loading bay tape
+			// If there's more than one goal something is wrong, so there shouldn't be a choice there - the only two real options are "there is a goal" or "there isn't a goal"
 			field_obj::Detection local_goal_msg;
 			{
 				std::lock_guard<std::mutex> l(goal_msg_mutex_);
@@ -159,7 +167,7 @@ class AlignToShootAction {
 			aligned_ = false;
 
 			// Wait for turret controller to exist
-			if(!turret_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
+			if (!turret_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
 			{
 
 				ROS_ERROR_STREAM(action_name_ << " can't find turret_controller");
@@ -167,14 +175,15 @@ class AlignToShootAction {
 				return;
 			}
 
+			ros::Rate r(10);
 			// Try over and over again to get the turret to its desired position (update position each time)
-			while(!aligned_ && !preempted_ && !timed_out_ && ros::ok())
+			while (!aligned_ && !preempted_ && !timed_out_ && ros::ok())
 			{
 				ROS_INFO_STREAM(action_name_ << ": calling turret controller");
 				//call controller client, if failed set preempted_ = true, and log an error msg
 				controllers_2020_msgs::TurretSrv srv;
 				srv.request.set_point = getTurretPosition();
-				if(!turret_controller_client_.call(srv))
+				if (!turret_controller_client_.call(srv))
 				{
 					ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
 					preempted_ = true;
@@ -183,31 +192,35 @@ class AlignToShootAction {
 				double start_turret_time = ros::Time::now().toSec();
 				bool turret_timed_out = false; //This determines if this service call timed out, not if the entire server timed out
 				//if necessary, run a loop to wait for the controller to finish
-				while(!preempted_ && !timed_out_ && !turret_timed_out && ros::ok())
+				while (!preempted_ && !timed_out_ && !turret_timed_out && ros::ok())
 				{
 					//check preempted_
-					if(as_.isPreemptRequested() || !ros::ok()) {
+					if (as_.isPreemptRequested() || !ros::ok())
+					{
 						ROS_ERROR_STREAM(action_name_ << ": preempt while calling turret controller");
 						preempted_ = true;
 					}
 					//test if succeeded, if so, break out of the loop
-					else if(fabs(cur_turret_position_ - srv.request.set_point) < max_turret_position_error_) {
+					else if (fabs(cur_turret_position_ - srv.request.set_point) < max_turret_position_error_)
+					{
 						ROS_INFO_STREAM(action_name_ << ": succeeded to call turret controller");
 						aligned_ = true;
 						break;
 					}
-					//check timed out 
-					else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
+					//check timed out
+					else if (ros::Time::now().toSec() - start_time_ > server_timeout_)
+					{
 						ROS_ERROR_STREAM(action_name_ << ": timed out while calling turret controller");
 						timed_out_ = true;
 						r.sleep();
 					}
-					else if((ros::Time::now().toSec() - start_turret_time > turn_turret_timeout_))
+					else if ((ros::Time::now().toSec() - start_turret_time > turn_turret_timeout_))
 					{
 						ROS_WARN_STREAM(action_name_ << ": turret controller timed out; running again");
 					}
 					//otherwise, pause then loop again
-					else {
+					else
+					{
 						r.sleep();
 					}
 				}
@@ -216,19 +229,22 @@ class AlignToShootAction {
 			//log result and set actionlib server state appropriately
 			behavior_actions::AlignToShootResult result;
 
-			if(preempted_) {
+			if (preempted_)
+			{
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
 				result.timed_out = false;
 				result.success = false;
 				as_.setPreempted(result);
 			}
-			else if(timed_out_) {
+			else if (timed_out_)
+			{
 				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
 				result.timed_out = true;
 				result.success = false;
 				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
 			}
-			else { //implies succeeded
+			else   //implies succeeded
+			{
 				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
 				result.timed_out = false;
 				result.success = true;
@@ -241,42 +257,48 @@ class AlignToShootAction {
 
 
 		void waitForActionlibServer(auto &action_client, double timeout, const std::string &activity)
-			//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
+		//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
 		{
 			double request_time = ros::Time::now().toSec();
 
 			//wait for actionlib server to finish
 			std::string state;
-			while(!preempted_ && !timed_out_ && ros::ok())
+			ros::Rate r(10);
+			while (!preempted_ && !timed_out_ && ros::ok())
 			{
 				state = action_client.getState().toString();
 
-				if(state == "PREEMPTED") {
+				if (state == "PREEMPTED")
+				{
 					ROS_ERROR_STREAM(action_name_ << ": external actionlib server returned preempted_ during " << activity);
 					preempted_ = true;
 				}
 				//check timeout - note: have to do this before checking if state is SUCCEEDED since timeouts are reported as SUCCEEDED
 				else if (ros::Time::now().toSec() - request_time > timeout || //timeout from what this file says
-						(state == "SUCCEEDED" && !action_client.getResult()->success)) //server times out by itself
+						 (state == "SUCCEEDED" && !action_client.getResult()->success)) //server times out by itself
 				{
 					ROS_ERROR_STREAM(action_name_ << ": external actionlib server timed out during " << activity);
 					timed_out_ = true;
 					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
 				}
-				else if (state == "SUCCEEDED") { //must have succeeded since we already checked timeout possibility
+				else if (state == "SUCCEEDED")   //must have succeeded since we already checked timeout possibility
+				{
 					break; //stop waiting
 				}
 				//checks related to this file's actionlib server
-				else if (as_.isPreemptRequested() || !ros::ok()) {
+				else if (as_.isPreemptRequested() || !ros::ok())
+				{
 					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
 					preempted_ = true;
 				}
-				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
+				else if (ros::Time::now().toSec() - start_time_ > server_timeout_)
+				{
 					ROS_ERROR_STREAM(action_name_ << ": timed out during " << activity);
 					timed_out_ = true;
 					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
 				}
-				else { //if didn't succeed and nothing went wrong, keep waiting
+				else   //if didn't succeed and nothing went wrong, keep waiting
+				{
 					ros::spinOnce();
 					r.sleep();
 				}
@@ -284,14 +306,15 @@ class AlignToShootAction {
 		}
 
 		//config variables, with defaults
-        double server_timeout_; //overall timeout for your server
-        double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
-        double turn_turret_timeout_; //timeout for waiting for turret to go to position 
+		double server_timeout_; //overall timeout for your server
+		double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
+		double turn_turret_timeout_; //timeout for waiting for turret to go to position
 		double max_turret_position_error_;
 
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 	//create node
 	ros::init(argc, argv, "align_to_shoot_server");
 
@@ -301,7 +324,7 @@ int main(int argc, char** argv) {
 	//create the actionlib server
 	AlignToShootAction align_to_shoot_action("align_to_shoot_server");
 
-	ros::NodeHandle n_params_align(n, "actionlib_align_params"); //node handle for a lower-down namespace
+	ros::NodeHandle n_params_align(n, "actionlib_align_to_shoot_params"); //node handle for a lower-down namespace
 	if (!n_params_align.getParam("server_timeout", align_to_shoot_action.server_timeout_))
 	{
 		ROS_ERROR("Could not read server_timeout in align_server");
