@@ -9,6 +9,8 @@
 #include "behavior_actions/IndexerAction.h"
 #include "behavior_actions/IntakeAction.h"
 
+#include "behavior_actions/enumerated_indexer_actions.h"
+
 //include controller service files and other service files
 #include "controllers_2020_msgs/IndexerSrv.h"
 #include "controllers_2020_msgs/IntakeSrv.h"
@@ -300,7 +302,7 @@ class IndexerAction {
 
 			switch(goal->action)
 			{
-				case 0: //go to position intake
+				case POSITION_INTAKE: //go to position intake
                 {
 					ROS_INFO_STREAM("Going to position intake in indexer actionlib server");
 					if(!preempted_ && !timed_out_ && ros::ok())
@@ -309,7 +311,7 @@ class IndexerAction {
 					}
 				}
 					break;
-				case 1: //intake a ball
+				case INTAKE_ONE_BALL:
                 { //braces here fix a cross-initialization error
 
 					ROS_INFO_STREAM("Intaking a ball in indexer actionlib server");
@@ -398,7 +400,7 @@ class IndexerAction {
 
 				}
 					break;
-				case 2: //feed a ball to the shooter
+				case SHOOT_ONE_BALL: //feed a ball to the shooter
                 {
 					ROS_INFO_STREAM("Feeding a ball to the shooter in indexer actionlib server");
 
