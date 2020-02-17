@@ -148,7 +148,6 @@ class IndexerAction {
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
 		bool timed_out_;
-		ros::Rate r_{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
 		//other variables
@@ -158,6 +157,7 @@ class IndexerAction {
 		bool pause(const double duration, const std::string &activity)
 		{
 			const double pause_start_time = ros::Time::now().toSec();
+			ros::Rate r(10); //TODO config?
 
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
@@ -169,7 +169,7 @@ class IndexerAction {
 				checkPreemptedAndTimedOut("pausing during - " + activity);
 				if(!preempted_ && !timed_out_)
 				{
-					r_.sleep();
+					r.sleep();
 				}
 			}
 
@@ -220,11 +220,12 @@ class IndexerAction {
 				}
 
 				//keep going backwards until indexer linebreak is triggered (until ball right in front of intake)
+				ros::Rate r(10); //TODO config?
 				while (!indexer_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
 				{
 					checkPreemptedAndTimedOut("going to position intake");
 					if(!preempted_ && !timed_out_){
-						r_.sleep(); //sleep if we didn't preempt or timeout
+						r.sleep(); //sleep if we didn't preempt or timeout
 					}
 				}
 
@@ -254,11 +255,12 @@ class IndexerAction {
 				}
 
 				//keep going forwards until shooter linebreak is triggered (until ball right in front of shooter)
+				ros::Rate r(10); //TODO config?
 				while (!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
 				{
 					checkPreemptedAndTimedOut("going to position shoot");
 					if(!preempted_ && !timed_out_){
-						r_.sleep(); //sleep if we didn't preempt or timeout
+						r.sleep(); //sleep if we didn't preempt or timeout
 					}
 				}
 
@@ -347,6 +349,7 @@ class IndexerAction {
 
 					//wait for ball to be intaked - ball is intaked if the indexer linebreak pulses on then off
 					indexer_linebreak_.resetPulseDetection(); //clear previous checks for rising/falling edges
+					ros::Rate r(10); //TODO config?
 					while(!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
 					{
 						ROS_INFO("Indexer server - Waiting for ball to be fully intaked");
@@ -359,7 +362,7 @@ class IndexerAction {
 
 						checkPreemptedAndTimedOut("waiting for ball to be fully intaked");
 						if(!preempted_ && !timed_out_){
-							r_.sleep();
+							r.sleep();
 						}
 					}
 					//check if we exited the while loop because the shooter linebreak got triggered - means the intake didn't complete successfully
@@ -399,6 +402,7 @@ class IndexerAction {
                 {
 					ROS_INFO_STREAM("Feeding a ball to the shooter in indexer actionlib server");
 
+					//shoot if you've got the balls
 					if(n_balls_ > 0 && !preempted_ && !timed_out_ && ros::ok())
 					{
 						//set indexer velocity forwards
@@ -411,6 +415,7 @@ class IndexerAction {
 
 						//wait until get a falling edge on the shooter linebreak - means a ball has been shot
 						shooter_linebreak_.resetPulseDetection(); //so we can detect a NEW falling edge
+						ros::Rate r(10); //TODO config?
 						while(!preempted_ && !timed_out_ && ros::ok())
 						{
 							if(shooter_linebreak_.falling_edge_happened_)
@@ -423,7 +428,7 @@ class IndexerAction {
 							checkPreemptedAndTimedOut("moving forwards, waiting for ball to be shot");
 							if(!preempted_ && !timed_out_)
 							{
-								r_.sleep();
+								r.sleep();
 							}
 						}
 
@@ -493,6 +498,7 @@ class IndexerAction {
 			//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
 		{
 			double request_time = ros::Time::now().toSec();
+			ros::Rate r(10); //TODO config?
 
 			//wait for actionlib server to finish
 			std::string state;
@@ -527,7 +533,7 @@ class IndexerAction {
 				}
 				else { //if didn't succeed and nothing went wrong, keep waiting
 					ros::spinOnce();
-					r_.sleep();
+					r.sleep();
 				}
 			}
 		}
