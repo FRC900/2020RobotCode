@@ -1,7 +1,8 @@
 #include "ros/ros.h"
 #include "actionlib/server/simple_action_server.h"
 #include "behavior_actions/IntakeAction.h"
-#include "controllers_2020_msgs/IntakeSrv.h"
+#include "controllers_2020_msgs/IntakeArmSrv.h"
+#include "controllers_2020_msgs/IntakeRollerSrv.h"
 #include "sensor_msgs/JointState.h"
 #include <atomic>
 
@@ -21,7 +22,10 @@ class PowerCellIntakeAction {
 		actionlib::SimpleActionServer<behavior_actions::IntakeAction> as_; //create the actionlib server
 		std::string action_name_;
 
-		ros::ServiceClient powercell_intake_controller_client_; //create a ros client to send requests to the controller
+		//create ros clients to send requests to the controller
+		ros::ServiceClient intake_arm_controller_client_;
+		ros::ServiceClient intake_roller_controller_client_;
+
 		std::atomic<int> linebreak_true_count_; //counts how many times in a row the linebreak reported there's a powercell
 		//create subscribers to get data
 		ros::Subscriber joint_states_sub_;
@@ -38,7 +42,8 @@ class PowerCellIntakeAction {
 		service_connection_header["tcp_nodelay"] = "1";
 
 		//initialize the client being used to call the controller
-		powercell_intake_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeSrv>("/frcrobot_jetson/powercell_intake_controller/powercell_intake_command", false, service_connection_header);
+		intake_arm_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeArmSrv>("/frcrobot_jetson/powercell_intake_controller/intake_arm_command", false, service_connection_header);
+		intake_arm_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeRollerSrv>("/frcrobot_jetson/powercell_intake_controller/intake_roller_command", false, service_connection_header);
 
 		//start subscribers subscribing
 		joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &PowerCellIntakeAction::jointStateCallback, this);
@@ -57,9 +62,15 @@ class PowerCellIntakeAction {
 			//TODO wait for indexer actionlib server
 
 			//wait for all controller services we need
-			if(! powercell_intake_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout)))
+			if(! intake_arm_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout)))
 			{
-				ROS_ERROR_STREAM("Intake powercell server can't find powercell_intake_controller");
+				ROS_ERROR_STREAM("Intake powercell server can't find powercell intake controller's arm ROS server");
+				as_.setPreempted();
+				return;
+			}
+			if(! intake_roller_controller_client_.waitForExistence(ros::Duration(wait_for_server_timeout)))
+			{
+				ROS_ERROR_STREAM("Intake powercell server can't find powercell intake controller's roller ROS server");
 				as_.setPreempted();
 				return;
 			}
@@ -74,16 +85,29 @@ class PowerCellIntakeAction {
 			bool timed_out = false;
 			linebreak_true_count_ = 0; //when this gets higher than linebreak_debounce_iterations, we'll consider the gamepiece intooket
 
+			//tell indexer actionlib server to move to position intake
+			//TODO
+
+
+
 			//send command to lower arm and run roller to the powercell intake controller ------
 			ROS_WARN("%s: lowering arm and spinning roller in",action_name_.c_str());
-			//define request to send to powercell intake controller
-			controllers_2020_msgs::IntakeSrv srv;
-			srv.request.percent_out = roller_power;
-			srv.request.intake_arm_extend = true;
-			//send request to controller
-			if(!powercell_intake_controller_client_.call(srv))
+			//define requests to send to powercell intake controller
+			controllers_2020_msgs::IntakeArmSrv arm_srv;
+			arm_srv.request.intake_arm_extend = true;
+
+			controllers_2020_msgs::IntakeRollerSrv roller_srv;
+			roller_srv.request.percent_out = roller_power;
+
+			//send requests to controller
+			if(!intake_arm_controller_client_.call(arm_srv))
 			{
-				ROS_ERROR("%s: powercell intake controller call failed when starting the intake", action_name_.c_str());
+				ROS_ERROR("%s: powercell intake controller call to arm failed when starting the intake", action_name_.c_str());
+				preempted = true;
+			}
+			if(!intake_roller_controller_client_.call(roller_srv))
+			{
+				ROS_ERROR("%s: powercell intake controller call to roller failed when starting the intake", action_name_.c_str());
 				preempted = true;
 			}
 
@@ -104,29 +128,26 @@ class PowerCellIntakeAction {
 					r.sleep();
 				}
 			}
+
 			//set ending state of controller no matter what happened: arm up and roller motors stopped
-			//define command to send to powercell intake controller
-			if(linebreak_true_count_ > linebreak_debounce_iterations) {
-				srv.request.percent_out = roller_power;
-				srv.request.intake_arm_extend = false;
-			}
-			else {
-				srv.request.percent_out = roller_power; //TODO: change this. This currently just sets holding power no matter what, but this probably should change once we have a linebreak mount
-				srv.request.intake_arm_extend = false;
-			}
-			//send request to controller
-			if(!powercell_intake_controller_client_.call(srv))
+			arm_srv.request.intake_arm_extend = false;
+			roller_srv.request.percent_out = 0;
+			if(!intake_arm_controller_client_.call(arm_srv))
 			{
-				ROS_ERROR("Srv intake call failed in powercell intake server");
+				ROS_ERROR("%s: powercell intake controller call to arm failed when setting final state", action_name_.c_str());
+			}
+			if(!intake_roller_controller_client_.call(roller_srv))
+			{
+				ROS_ERROR("%s: powercell intake controller call to roller failed when setting final state", action_name_.c_str());
 			}
 
 			//log state of action and set result of action
 			behavior_actions::IntakeResult result; //variable to store result of the actionlib action
 			result.timed_out = timed_out; //timed_out refers to last controller call, but applies for whole action
-			if(!success || timed_out)
+			if(timed_out)
 			{
-				ROS_WARN("%s: Error / Timed Out", action_name_.c_str());
-				result.success = false;
+				ROS_WARN("%s: Timed Out", action_name_.c_str());
+				result.success = true;
 				as_.setSucceeded(result);
 			}
 			else if(preempted)
