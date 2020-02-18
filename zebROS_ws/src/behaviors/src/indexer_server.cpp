@@ -36,6 +36,7 @@ class IndexerAction {
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
 		ros::ServiceClient intake_controller_client_;
 		ros::ServiceClient disable_intake_forwards_client_;
+		ros::ServiceClient lost_a_ball_disable_intake_client_; //need a second one because the lostABallCallback() function needs one but runs asynchronously - simple way to avoid conflicting between threads
 
 		//clients for actionlib servers
 		actionlib::SimpleActionClient<behavior_actions::IntakeAction> ac_intake_; //only used for preempting the intake actionlib server
@@ -120,6 +121,17 @@ class IndexerAction {
 			if(n_balls_ > 0)
 			{
 				n_balls_--;
+			}
+			//if no balls, enable the intake moving forwards
+			if(n_balls_ == 0)
+			{
+				std_srvs::SetBool srv;
+				srv.request.data = false; //disabled = false
+				if(!lost_a_ball_disable_intake_client_.call(srv))
+				{
+					ROS_ERROR("Indexer server - enabling intake forwards call to intake controller failed in lostABallCallback");
+					preempted_ = true;
+				}
 			}
 			return true;
 		}
@@ -552,6 +564,7 @@ class IndexerAction {
 			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
 			intake_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeRollerSrv>("/frcrobot_jetson/intake_controller/intake_command", false, service_connection_header);
 			disable_intake_forwards_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/intake_controller/intake_disable", false, service_connection_header);
+			lost_a_ball_disable_intake_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/intake_controller/intake_disable", false, service_connection_header);
 
 			//initialize subscribers
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
