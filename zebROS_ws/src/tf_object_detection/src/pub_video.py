@@ -14,13 +14,29 @@ class Video2ROS:
         rospy.init_node('pub_video', anonymous=False)
         rospy.on_shutdown(self.cleanup)
 
-        self.input = "video.mp4"
+        self.filename = "video.mp4"
+        self.pub_topic = "c920/rect_image"
+        self.framerate = 30
+        self.show_video = False
+
+        if rospy.has_param('pub_video/pub_topic'):
+            self.pub_topic = rospy.get_param('pub_video/pub_topic')
+
+        if rospy.has_param('pub_video/filename'):
+            self.filename = rospy.get_param('pub_video/filename')
+
+        if rospy.has_param('pub_video/framerate'):
+            self.framerate = rospy.get_param('pub_video/framerate')
+
+        if rospy.has_param('pub_video/show_video'):
+            self.show_video = rospy.get_param('pub_video/show_video')
+
         rospack = rospkg.RosPack()
         image_path = rospack.get_path('tf_object_detection') + '/src/'
-        self.capture = cv2.VideoCapture(image_path + 'video.mp4')
+        self.capture = cv2.VideoCapture(image_path + str(self.filename))
         bridge = CvBridge()
 
-        image_pub = rospy.Publisher("c920/rect_image", Image, queue_size=10)
+        image_pub = rospy.Publisher(self.pub_topic, Image, queue_size=10)
 
         while not rospy.is_shutdown():
             ret, frame = self.capture.read()
@@ -33,7 +49,7 @@ class Video2ROS:
                 display_image = frame.copy()
                 cv2.imshow("Video Playback", display_image)
 
-            self.keystroke = cv2.waitKey(25)
+            self.keystroke = cv2.waitKey(1000 / self.framerate)
 
     def cleanup(self):
             print "Shutting down video pub node."

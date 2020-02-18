@@ -16,6 +16,9 @@ from cv_bridge import CvBridge, CvBridgeError
 bridge = CvBridge()
 
 category_index, detection_graph, sess, pub, pub_debug = None, None, None, None, None
+min_confidence = 0.5
+
+VERBOSE = True
 
 # This is needed since the modules are in a subdir of
 # the python script
@@ -30,8 +33,8 @@ from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
-sub_topic = "c920/rect_image"
-pub_topic = "tf_obj_detection"
+sub_topic = "/c920/rect_image"
+pub_topic = "obj_detection_msg"
 
 # Takes a image, and using the tensorflow session and graph
 # provided, runs inference on the image. This returns a list
@@ -90,9 +93,11 @@ def run_inference_for_single_image(msg):
     detection = Detection()
     for i in range(output_dict['num_detections']):
         obj = Object()
+        obj.confidence = output_dict['detection_scores'][i]
+        if obj.confidence < min_confidence:
+            continue
         obj.location.x = ((output_dict['detection_boxes'][i][1] + output_dict['detection_boxes'][i][3]) / 2) * image.shape[2]
         obj.location.y = ((output_dict['detection_boxes'][i][0] + output_dict['detection_boxes'][i][2]) / 2) * image.shape[1]
-        obj.confidence = output_dict['detection_scores'][i]
         obj.id = str(output_dict['detection_classes'][i])
         detection.objects.append(obj)
 
@@ -101,26 +106,33 @@ def run_inference_for_single_image(msg):
     vis(output_dict, image_np)
 
 def vis(output_dict, image_np):
-    vis_util.visualize_boxes_and_labels_on_image_array(
-            image_np,
-            output_dict['detection_boxes'],
-            output_dict['detection_classes'],
-            output_dict['detection_scores'],
-            category_index,
-            instance_masks=output_dict.get('detection_masks'),
-            use_normalized_coordinates=True,
-            line_thickness=4,
-            max_boxes_to_draw=50,
-            min_score_thresh=0.35,
-            groundtruth_box_visualization_color='yellow')
-
-    pub_debug.publish(bridge.cv2_to_imgmsg(image_np, encoding="rgb8"))
+    if pub_debug.get_num_connections() > 0:
+        vis_util.visualize_boxes_and_labels_on_image_array(
+                image_np,
+                output_dict['detection_boxes'],
+                output_dict['detection_classes'],
+                output_dict['detection_scores'],
+                category_index,
+                instance_masks=output_dict.get('detection_masks'),
+                use_normalized_coordinates=True,
+                line_thickness=4,
+                max_boxes_to_draw=50,
+                min_score_thresh=0.35,
+                groundtruth_box_visualization_color='yellow')
+        pub_debug.publish(bridge.cv2_to_imgmsg(image_np, encoding="rgb8"))
 
 def main():
-    global THIS_DIR
-    global detection_graph, sess, pub, category_index, pub_debug
+    global THIS_DIR, VERBOSE
+    global detection_graph, sess, pub, category_index, pub_debug, sub_topic, min_confidence
 
     rospy.init_node('tf_object_detection', anonymous = True)
+
+    if rospy.has_param('tf_object_detection/min_confidence'):
+        min_confidence = rospy.get_param('tf_object_detection/min_confidence')
+
+    if rospy.has_param('tf_object_detection/image_topic'):
+        sub_topic = rospy.get_param('tf_object_detection/image_topic')
+
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     # This shouldn't need to change
@@ -144,7 +156,7 @@ def main():
 
     sub = rospy.Subscriber(sub_topic, Image, run_inference_for_single_image)
     pub = rospy.Publisher(pub_topic, Detection, queue_size=10)
-    pub_debug = rospy.Publisher("/tf_object_detection/debug_image", Image, queue_size=10)
+    pub_debug = rospy.Publisher("debug_image", Image, queue_size=10)
 
     try:
         rospy.spin()
