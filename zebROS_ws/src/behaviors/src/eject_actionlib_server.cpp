@@ -11,7 +11,11 @@
 #include "controllers_2020_msgs/IntakeRollerSrv.h"
 #include "controllers_2020_msgs/IntakeArmSrv.h"
 #include "controllers_2020_msgs/IndexerSrv.h"
+#include "sensor_msgs/JointState.h"
+#include "std_srvs/Empty.h" //used for the lost a ball client
 
+
+#include "behaviors/linebreak.h" //contains the Linebreak class, which has logic for processing linebreak signals
 
 #include "behaviors/linebreak.h" //contains the Linebreak class, which has logic for processing linebreak signals
 
@@ -27,6 +31,12 @@ class EjectAction {
 		ros::ServiceClient intake_roller_controller_client_; //create a ros client to send requests to the controller
 		ros::ServiceClient intake_arm_controller_client_;
 		ros::ServiceClient indexer_controller_client_;
+
+		//client to tell indexer server when we lose a ball
+		ros::ServiceClient lost_a_ball_client_;
+
+		//subscribers
+		ros::Subscriber joint_states_sub_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		//define the function to be executed when the actionlib server is called
@@ -103,8 +113,30 @@ class EjectAction {
 
 			//run a loop to wait for the controller to finish
 			ros::Rate r(10);
+			indexer_linebreak_.resetPulseDetection();
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
+				//check if we got a falling edge on the indexer linebreak - indicates we lost a ball
+				//note: balls are only counted as "had" if they previously fully passed the indexer linebreak.
+				//		It is possible that a ball could have made it up to the indexer linebreak, triggering it,
+				//		and then gotten stuck there when the indexer server preempted, before it registered as "had".
+				//		Thus, this check could detect losing a ball we never had. To fix this, doing a check for negative
+				//		balls in the lost a ball callback (in indexer server), and then just assuming that it's zero.
+				//		Also this actionlib server shouldn't really be used, so logic doesn't have to be impeccable for every case.
+				if(indexer_linebreak_.falling_edge_happened_)
+				{
+					ROS_INFO("Eject server - lost a ball");
+
+					//tell the indexer server we lost it
+					std_srvs::Empty srv;
+					if(!lost_a_ball_client_.call(srv))
+					{
+						ROS_ERROR("Eject server - call to indexer server's lost a ball service failed");
+						preempted_ = true;
+					}
+					indexer_linebreak_.resetPulseDetection(); //so we don't process this falling edge multiple times
+				}
+
 				//check preempted_ - the intended way for this actionlib server to finish is for the driver to preempt it
 				if(as_.isPreemptRequested() || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempt while running stuff backwards");

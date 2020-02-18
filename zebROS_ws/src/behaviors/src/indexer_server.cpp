@@ -43,6 +43,9 @@ class IndexerAction {
 		ros::Subscriber n_indexer_balls_sub_;
 		ros::Subscriber n_stored_balls_sub_;
 
+		//services
+		ros::ServiceServer lost_a_ball_service_; //called from eject server so we can accurately keep track of num balls
+
 		//linebreak sensors
 		Linebreak intake_linebreak_{"intake_linebreak"};
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
