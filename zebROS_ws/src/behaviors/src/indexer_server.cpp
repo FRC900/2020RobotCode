@@ -15,8 +15,9 @@
 #include "controllers_2020_msgs/IndexerSrv.h"
 #include "controllers_2020_msgs/IntakeRollerSrv.h"
 #include "sensor_msgs/JointState.h" //for linebreak sensor data
-#include "std_msgs/UInt8.h"
-#include "std_srvs/SetBool.h"
+#include "std_msgs/UInt8.h" //for publishing num balls
+#include "std_srvs/SetBool.h" //for disabling the intake
+#include "std_srvs/Empty.h" //for the lost a ball service
 
 #include "behaviors/linebreak.h" //contains a class used for linebreak logic
 
@@ -41,6 +42,9 @@ class IndexerAction {
 
 		//subscribers
 		ros::Subscriber joint_states_sub_;
+
+		//services
+		ros::ServiceServer lost_a_ball_service_; //called from eject server so we can accurately keep track of num balls
 
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
@@ -108,6 +112,16 @@ class IndexerAction {
 				ROS_ERROR("indexer own ball linebreak update failed, preempting indexer server");
 				preempted_ = true;
 			}
+		}
+
+		bool lostABallCallback(std_srvs::Empty::Request &req,
+							   std_srvs::Empty::Response &)
+		{
+			if(n_balls_ > 0)
+			{
+				n_balls_--;
+			}
+			return true;
 		}
 
 		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
@@ -542,7 +556,8 @@ class IndexerAction {
 			//initialize subscribers
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
 
-
+			//initialize services
+			lost_a_ball_service_ = nh_.advertiseService("lost_a_ball", &IndexerAction::lostABallCallback, this);
 		}
 
 		~IndexerAction(void)
