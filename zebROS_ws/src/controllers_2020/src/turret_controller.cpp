@@ -32,6 +32,13 @@ namespace turret_controller
 			return false;
 		}
 
+		//get turret zeroing angle
+		if ( !controller_nh.getParam("turret_zero_angle", turret_zero_angle_)) //grabbing the config value under the controller's section in the main config file
+		{
+			ROS_ERROR_STREAM("Could not read turret_zero_angle");
+			return false;
+		}
+
 		//initialize motor joint using those config values
 		if ( !turret_joint_.initWithNode(talon_command_iface, nullptr, controller_nh, turret_params) ){
 			ROS_ERROR("Cannot initialize turret_joint!");
@@ -52,9 +59,7 @@ namespace turret_controller
 
 		zeroed_ = false;
 		last_zeroed_  = false;
-		last_time_down_ = ros::Time::now();
-		last_mode_ = hardware_interface::TalonMode_Disabled;
-		last_position_ = -1; // give nonsense position to force update on first time through update()
+		last_time_moving_ = ros::Time::now();
 		cmd_buffer_.writeFromNonRT(0.0);
 	}
 
@@ -67,7 +72,7 @@ namespace turret_controller
 			{
 				zeroed_ = true;
 				last_zeroed_ = true;
-				turret_joint_.setSelectedSensorPosition(-M_PI/3);
+				turret_joint_.setSelectedSensorPosition(turret_zero_angle_);
 			}
 		}
 		else
@@ -87,9 +92,10 @@ namespace turret_controller
 		else
 		{
 			turret_joint_.setMode(hardware_interface::TalonMode_PercentOutput);
-			if ((ros::Time::now() - last_time_down_).toSec() < turret_zero_timeout_)
+			//Check if turret is timed out
+			if ((ros::Time::now() - last_time_moving_).toSec() < turret_zero_timeout_)
 			{
-				// Not yet zeroed. Run the turret down slowly until the limit switch is set.
+				// Not yet zeroed. Run the turret over slowly until the limit switch is set.
 				ROS_INFO_STREAM_THROTTLE(0.25, "Zeroing turret with percent output: "
 										 << turret_zero_percent_output_);
 				turret_joint_.setCommand(turret_zero_percent_output_);
@@ -97,16 +103,16 @@ namespace turret_controller
 			else
 			{
 				// Stop moving to prevent motor from burning out
-				ROS_INFO_STREAM_THROTTLE(0.25, "Turret timed out");
+				ROS_INFO_STREAM_THROTTLE(0.25, "Turret timed out in turret controller while zeroing");
 				turret_joint_.setCommand(0);
 			}
 
 			// If not zeroed but enabled, check if the turret is moving
 			if ((turret_joint_.getMode() == hardware_interface::TalonMode_Disabled) ||
-				(turret_joint_.getSpeed() < 0)) // TODO : param
+				(turret_joint_.getSpeed() > 0)) // TODO : param
 			{
 				// If moving down, or disabled and thus not expected to move down, reset the timer
-				last_time_down_ = ros::Time::now();
+				last_time_moving_ = ros::Time::now();
 			}
 		}
 	}

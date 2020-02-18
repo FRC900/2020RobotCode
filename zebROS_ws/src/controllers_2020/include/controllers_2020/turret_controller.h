@@ -47,15 +47,12 @@ class TurretController : public controller_interface::MultiInterfaceController<h
 
 			bool zeroed_;
 			bool last_zeroed_;
-			double last_position_;
 
 			double turret_zero_timeout_;
 			double turret_zero_percent_output_;
+			double turret_zero_angle_;
 
-			//double last_setpoint_;
-			hardware_interface::TalonMode last_mode_;
-
-			ros::Time last_time_down_;
+			ros::Time last_time_moving_;
 }; //class
 
 } //namespace
