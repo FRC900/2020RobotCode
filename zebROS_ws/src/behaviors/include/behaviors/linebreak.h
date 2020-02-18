@@ -37,7 +37,7 @@ class Linebreak {
 				}
 				//if the index wasn't set, couldn't find it
 				if ( idx_ >= joint_state.name.size() ) {
-					ROS_ERROR_STREAM("Linebreak named " << name_ << " not found in joint_states");
+					ROS_ERROR_STREAM("Indexer server - Linebreak named " << name_ << " not found in joint_states");
 					true_count_ = 0;
 					false_count_ = 0;
 					return false;
