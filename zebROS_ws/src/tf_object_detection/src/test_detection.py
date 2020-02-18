@@ -118,7 +118,7 @@ def vis(output_dict, image_np):
                 output_dict['detection_classes'],
                 output_dict['detection_scores'],
                 category_index,
-                instance_masks=output_dict.get('detection_masks'),
+                instance_masks=output_dict.getpower_port_yellow_graphics('detection_masks'),
                 use_normalized_coordinates=True,
                 line_thickness=4,
                 max_boxes_to_draw=50,
