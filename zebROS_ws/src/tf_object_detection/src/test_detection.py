@@ -98,7 +98,7 @@ def run_inference_for_single_image(msg):
             continue
         obj.location.x = ((output_dict['detection_boxes'][i][1] + output_dict['detection_boxes'][i][3]) / 2) * image.shape[2]
         obj.location.y = ((output_dict['detection_boxes'][i][0] + output_dict['detection_boxes'][i][2]) / 2) * image.shape[1]
-        obj.id = str(output_dict['detection_classes'][i])
+        obj.id = str(category_index.get(output_dict['detection_classes'][i])['name'])
         detection.objects.append(obj)
 
     pub.publish(detection)
@@ -113,7 +113,7 @@ def vis(output_dict, image_np):
                 output_dict['detection_classes'],
                 output_dict['detection_scores'],
                 category_index,
-                instance_masks=output_dict.get('detection_masks'),
+                instance_masks=output_dict.getpower_port_yellow_graphics('detection_masks'),
                 use_normalized_coordinates=True,
                 line_thickness=4,
                 max_boxes_to_draw=50,
@@ -127,11 +127,11 @@ def main():
 
     rospy.init_node('tf_object_detection', anonymous = True)
 
-    if rospy.has_param('tf_object_detection/min_confidence'):
-        min_confidence = rospy.get_param('tf_object_detection/min_confidence')
+    if rospy.has_param('min_confidence'):
+        min_confidence = rospy.get_param('min_confidence')
 
-    if rospy.has_param('tf_object_detection/image_topic'):
-        sub_topic = rospy.get_param('tf_object_detection/image_topic')
+    if rospy.has_param('image_topic'):
+        sub_topic = rospy.get_param('image_topic')
 
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.

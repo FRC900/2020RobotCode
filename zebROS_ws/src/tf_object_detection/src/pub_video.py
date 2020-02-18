@@ -19,17 +19,17 @@ class Video2ROS:
         self.framerate = 30
         self.show_video = False
 
-        if rospy.has_param('pub_video/pub_topic'):
-            self.pub_topic = rospy.get_param('pub_video/pub_topic')
+        if rospy.has_param('pub_topic'):
+            self.pub_topic = rospy.get_param('pub_topic')
 
-        if rospy.has_param('pub_video/filename'):
-            self.filename = rospy.get_param('pub_video/filename')
+        if rospy.has_param('filename'):
+            self.filename = rospy.get_param('filename')
 
-        if rospy.has_param('pub_video/framerate'):
-            self.framerate = rospy.get_param('pub_video/framerate')
+        if rospy.has_param('framerate'):
+            self.framerate = rospy.get_param('framerate')
 
-        if rospy.has_param('pub_video/show_video'):
-            self.show_video = rospy.get_param('pub_video/show_video')
+        if rospy.has_param('show_video'):
+            self.show_video = rospy.get_param('show_video')
 
         rospack = rospkg.RosPack()
         image_path = rospack.get_path('tf_object_detection') + '/src/'
