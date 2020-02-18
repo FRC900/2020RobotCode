@@ -484,6 +484,7 @@ class IndexerAction {
 			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
 			intake_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeRollerSrv>("/frcrobot_jetson/intake_controller/intake_command", false, service_connection_header);
 			disable_intake_forwards_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/intake_controller/intake_disable", false, service_connection_header);
+			lost_a_ball_disable_intake_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/intake_controller/intake_disable", false, service_connection_header);
 
 			//initialize subscribers
 			n_indexer_balls_sub_ = nh_.subscribe("/num_indexer_powercells", 1, &IndexerAction::numIndexerBallsCallback, this);
