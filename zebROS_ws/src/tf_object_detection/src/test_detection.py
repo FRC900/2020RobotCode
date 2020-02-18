@@ -138,7 +138,6 @@ def main():
     if rospy.has_param('image_topic'):
         sub_topic = rospy.get_param('image_topic')
 
-
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     # This shouldn't need to change
     PATH_TO_FROZEN_GRAPH = THIS_DIR + 'frozen_inference_graph.pb'
