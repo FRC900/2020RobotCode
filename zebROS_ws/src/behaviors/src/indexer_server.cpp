@@ -16,6 +16,7 @@
 #include "controllers_2020_msgs/IntakeRollerSrv.h"
 #include "sensor_msgs/JointState.h" //for linebreak sensor data
 #include "std_msgs/UInt8.h"
+#include "std_srvs/SetBool.h"
 
 int linebreak_debounce_iterations; //global so that main() can set it and the Linebreak class can use it
 
@@ -136,6 +137,7 @@ class IndexerAction {
 		//clients to call controllers
 		ros::ServiceClient indexer_controller_client_; //create a ros client to send requests to the controller
 		ros::ServiceClient intake_controller_client_;
+		ros::ServiceClient disable_intake_forwards_client_;
 
 		//clients for actionlib servers
 		actionlib::SimpleActionClient<behavior_actions::IntakeAction> ac_intake_; //only used for preempting the intake actionlib server
@@ -145,6 +147,7 @@ class IndexerAction {
 
 		//linebreak sensors
 		Linebreak indexer_linebreak_{"indexer_linebreak"}; //just inside the entrance to the indexer
+		Linebreak own_ball_linebreak_{"indexer_own_ball_linebreak"}; //rising edge triggered = indexer has control over this ball, intake has control of any balls directly behind it
 		Linebreak shooter_linebreak_{"shooter_linebreak"}; //just before the shooter
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
@@ -204,6 +207,10 @@ class IndexerAction {
 				ROS_ERROR("shooter linebreak update failed, preempting indexer server");
 				preempted_ = true;
 			}
+			if (! own_ball_linebreak_.update(joint_state) ) {
+				ROS_ERROR("indexer own ball linebreak update failed, preempting indexer server");
+				preempted_ = true;
+			}
 		}
 
 		//function to send balls towards intake until linebreak right inside indexer is triggered - default state if less than 5 balls
@@ -257,9 +264,25 @@ class IndexerAction {
 				}
 
 				//keep going forwards until shooter linebreak is triggered (until ball right in front of shooter)
+				indexer_linebreak_.resetPulseDetection(); //so we can detect balls that inadvertently get stored b/c we're moving forwards
 				ros::Rate r(10); //TODO config?
 				while (!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
 				{
+					if(indexer_linebreak_.pulsed_)
+					{
+						ROS_INFO("Indexer server - got a ball! Enabling intake move forwards");
+						n_balls_++;
+						indexer_linebreak_.resetPulseDetection(); //needed so we don't "get a new ball" every iteration
+						//enable the intake moving forwards
+						std_srvs::SetBool srv;
+						srv.request.data = false; //disabled = false
+						if(!disable_intake_forwards_client_.call(srv))
+						{
+							ROS_ERROR("Indexer server - enabling intake forwards call to intake controller failed");
+							preempted_ = true;
+						}
+					}
+
 					checkPreemptedAndTimedOut("going to position shoot");
 					if(!preempted_ && !timed_out_){
 						r.sleep(); //sleep if we didn't preempt or timeout
@@ -350,15 +373,42 @@ class IndexerAction {
 					}
 
 					//wait for ball to be intaked - ball is intaked if the indexer linebreak pulses on then off
+					own_ball_linebreak_.resetPulseDetection();
 					indexer_linebreak_.resetPulseDetection(); //clear previous checks for rising/falling edges
 					ros::Rate r(10); //TODO config?
 					while(!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
 					{
 						ROS_INFO("Indexer server - Waiting for ball to be fully intaked");
+
+						if(own_ball_linebreak_.rising_edge_happened_)
+						{
+							ROS_INFO("Indexer server - disabling intake move forwards to ensure a gap between balls");
+
+							//disable intake moving forwards momentarily
+							std_srvs::SetBool srv;
+							srv.request.data = true; //disabled = true
+							if(!disable_intake_forwards_client_.call(srv))
+							{
+								ROS_ERROR("Indexer server - call to disable intake moving forwards failed");
+								preempted_ = true;
+							}
+
+							own_ball_linebreak_.resetPulseDetection(); //so we don't keep disabling it every iteration, once is enough
+						}
+
 						if(indexer_linebreak_.pulsed_)
 						{
-							ROS_INFO("Indexer server - successfully intaked the ball!");
+							ROS_INFO("Indexer server - successfully intaked the ball! Enabling intake moving forwards");
 							n_balls_++;
+
+							//enable intake move forwards
+							std_srvs::SetBool srv;
+							srv.request.data = false; //disabled = false
+							if(!disable_intake_forwards_client_.call(srv))
+							{
+								ROS_ERROR("Indexer server - call to enable intake moving forwards failed");
+								preempted_ = true;
+							}
 							break;
 						}
 
@@ -372,6 +422,7 @@ class IndexerAction {
 					{
 						preempted_ = true;
 						ROS_ERROR("Indexer server - couldn't finish intaking a ball because there was a ball at the shooter");
+
 						//stop the intake
 						ROS_WARN("Indexer server - stopping the intake");
 
@@ -416,10 +467,28 @@ class IndexerAction {
 						}
 
 						//wait until get a falling edge on the shooter linebreak - means a ball has been shot
+						indexer_linebreak_.resetPulseDetection(); //so we can detect balls that inadvertently get stored b/c we're moving forwards
 						shooter_linebreak_.resetPulseDetection(); //so we can detect a NEW falling edge
 						ros::Rate r(10); //TODO config?
 						while(!preempted_ && !timed_out_ && ros::ok())
 						{
+							//check if we happened to get a new ball past the storage position
+							if(indexer_linebreak_.pulsed_)
+							{
+								ROS_INFO("Indexer server - got a ball! Enabling intake move forwards");
+								n_balls_++;
+								indexer_linebreak_.resetPulseDetection(); //needed so we don't "get a new ball" every iteration
+								//enable the intake moving forwards
+								std_srvs::SetBool srv;
+								srv.request.data = false; //disabled = false
+								if(!disable_intake_forwards_client_.call(srv))
+								{
+									ROS_ERROR("Indexer server - enabling intake forwards call to intake controller failed");
+									preempted_ = true;
+								}
+							}
+
+							//check for successful shoot
 							if(shooter_linebreak_.falling_edge_happened_)
 							{
 								ROS_INFO("Indexer server - successfully shot a ball!");
@@ -427,6 +496,17 @@ class IndexerAction {
 								if(n_balls_ < 0)
 								{
 									ROS_ERROR_STREAM("Indexer server - num balls less than zero. We think we have " << n_balls_);
+								}
+								else if(n_balls_ == 0)
+								{
+									//enable intake moving forward, since new balls can no longer cause jams
+									std_srvs::SetBool srv;
+									srv.request.data = false; //disabled = false
+									if(!disable_intake_forwards_client_.call(srv))
+									{
+										ROS_ERROR("Indexer server - enabling intake forwards call to intake controller failed");
+										preempted_ = true;
+									}
 								}
 								break;
 							}
@@ -560,6 +640,7 @@ class IndexerAction {
 			//initialize clients used to call controllers
 			indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
 			intake_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeRollerSrv>("/frcrobot_jetson/intake_controller/intake_command", false, service_connection_header);
+			disable_intake_forwards_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/intake_controller/intake_disable", false, service_connection_header);
 
 			//initialize subscribers
 			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
