@@ -10,7 +10,7 @@ import tensorflow as tf
 
 import rospy
 from sensor_msgs.msg import Image
-from field_obj.msg import Detection, Object
+from field_obj.msg import TFDetection, TFObject
 from cv_bridge import CvBridge, CvBridgeError
 
 bridge = CvBridge()
@@ -18,15 +18,13 @@ bridge = CvBridge()
 category_index, detection_graph, sess, pub, pub_debug = None, None, None, None, None
 min_confidence = 0.5
 
-VERBOSE = True
-
 # This is needed since the modules are in a subdir of
 # the python script
 # These are 'borrowed' from the tensorflow models object
 # detection directory
 from os.path import dirname, abspath, join
 rospack = rospkg.RosPack()
-THIS_DIR = rospack.get_path('tf_object_detection') + '/src/'
+THIS_DIR = os.path.join(rospack.get_path('tf_object_detection'), 'src/')
 CODE_DIR = abspath(join(THIS_DIR, 'modules'))
 sys.path.append(CODE_DIR)
 from object_detection.utils import ops as utils_ops
@@ -90,15 +88,18 @@ def run_inference_for_single_image(msg):
     if 'detection_masks' in output_dict:
       output_dict['detection_masks'] = output_dict['detection_masks'][0]
 
-    detection = Detection()
+    detection = TFDetection()
     for i in range(output_dict['num_detections']):
-        obj = Object()
+        obj = TFObject()
         obj.confidence = output_dict['detection_scores'][i]
         if obj.confidence < min_confidence:
             continue
-        obj.location.x = ((output_dict['detection_boxes'][i][1] + output_dict['detection_boxes'][i][3]) / 2) * image.shape[2]
-        obj.location.y = ((output_dict['detection_boxes'][i][0] + output_dict['detection_boxes'][i][2]) / 2) * image.shape[1]
-        obj.id = str(category_index.get(output_dict['detection_classes'][i])['name'])
+        obj.tl.x = output_dict['detection_boxes'][i][1] * image.shape[2]
+        obj.tl.y = output_dict['detection_boxes'][i][0] * image.shape[1]
+        obj.br.x = output_dict['detection_boxes'][i][3] * image.shape[2]
+        obj.br.y = output_dict['detection_boxes'][i][2] * image.shape[1]
+        obj.id = output_dict['detection_classes'][i]
+        obj.label = str(category_index.get(output_dict['detection_classes'][i])['name'])
         detection.objects.append(obj)
 
     pub.publish(detection)
@@ -113,7 +114,7 @@ def vis(output_dict, image_np):
                 output_dict['detection_classes'],
                 output_dict['detection_scores'],
                 category_index,
-                instance_masks=output_dict.getpower_port_yellow_graphics('detection_masks'),
+                instance_masks=output_dict.get('detection_masks'),
                 use_normalized_coordinates=True,
                 line_thickness=4,
                 max_boxes_to_draw=50,
@@ -122,7 +123,7 @@ def vis(output_dict, image_np):
         pub_debug.publish(bridge.cv2_to_imgmsg(image_np, encoding="rgb8"))
 
 def main():
-    global THIS_DIR, VERBOSE
+    global THIS_DIR
     global detection_graph, sess, pub, category_index, pub_debug, sub_topic, min_confidence
 
     rospy.init_node('tf_object_detection', anonymous = True)
@@ -136,10 +137,10 @@ def main():
 
     # Path to frozen detection graph. This is the actual model that is used for the object detection.
     # This shouldn't need to change
-    PATH_TO_FROZEN_GRAPH = THIS_DIR + 'frozen_inference_graph.pb'
+    PATH_TO_FROZEN_GRAPH = os.path.join(THIS_DIR, 'frozen_inference_graph.pb')
 
     # List of the strings that is used to add correct label for each box.
-    PATH_TO_LABELS = THIS_DIR + '2020Game_label_map.pbtxt'
+    PATH_TO_LABELS = os.path.join(THIS_DIR, '2020Game_label_map.pbtxt')
 
     # Init TF detection graph and session
     detection_graph = tf.Graph()
@@ -155,7 +156,7 @@ def main():
     category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
     sub = rospy.Subscriber(sub_topic, Image, run_inference_for_single_image)
-    pub = rospy.Publisher(pub_topic, Detection, queue_size=10)
+    pub = rospy.Publisher(pub_topic, TFDetection, queue_size=10)
     pub_debug = rospy.Publisher("debug_image", Image, queue_size=10)
 
     try:
