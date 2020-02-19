@@ -69,8 +69,6 @@ class PowerCellIntakeAction {
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 			start_time_ = ros::Time::now().toSec();
-			preempted_ = false;
-			timed_out_ = false;
 
 
 			//wait for all actionlib servers we need
@@ -223,7 +221,6 @@ class PowerCellIntakeAction {
 				//checks related to this file's actionlib server
 				else if (as_.isPreemptRequested() || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
-					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
 					preempted_ = true;
 				}
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
