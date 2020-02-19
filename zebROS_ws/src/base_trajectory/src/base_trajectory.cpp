@@ -142,7 +142,7 @@ void printTrajectory(const Trajectory &trajectory, const std::vector<std::string
 	{
 		for (size_t joint = 0; joint < n_joints; joint++)
 		{
-			ROS_INFO_STREAM("joint = " << jointNames[joint] << " seg = " << seg <<
+			ROS_INFO_STREAM_FILTER(&messageFilter, "joint = " << jointNames[joint] << " seg = " << seg <<
 			                " start_time = " << trajectory[joint][seg].startTime() <<
 			                " end_time = " << trajectory[joint][seg].endTime());
 			auto coefs = trajectory[joint][seg].getCoefs();
@@ -151,11 +151,10 @@ void printTrajectory(const Trajectory &trajectory, const std::vector<std::string
 			s << "coefs ";
 			for (size_t i = 0; i < coefs[i].size(); ++i)
 				s << coefs[0][i] << " ";
-			ROS_INFO_STREAM(s.str());
+			ROS_INFO_STREAM_FILTER(&messageFilter, s.str());
 		}
 	}
 }
-
 
 // For printing out matlab code for testing
 void printCoefs(std::stringstream &s, const std::string &name, const std::vector<base_trajectory::Coefs> &coefs)
@@ -1185,22 +1184,13 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 	out_msg.y_coefs.resize(trajectory[0].size());
 	out_msg.end_points.clear();
 
+	printTrajectory(trajectory, jointNames);
 	const size_t n_joints = jointNames.size();
 	for (size_t seg = 0; seg < trajectory[0].size(); seg++)
 	{
 		for (size_t joint = 0; joint < n_joints; joint++)
 		{
-			ROS_INFO_STREAM_FILTER(&messageFilter, "joint = " << jointNames[joint] << " seg = " << seg <<
-			                " start_time = " << trajectory[joint][seg].startTime() <<
-			                " end_time = " << trajectory[joint][seg].endTime());
 			auto coefs = trajectory[joint][seg].getCoefs();
-
-			std::stringstream s;
-			s << "coefs ";
-			for (size_t i = 0; i < coefs[i].size(); ++i)
-				s << coefs[0][i] << " ";
-			ROS_INFO_STREAM_FILTER(&messageFilter, s.str());
-
 			std::vector<double> *m;
 
 			if (joint == 0)
@@ -1263,20 +1253,20 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 		// equalArcLenghtTimes is arbitrary spline time
 		// Prevent path from using 0 / 0 velocity for first and last point - reuse penulitmate point instead
 		// so it has a reasonable direction
-		const auto current_time = equalArcLengthTimes[(i == 0) ? (i + 1) : ((i == equalArcLengthTimes.size() - 1) ? (i - 1) : (i))];
-		//ROS_INFO_STREAM("base_trajectory trajectoryToSplineResponseMsg : equalArcLengthTimes[" << i <<  "]=" << equalArcLengthTimes[i]);
+		const auto currentTime = equalArcLengthTimes[(i == 0) ? (i + 1) : ((i == equalArcLengthTimes.size() - 1) ? (i - 1) : (i))];
+		//ROS_INFO_STREAM("base_trajectory trajectoryToSplineResponseMsg : equalArcLengthTimes[]=" << currentTime);
 
-		TrajectoryPerJoint::const_iterator xIt = sample(trajectory[0], current_time, xState);
+		TrajectoryPerJoint::const_iterator xIt = sample(trajectory[0], currentTime, xState);
 		if (xIt == trajectory[0].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample xState at time " << current_time);
+			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample xState at time " << currentTime);
 			return;
 		}
 
-		TrajectoryPerJoint::const_iterator yIt = sample(trajectory[1], current_time, yState);
+		TrajectoryPerJoint::const_iterator yIt = sample(trajectory[1], currentTime, yState);
 		if (yIt == trajectory[1].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample yState at time " << current_time);
+			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample yState at time " << currentTime);
 			return;
 		}
 		//ROS_INFO_STREAM("xState.velocity[0] = " << xState.velocity[0] << ", " << "yState.velocity[0] = " << yState.velocity[0]);
@@ -1306,7 +1296,7 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 		TrajectoryPerJoint::const_iterator orientationIt = sample(trajectory[2], equalArcLengthTimes[i], rotState);
 		if (orientationIt == trajectory[2].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample orientationState at time " << current_time);
+			ROS_ERROR_STREAM("base_trajectory trajectoryToSplineResponseMsg : could not sample orientationState at time " << currentTime);
 			return;
 		}
 		geometry_msgs::Quaternion orientation;
