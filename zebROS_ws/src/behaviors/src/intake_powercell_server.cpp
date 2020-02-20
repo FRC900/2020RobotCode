@@ -69,6 +69,8 @@ class PowerCellIntakeAction {
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 			start_time_ = ros::Time::now().toSec();
+			preempted_ = false;
+			timed_out_ = false;
 
 
 			//wait for all actionlib servers we need
@@ -164,6 +166,8 @@ class PowerCellIntakeAction {
 			{
 				ROS_ERROR("%s: powercell intake controller call to roller failed when setting final state", action_name_.c_str());
 			}
+			//preempt the indexer server in case it was still running from the initial call
+			ac_indexer_.cancelGoalsAtAndBeforeTime(ros::Time::now());
 
 			//log state of action and set result of action
 			behavior_actions::IntakeResult result; //variable to store result of the actionlib action
@@ -221,6 +225,7 @@ class PowerCellIntakeAction {
 				//checks related to this file's actionlib server
 				else if (as_.isPreemptRequested() || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
+					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
 					preempted_ = true;
 				}
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
