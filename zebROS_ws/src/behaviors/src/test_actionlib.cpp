@@ -521,6 +521,7 @@ void mySigIntHandler(int sig)
 
 #endif
 
+
 int main (int argc, char **argv)
 {
 	/*GET DATA FROM USER INPUT
