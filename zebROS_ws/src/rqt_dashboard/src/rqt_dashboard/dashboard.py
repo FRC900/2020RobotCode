@@ -3,6 +3,8 @@ import rospy
 import rospkg
 import threading
 
+import sys
+
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup
@@ -109,33 +111,6 @@ class Dashboard(Plugin):
     
 
 
-    def setImuAngle(self):
-        angle = self._widget.imu_angle.value() # imu_angle is the text field (doublespinbox) that the user can edit to change the navx angle, defaulting to zero
-
-        # call the service
-        try:
-            rospy.wait_for_service("/navx_jetson/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
-            caller = rospy.ServiceProxy("/navx_jetson/set_imu_zero", ImuZeroAngle)
-            caller(angle)
-            # change button to green color to indicate that the service call went through
-            self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
-
-        except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
-            self.errorPopup("Imu Set Angle Error", e)
-
-
-
-    def errorPopup(self, title, e):
-            msg_box = QMessageBox()
-            msg_box.setWindowTitle(title)
-            msg_box.setIcon(QMessageBox.Warning)
-            msg_box.setText("%s"%e)
-            msg_box.exec_()
-
-
-    def imuAngleChanged(self):
-        # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
-        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
 
     #Publisher -> fake Auto States
     def publish_thread(self):
