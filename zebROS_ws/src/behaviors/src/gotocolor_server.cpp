@@ -10,6 +10,7 @@
 #include <atomic>
 #include <ros/console.h>
 #include <cctype>
+#include <string>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behaviors/GoToColorAction.h"
@@ -28,16 +29,12 @@
 class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
-        	ros::Subscriber match_sub_;
+        ros::Subscriber match_sub_;
 		ros::Subscriber talon_states_sub_;
 		ros::Subscriber color_sensor_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
-		string goal_color_ = "";
-		string current_color_;
-
-		ros::ServiceClient color_algorithm_client_;
-
+		
 		ros::Publisher cmd_vel_publisher_;
 
 		//clients to call other actionlib servers
@@ -45,6 +42,7 @@ class GoToColorControlPanelAction {
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
+		ros::ServiceClient color_algorithm_client_;
 		ros::ServiceClient control_panel_controller_client_;
 		ros::ServiceClient climber_controller_client_;
 
@@ -57,6 +55,7 @@ class GoToColorControlPanelAction {
 		double climb_wait;
 		double friction_wait;
 		double back_up_wait;
+		double spin_wait;
 
 		double drive_forward_speed;
 		double back_up_speed;
@@ -66,12 +65,15 @@ class GoToColorControlPanelAction {
 
 		int num_drive_motors;
 
-		std::atomic<double> cmd_vel_forward_speed_;
-                std::atomic<bool> stopped_;
+		std::string goal_color_ = "";
+		std::string current_color_;
 
-                //config variables, with defaults
-                double server_timeout_; //overall timeout for your server
-                double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
+		std::atomic<double> cmd_vel_forward_speed_;
+        std::atomic<bool> stopped_;
+
+        //config variables, with defaults
+        double server_timeout_; //overall timeout for your server
+        double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 
 	public:
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
@@ -88,9 +90,6 @@ class GoToColorControlPanelAction {
 		std::map<std::string, std::string> service_connection_header;
 		service_connection_header["tcp_nodelay"] = "1";
 
-		//initialize client used to call controllers
-		//e.g. mech_controller_client_ = nh_.serviceClient<controller_package::ControllerSrv>("name_of_service", false, service_connection_header);
-
 		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
 		color_sensor_sub_=nh.subscribe("/color_sensor" /*insert topic name*/, 1, &GoToColorControlPanelAction::sensorColorCallback, this);
 		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
@@ -100,7 +99,7 @@ class GoToColorControlPanelAction {
 		climber_controller_client_=nh.serviceClient<controllers_2020_msgs::ClimberSrv>("climber_controller", false, service_connection_header);
 
 		//initialize the publisher used to send messages to the drive base
-                cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
+        cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -135,28 +134,28 @@ class GoToColorControlPanelAction {
 		}
 
 		// Basic thread which spams cmd_vel to the drive base to
-                // continually drive forward during the climb
-                void cmdVelThread()
-                {
-                        ROS_INFO_STREAM("the callback is being called");
-                        geometry_msgs::Twist cmd_vel_msg;
-                        stopped_ = false;
+		// continually drive forward during the climb
+		void cmdVelThread()
+		{
+				ROS_INFO_STREAM("the callback is being called");
+				geometry_msgs::Twist cmd_vel_msg;
+				stopped_ = false;
 
-                        ros::Rate r(20);
+				ros::Rate r(20);
 
-                        while(ros::ok() && !stopped_)
-                        {
-                                cmd_vel_msg.linear.x = cmd_vel_forward_speed_;
-                                cmd_vel_msg.linear.y = 0.0;
-                                cmd_vel_msg.linear.z = 0.0;
-                                cmd_vel_msg.angular.x = 0.0;
-                                cmd_vel_msg.angular.y = 0.0;
-                                cmd_vel_msg.angular.z = 0.0;
+				while(ros::ok() && !stopped_)
+				{
+						cmd_vel_msg.linear.x = cmd_vel_forward_speed_;
+						cmd_vel_msg.linear.y = 0.0;
+						cmd_vel_msg.linear.z = 0.0;
+						cmd_vel_msg.angular.x = 0.0;
+						cmd_vel_msg.angular.y = 0.0;
+						cmd_vel_msg.angular.z = 0.0;
 
-                                cmd_vel_publisher_.publish(cmd_vel_msg);
-                                r.sleep();
-                        }
-                }
+						cmd_vel_publisher_.publish(cmd_vel_msg);
+						r.sleep();
+				}
+		}
 
 		//define the function to be executed when the actionlib server is called
 		void executeCB(const behaviors::GoToColorGoalConstPtr &goal)
@@ -167,7 +166,7 @@ class GoToColorControlPanelAction {
 			preempted_ = false;
 			timed_out_ = false;
 
-			if(goal_color_ = "")
+			if(goal_color_ == "")
 			{
 				ROS_ERROR_STREAM("Can't spin to color, match data hasn't given a color");
 				return;
@@ -214,12 +213,12 @@ class GoToColorControlPanelAction {
 			{
 				//check preempted_
 				if(as_.isPreemptRequested() || !ros::ok()) {
-					ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
+					ROS_ERROR_STREAM(action_name_ << ": preempt while driving forward");
 					preempted_ = true;
 				}
 				//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
-					ROS_ERROR_STREAM(action_name_ << ": timed out while calling control panel controller");
+					ROS_ERROR_STREAM(action_name_ << ": timed out while driving forward");
 					timed_out_ = true;
 				}
 				//otherwise, pause then loop again
@@ -246,7 +245,7 @@ class GoToColorControlPanelAction {
 				if(!preempted_ && !timed_out_ && ros::ok())
 				{
 					controller_2020_msgs::ControlPanelSrv panel_srv;
-                                        panel_srv.request.control_panel_rotations = panel_rotations; //Might need to be negative, but hopefully not ?
+                    panel_srv.request.control_panel_rotations = panel_rotations; //Might need to be negative, but hopefully not?
 					if(!control_panel_controller_client_.call(panel_srv)) {
 						ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
 						preempted_ = true;
@@ -265,7 +264,7 @@ class GoToColorControlPanelAction {
 				}
 				//otherwise, pause then loop again
 				else {
-					r.sleep();
+					pause(spin_wait,"Spinning panel");
 				}
 			}
 	
@@ -393,19 +392,6 @@ int main(int argc, char** argv) {
         double server_timeout = 10;
         double wait_for_server_timeout = 10;
 
-	/* e.g.
-	//ros::NodeHandle n_params_intake(n, "actionlib_cargo_intake_params"); //node handle for a lower-down namespace
-
-	if (!n.getParam("/teleop/teleop_params/linebreak_debounce_iterations", linebreak_debounce_iterations))
-		ROS_ERROR("Could not read linebreak_debounce_iterations in intake_server");
-
-	if (!n.getParam("/actionlib_params/wait_for_server_timeout", wait_for_server_timeout))
-		ROS_ERROR("Could not read wait_for_server_timeout_ in intake_sever");
-
-	if (!n_params_intake.getParam("roller_power", roller_power))
-		ROS_ERROR("Could not read roller_power in cargo_intake_server");
-	*/
-
 	if (!n.getParam("/actionlib_gotocolor_params/drive_forward_speed", drive_forward_speed))
         {
                 ROS_ERROR("Could not read drive_forward_speed in go_to_color_control_panel_server");
@@ -446,6 +432,12 @@ int main(int argc, char** argv) {
         {
                 ROS_ERROR("Could not read num_drive_motors in go_to_color_control_panel_server");
                 num_drive_motors = 4;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/spin_pause", spin_wait))
+        {
+                ROS_ERROR("Could not read spin_pause in go_to_color_control_panel_server");
+                spin_wait = 1;
         }
 
 	//create the actionlib server
