@@ -18,6 +18,7 @@
 		<rosparam file="$(find ros_control_boilerplate)/config/2020_compbot_offsets.yaml" command="load"/>
 		<rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller_jetson.yaml" command="load"/>
 		<rosparam file="$(find ros_control_boilerplate)/config/2020_shooter_params.yaml" command="load"/>
+		<rosparam file="$(find behaviors)/config/auto_mode_config.yaml" command="load"/>
 		<!--
 		<rosparam file="$(find robot_visualizer)/config/robot_visualize.yaml" command="load"/>
 		-->
