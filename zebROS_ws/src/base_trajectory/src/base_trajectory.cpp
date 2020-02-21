@@ -133,8 +133,6 @@ typedef std::vector<TrajectoryPerJoint> Trajectory;
 
 typedef trajectory_msgs::JointTrajectory::ConstPtr JointTrajectoryConstPtr;
 
-ros::Duration period;
-
 void printTrajectory(const Trajectory &trajectory, const std::vector<std::string> &jointNames)
 {
 	const size_t n_joints = jointNames.size();
@@ -487,9 +485,7 @@ bool initSpline(Trajectory &trajectory,
 		if (result_traj_per_joint.size() > 0)
 			trajectory[joint_id] = result_traj_per_joint;
 	}
-	//printTrajectory(trajectory, jointNames);
 
-#if 1
 	// If the trajectory for all joints is empty, empty the trajectory vector
 	auto trajIter = std::find_if (trajectory.begin(), trajectory.end(), joint_trajectory_controller::isNotEmpty<Trajectory>);
 	if (trajIter == trajectory.cend())
@@ -498,7 +494,6 @@ bool initSpline(Trajectory &trajectory,
 		trajectory.clear();
 	}
 	printTrajectory(trajectory, jointNames);
-#endif
 
 	return true;
 }
@@ -903,9 +898,9 @@ bool getPathLength(Trajectory &arcLengthTrajectory,
 // increasing, equally spaced lengths along
 // that trajectory
 bool subdivideLength(std::vector<double> &equalLengthTimes,
-		const Trajectory &trajectory,
-		const double distanceBetweenLengths,
-		const double distanceEpsilon)
+			const Trajectory &trajectory,
+			const double distanceBetweenLengths,
+			const double distanceEpsilon)
 {
 	equalLengthTimes.clear();
 	equalLengthTimes.push_back(0); // start at t==0
@@ -984,28 +979,27 @@ bool subdivideLength(std::vector<double> &equalLengthTimes,
 }
 
 
-// evaluate spline - inputs are spline coeffs (Trajectory), waypoints, dmax, vmax, amax, acentmax
+// evaluate trajectory - inputs are spline coeffs (Trajectory), plus various kinematic constraints
+//                   Creates a velocity profile bound by those constraints
 //                   returns cost for the path in cost, true if the evaluation succeeds and false
 //                   if it fails
-bool evaluateSpline(double &cost,
-					std::vector<double> &equalArcLengthTimes,
-					std::vector<double> &remappedTimes,
-					std::vector<double> &vTrans,
-					const Trajectory &trajectory,
-					const std::vector<trajectory_msgs::JointTrajectoryPoint> &points,
-					const double dMax, // limit of path excursion from straight line b/t waypoints
-					const double vMax, // max overall velocity
-					const double aMax, // max allowed acceleration
-					const double wheelRadius, // radius from center to wheels
-					const double aCentMax) // max allowed centripetal acceleration
+bool evaluateTrajectory(double &cost,
+						std::vector<double> &equalArcLengthTimes,
+						std::vector<double> &remappedTimes,
+						std::vector<double> &vTrans,
+						const Trajectory &trajectory,
+						const double dMax, // limit of path excursion from straight line b/t waypoints
+						const double vMax, // max overall velocity
+						const double aMax, // max allowed acceleration
+						const double wheelRadius, // radius from center to wheels
+						const double aCentMax) // max allowed centripetal acceleration
 {
-
 	// arcLengthTrajectory takes in a time and returns the x-y distance
 	// traveled up to that time.
 	Trajectory arcLengthTrajectory;
 	if (!getPathLength(arcLengthTrajectory, trajectory))
 	{
-		ROS_ERROR("base_trajectory_node : evaluateSpline -> getPathLength() failed");
+		ROS_ERROR("base_trajectory_node : evaluateTrajectory -> getPathLength() failed");
 		return false;
 	}
 	// equalArcLengthTimes will contain times that are
@@ -1013,7 +1007,7 @@ bool evaluateSpline(double &cost,
 	if (!subdivideLength(equalArcLengthTimes, arcLengthTrajectory,
 						 distBetweenArcLengths, distBetweenArcLengthEpsilon))
 	{
-		ROS_ERROR("evaluateSpline : subdivideLength() failed");
+		ROS_ERROR("evaluateTrajectory : subdivideLength() failed");
 		return false;
 	}
 #if 0
@@ -1028,26 +1022,65 @@ bool evaluateSpline(double &cost,
 	std::vector<double> deltaS;   // change in position along spline for each step
 	std::vector<double> distanceToPathMidpoint;
 
-	// Add 0th entries for arrays so indices line up with equalArcLengthTimes
-	// Starting at arclength 0
-	deltaS.push_back(0);
-	double prevArcLength = 0;
-	distanceToPathMidpoint.push_back(0);
-	// Init velocities from requested starting conditions
-	vTrans.clear();
-	vTrans.push_back(hypot(points[0].velocities[0], points[0].velocities[1]));
-	size_t seg = 0;
 	// Declare these static so they're not constantly created
 	// and destroyed on every call to the function
 	static Segment::State arcLengthState;
 	static Segment::State xState;
 	static Segment::State yState;
 	static Segment::State thetaState;
+
+	// Add 0th entries for arrays so indices line up with equalArcLengthTimes
+	// Starting at arclength 0
+	deltaS.push_back(0);
+	double prevArcLength = 0;
+	distanceToPathMidpoint.push_back(0);
+
+	// Init translational velocity from requested starting x&y velocities
+	vTrans.clear();
+	TrajectoryPerJoint::const_iterator it = sample(trajectory[0], 0, xState);
+	if (it >= trajectory[0].cend())
+	{
+		ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample xState at time 0");
+		return false;
+	}
+	it = sample(trajectory[1], 0, yState);
+	if (it >= trajectory[1].cend())
+	{
+		ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample yState at time 0");
+		return false;
+	}
+	vTrans.push_back(hypot(xState.velocity[0], yState.velocity[0]));
+
+	// Grab positions from each of the control points on the trajectory
+	// Since the trajectory is still in arbitrary-time that means every integer
+	//   value of time from 0 to the last time in equalArcLengthTimes
+	// These values are used frequently, so calc and cache them once rather
+	//   than recalculating every iteration below
+	std::vector<std::vector<double>> controlPointPositions;
+	for (size_t i = 0; i <= static_cast<size_t>(equalArcLengthTimes.back()); i++)
+	{
+		controlPointPositions.push_back(std::vector<double>());
+		for (size_t j = 0; j <= 1; j++)
+		{
+			it = sample(trajectory[j], i, xState);
+			if (it >= trajectory[j].cend())
+			{
+				ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample control point state " << i);
+				return false;
+			}
+			controlPointPositions.back().push_back(xState.position[0]);
+		}
+	}
+
 	for (size_t i = 1; i < equalArcLengthTimes.size(); i++)
 	{
 		const double t = equalArcLengthTimes[i];
-		while (points[seg+1].time_from_start < ros::Duration(t))
-			seg += 1;
+		// trajectory segments are still arbitrary times, each 1 unit long.
+		// Thus, times 0 .. 0.99999 will be in segment 0, 1 .. 1.99999 in seg 1, and so on
+		// The exception is the last time - the end time is at the end of segment t - 1
+		size_t seg = std::floor(t);
+		if (i == (equalArcLengthTimes.size() - 1))
+			seg -= 1;
 		//ROS_INFO_STREAM_FILTER(&messageFilter, "processing index " << i << " t=" << t <<" seg=" << seg);
 		// Save distance between prev and current position for this timestep
 		// This should be nearly constant between points, but
@@ -1055,7 +1088,7 @@ bool evaluateSpline(double &cost,
 		TrajectoryPerJoint::const_iterator arcLengthIt = sample(arcLengthTrajectory[0], t, arcLengthState);
 		if (arcLengthIt == arcLengthTrajectory[0].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory : evaluateSpline could not sample arcLengthState at time " << t);
+			ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample arcLengthState at time " << t);
 			return false;
 		}
 		deltaS.push_back(arcLengthState.position[0] - prevArcLength);
@@ -1067,23 +1100,23 @@ bool evaluateSpline(double &cost,
 		TrajectoryPerJoint::const_iterator xIt = trajectory[0].cbegin() + seg;
 		if (xIt >= trajectory[0].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory : evaluateSpline could not sample xState at time " << t);
+			ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample xState at time " << t << ", seg = " << seg << ", trajectory[0].size() = " << trajectory[0].size());
 			return false;
 		}
 		xIt->sample(t, xState);
 
-		TrajectoryPerJoint::const_iterator yIt = trajectory[1].cbegin() + (xIt - trajectory[0].cbegin());
+		TrajectoryPerJoint::const_iterator yIt = trajectory[1].cbegin() + seg;
 		if (yIt >= trajectory[1].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory : evaluateSpline could not sample yState at time " << t);
+			ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample yState at time " << t << ", seg = " << seg << ", trajectory[1].size() = " << trajectory[1].size());
 			return false;
 		}
 		yIt->sample(t, yState);
 
-		TrajectoryPerJoint::const_iterator thetaIt = trajectory[2].cbegin() + (xIt - trajectory[0].cbegin());
+		TrajectoryPerJoint::const_iterator thetaIt = trajectory[2].cbegin() + seg;
 		if (thetaIt >= trajectory[2].cend())
 		{
-			ROS_ERROR_STREAM("base_trajectory : evaluateSpline could not sample thetaState at time " << t);
+			ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample thetaState at time " << t << ", seg = " << seg << ", trajectory[2].size() = " << trajectory[2].size());
 			return false;
 		}
 		thetaIt->sample(t, thetaState);
@@ -1091,11 +1124,13 @@ bool evaluateSpline(double &cost,
 		//ROS_INFO_STREAM("[" << i << "] = x: " << xState.position[0] << " y: " << yState.position[0]);
 		// Get orthogonal distance between spline position and
 		// line segment connecting the corresponding waypoints
-		distanceToPathMidpoint.push_back(pointToLineSegmentDistance(points[seg].positions, points[seg+1].positions, xState.position[0], yState.position[0]));
+		distanceToPathMidpoint.push_back(
+				pointToLineSegmentDistance(controlPointPositions[seg], controlPointPositions[seg + 1],
+										   xState.position[0], yState.position[0]));
 #if 0
 		ROS_INFO_STREAM_FILTER(&messageFilter, "pointToLineSegmentDistance = " << distanceToPathMidpoint.back() <<
-				" p1: " << points[seg].positions[0] << "," << points[seg].positions[1] <<
-				" p2: " << points[seg+1].positions[0] << "," << points[seg+1].positions[1] <<
+				" p1: " << controlPointPositions[seg][0] << "," << controlPointPositions[seg][1] <<
+				" p2: " << controlPointPositions[seg+1][0] << "," << controlPointPositions[seg+1][1] <<
 				" x: " << xState.position[0] << " y: " << yState.position[0]);
 #endif
 
@@ -1121,7 +1156,7 @@ bool evaluateSpline(double &cost,
 		// and also velocity limited by max centripetal acceleration
 		// Assume rotational velocity is a hard constraint we have to hit
 		vTrans.push_back(vMax - fabs(thetaState.velocity[0]) * wheelRadius);
-		if (curvature != 0)
+		if (curvature != 0) // avoid divide by 0 again
 			vTrans.back() = std::min(vTrans.back(), sqrt(aCentMax / fabs(curvature)));
 		//ROS_INFO_STREAM("vTrans0[" << i << "]=" << equalArcLengthTimes[i] << "," << vTrans[i]);
 	}
@@ -1139,7 +1174,21 @@ bool evaluateSpline(double &cost,
 
 	// Backwards pass
 	// Grab lateral velocity from end point as starting condition for backwards iteration
-	vTrans.back() = hypot(points.back().velocities[0], points.back().velocities[1]);
+	// By starting condition for backwards iteration is actually last point in velocity curve
+	it = sample(trajectory[0], equalArcLengthTimes.back(), xState);
+	if (it >= trajectory[0].cend())
+	{
+		ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample xState at time 0");
+		return false;
+	}
+	it = sample(trajectory[1], equalArcLengthTimes.back(), yState);
+	if (it >= trajectory[1].cend())
+	{
+		ROS_ERROR_STREAM("base_trajectory : evaluateTrajectory could not sample yState at time 0");
+		return false;
+	}
+	vTrans.back() = hypot(xState.velocity[0], yState.velocity[0]);
+
 	//ROS_INFO_STREAM("vTrans2[" << vTrans.size()-1 << "]=" << equalArcLengthTimes[vTrans.size()-1] << "," << vTrans[vTrans.size()-1]);
 	for (size_t i = vTrans.size() - 2; i > 0; i--)
 	{
@@ -1175,9 +1224,8 @@ bool evaluateSpline(double &cost,
 // Convert from Trajectory type into the correct output
 // message type
 void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &out_msg,
-		const std::vector<trajectory_msgs::JointTrajectoryPoint> &points,
-		const Trajectory &trajectory,
-		const std::vector<std::string> &jointNames)
+								   const Trajectory &trajectory,
+								   const std::vector<std::string> &jointNames)
 {
 	out_msg.orient_coefs.resize(trajectory[0].size());
 	out_msg.x_coefs.resize(trajectory[0].size());
@@ -1215,23 +1263,24 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 		// All splines in a waypoint end at the same time?
 		out_msg.end_points.push_back(trajectory[0][seg].endTime());
 	}
+	// Grab velocity profile, use that to construct a set of position
+	// waypoints for the robot in wall-clock time
 	double cost;
 	std::vector<double> equalArcLengthTimes;
 	std::vector<double> remappedTimes;
 	std::vector<double> vTrans;
-	if (!evaluateSpline(cost,
+	if (!evaluateTrajectory(cost,
 				equalArcLengthTimes,
 				remappedTimes,
 				vTrans,
 				trajectory,
-				points,
 				pathLimitDistance, // limit of path excursion from straight line b/t waypoints
 				maxVel, // max overall velocity
 				maxLinearAcc, // max allowed acceleration
 				wheelRadius, // wheel radius
 				maxCentAcc)) // max allowed centripetal acceleration
 	{
-		ROS_ERROR("base_trajectory_node trajectoryToSplineResponseMsg : evaluateSpline() returned false");
+		ROS_ERROR("base_trajectory_node trajectoryToSplineResponseMsg : evaluateTrajectory() returned false");
 		return;
 	}
 	out_msg.path.poses.clear();
@@ -1292,7 +1341,6 @@ void trajectoryToSplineResponseMsg(base_trajectory::GenerateSpline::Response &ou
 
 		prevVTrans = vTrans[i];
 
-
 		TrajectoryPerJoint::const_iterator orientationIt = sample(trajectory[2], equalArcLengthTimes[i], rotState);
 		if (orientationIt == trajectory[2].cend())
 		{
@@ -1349,19 +1397,18 @@ bool RPROP(
 	std::vector<double> equalArcLengthTimes;
 	std::vector<double> remappedTimes;
 	std::vector<double> vTrans;
-	if (!evaluateSpline(bestCost,
+	if (!evaluateTrajectory(bestCost,
 				equalArcLengthTimes,
 				remappedTimes,
 				vTrans,
 				bestTrajectory,
-				points,
 				dMax,    // limit of path excursion from straight line b/t waypoints
 				vMax,    // max overall velocity
 				aMax,    // max allowed acceleration
 				wheelRadius, // wheel radius
 				aCentMax))   // max allowed centripetal acceleration
 	{
-		ROS_ERROR("base_trajectory_node : RPROP initial evaluateSpline() falied");
+		ROS_ERROR("base_trajectory_node : RPROP initial evaluateTrajectory() falied");
 		return false;
 	}
 
@@ -1403,19 +1450,18 @@ bool RPROP(
 					}
 
 					double thisCost;
-					if (!evaluateSpline(thisCost,
+					if (!evaluateTrajectory(thisCost,
 										equalArcLengthTimes,
 										remappedTimes,
 										vTrans,
 										thisTrajectory,
-										points,
 										dMax, // limit of path excursion from straight line b/t waypoints
 										vMax, // max overall velocity
 										aMax, // max allowed acceleration
 										wheelRadius, // wheel radius
 										aCentMax)) // max allowed centripetal acceleration
 					{
-						ROS_ERROR("base_trajectory_node : RPROP evaluateSpline() failed");
+						ROS_ERROR("base_trajectory_node : RPROP evaluateTrajectory() failed");
 						return false;
 					}
 
@@ -1571,28 +1617,28 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 		std::vector<double> equalArcLengthTimes;
 		std::vector<double> remappedTimes;
 		std::vector<double> vTrans;
-		if (!evaluateSpline(cost,
+		if (!evaluateTrajectory(cost,
 					equalArcLengthTimes,
 					remappedTimes,
 					vTrans,
 					trajectory,
-					msg.points,
 					pathLimitDistance, // limit of path excursion from straight line b/t waypoints
 					maxVel, // max overall velocity
 					maxLinearAcc, // max allowed acceleration
 					wheelRadius, // wheel radius
 					maxCentAcc)) // max allowed centripetal acceleration
 		{
-			ROS_ERROR("base_trajectory_node : evaluateSpline() returned false");
+			ROS_ERROR("base_trajectory_node : evaluateTrajectory() returned false");
 			return false;
 		}
 
 		base_trajectory::GenerateSpline::Response tmp_msg;
-		trajectoryToSplineResponseMsg(tmp_msg, msg.points, trajectory, jointNames);
+		trajectoryToSplineResponseMsg(tmp_msg, trajectory, jointNames);
 		writeMatlabSplines(tmp_msg);
 		messageFilter.disable();
 		fflush(stdout);
 
+		// Call optimization, get optimizated result in trajectory
 		if (!RPROP(trajectory,
 					msg.points,
 					jointNames,
@@ -1608,7 +1654,7 @@ bool callback(base_trajectory::GenerateSpline::Request &msg,
 		messageFilter.enable();
 	}
 
-	trajectoryToSplineResponseMsg(out_msg, msg.points, trajectory, jointNames);
+	trajectoryToSplineResponseMsg(out_msg, trajectory, jointNames);
 	writeMatlabSplines(out_msg);
 	fflush(stdout);
 	ROS_INFO_STREAM("base_trajectory_callback took " <<
@@ -1621,11 +1667,6 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "base_trajectory");
 	ros::NodeHandle nh;
-
-	double loop_hz;
-
-	nh.param<double>("loop_hz", loop_hz, 100.);
-	period = ros::Duration(1.0 / loop_hz);
 
 	ddynamic_reconfigure::DDynamicReconfigure ddr;
 	nh.param("seg_length_epsilon", segLengthEpsilon, 1.0e-4);
