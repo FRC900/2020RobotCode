@@ -23,7 +23,11 @@
 #include "controllers_2020_msgs/ControlPanelSrv.h"
 #include "controllers_2020_msgs/ClimberSrv.h"
 #include "geometry_msgs/Twist.h"
-#include <talon_state_msgs/TalonState.h>
+#include "talon_state_msgs/TalonState.h"
+#include "std_msgs/Int8"
+#include "as726x_msgs/AS726CalibratedChannelData"
+
+enum colors{blue, red, yellow, green};
 
 //create the class for the actionlib server
 class GoToColorControlPanelAction {
@@ -31,14 +35,13 @@ class GoToColorControlPanelAction {
 		ros::NodeHandle nh_;
         ros::Subscriber match_sub_;
 		ros::Subscriber talon_states_sub_;
+		ros::Subscriber color_detect_sub_;
 		ros::Subscriber color_sensor_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
 		
 		ros::Publisher cmd_vel_publisher_;
-
-		//clients to call other actionlib servers
-		//e.g. actionlib::SimpleActionClient<behaviors::ElevatorAction> ac_elevator_;
+		ros::Publisher color_detect_pub_;
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -67,6 +70,7 @@ class GoToColorControlPanelAction {
 
 		std::string goal_color_ = "";
 		std::string current_color_;
+		as726x_msgs::AS726CalibratedChannelData color_sensor_data_;
 
 		std::atomic<double> cmd_vel_forward_speed_;
         std::atomic<bool> stopped_;
@@ -90,16 +94,18 @@ class GoToColorControlPanelAction {
 		std::map<std::string, std::string> service_connection_header;
 		service_connection_header["tcp_nodelay"] = "1";
 
-		match_sub_=nh.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
-		color_sensor_sub_=nh.subscribe("/color_sensor" /*insert topic name*/, 1, &GoToColorControlPanelAction::sensorColorCallback, this);
+		match_sub_=nh_.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
+		color_detect_sub_=nh_.subscribe("/color_detected", 1, &GoToColorControlPanelAction::detectColorCallback, this);
 		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
+		color_sensor_sub_=nh.subscribe(""/*Not sure of topic name*/, 1, &GoToColorControlPanelAction::sensorColorCallback, this);
 
-		color_algorithm_client_=nh.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
-		control_panel_controller_client_=nh.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
-		climber_controller_client_=nh.serviceClient<controllers_2020_msgs::ClimberSrv>("climber_controller", false, service_connection_header);
+		color_algorithm_client_=nh_.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
+		control_panel_controller_client_=nh_.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
+		climber_controller_client_=nh_.serviceClient<controllers_2020_msgs::ClimberSrv>("climber_controller", false, service_connection_header);
 
 		//initialize the publisher used to send messages to the drive base
         cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
+		color_detect_pub_ = nh_.advertise<>("/color_request", 1);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -229,8 +235,15 @@ class GoToColorControlPanelAction {
 
 			double panel_rotations;
 			//Loop while calling rotation
-			while(!preempted_ && !timed_out_ && ros::ok() && goal_color_ != current_color_)
+			while(!preempted_ && !timed_out_ && ros::ok())
 			{
+				//Run color detection on sensor data
+				color_detect_pub_.publish(color_sensor_data_); //Should we pause here to wait for the detection to run? 
+				
+				if(goal_color_ == current_color_) //If the color detected is the color we want, break out of loop
+					break;
+
+				//Call algorithm to calculate rotation needed
 				color_spin::color_algorithm spin_srv;
 				spin_srv.request.sensor_color = current_color_;
 				spin_srv.request.fms_color = goal_color_;
@@ -242,7 +255,7 @@ class GoToColorControlPanelAction {
 					preempted_ = true;
 				}
                       
-				if(!preempted_ && !timed_out_ && ros::ok())
+				if(!preempted_ && !timed_out_ && ros::ok()) //Send rotation to control panel controller
 				{
 					controller_2020_msgs::ControlPanelSrv panel_srv;
                     panel_srv.request.control_panel_rotations = panel_rotations; //Might need to be negative, but hopefully not?
@@ -257,7 +270,7 @@ class GoToColorControlPanelAction {
 					ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
 					preempted_ = true;
 				}
-				//check timed out - TODO might want to use a timeout for this specific controller call rather than the whole server's timeout?
+				//check timed out
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
 					ROS_ERROR_STREAM(action_name_ << ": timed out while calling control panel controller");
 					timed_out_ = true;
@@ -365,8 +378,31 @@ class GoToColorControlPanelAction {
 			goal_color_= std::toupper(match_data.controlPanelColor);
 		}
 
-		void sensorColorCallback(const /*insert message type here*/ &color_data){
-			current_color_ = std::toupper(color_data./*insert name of data*/);
+		void detectColorCallback(const std_msgs::Int8 &color_data){
+			switch(color_data.data) {
+				case blue:
+					current_color_ = "B";
+					break;
+
+				case red:
+					current_color_ = "R";
+					break;
+
+				case yellow:
+					current_color_ = "Y";
+					break;
+
+				case green:
+					current_color_ = "G";
+					break;
+				default:
+					ROS_ERROR_STREAM(action_name_ << ": color detect didn't return valid color");
+					
+			}
+		}
+
+		void sensorColorCallback(const as726x_msgs::AS726CalibratedChannelData &sensor_data) {
+			color_sensor_data_ = sensor_data;
 		}
 
 		void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
