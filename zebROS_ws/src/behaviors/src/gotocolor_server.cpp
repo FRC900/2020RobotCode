@@ -36,12 +36,10 @@ class GoToColorControlPanelAction {
         ros::Subscriber match_sub_;
 		ros::Subscriber talon_states_sub_;
 		ros::Subscriber color_detect_sub_;
-		ros::Subscriber color_sensor_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
 		
 		ros::Publisher cmd_vel_publisher_;
-		ros::Publisher color_detect_pub_;
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -70,7 +68,6 @@ class GoToColorControlPanelAction {
 
 		std::string goal_color_ = "";
 		std::string current_color_;
-		as726x_msgs::AS726CalibratedChannelData color_sensor_data_;
 
 		std::atomic<double> cmd_vel_forward_speed_;
         std::atomic<bool> stopped_;
@@ -97,7 +94,6 @@ class GoToColorControlPanelAction {
 		match_sub_=nh_.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
 		color_detect_sub_=nh_.subscribe("/color_detected", 1, &GoToColorControlPanelAction::detectColorCallback, this);
 		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
-		color_sensor_sub_=nh.subscribe(""/*Not sure of topic name*/, 1, &GoToColorControlPanelAction::sensorColorCallback, this);
 
 		color_algorithm_client_=nh_.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
 		control_panel_controller_client_=nh_.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
@@ -105,7 +101,6 @@ class GoToColorControlPanelAction {
 
 		//initialize the publisher used to send messages to the drive base
         cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
-		color_detect_pub_ = nh_.advertise<>("/color_request", 1);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -237,9 +232,6 @@ class GoToColorControlPanelAction {
 			//Loop while calling rotation
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
-				//Run color detection on sensor data
-				color_detect_pub_.publish(color_sensor_data_); //Should we pause here to wait for the detection to run? 
-				
 				if(goal_color_ == current_color_) //If the color detected is the color we want, break out of loop
 					break;
 
@@ -399,10 +391,6 @@ class GoToColorControlPanelAction {
 					ROS_ERROR_STREAM(action_name_ << ": color detect didn't return valid color");
 					
 			}
-		}
-
-		void sensorColorCallback(const as726x_msgs::AS726CalibratedChannelData &sensor_data) {
-			color_sensor_data_ = sensor_data;
 		}
 
 		void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
