@@ -59,15 +59,13 @@ int main(int argc, char* argv[]) {
   ros::NodeHandle nh_;
   std::string sub_topic, camera_info_topic, depth_topic, pub_topic;
 
-  model_.fromCameraInfo(camera_info_);
-
   pub = nh_.advertise<field_obj::Detection>(pub_topic, 1);
   ros::Subscriber sub_camera_info = nh_.subscribe(camera_info_topic, 1, camera_info_callback);
 
   message_filters::Subscriber<field_obj::TFDetection> tf_sub(nh_, sub_topic, 1);
   message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh_, depth_topic, 1);
 
-  typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, field_obj::TFDetection> MySyncPolicy;
+  typedef message_filters::sync_policies::ExactTime<field_obj::TFDetection, sensor_msgs::Image> MySyncPolicy;
   // ExactTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
   message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), tf_sub, depth_sub);
   sync.registerCallback(boost::bind(&screen_to_world_callback, _1, _2));
