@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 
 import rospy
-from as726x_msgs.msg import AS726CalibratedChannelData as ccd
-from std_msgs.msg impot Int8, 
+from as726x_msgs.msg import AS726xCalibratedChannelData as ccd
+from std_msgs.msg import Int8 
 import numpy as np
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
-model = load_model("detect_adv.h5")
+model = load_model("src/color_detection/scripts/detect_adv.h5")
 pub = rospy.Publisher("color_detected", Int8, queue_size=1000)
 
 def callback(data):
     global pub
-    data = np.array(data.calibrated_channel_data).expand_dims(axis=0)
+    data = np.expand_dims(np.array(data.calibrated_channel_data), axis=0)
     out = model.predict(data)[0]
+    out = np.argmax(out)
+    rospy.loginfo(str(out))
     pub.publish(out)
 
     
