@@ -11,7 +11,7 @@ namespace intake_controller
         hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
         //Initialize intake piston joint
-        intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //read from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
+        //intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //read from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
         //Initialize motor joints
         //get params from config file
@@ -50,14 +50,14 @@ namespace intake_controller
 
     void IntakeController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
         //grab value from command buffer(s)
-        const bool arm_extend_cmd = *(arm_extend_cmd_buffer_.readFromRT());
+        /*const bool arm_extend_cmd = *(arm_extend_cmd_buffer_.readFromRT());
 		double arm_extend_double;
 		if(arm_extend_cmd == true){
 			arm_extend_double = 1.0;
 		}
 		else {
 			arm_extend_double = 0.0;
-		}
+		}*/
 
 		//if moving forwards was disabled by the indexer server, don't allow forward movement
 		double percent_out_cmd = *percent_out_cmd_buffer_.readFromRT();
@@ -67,7 +67,7 @@ namespace intake_controller
 		}
 
 		intake_joint_.setCommand(percent_out_cmd);
-		intake_arm_joint_.setCommand(arm_extend_double);
+		//intake_arm_joint_.setCommand(arm_extend_double);
     }
 
     void IntakeController::stopping(const ros::Time &/*time*/) {
