@@ -172,6 +172,8 @@ class PowerCellIntakeAction {
 			{
 				ROS_ERROR("%s: powercell intake controller call to roller failed when setting final state", action_name_.c_str());
 			}
+			//preempt the indexer server in case it was still running from the initial call
+			ac_indexer_.cancelGoalsAtAndBeforeTime(ros::Time::now());
 
 			//log state of action and set result of action
 			behavior_actions::IntakeResult result; //variable to store result of the actionlib action
