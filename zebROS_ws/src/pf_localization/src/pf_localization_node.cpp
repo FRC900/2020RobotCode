@@ -55,9 +55,9 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
   #endif
 }
 
-void goalCallback(const goal_detection::GoalDetection::ConstPtr& msg){
+void goalCallback(const field_obj::Detection::ConstPtr& msg){
   measurement.clear();
-  for(const goal_detection::Goal& p : msg->goals) {
+  for(const field_obj::Object& p : msg->objects) {
     measurement.push_back(std::make_pair(p.location.y, p.location.x));
   }
   #ifdef EXTREME_VERBOSE
