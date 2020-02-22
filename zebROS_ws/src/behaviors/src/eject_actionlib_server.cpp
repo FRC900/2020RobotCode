@@ -1,4 +1,3 @@
-
 #include "ros/ros.h"
 #include "actionlib/server/simple_action_server.h"
 #include "actionlib/client/simple_action_client.h"
@@ -12,8 +11,6 @@
 #include "controllers_2020_msgs/IntakeRollerSrv.h"
 #include "controllers_2020_msgs/IntakeArmSrv.h"
 #include "controllers_2020_msgs/IndexerSrv.h"
-#include "sensor_msgs/JointState.h"
-#include "std_srvs/Empty.h" //used for the lost a ball client
 
 
 #include "behaviors/linebreak.h" //contains the Linebreak class, which has logic for processing linebreak signals
@@ -31,58 +28,10 @@ class EjectAction {
 		ros::ServiceClient intake_arm_controller_client_;
 		ros::ServiceClient indexer_controller_client_;
 
-		//client to tell indexer server when we lose a ball
-		ros::ServiceClient lost_a_ball_client_;
-
-		//subscribers
-		ros::Subscriber joint_states_sub_;
-
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
 		bool timed_out_;
 		double start_time_;
-
-		//linebreaks
-		Linebreak indexer_linebreak_{"indexer_linebreak"};
-
-		void jointStateCallback(const sensor_msgs::JointState &joint_state)
-		{
-			//update all linebreak sensors
-			if (! indexer_linebreak_.update(joint_state) ) {
-				ROS_ERROR("indexer linebreak update failed, preempting eject server");
-				preempted_ = true;
-			}
-		}
-
-		//Use to make pauses while still checking timed_out_ and preempted_
-		bool pause(const double duration, const std::string &activity)
-		{
-			const double pause_start_time = ros::Time::now().toSec();
-			ros::Rate r(10);
-
-			while(!preempted_ && !timed_out_ && ros::ok())
-			{
-				if(as_.isPreemptRequested() || !ros::ok())
-				{
-					preempted_ = true;
-					ROS_ERROR_STREAM("eject_server: preempt during pause() - " << activity);
-				}
-				else if ((ros::Time::now().toSec() - start_time_) >= server_timeout_)
-				{
-					timed_out_ = true;
-					ROS_ERROR_STREAM("eject_server: timeout during pause() - " << activity);
-				}
-				else if((ros::Time::now().toSec() - pause_start_time) >= duration)
-				{
-					return true; //pause worked like expected
-				}
-				else {
-					r.sleep();
-				}
-			}
-
-			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
-		}
 
 		//define the function to be executed when the actionlib server is called
 		void executeCB(const behavior_actions::EjectGoalConstPtr &goal)
@@ -158,30 +107,8 @@ class EjectAction {
 
 			//run a loop to wait for the controller to finish
 			ros::Rate r(10);
-			indexer_linebreak_.resetPulseDetection();
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
-				//check if we got a falling edge on the indexer linebreak - indicates we lost a ball
-				//note: balls are only counted as "had" if they previously fully passed the indexer linebreak.
-				//		It is possible that a ball could have made it up to the indexer linebreak, triggering it,
-				//		and then gotten stuck there when the indexer server preempted, before it registered as "had".
-				//		Thus, this check could detect losing a ball we never had. To fix this, doing a check for negative
-				//		balls in the lost a ball callback (in indexer server), and then just assuming that it's zero.
-				//		Also this actionlib server shouldn't really be used, so logic doesn't have to be impeccable for every case.
-				if(indexer_linebreak_.falling_edge_happened_)
-				{
-					ROS_INFO("Eject server - lost a ball");
-
-					//tell the indexer server we lost it
-					std_srvs::Empty srv;
-					if(!lost_a_ball_client_.call(srv))
-					{
-						ROS_ERROR("Eject server - call to indexer server's lost a ball service failed");
-						preempted_ = true;
-					}
-					indexer_linebreak_.resetPulseDetection(); //so we don't process this falling edge multiple times
-				}
-
 				//check preempted_ - the intended way for this actionlib server to finish is for the driver to preempt it
 				if(as_.isPreemptRequested() || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempt while running stuff backwards");
@@ -245,56 +172,12 @@ class EjectAction {
 		}
 
 
-		void waitForActionlibServer(auto &action_client, double timeout, const std::string &activity)
-			//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
-		{
-			double request_time = ros::Time::now().toSec();
-			ros::Rate r(10);
-
-			//wait for actionlib server to finish
-			std::string state;
-			while(!preempted_ && !timed_out_ && ros::ok())
-			{
-				state = action_client.getState().toString();
-
-				if(state == "PREEMPTED") {
-					ROS_ERROR_STREAM(action_name_ << ": external actionlib server returned preempted_ during " << activity);
-					preempted_ = true;
-				}
-				//check timeout - note: have to do this before checking if state is SUCCEEDED since timeouts are reported as SUCCEEDED
-				else if (ros::Time::now().toSec() - request_time > timeout || //timeout from what this file says
-						(state == "SUCCEEDED" && !action_client.getResult()->success)) //server times out by itself
-				{
-					ROS_ERROR_STREAM(action_name_ << ": external actionlib server timed out during " << activity);
-					timed_out_ = true;
-					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
-				}
-				else if (state == "SUCCEEDED") { //must have succeeded since we already checked timeout possibility
-					break; //stop waiting
-				}
-				//checks related to this file's actionlib server
-				else if (as_.isPreemptRequested() || !ros::ok()) {
-					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
-					preempted_ = true;
-				}
-				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
-					ROS_ERROR_STREAM(action_name_ << ": timed out during " << activity);
-					timed_out_ = true;
-					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
-				}
-				else { //if didn't succeed and nothing went wrong, keep waiting
-					ros::spinOnce();
-					r.sleep();
-				}
-			}
-		}
 
 	public:
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
 		EjectAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&EjectAction::executeCB, this, _1), false),
 			action_name_(name)
-			//ac_elevator_("/elevator/elevator_server", true) example how to initialize other action clients, don't forget to add a comma on the previous line
 	{
 		as_.start(); //start the actionlib server
 
@@ -306,12 +189,6 @@ class EjectAction {
 		intake_roller_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeRollerSrv>("/frcrobot_jetson/intake_controller/intake_roller_command", false, service_connection_header);
 		intake_arm_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IntakeArmSrv>("/frcrobot_jetson/intake_controller/intake_arm_command", false, service_connection_header);
 		indexer_controller_client_ = nh_.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command", false, service_connection_header);
-
-		//initialize client used to tell indexer server we lost a ball
-		lost_a_ball_client_ = nh_.serviceClient<std_srvs::Empty>("/indexer/lost_a_ball", false, service_connection_header);
-
-		//initialize subscribers
-		joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &EjectAction::jointStateCallback, this);
 	}
 
 		~EjectAction(void)
@@ -345,7 +222,7 @@ int main(int argc, char** argv) {
 	}
 	if (!eject_params_nh.getParam("intake_percent_out", eject_action.intake_percent_out_)) {
 		ROS_ERROR("Could not read intake_percent_out in eject_sever");
-		eject_action.intake_percent_out_ = -0.5;
+		eject_action.intake_percent_out_ = -0.5; //TODO better default
 	}
 	if (!eject_params_nh.getParam("indexer_velocity", eject_action.indexer_velocity_)) {
 		ROS_ERROR("Could not read indexer_velocity in eject_sever");

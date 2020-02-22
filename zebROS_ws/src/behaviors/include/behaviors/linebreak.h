@@ -59,7 +59,7 @@ class Linebreak {
 			if (true_count_ > debounce_iterations_){
 				triggered_ = true;
 			}
-			else if (false_count_ > debounce_iterations_){
+			else if (false_count_ > 0){ //note: required to have no debouncing on the falling edge in order for num_powercells_pub_node.cpp to work
 				triggered_ = false;
 			}
 
