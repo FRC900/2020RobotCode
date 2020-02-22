@@ -33,7 +33,6 @@
 
 	<group ns="imu">
 		<include file="$(find controller_node)/launch/2019_compbot_jetson_imu.launch">
-
 			<arg name="primary_imu" value="$(arg primary_imu)" />
 		</include>
 	</group>
