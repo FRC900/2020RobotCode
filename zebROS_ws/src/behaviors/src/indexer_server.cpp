@@ -143,7 +143,7 @@ class IndexerAction {
 					//Since all balls are properly stored, the gap will be ensured
 					if(intake_linebreak_.triggered_){
 						preempted_ = true;
-					}
+					}//TODO might not need this if action INTAKE_ONE_BALL stops when the new ball causes a rising edge on the indexer gap linebreak
 				}
 			}
 		}
