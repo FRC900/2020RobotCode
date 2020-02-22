@@ -25,7 +25,6 @@
 #include "geometry_msgs/Twist.h"
 #include "talon_state_msgs/TalonState.h"
 #include "std_msgs/Int8"
-#include "as726x_msgs/AS726CalibratedChannelData"
 
 enum colors{blue, red, yellow, green};
 
