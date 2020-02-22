@@ -2,3 +2,4 @@ actionlib_shooter_params:
     server_timeout: 10
     wait_for_server_timeout: 1
     wait_for_ready_timeout: 1.0
+    speed_table: [[30, 460, false], [20, 415, false], [10, 420, false], [10, 315, true], [2, 250, true]] #distance, speed, hood_down

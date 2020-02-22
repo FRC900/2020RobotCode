@@ -82,6 +82,17 @@ class ShooterAction {
 				local_goal_msg = goal_msg_;
 			}
 			// use local_goal_msg here
+			// retrieve the speed_table values from config
+			double[][] speed_table_;
+			if(!nh.getParam("speed_table", speed_table)){
+				ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
+				speed_table = [][];
+			}
+
+			//get distance
+			geometry_msgs::Point32 goal_pos = local_goal_msg.objects.location;
+			//geometry_msgs::Point32 my_pos = 
+
 			hood_extended = true;
 			shooter_speed = 3;
 			return true;
