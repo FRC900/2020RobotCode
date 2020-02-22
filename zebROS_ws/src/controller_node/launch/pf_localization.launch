@@ -7,6 +7,6 @@
     </node>
   </group>
 
-  <include file="$(find controller_node)/launch/bag_tape_detection.launch"/>
+  <!-- <include file="$(find controller_node)/launch/bag_tape_detection.launch"/> -->
 
 </launch>
