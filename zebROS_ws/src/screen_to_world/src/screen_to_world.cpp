@@ -8,6 +8,8 @@
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <sensor_msgs/Image.h>
+#include <cv_bridge/cv_bridge.h>
+#include "Utilities.hpp"
 
 #include <field_obj/Object.h>
 #include <field_obj/Detection.h>
@@ -18,11 +20,13 @@ ros::Publisher pub;
 image_geometry::PinholeCameraModel model_;
 sensor_msgs::CameraInfo camera_info_;
 
+using namespace cv;
+
 cv::Point3f convert_to_world(cv::Point2f uv, float distance){
-  const cv::Point3f world_coord_unit = model_.projectPixelTo3dRay(uv);
+  const Point3f world_coord_unit = model_.projectPixelTo3dRay(uv);
   //const float distance = sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
-  const cv::Point3f world_coord_scaled = world_coord_unit * distance;
-  const cv::Point3f adj_world_coord_scaled(world_coord_scaled.x, -world_coord_scaled.y, world_coord_scaled.z);
+  const Point3f world_coord_scaled = world_coord_unit * distance;
+  const Point3f adj_world_coord_scaled(world_coord_scaled.x, -world_coord_scaled.y, world_coord_scaled.z);
 
   return adj_world_coord_scaled;
 }
@@ -31,15 +35,28 @@ void camera_info_callback(const sensor_msgs::CameraInfoConstPtr &info) {
 	camera_info_ = *info;
 }
 
-void screen_to_world_callback(const field_obj::TFDetection::ConstPtr &raw_msg, const sensor_msgs::ImageConstPtr &depth_msg){
+float get_depth(const field_obj::TFObject object, const Mat &depth){
+  const Rect mask_bound(object.tl.x, object.tl.y, object.br.x - object.tl.x, object.br.y - object.tl.y);
+  static Mat mask(depth.rows, depth.cols, CV_8UC1, Scalar(0));
+  rectangle(mask, mask_bound, Scalar(255), CV_FILLED, 8, 0);
+
+  const float average_depth = zv_utils::avgOfDepthMat(depth, mask, mask_bound);
+  return average_depth;
+}
+
+void screen_to_world_callback(const field_obj::TFDetection::ConstPtr &raw_msg, const sensor_msgs::ImageConstPtr &depth_msg) {
+  cv_bridge::CvImageConstPtr cvDepth = cv_bridge::toCvShare(depth_msg, sensor_msgs::image_encodings::TYPE_32FC1);
+
   float distance;
   field_obj::Detection msg;
   for(field_obj::TFObject object : raw_msg -> objects){
     double screen_x = (object.tl.x + object.br.x) / 2;
     double screen_y = (object.tl.y + object.br.y) / 2;
 
-    cv::Point2f screen_coord(screen_x, screen_y);
-    cv::Point3f world_coord = convert_to_world(screen_coord, distance);
+    distance = get_depth(object, cvDepth->image);
+
+    Point2f screen_coord(screen_x, screen_y);
+    Point3f world_coord = convert_to_world(screen_coord, distance);
 
     field_obj::Object dummy;
 

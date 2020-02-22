@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_geometry
   message_generation
   message_filters
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -119,12 +120,16 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ../../../common
+  ../../..
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/screen_to_world.cpp
-# )
+ add_library(${PROJECT_NAME}
+   src/screen_to_world.cpp
+   ../../../common/Utilities.cpp
+ )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -149,6 +154,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
+   ${OpenCV_LIBS}
  )
 
 #############
