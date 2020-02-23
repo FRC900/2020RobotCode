@@ -1,6 +1,6 @@
 #include <ros/ros.h>
-#include <std_msgs/String.h>
 #include <behavior_actions/AutoMode.h> //msg file
+#include <behavior_actions/AutoState.h> //msg file
 #include <std_srvs/Empty.h>
 #include <frc_msgs/MatchSpecificData.h>
 #include <geometry_msgs/Point32.h>
@@ -70,17 +70,19 @@ void publishAutoState(ros::Publisher publisher)
 
     //publish
 	ros::Rate r(10); //TODO config
-	std_msgs::String msg;
+	behavior_actions::AutoState msg;
 
 	while(ros::ok()){
+		msg.id = auto_state;
+
 		switch(auto_state){
-			case NOT_READY: msg.data = "Not Ready"; break;
-			case READY: msg.data = "Ready"; break;
-			case RUNNING: msg.data = "Running"; break;
-			case DONE: msg.data = "Done"; break;
-			case ERROR: msg.data = "Error"; break;
+			case NOT_READY: msg.string = "Not Ready"; break;
+			case READY: msg.string = "Ready"; break;
+			case RUNNING: msg.string = "Running"; break;
+			case DONE: msg.string = "Done"; break;
+			case ERROR: msg.string = "Error"; break;
 			default:
-				msg.data = "Unknown State";
+				msg.string = "Unknown State";
 				ROS_ERROR("Unknown auto state - weirdness in auto_node");
 				break;
 		}
@@ -149,7 +151,7 @@ int main(int argc, char** argv)
 	//publishers
 	//auto state
 #ifdef __linux__
-	ros::Publisher state_pub = nh.advertise<std_msgs::String>("auto_state", 1);
+	ros::Publisher state_pub = nh.advertise<behavior_actions::AutoState>("auto_state", 1);
 	std::thread auto_state_pub_thread(publishAutoState, state_pub);
 #endif
 
