@@ -13,7 +13,7 @@ namespace shooter_controller
         hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
         //Initialize piston joints
-        shooter_hood_joint_ = pos_joint_iface->getHandle("shooter_hood_joint"); //joint name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
+        //shooter_hood_joint_ = pos_joint_iface->getHandle("shooter_hood_joint"); //joint name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
         //Initialize motor joints
         XmlRpc::XmlRpcValue shooter_motor_params;
@@ -63,11 +63,11 @@ namespace shooter_controller
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
         if(shooter_cmd.shooter_hood_raise_ == true)
         {
-            shooter_hood_joint_.setCommand(1.0);
+           // shooter_hood_joint_.setCommand(1.0);
         }
         else
         {
-            shooter_hood_joint_.setCommand(0.0);
+            //shooter_hood_joint_.setCommand(0.0);
         }
         if(shooter_cmd.shooter_hood_raise_ != last_hood_command)
         {
