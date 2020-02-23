@@ -17,9 +17,9 @@
 			output="screen" launch-prefix="$(arg launch_prefix)">
 		</node>
 
-		<!-- Load controller manager -->
+		<!-- Load controller manager, use falcon1_controller instead of shooter_controller if want to use that -->
 		<node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false"
-			output="screen" args="spawn falcon1_controller talon_state_controller talon_config_controller joint_state_controller do2_controller joint_state_listener_controller match_state_listener_controller pdp_state_controller pcm_state_controller robot_code_ready_controller" />
+			output="screen" args="spawn shooter_controller talon_state_controller talon_config_controller joint_state_controller do2_controller joint_state_listener_controller match_state_listener_controller pdp_state_controller pcm_state_controller robot_code_ready_controller" />
 	</group>
 
 </launch>
