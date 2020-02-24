@@ -9,6 +9,7 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup
 from python_qt_binding.QtCore import QCoreApplication
+from python_qt_binding.QtGui import QPixmap 
 from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
 import std_msgs.msg
@@ -75,15 +76,21 @@ class Dashboard(Plugin):
                     v_layout.addWidget( QLabel("No auto modes found") )
                 break #break out of for loop searching for auto modes
             
-        #auto state stuff
+        # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
         self.sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
 
-        #publish thread
+        # publish thread
         publish_thread = threading.Thread(target=self.publish_thread) #args=(self,))
         publish_thread.start()
 
+        # number balls display
+        label = self._widget.n_balls_display
+        yellow_circle = QPixmap("~/2020RobotCode/zebROS_ws/src/rqt_dashboard/src/rqt_dashboard/yellow_circle.png")
+        label.setPixmap(yellow_circle)
+        print(yellow_circle.isNull())
+        
 
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
