@@ -65,7 +65,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   std_msgs  
+   std_msgs
+   color_spin 
  )
 
 ################################################
@@ -141,23 +142,18 @@ add_executable(color_spin src/color_spin.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(color_spin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_dependencies(color_spin ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(color_spin
    ${catkin_LIBRARIES}
    )
-add_dependencies(color_spin src/color_spin.cpp)
-target_link_libraries(color_spin
-   ${catkin_LIBRARIES}
-   )
+## add_dependencies(color_spin src/color_spin.cpp)
 add_executable(color_spin_client src/color_spin_client.cpp)
 target_link_libraries(color_spin_client
    ${catkin_LIBRARIES}
    )
-add_dependencies(color_spin_client
-   ${catkin_LIBRARIES}
-   )
+add_dependencies(color_spin_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############
 ## Install ##
 #############
