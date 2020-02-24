@@ -1,3 +1,4 @@
-pub_topic:
-sub_topic:
-camera_info_topic:
+pub_topic: ""
+sub_topic: ""
+depth_topic: ""
+camera_info_topic: ""

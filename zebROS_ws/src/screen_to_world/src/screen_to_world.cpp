@@ -76,6 +76,26 @@ int main(int argc, char* argv[]) {
   ros::NodeHandle nh_;
   std::string sub_topic, camera_info_topic, depth_topic, pub_topic;
 
+  if (!nh_.getParam("sub_topic", sub_topic)) {
+    ROS_ERROR("sub topic not specified");
+    return -1;
+  }
+
+  if (!nh_.getParam("camera_info_topic", camera_info_topic)) {
+    ROS_ERROR("camera info topic not specified");
+    return -1;
+  }
+
+  if (!nh_.getParam("depth_topic", depth_topic)) {
+    ROS_ERROR("depth topic not specified");
+    return -1;
+  }
+
+  if (!nh_.getParam("pub_topic", pub_topic)) {
+    ROS_ERROR("pub topic not specified");
+    return -1;
+  }
+
   pub = nh_.advertise<field_obj::Detection>(pub_topic, 1);
   ros::Subscriber sub_camera_info = nh_.subscribe(camera_info_topic, 1, camera_info_callback);
 

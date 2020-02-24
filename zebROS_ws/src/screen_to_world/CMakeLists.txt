@@ -126,10 +126,9 @@ include_directories(
 )
 
 ## Declare a C++ library
- add_library(${PROJECT_NAME}
-   src/screen_to_world.cpp
-   ../../../common/Utilities.cpp
- )
+#add_library(${PROJECT_NAME}
+#   src/screen_to_world.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -139,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/screen_to_world.cpp)
+add_executable(${PROJECT_NAME}_node src/screen_to_world.cpp ../../../common/Utilities.cpp ../../../common/objtype.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
