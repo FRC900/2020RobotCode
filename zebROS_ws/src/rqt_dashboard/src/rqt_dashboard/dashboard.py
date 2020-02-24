@@ -53,8 +53,8 @@ class Dashboard(Plugin):
         self.auto_mode_button_group = QButtonGroup(self._widget) # needs to be a member variable so the publisher can access it to see which auto mode was selected
         # Search for auto_mode config items
         for i in range(1,100): # loop will exit when can't find the next auto mode, so really only a while loop needed, but exiting at 100 will prevent infinite looping
-            if rospy.has_param("/frcrobot_jetson/auto_mode_" + str(i)):
-                auto_sequence = rospy.get_param("/frcrobot_jetson/auto_mode_" + str(i))
+            if rospy.has_param("/auto/auto_mode_" + str(i)):
+                auto_sequence = rospy.get_param("/auto/auto_mode_" + str(i))
                
                 new_auto_mode = QWidget()
                 new_h_layout = QHBoxLayout()
@@ -78,7 +78,7 @@ class Dashboard(Plugin):
         #auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        self.sub = rospy.Subscriber("/auto_state", AutoState, self.autoStateCallback)
+        self.sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
 
         #publish thread
         publish_thread = threading.Thread(target=self.publish_thread) #args=(self,))
@@ -149,7 +149,7 @@ class Dashboard(Plugin):
 
     #Publisher -> fake Auto States
     def publish_thread(self):
-        pub = rospy.Publisher('/auto_mode', AutoMode, queue_size=10)
+        pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
         r = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
             h = std_msgs.msg.Header()
