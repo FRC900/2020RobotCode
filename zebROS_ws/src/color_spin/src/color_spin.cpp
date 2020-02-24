@@ -69,8 +69,10 @@ bool rotate(color_spin::color_algorithm::Request &req,
 			 case 'G': res.rotate = -.125;
 					   break;
 			 case 'R': ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+					   res.rotate = .0;
 					   break;
 			 default: ROS_ERROR("FMS COLOR IS STRANGE");
+					   res.rotate = .0;
 					   break;
 		 }
 		 break;
@@ -84,8 +86,10 @@ bool rotate(color_spin::color_algorithm::Request &req,
 			 case 'Y': res.rotate = .25;
 					   break; 
 			 case 'G': ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+					   res.rotate = .0;
 					   break;
 			 default: ROS_ERROR("FMS COLOR IS STRANGE");
+					   res.rotate = .0;
 					   break;
 		 }
 		 break;
@@ -99,8 +103,10 @@ bool rotate(color_spin::color_algorithm::Request &req,
 			 case 'Y': res.rotate = -.125;
 					   break;
 			 case 'C': ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+					   res.rotate = .0;
 					   break;
 			 default: ROS_ERROR("FMS COLOR IS STRANGE");
+					   res.rotate = .0;
 					   break;
 		 }
 		 break;
@@ -114,8 +120,10 @@ bool rotate(color_spin::color_algorithm::Request &req,
 			 case 'G': res.rotate = .25;
 					   break;
 			 case 'Y': ROS_ERROR("FMS COLOR AND SENSOR COLOR ARE THE SAME");
+					   res.rotate = .0;
 					   break;
 			 default: ROS_ERROR("FMS COLOR IS STRANGE");
+					   res.rotate = .0;
 					   break;
 		 }
 		 break;
