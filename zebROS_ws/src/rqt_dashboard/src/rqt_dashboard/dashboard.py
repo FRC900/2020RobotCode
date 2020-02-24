@@ -9,8 +9,9 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup
 from python_qt_binding.QtCore import QCoreApplication
-from std_msgs.msg import String
+from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
+import std_msgs.msg
 
 class Dashboard(Plugin):
 
@@ -74,29 +75,14 @@ class Dashboard(Plugin):
                     v_layout.addWidget( QLabel("No auto modes found") )
                 break #break out of for loop searching for auto modes
             
-        self.autoState = 0    
-        
-        #Subscriber
-        self.sub = rospy.Subscriber("/fakeAutoState", String, self.autoStateCallback)
-        load_thread = threading.Thread(target=self.publish_thread) #args=(self,))
-        load_thread.start()
+        #auto state stuff
+        self.autoState = 0
+        self.displayAutoState() #display initial auto state
+        self.sub = rospy.Subscriber("/auto_state", AutoState, self.autoStateCallback)
 
-      	#Display Auto States 
-        if self.autoState == 1:
-            self._widget.lineEdit.setText("Auto Node NOT Started")
-            self._widget.lineEdit.setStyleSheet("background-color:#5eff00;")
-        elif self.autoState == 2: 
-            self._widget.lineEdit.setText("Waiting for Auto Period to Start")
-            self._widget.lineEdit.setStyleSheet("background-color:#ffa500;") 
-        elif self.autoState == 3: 
-            self._widget.lineEdit.setText("Executing Auto Node")
-            self._widget.lineEdit.setStyleSheet("background-color:#ffff00")       
-        elif self.autoState == 4: 
-            self._widget.lineEdit.setText("Auto Node Finished Running")
-            self._widget.lineEdit.setStyleSheet("background-color:#00ff00;")
-	elif self.autoState == 0:
-	    self._widget.lineEdit.setText("error")
-	
+        #publish thread
+        publish_thread = threading.Thread(target=self.publish_thread) #args=(self,))
+        publish_thread.start()
 
 
         # Show _widget.windowTitle on left-top of each plugin (when 
@@ -108,17 +94,29 @@ class Dashboard(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
+
+
+
+    def autoStateCallback(self, msg):
+	self.autoState = msg.id
+        self.displayAutoState()
     
-
-
-
-    #Publisher -> fake Auto States
-    def publish_thread(self):
-        pub = rospy.Publisher('/fakeAutoState', String, queue_size=10)
-        r = rospy.Rate(10) # 10hz
-        while not rospy.is_shutdown():
-            pub.publish("2")
-            r.sleep()
+    def displayAutoState(self):
+        if self.autoState == 0:
+            self._widget.auto_state_display.setText("Not ready")
+            self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
+        elif self.autoState == 1: 
+            self._widget.auto_state_display.setText("Ready, waiting for auto period")
+            self._widget.auto_state_display.setStyleSheet("background-color:#ffffff;") 
+        elif self.autoState == 2: 
+            self._widget.auto_state_display.setText("Running")
+            self._widget.auto_state_display.setStyleSheet("background-color:#ffff00")       
+        elif self.autoState == 3: 
+            self._widget.auto_state_display.setText("Finished")
+            self._widget.auto_state_display.setStyleSheet("background-color:#00ff00;")
+	elif self.autoState == 4:
+	    self._widget.auto_state_display.setText("Error")
+            self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
 
 
 
@@ -137,6 +135,10 @@ class Dashboard(Plugin):
             self.errorPopup("Imu Set Angle Error", e)
 
 
+    def imuAngleChanged(self):
+        # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
+        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
+
 
     def errorPopup(self, title, e):
             msg_box = QMessageBox()
@@ -145,19 +147,15 @@ class Dashboard(Plugin):
             msg_box.setText("%s"%e)
             msg_box.exec_()
 
-
-    def imuAngleChanged(self):
-        # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
-        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
-
     #Publisher -> fake Auto States
     def publish_thread(self):
-        pub = rospy.Publisher('/fakeAutoState', String, queue_size=10)
+        pub = rospy.Publisher('/auto_mode', AutoMode, queue_size=10)
         r = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
-            pub.publish("2")
+            h = std_msgs.msg.Header()
+            h.stamp = rospy.Time.now()
+            pub.publish(h, self.auto_mode_button_group.checkedId())
             r.sleep()
-
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
@@ -173,8 +171,6 @@ class Dashboard(Plugin):
         # v = instance_settings.value(k)
         pass
     
-    def autoStateCallback(self, msg):
-	self.autoState = int(msg.data)
 
     def trigger_configuration(self):
         # Comment in to signal that the plugin has a way to configure

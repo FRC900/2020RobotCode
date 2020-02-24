@@ -210,8 +210,8 @@ int main(int argc, char** argv)
 	auto_state = RUNNING;
 
 	//read sequence of actions from config
-	if(! nh.getParam("auto_mode_" + std::to_string(auto_mode), auto_steps)){
-		ROS_ERROR_STREAM("Couldn't read auto_mode_" + std::to_string(auto_mode) + " config value in auto node");
+	if(! nh.getParam("/frcrobot_jetson/auto_mode_" + std::to_string(auto_mode), auto_steps)){
+		ROS_ERROR_STREAM("Couldn't read /frcrobot_jetson/auto_mode_" + std::to_string(auto_mode) + " config value in auto node");
 		auto_state = ERROR;
 		if(auto_state_pub_thread.joinable()) {
 			auto_state_pub_thread.join(); //keeps the publishing going then closes the publish thread when ros not ok
