@@ -65,14 +65,17 @@ void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
 //this is read by the dashboard to display it to the driver
 void publishAutoState(ros::Publisher publisher)
 {
+#ifdef __linux__
 	//give the thread a name
     pthread_setname_np(pthread_self(), "auto_state_pub_thread");
+#endif
 
     //publish
 	ros::Rate r(10); //TODO config
 	behavior_actions::AutoState msg;
 
 	while(ros::ok()){
+		msg.header.stamp = ros::Time::now();
 		msg.id = auto_state;
 
 		switch(auto_state){
@@ -150,10 +153,8 @@ int main(int argc, char** argv)
 
 	//publishers
 	//auto state
-#ifdef __linux__
 	ros::Publisher state_pub = nh.advertise<behavior_actions::AutoState>("auto_state", 1);
 	std::thread auto_state_pub_thread(publishAutoState, state_pub);
-#endif
 
 	//servers
 	ros::ServiceServer stop_auto_server = nh.advertiseService("stop_auto", stopAuto); //called by teleoop node to stop auto execution during teleop if driver wants
