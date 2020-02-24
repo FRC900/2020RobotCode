@@ -75,13 +75,10 @@
          <property name="text">
           <string>Auto Code Status</string>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">autoModeButtons</string>
-         </attribute>
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="lineEdit">
+        <widget class="QLineEdit" name="auto_state_display">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -105,19 +102,6 @@
          <property name="readOnly">
           <bool>true</bool>
          </property>
-         <attribute name="buttonGroup">
-          <string notr="true">autoModeButtons</string>
-         </attribute>
-        </widget>
-       </item>
-       <item>
-        <widget class="QRadioButton" name="radioButton_4">
-         <property name="text">
-          <string>RadioButton</string>
-         </property>
-         <attribute name="buttonGroup">
-          <string notr="true">autoModeButtons</string>
-         </attribute>
         </widget>
        </item>
       </layout>
@@ -164,7 +148,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Auto Code Status</string>
+          <string>Set IMU Angle</string>
          </property>
         </widget>
        </item>
