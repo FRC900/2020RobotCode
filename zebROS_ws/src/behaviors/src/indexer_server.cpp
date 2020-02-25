@@ -195,25 +195,9 @@ class IndexerAction {
 				}
 
 				//keep going forwards until shooter linebreak is triggered (until ball right in front of shooter)
-				indexer_linebreak_.resetPulseDetection(); //so we can detect balls that inadvertently get stored b/c we're moving forwards
 				ros::Rate r(10); //TODO config?
 				while (!shooter_linebreak_.triggered_ && !preempted_ && !timed_out_ && ros::ok())
 				{
-					if(indexer_linebreak_.pulsed_)
-					{
-						ROS_INFO("Indexer server - got a ball! Enabling intake move forwards");
-						n_balls_++;
-						indexer_linebreak_.resetPulseDetection(); //needed so we don't "get a new ball" every iteration
-						//enable the intake moving forwards
-						std_srvs::SetBool srv;
-						srv.request.data = false; //disabled = false
-						if(!disable_intake_forwards_client_.call(srv))
-						{
-							ROS_ERROR("Indexer server - enabling intake forwards call to intake controller failed");
-							preempted_ = true;
-						}
-					}
-
 					checkPreemptedAndTimedOut("going to position shoot");
 					if(!preempted_ && !timed_out_){
 						r.sleep(); //sleep if we didn't preempt or timeout
@@ -314,7 +298,6 @@ class IndexerAction {
 					}
 
 					//wait for ball to be intaked - ball is intaked if the indexer linebreak pulses on then off
-					own_ball_linebreak_.resetPulseDetection();
 					indexer_linebreak_.resetPulseDetection(); //clear previous checks for rising/falling edges
 					ros::Rate r(10); //TODO config?
 					while(!preempted_ && !timed_out_ && ros::ok())
@@ -388,7 +371,6 @@ class IndexerAction {
 						}
 
 						//wait until get a falling edge on the shooter linebreak - means a ball has been shot
-						indexer_linebreak_.resetPulseDetection(); //so we can detect balls that inadvertently get stored b/c we're moving forwards
 						shooter_linebreak_.resetPulseDetection(); //so we can detect a NEW falling edge
 						ros::Rate r(10); //TODO config?
 						while(!preempted_ && !timed_out_ && ros::ok())
