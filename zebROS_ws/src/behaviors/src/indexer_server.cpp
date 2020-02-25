@@ -59,6 +59,7 @@ class IndexerAction {
 		std::atomic<int> n_indexer_balls_ = 3; //balls anywhere in the indexer, default of 3
 		std::atomic<int> n_stored_balls_ = 3; //properly stored balls (after the indexer linebreak, to ensure a gap)
 
+		std::atomic<bool> just_stored_new_ball_ = false; //set to true by the n stored balls callback, used by action INTAKE_ONE_BALL, which sets it to false upon using it
 
 		void checkPreemptedAndTimedOut(const std::string &activity)
 		{
@@ -104,7 +105,12 @@ class IndexerAction {
 
 		void numStoredBallsCallback(const std_msgs::UInt8 &msg)
 		{
+			int prev_n_stored_balls = n_stored_balls_;
 			n_stored_balls_ = msg.data;
+			if(prev_n_stored_balls < n_stored_balls_)
+			{
+				just_stored_new_ball_ = true;
+			}
 			updateIntakeDisable();
 		}
 
@@ -272,6 +278,8 @@ class IndexerAction {
 
 					ROS_INFO_STREAM("Intaking a ball in indexer actionlib server");
 
+					just_stored_new_ball_ = false; //we want to detect a new ball that got stored AFTER this action started
+
 					if(!preempted_ && !timed_out_ && ros::ok())
 					{
 						//set velocity forward if we're allowed to (e.g. if that won't force a ball into the shooter)
@@ -336,11 +344,21 @@ class IndexerAction {
 							break;
 						}
 
+						/* logic for if we stop as soon as rising edge on indexer linebreak
+						if(just_stored_new_ball_)
+						{
+							ROS_INFO("Indexer server - successfully intaked the ball!");
+							just_stored_new_ball_ = false;
+							break;
+						}*/
+
 						checkPreemptedAndTimedOut("waiting for ball to be fully intaked");
 						if(!preempted_ && !timed_out_){
 							r.sleep();
 						}
 					}
+
+					//NOTE: don't do this if doing the stop-as-soon-as-rising-edge-on-indexer-linebreak logic
 
 					//go to positionIntake
 					if(!preempted_ && !timed_out_ && ros::ok())
