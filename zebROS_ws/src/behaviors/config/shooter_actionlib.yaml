@@ -2,4 +2,7 @@ actionlib_shooter_params:
     server_timeout: 10
     wait_for_server_timeout: 1
     wait_for_ready_timeout: 1.0
-    speed_table: [[30, 460, false], [20, 415, false], [10, 420, false], [10, 315, true], [2, 250, true]] #distance, speed, hood_down
+    hood_threshold: 10.0 #if the distance > 10, hood is not down
+    dist_table: [30.0, 20.0, 10.0, 10.0, 2.0]
+    speed_table: [460.0, 415.0, 420.0, 315.0, 250.0]
+    #no, no, no, yes, yes

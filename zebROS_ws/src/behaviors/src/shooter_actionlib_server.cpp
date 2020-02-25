@@ -81,17 +81,69 @@ class ShooterAction {
 				std::lock_guard<std::mutex> l(goal_msg_mutex_);
 				local_goal_msg = goal_msg_;
 			}
+
 			// use local_goal_msg here
 			// retrieve the speed_table values from config
-			double[][] speed_table_;
+			/*double[][] speed_table_;
 			if(!nh.getParam("speed_table", speed_table)){
 				ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
 				speed_table = [][];
+			}*/
+
+			//initialize config values
+			std::vector<double> dist_table_;
+			if(!nh.getParam("dist_table", dist_table_)){
+				ROS_ERROR("Couldn't read dist_table in shooter_actionlib.yaml");
 			}
 
-			//get distance
-			geometry_msgs::Point32 goal_pos = local_goal_msg.objects.location;
-			//geometry_msgs::Point32 my_pos = 
+			std::vector<double> speed_table_;
+			if(!nh.getParam("speed_table", speed_table_)){
+				ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
+			}
+
+			double hood_threshold_;
+			if(!nh.getParam("hood_threshold", hood_threshold_)){
+				ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
+				hood_threshold_ = 0.0;
+			}
+
+			//get the goal object
+			geometry_msgs::Point32 goal_pos_ = null;
+			for (field_obj/Object obj : local_goal_msg.objects)
+			{
+				if(obj.id == "PowerSomething")
+				{
+					goal_pos_ = obj.location;
+				}
+			}
+
+			//geometry_msgs::Point32 shooter_pos_ = GET POSITION OF SHOOTER
+
+			//obtain distance via trig
+			double x_val_ = goal_pos_.x - shooter_pos_.x;
+			double y_val_ = goal_pos_.y - shooter_pos_.y;
+			double distance = sqrt(pow(x_val_, 2) sqrt(y_val_, 2));
+
+			//obtain speed and hood values
+			int counter = 0;
+			for (double d : dist_table_)
+			{
+				if(d == distance)
+				{
+					shooter_speed = speed_table_[counter];
+					break;
+				}
+				counter += 1;
+			}
+
+			if(distance > hood_threshold_)
+			{
+				hood_extended = true;
+			}
+			else
+			{
+				hood_extended = false;
+			}
 
 			hood_extended = true;
 			shooter_speed = 3;
