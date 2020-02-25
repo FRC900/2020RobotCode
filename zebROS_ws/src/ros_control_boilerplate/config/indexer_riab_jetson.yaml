@@ -8,14 +8,15 @@ hardware_interface:
    run_hal_robot: false
    can_interface: can0
    joints:
-       - {name: indexer_joint, type: can_talon_srx, can_id: 67, local: true} #TODO find actual can id
+       - {name: indexer_joint, type: can_talon_srx, can_id: 12, local: true} #TODO find actual can id
+       - {name: shooter_joint, type: can_talon_srx, can_id: 23, local: true}
        - {name: pdp, local: true, type: pdp}
        - {name: robot_code_ready_jetson, local: true, type: ready}
        - {name: robot_code_ready_rio, local: false, type: ready} # Probably not really needed?
-       - {name: intake_joint, type: can_talon_srx, can_id: 33, local: true}
+       - {name: intake_joint, type: can_talon_srx, can_id: 9, local: true}
 
        - {name: intake_linebreak, type: digital_input, local: false}
-       - {name: indexer_own_ball_linebreak, type: digital_input, local: false}
+       - {name: indexer_front_linebreak, type: digital_input, local: false}
        - {name: indexer_linebreak, type: digital_input, local: false}
        - {name: shooter_linebreak, type: digital_input, local: false}
 
