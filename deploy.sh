@@ -247,7 +247,7 @@ done
 # This is the more likely failure mode - compile errors, etc
 for i in "${JETSON_ADDR[@]}"
 do
-	ssh -C $i 'cat $JETSON_ROS_CODE_LOCATION/.native_build.status' | grep -q SUCCESS
+	ssh -C $i cat $JETSON_ROS_CODE_LOCATION/.native_build.status | grep -q SUCCESS
 	if [ $? -ne 0 ] ; then
 		echo -e "Jetson native_build \e[1m\e[31mFAILED\e[0m"
 		EXIT_FAIL=1
@@ -259,4 +259,4 @@ if [ $EXIT_FAIL -ne 0 ] ; then
 fi
 
 update_links
-echo "\e[1m\e[32mFINISHED SUCCESSFULLY\e[0m"
+echo -e "\e[1m\e[32mFINISHED SUCCESSFULLY\e[0m"
