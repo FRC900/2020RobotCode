@@ -73,7 +73,7 @@ std::vector<std::pair<double, double> > WorldModel::particle_relative(const Part
   return res;
 }
 
-//Uses hungarian algorithm to pair particle relatiev beacons and robot relative beacons and returns the total error (sum of distance errors from particle to robot beacons)
+//Uses hungarian algorithm to pair particle relative beacons and robot relative beacons and returns the total error (sum of distance errors from particle to robot beacons)
 double WorldModel::total_distance(const Particle& p, const std::vector<std::pair<double, double> >& m) {
   std::vector<int> assignment;
   assignment.reserve(m.size());
