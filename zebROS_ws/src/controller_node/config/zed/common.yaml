@@ -2,15 +2,15 @@
 # Common parameters to Stereolabs ZED and ZED mini cameras
 ---
 # Dynamic parameters cannot have a namespace
-brightness:                 0                                   # Dynamic
+brightness:                 3                                   # Dynamic
 contrast:                   4                                   # Dynamic
 hue:                        6                                   # Dynamic
 saturation:                 4                                   # Dynamic
 sharpness:                  3                                   # Dynamic
 gamma:                      8                                   # Dynamic - Requires SDK >=v3.1
 auto_exposure_gain:         false                               # Dynamic
-gain:                       10                                  # Dynamic - works only if `auto_exposure_gain` is false
-exposure:                   20                                  # Dynamic - works only if `auto_exposure_gain` is false
+gain:                       40                                  # Dynamic - works only if `auto_exposure_gain` is false
+exposure:                   40                                  # Dynamic - works only if `auto_exposure_gain` is false
 auto_whitebalance:          true                                # Dynamic
 whitebalance_temperature:   4200                                # Dynamic - works only if `auto_whitebalance` is false
 depth_confidence:           80                                  # Dynamic
