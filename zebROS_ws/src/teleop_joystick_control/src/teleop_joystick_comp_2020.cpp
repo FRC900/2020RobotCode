@@ -118,440 +118,460 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 	//Only do this for the first joystick
 	if(joystick_id == 0)
 	{
-		static bool sendRobotZero = false;
+		bool dummy_bb_toggle = false;
 
-		geometry_msgs::Twist cmd_vel = teleop_cmd_vel->generateCmdVel(joystick_states_array[0], imu_angle, config);
-
-		if((cmd_vel.linear.x == 0.0) && (cmd_vel.linear.y == 0.0) && (cmd_vel.angular.z == 0.0) && !sendRobotZero)
+		if(!dummy_bb_toggle /*TODO Replace with actual toggle value*/)
 		{
-			std_srvs::Empty empty;
-			if (!BrakeSrv.call(empty))
+			static bool sendRobotZero = false;
+
+			geometry_msgs::Twist cmd_vel = teleop_cmd_vel->generateCmdVel(joystick_states_array[0], imu_angle, config);
+
+			if((cmd_vel.linear.x == 0.0) && (cmd_vel.linear.y == 0.0) && (cmd_vel.angular.z == 0.0) && !sendRobotZero)
 			{
-				ROS_ERROR("BrakeSrv call failed in sendRobotZero_");
+				std_srvs::Empty empty;
+				if (!BrakeSrv.call(empty))
+				{
+					ROS_ERROR("BrakeSrv call failed in sendRobotZero_");
+				}
+				ROS_INFO("BrakeSrv called");
+
+				JoystickRobotVel.publish(cmd_vel);
+				sendRobotZero = true;
 			}
-			ROS_INFO("BrakeSrv called");
+			else if((cmd_vel.linear.x != 0.0) || (cmd_vel.linear.y != 0.0) || (cmd_vel.angular.z != 0.0))
+			{
+				JoystickRobotVel.publish(cmd_vel);
+				sendRobotZero = false;
+			}
 
-			JoystickRobotVel.publish(cmd_vel);
-			sendRobotZero = true;
-		}
-		else if((cmd_vel.linear.x != 0.0) || (cmd_vel.linear.y != 0.0) || (cmd_vel.angular.z != 0.0))
-		{
-			JoystickRobotVel.publish(cmd_vel);
-			sendRobotZero = false;
-		}
+			//Joystick1: buttonA
+			if(joystick_states_array[0].buttonAPress)
+			{
+				//Control panel task based off of BB switch
+				// Up - Rotation task
+				// Off - Increment by one color
+				// Down - Position task
+			}
+			if(joystick_states_array[0].buttonAButton)
+			{
+			}
+			if(joystick_states_array[0].buttonARelease)
+			{
+			}
 
-		//Joystick1: buttonA
-		if(joystick_states_array[0].buttonAPress)
-		{
-		}
-		if(joystick_states_array[0].buttonAButton)
-		{
-		}
-		if(joystick_states_array[0].buttonARelease)
-		{
-		}
+			//Joystick1: buttonB
+			if(joystick_states_array[0].buttonBPress)
+			{
+			}
+			if(joystick_states_array[0].buttonBRelease)
+			{
+			}
 
-		//Joystick1: buttonB
-		if(joystick_states_array[0].buttonBPress)
-		{
-		}
-		if(joystick_states_array[0].buttonBRelease)
-		{
-		}
+			//Joystick1: buttonX
+			if(joystick_states_array[0].buttonXPress)
+			{
+				// Preempt all actionlib servers.
+			}
+			if(joystick_states_array[0].buttonXButton)
+			{
+			}
+			if(joystick_states_array[0].buttonXRelease)
+			{
+			}
 
-		//Joystick1: buttonX
-		if(joystick_states_array[0].buttonXPress)
-		{
-		}
-		if(joystick_states_array[0].buttonXButton)
-		{
-		}
-		if(joystick_states_array[0].buttonXRelease)
-		{
-		}
+			//Joystick1: buttonY
+			if(joystick_states_array[0].buttonYPress)
+			{
+			}
+			if(joystick_states_array[0].buttonYButton)
+			{
+			}
+			if(joystick_states_array[0].buttonYRelease)
+			{
+			}
 
-		//Joystick1: buttonY
-		if(joystick_states_array[0].buttonYPress)
-		{
-		}
-		if(joystick_states_array[0].buttonYButton)
-		{
-		}
-		if(joystick_states_array[0].buttonYRelease)
-		{
-		}
+			//Joystick1: bumperLeft
+			if(joystick_states_array[0].bumperLeftPress)
+			{
+				//Intake down and rolling in
+			}
+			if(joystick_states_array[0].bumperLeftButton)
+			{
+			}
+			if(joystick_states_array[0].bumperLeftRelease)
+			{
+				//Intake up and stop rolling
+			}
 
-		//Joystick1: bumperLeft
-		if(joystick_states_array[0].bumperLeftPress)
-		{
-		}
-		if(joystick_states_array[0].bumperLeftButton)
-		{
-		}
-		if(joystick_states_array[0].bumperLeftRelease)
-		{
-		}
+			//Joystick1: bumperRight
+			if(joystick_states_array[0].bumperRightPress)
+			{
+				//Start shooting
+			}
+			if(joystick_states_array[0].bumperRightButton)
+			{
+			}
+			if(joystick_states_array[0].bumperRightRelease)
+			{
+				//Stop shooting
+			}
 
-		//Joystick1: bumperRight
-		if(joystick_states_array[0].bumperRightPress)
-		{
-		}
-		if(joystick_states_array[0].bumperRightButton)
-		{
-		}
-		if(joystick_states_array[0].bumperRightRelease)
-		{
-		}
+			//Joystick1: leftTrigger
+			if(joystick_states_array[0].leftTrigger >= 0.5)
+			{
+			}
+			else
+			{
+			}
 
-		//Joystick1: leftTrigger
-		if(joystick_states_array[0].leftTrigger >= 0.5)
-		{
+			std_msgs::Bool enable_pub_msg;
+
+			if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0)) //TODO Make a trigger point config value
+			{
+				enable_pub_msg.data = true;
+			}
+			else
+			{
+				enable_pub_msg.data = false;
+			}
+
+			orient_strafing_enable_pub.publish(enable_pub_msg);
+
+			std_msgs::Float64 orient_strafing_angle_msg;
+			orient_strafing_angle_msg.data = orient_strafing_angle;
+			orient_strafing_setpoint_pub.publish(orient_strafing_angle_msg);
+
+			std_msgs::Float64 imu_angle_msg;
+			imu_angle_msg.data = imu_angle;
+			orient_strafing_state_pub.publish(imu_angle_msg);
+
+			//Joystick1: rightTrigger
+			if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
+			{
+				teleop_cmd_vel->setSlowMode(true);
+			}
+			else
+			{
+				teleop_cmd_vel->setSlowMode(false);
+			}
+
+			//Joystick1: directionLeft
+			if(joystick_states_array[0].directionLeftPress)
+			{
+			}
+			if(joystick_states_array[0].directionLeftButton)
+			{
+			}
+			if(joystick_states_array[0].directionLeftRelease)
+			{
+			}
+
+			//Joystick1: directionRight
+			if(joystick_states_array[0].directionRightPress)
+			{
+				// Align for climbing?
+				// Not actually written yet.
+			}
+			if(joystick_states_array[0].directionRightButton)
+			{
+			}
+			if(joystick_states_array[0].directionRightRelease)
+			{
+			}
+
+			//Joystick1: directionUp
+			if(joystick_states_array[0].directionUpPress)
+			{
+			}
+			if(joystick_states_array[0].directionUpButton)
+			{
+			}
+			if(joystick_states_array[0].directionUpRelease)
+			{
+			}
+
+			//Joystick1: directionDown
+			if(joystick_states_array[0].directionDownPress)
+			{
+			}
+			if(joystick_states_array[0].directionDownButton)
+			{
+			}
+			if(joystick_states_array[0].directionDownRelease)
+			{
+			}
 		}
 		else
 		{
-		}
+			static ros::Time last_header_stamp = joystick_states_array[1].header.stamp;
 
-		std_msgs::Bool enable_pub_msg;
+			static controllers_2020_msgs::ClimberSrv climber_diagnostics;
+			static controllers_2020_msgs::ControlPanelSrv control_panel_diagnostics;
+			static controllers_2020_msgs::IndexerSrv indexer_diagnostics;
+			static controllers_2020_msgs::IntakeArmSrv intake_arm_diagnostics;
+			static controllers_2020_msgs::IntakeRollerSrv intake_roller_diagnostics;
+			static controllers_2020_msgs::ShooterSrv shooter_diagnostics;
+			static controllers_2020_msgs::TurretSrv turret_diagnostics;
 
-		if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0)) //TODO Make a trigger point config value
-		{
-			enable_pub_msg.data = true;
-		}
-		else
-		{
-			enable_pub_msg.data = false;
-		}
+			static bool diagnostics_initialized = false;
 
-		orient_strafing_enable_pub.publish(enable_pub_msg);
+			if(!diagnostics_initialized)
+			{
+				//Initialize the climber command
+				climber_diagnostics.request.winch_set_point = 0.0;
+				climber_diagnostics.request.climber_deploy = true;
+				climber_diagnostics.request.climber_elevator_brake = true;
 
-		std_msgs::Float64 orient_strafing_angle_msg;
-		orient_strafing_angle_msg.data = orient_strafing_angle;
-		orient_strafing_setpoint_pub.publish(orient_strafing_angle_msg);
+				//Initialize the control panel command
+				control_panel_diagnostics.request.control_panel_rotations = 0.0;
 
-		std_msgs::Float64 imu_angle_msg;
-		imu_angle_msg.data = imu_angle;
-		orient_strafing_state_pub.publish(imu_angle_msg);
+				//Initialize the indexer command
+				indexer_diagnostics.request.indexer_velocity = 0.0;
 
-		//Joystick1: rightTrigger
-		if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
-		{
-			teleop_cmd_vel->setSlowMode(true);
-		}
-		else
-		{
-			teleop_cmd_vel->setSlowMode(false);
-		}
+				//Initialize the intake command
+				intake_arm_diagnostics.request.intake_arm_extend = false;
+				intake_roller_diagnostics.request.percent_out = 0.0;
 
-		//Joystick1: directionLeft
-		if(joystick_states_array[0].directionLeftPress)
-		{
-		}
-		if(joystick_states_array[0].directionLeftButton)
-		{
-		}
-		if(joystick_states_array[0].directionLeftRelease)
-		{
-		}
+				//Initialize the shooter command
+				shooter_diagnostics.request.shooter_hood_raise = false;
+				shooter_diagnostics.request.set_velocity = 0.0;
 
-		//Joystick1: directionRight
-		if(joystick_states_array[0].directionRightPress)
-		{
-		}
-		if(joystick_states_array[0].directionRightButton)
-		{
-		}
-		if(joystick_states_array[0].directionRightRelease)
-		{
-		}
+				//Initialize the turret command
+				turret_diagnostics.request.set_point = 0.0;
 
-		//Joystick1: directionUp
-		if(joystick_states_array[0].directionUpPress)
-		{
-		}
-		if(joystick_states_array[0].directionUpButton)
-		{
-		}
-		if(joystick_states_array[0].directionUpRelease)
-		{
-		}
+				diagnostics_initialized = true;
+			}
 
-		//Joystick1: directionDown
-		if(joystick_states_array[0].directionDownPress)
-		{
-		}
-		if(joystick_states_array[0].directionDownButton)
-		{
-		}
-		if(joystick_states_array[0].directionDownRelease)
-		{
+			//Joystick2: leftStickY
+			if(abs(joystick_states_array[1].leftStickY) > diagnostics_config.left_stick_trigger_point)
+			{
+				shooter_diagnostics.request.set_velocity += (std::copysign(diagnostics_config.shooter_setpoint_rate, joystick_states_array[1].leftStickY)
+						*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				ROS_WARN_STREAM("Calling shooter controller with set_velocity = " << shooter_diagnostics.request.set_velocity
+						<< " (" << (shooter_diagnostics.request.set_velocity*30/M_PI) << " rpm)");
+				shooter_controller_client.call(shooter_diagnostics);
+			}
+
+			//Joystick2: leftStickX
+			if(abs(joystick_states_array[1].leftStickX) > diagnostics_config.left_stick_trigger_point)
+			{
+				turret_diagnostics.request.set_point += (std::copysign(diagnostics_config.turret_setpoint_rate, joystick_states_array[1].leftStickX)
+						*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				turret_diagnostics.request.set_point = std::clamp(turret_diagnostics.request.set_point, -diagnostics_config.turret_angle_limit, diagnostics_config.turret_angle_limit);
+				ROS_WARN_STREAM("Calling turret controller with set_point = " << turret_diagnostics.request.set_point);
+				turret_controller_client.call(turret_diagnostics);
+			}
+
+			//Joystick2: rightStickY
+			if(abs(joystick_states_array[1].rightStickY) > 0.5) //TODO Make a trigger point config value
+			{
+				indexer_diagnostics.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[1].leftStickY)
+						*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = " << indexer_diagnostics.request.indexer_velocity
+						<< " (" << (indexer_diagnostics.request.indexer_velocity*30/M_PI) << " rpm)");
+				indexer_controller_client.call(indexer_diagnostics);
+			}
+
+			//Joystick2: rightStickX
+			if(abs(joystick_states_array[1].rightStickX) > 0.5) //TODO Make a trigger point config value
+			{
+			}
+
+			//Joystick2: stickLeft
+			if(joystick_states_array[1].stickLeftPress)
+			{
+				shooter_diagnostics.request.set_velocity = 0.0;
+				ROS_WARN_STREAM("Calling shooter controller with set_velocity = 0.0 Stopping shooter!");
+				shooter_controller_client.call(shooter_diagnostics);
+			}
+			if(joystick_states_array[1].stickLeftButton)
+			{
+			}
+			if(joystick_states_array[1].stickLeftRelease)
+			{
+			}
+
+			//Joystick2: stickRight
+			if(joystick_states_array[1].stickRightPress)
+			{
+				indexer_diagnostics.request.indexer_velocity = 0.0;
+				ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = 0.0 Stopping indexer!");
+				indexer_controller_client.call(indexer_diagnostics);
+			}
+			if(joystick_states_array[1].stickRightButton)
+			{
+			}
+			if(joystick_states_array[1].stickRightRelease)
+			{
+			}
+
+			//Joystick2: buttonA
+			if(joystick_states_array[1].buttonAPress)
+			{
+				control_panel_diagnostics.request.control_panel_rotations = diagnostics_config.control_panel_increment;
+				ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_diagnostics.request.control_panel_rotations);
+				control_panel_controller_client.call(control_panel_diagnostics);
+				control_panel_diagnostics.request.control_panel_rotations = 0.0;
+			}
+			if(joystick_states_array[1].buttonAButton)
+			{
+			}
+			if(joystick_states_array[1].buttonARelease)
+			{
+			}
+
+			//Joystick2: buttonB
+			if(joystick_states_array[1].buttonBPress)
+			{
+				intake_roller_diagnostics.request.percent_out = 0.0;
+				ROS_WARN_STREAM("Calling intake controller with percent_out = 0.0 Stopping intake!");
+				intake_roller_controller_client.call(intake_roller_diagnostics);
+			}
+			if(joystick_states_array[1].buttonBButton)
+			{
+			}
+			if(joystick_states_array[1].buttonBRelease)
+			{
+			}
+
+			//Joystick2: buttonX
+			if(joystick_states_array[1].buttonXPress)
+			{
+			}
+			if(joystick_states_array[1].buttonXButton)
+			{
+			}
+			if(joystick_states_array[1].buttonXRelease)
+			{
+			}
+
+			//Joystick2: buttonY
+			if(joystick_states_array[1].buttonYPress)
+			{
+				intake_arm_diagnostics.request.intake_arm_extend = !intake_arm_diagnostics.request.intake_arm_extend;
+				ROS_WARN_STREAM("Calling intake server with intake_arm_extend = " << intake_arm_diagnostics.request.intake_arm_extend);
+				intake_arm_controller_client.call(intake_arm_diagnostics);
+			}
+			if(joystick_states_array[1].buttonYButton)
+			{
+			}
+			if(joystick_states_array[1].buttonYRelease)
+			{
+			}
+
+			//Joystick2: bumperLeft
+			if(joystick_states_array[1].bumperLeftPress)
+			{
+				shooter_diagnostics.request.shooter_hood_raise = !shooter_diagnostics.request.shooter_hood_raise;
+				ROS_WARN_STREAM("Calling shooter controller with shooter_hood_raise = " << shooter_diagnostics.request.shooter_hood_raise);
+				shooter_controller_client.call(shooter_diagnostics);
+			}
+			if(joystick_states_array[1].bumperLeftButton)
+			{
+			}
+			if(joystick_states_array[1].bumperLeftRelease)
+			{
+			}
+
+			//Joystick2: bumperRight
+			if(joystick_states_array[1].bumperRightPress)
+			{
+			}
+			if(joystick_states_array[1].bumperRightButton)
+			{
+				intake_roller_diagnostics.request.percent_out	+= diagnostics_config.intake_setpoint_rate*(joystick_states_array[1].header.stamp - last_header_stamp).toSec();
+				intake_roller_diagnostics.request.percent_out = std::clamp(intake_roller_diagnostics.request.percent_out, -1.0, 1.0);
+				ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_diagnostics.request.percent_out);
+				intake_roller_controller_client.call(intake_roller_diagnostics);
+			}
+			if(joystick_states_array[1].bumperRightRelease)
+			{
+			}
+
+			//Joystick2: leftTrigger
+			if(joystick_states_array[1].leftTrigger >= 0.5) //TODO Make a trigger point config value
+			{
+			}
+			else
+			{
+			}
+
+			//Joystick2: rightTrigger
+			if(joystick_states_array[1].rightTrigger >= 0.5) //TODO Make a trigger point config value
+			{
+				intake_roller_diagnostics.request.percent_out	-= diagnostics_config.intake_setpoint_rate*(joystick_states_array[1].header.stamp - last_header_stamp).toSec();
+				intake_roller_diagnostics.request.percent_out = std::clamp(intake_roller_diagnostics.request.percent_out, -1.0, 1.0);
+				ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_diagnostics.request.percent_out);
+				intake_roller_controller_client.call(intake_roller_diagnostics);
+			}
+			else
+			{
+			}
+
+			//Joystick2: directionLeft
+			if(joystick_states_array[1].directionLeftPress)
+			{
+				climber_diagnostics.request.climber_deploy = !climber_diagnostics.request.climber_deploy;
+				ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_diagnostics.request.climber_deploy);
+				climber_controller_client.call(climber_diagnostics);
+			}
+			if(joystick_states_array[1].directionLeftButton)
+			{
+			}
+			if(joystick_states_array[1].directionLeftRelease)
+			{
+			}
+
+			//Joystick2: directionRight
+			if(joystick_states_array[1].directionRightPress)
+			{
+				climber_diagnostics.request.climber_elevator_brake = !climber_diagnostics.request.climber_elevator_brake;
+				ROS_WARN_STREAM("Calling climber controller with climber_elevator_brake = " << climber_diagnostics.request.climber_elevator_brake);
+				climber_controller_client.call(climber_diagnostics);
+			}
+			if(joystick_states_array[1].directionRightButton)
+			{
+			}
+			if(joystick_states_array[1].directionRightRelease)
+			{
+			}
+
+			//Joystick2: directionUp
+			if(joystick_states_array[1].directionUpPress)
+			{
+			}
+			if(joystick_states_array[1].directionUpButton)
+			{
+				climber_diagnostics.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				climber_diagnostics.request.winch_set_point = std::clamp(climber_diagnostics.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
+				ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_diagnostics.request.winch_set_point);
+				climber_controller_client.call(climber_diagnostics);
+			}
+			if(joystick_states_array[1].directionUpRelease)
+			{
+			}
+
+			//Joystick2: directionDown
+			if(joystick_states_array[1].directionDownPress)
+			{
+			}
+			if(joystick_states_array[1].directionDownButton)
+			{
+				climber_diagnostics.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				climber_diagnostics.request.winch_set_point = std::clamp(climber_diagnostics.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
+				ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_diagnostics.request.winch_set_point);
+				climber_controller_client.call(climber_diagnostics);
+			}
+			if(joystick_states_array[1].directionDownRelease)
+			{
+			}
+
+			last_header_stamp = joystick_states_array[1].header.stamp;
 		}
 	}
 	else if(joystick_id == 1)
 	{
-		static ros::Time last_header_stamp = joystick_states_array[1].header.stamp;
-
-		static controllers_2020_msgs::ClimberSrv climber_diagnostics;
-		static controllers_2020_msgs::ControlPanelSrv control_panel_diagnostics;
-		static controllers_2020_msgs::IndexerSrv indexer_diagnostics;
-		static controllers_2020_msgs::IntakeArmSrv intake_arm_diagnostics;
-		static controllers_2020_msgs::IntakeRollerSrv intake_roller_diagnostics;
-		static controllers_2020_msgs::ShooterSrv shooter_diagnostics;
-		static controllers_2020_msgs::TurretSrv turret_diagnostics;
-
-		static bool diagnostics_initialized = false;
-
-		if(!diagnostics_initialized)
-		{
-			//Initialize the climber command
-			climber_diagnostics.request.winch_set_point = 0.0;
-			climber_diagnostics.request.climber_deploy = true;
-			climber_diagnostics.request.climber_elevator_brake = true;
-
-			//Initialize the control panel command
-			control_panel_diagnostics.request.control_panel_rotations = 0.0;
-
-			//Initialize the indexer command
-			indexer_diagnostics.request.indexer_velocity = 0.0;
-
-			//Initialize the intake command
-			intake_arm_diagnostics.request.intake_arm_extend = false;
-			intake_roller_diagnostics.request.percent_out = 0.0;
-
-			//Initialize the shooter command
-			shooter_diagnostics.request.shooter_hood_raise = false;
-			shooter_diagnostics.request.set_velocity = 0.0;
-
-			//Initialize the turret command
-			turret_diagnostics.request.set_point = 0.0;
-
-			diagnostics_initialized = true;
-		}
-
-		//Joystick2: leftStickY
-		if(abs(joystick_states_array[1].leftStickY) > diagnostics_config.left_stick_trigger_point)
-		{
-			shooter_diagnostics.request.set_velocity += (std::copysign(diagnostics_config.shooter_setpoint_rate, joystick_states_array[1].leftStickY)
-					*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			ROS_WARN_STREAM("Calling shooter controller with set_velocity = " << shooter_diagnostics.request.set_velocity
-					<< " (" << (shooter_diagnostics.request.set_velocity*30/M_PI) << " rpm)");
-			shooter_controller_client.call(shooter_diagnostics);
-		}
-
-		//Joystick2: leftStickX
-		if(abs(joystick_states_array[1].leftStickX) > diagnostics_config.left_stick_trigger_point)
-		{
-			turret_diagnostics.request.set_point += (std::copysign(diagnostics_config.turret_setpoint_rate, joystick_states_array[1].leftStickX)
-					*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			turret_diagnostics.request.set_point = std::clamp(turret_diagnostics.request.set_point, -diagnostics_config.turret_angle_limit, diagnostics_config.turret_angle_limit);
-			ROS_WARN_STREAM("Calling turret controller with set_point = " << turret_diagnostics.request.set_point);
-			turret_controller_client.call(turret_diagnostics);
-		}
-
-		//Joystick2: rightStickY
-		if(abs(joystick_states_array[1].rightStickY) > 0.5) //TODO Make a trigger point config value
-		{
-			indexer_diagnostics.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[1].leftStickY)
-					*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = " << indexer_diagnostics.request.indexer_velocity
-					<< " (" << (indexer_diagnostics.request.indexer_velocity*30/M_PI) << " rpm)");
-			indexer_controller_client.call(indexer_diagnostics);
-		}
-
-		//Joystick2: rightStickX
-		if(abs(joystick_states_array[1].rightStickX) > 0.5) //TODO Make a trigger point config value
-		{
-		}
-
-		//Joystick2: stickLeft
-		if(joystick_states_array[1].stickLeftPress)
-		{
-			shooter_diagnostics.request.set_velocity = 0.0;
-			ROS_WARN_STREAM("Calling shooter controller with set_velocity = 0.0 Stopping shooter!");
-			shooter_controller_client.call(shooter_diagnostics);
-		}
-		if(joystick_states_array[1].stickLeftButton)
-		{
-		}
-		if(joystick_states_array[1].stickLeftRelease)
-		{
-		}
-
-		//Joystick2: stickRight
-		if(joystick_states_array[1].stickRightPress)
-		{
-			indexer_diagnostics.request.indexer_velocity = 0.0;
-			ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = 0.0 Stopping indexer!");
-			indexer_controller_client.call(indexer_diagnostics);
-		}
-		if(joystick_states_array[1].stickRightButton)
-		{
-		}
-		if(joystick_states_array[1].stickRightRelease)
-		{
-		}
-
-		//Joystick2: buttonA
-		if(joystick_states_array[1].buttonAPress)
-		{
-			control_panel_diagnostics.request.control_panel_rotations = diagnostics_config.control_panel_increment;
-			ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_diagnostics.request.control_panel_rotations);
-			control_panel_controller_client.call(control_panel_diagnostics);
-			control_panel_diagnostics.request.control_panel_rotations = 0.0;
-		}
-		if(joystick_states_array[1].buttonAButton)
-		{
-		}
-		if(joystick_states_array[1].buttonARelease)
-		{
-		}
-
-		//Joystick2: buttonB
-		if(joystick_states_array[1].buttonBPress)
-		{
-			intake_roller_diagnostics.request.percent_out = 0.0;
-			ROS_WARN_STREAM("Calling intake controller with percent_out = 0.0 Stopping intake!");
-			intake_roller_controller_client.call(intake_roller_diagnostics);
-		}
-		if(joystick_states_array[1].buttonBButton)
-		{
-		}
-		if(joystick_states_array[1].buttonBRelease)
-		{
-		}
-
-		//Joystick2: buttonX
-		if(joystick_states_array[1].buttonXPress)
-		{
-		}
-		if(joystick_states_array[1].buttonXButton)
-		{
-		}
-		if(joystick_states_array[1].buttonXRelease)
-		{
-		}
-
-		//Joystick2: buttonY
-		if(joystick_states_array[1].buttonYPress)
-		{
-			intake_arm_diagnostics.request.intake_arm_extend = !intake_arm_diagnostics.request.intake_arm_extend;
-			ROS_WARN_STREAM("Calling intake server with intake_arm_extend = " << intake_arm_diagnostics.request.intake_arm_extend);
-			intake_arm_controller_client.call(intake_arm_diagnostics);
-		}
-		if(joystick_states_array[1].buttonYButton)
-		{
-		}
-		if(joystick_states_array[1].buttonYRelease)
-		{
-		}
-
-		//Joystick2: bumperLeft
-		if(joystick_states_array[1].bumperLeftPress)
-		{
-			shooter_diagnostics.request.shooter_hood_raise = !shooter_diagnostics.request.shooter_hood_raise;
-			ROS_WARN_STREAM("Calling shooter controller with shooter_hood_raise = " << shooter_diagnostics.request.shooter_hood_raise);
-			shooter_controller_client.call(shooter_diagnostics);
-		}
-		if(joystick_states_array[1].bumperLeftButton)
-		{
-		}
-		if(joystick_states_array[1].bumperLeftRelease)
-		{
-		}
-
-		//Joystick2: bumperRight
-		if(joystick_states_array[1].bumperRightPress)
-		{
-		}
-		if(joystick_states_array[1].bumperRightButton)
-		{
-			intake_roller_diagnostics.request.percent_out	+= diagnostics_config.intake_setpoint_rate*(joystick_states_array[1].header.stamp - last_header_stamp).toSec();
-			intake_roller_diagnostics.request.percent_out = std::clamp(intake_roller_diagnostics.request.percent_out, -1.0, 1.0);
-			ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_diagnostics.request.percent_out);
-			intake_roller_controller_client.call(intake_roller_diagnostics);
-		}
-		if(joystick_states_array[1].bumperRightRelease)
-		{
-		}
-
-		//Joystick2: leftTrigger
-		if(joystick_states_array[1].leftTrigger >= 0.5) //TODO Make a trigger point config value
-		{
-		}
-		else
-		{
-		}
-
-		//Joystick2: rightTrigger
-		if(joystick_states_array[1].rightTrigger >= 0.5) //TODO Make a trigger point config value
-		{
-			intake_roller_diagnostics.request.percent_out	-= diagnostics_config.intake_setpoint_rate*(joystick_states_array[1].header.stamp - last_header_stamp).toSec();
-			intake_roller_diagnostics.request.percent_out = std::clamp(intake_roller_diagnostics.request.percent_out, -1.0, 1.0);
-			ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_diagnostics.request.percent_out);
-			intake_roller_controller_client.call(intake_roller_diagnostics);
-		}
-		else
-		{
-		}
-
-		//Joystick2: directionLeft
-		if(joystick_states_array[1].directionLeftPress)
-		{
-			climber_diagnostics.request.climber_deploy = !climber_diagnostics.request.climber_deploy;
-			ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_diagnostics.request.climber_deploy);
-			climber_controller_client.call(climber_diagnostics);
-		}
-		if(joystick_states_array[1].directionLeftButton)
-		{
-		}
-		if(joystick_states_array[1].directionLeftRelease)
-		{
-		}
-
-		//Joystick2: directionRight
-		if(joystick_states_array[1].directionRightPress)
-		{
-			climber_diagnostics.request.climber_elevator_brake = !climber_diagnostics.request.climber_elevator_brake;
-			ROS_WARN_STREAM("Calling climber controller with climber_elevator_brake = " << climber_diagnostics.request.climber_elevator_brake);
-			climber_controller_client.call(climber_diagnostics);
-		}
-		if(joystick_states_array[1].directionRightButton)
-		{
-		}
-		if(joystick_states_array[1].directionRightRelease)
-		{
-		}
-
-		//Joystick2: directionUp
-		if(joystick_states_array[1].directionUpPress)
-		{
-		}
-		if(joystick_states_array[1].directionUpButton)
-		{
-			climber_diagnostics.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			climber_diagnostics.request.winch_set_point = std::clamp(climber_diagnostics.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
-			ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_diagnostics.request.winch_set_point);
-			climber_controller_client.call(climber_diagnostics);
-		}
-		if(joystick_states_array[1].directionUpRelease)
-		{
-		}
-
-		//Joystick2: directionDown
-		if(joystick_states_array[1].directionDownPress)
-		{
-		}
-		if(joystick_states_array[1].directionDownButton)
-		{
-			climber_diagnostics.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
-			climber_diagnostics.request.winch_set_point = std::clamp(climber_diagnostics.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
-			ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_diagnostics.request.winch_set_point);
-			climber_controller_client.call(climber_diagnostics);
-		}
-		if(joystick_states_array[1].directionDownRelease)
-		{
-		}
-
-		last_header_stamp = joystick_states_array[1].header.stamp;
+		// TODO Add empty button mappings here.
 	}
 }
 
