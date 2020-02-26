@@ -33,7 +33,7 @@ class GoToColorControlPanelAction {
 	protected:
 		ros::NodeHandle nh_;
         ros::Subscriber match_sub_;
-		ros::Subscriber talon_states_sub_;
+		//ros::Subscriber talon_states_sub_;
 		ros::Subscriber color_detect_sub_;
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
@@ -92,7 +92,7 @@ class GoToColorControlPanelAction {
 
 		match_sub_=nh_.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
 		color_detect_sub_=nh_.subscribe("/color_detected", 1, &GoToColorControlPanelAction::detectColorCallback, this);
-		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
+		//talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
 
 		color_algorithm_client_=nh_.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
 		control_panel_controller_client_=nh_.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
@@ -401,6 +401,7 @@ class GoToColorControlPanelAction {
 			}
 		}
 
+		/*
 		void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 		{
 			double current_sum = 0;
@@ -413,6 +414,7 @@ class GoToColorControlPanelAction {
 			}
 			avg_current = current_sum/num_drive_motors;
 		}
+		*/
 };
 int main(int argc, char** argv) {
 	//create node
