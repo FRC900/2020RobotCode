@@ -11,7 +11,7 @@ namespace intake_controller
         hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
         //Initialize intake piston joint
-        intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //read from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
+        //intake_arm_joint_ = pos_joint_iface->getHandle("intake_arm_joint"); //read from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
         //Initialize motor joints
         //get params from config file
@@ -67,7 +67,7 @@ namespace intake_controller
 		}
 
 		intake_joint_.setCommand(percent_out_cmd);
-		intake_arm_joint_.setCommand(arm_extend_double);
+		//intake_arm_joint_.setCommand(arm_extend_double);
     }
 
     void IntakeController::stopping(const ros::Time &/*time*/) {

@@ -23,6 +23,9 @@
 	</group>
 	<rosparam file="$(find behaviors)/config/2020_general_actionlib.yaml" command="load"/>
 
+	<node name="num_powercells_pub_node" pkg="behaviors" type="num_powercells_pub_node" output="screen" />
+	<param name="initial_num_powercells" value="3"/>                                 
+
 	<group ns="indexer">
 		<rosparam file="$(find behaviors)/config/indexerServer.yaml" command="load"/>
 		<node name="indexer_ac_server" pkg="behaviors" type="indexer_server" output="screen" />
@@ -35,6 +38,6 @@
 		<rosparam file="$(find behaviors)/config/intakePowercellServer.yaml" command="load"/>
 		<node name="intake_ac_server" pkg="behaviors" type="intake_powercell_server" output="screen" />
 	</group>
-	
+
 
 </launch>
