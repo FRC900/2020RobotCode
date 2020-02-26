@@ -1,4 +1,4 @@
-pub_topic: ""
-sub_topic: ""
-depth_topic: ""
-camera_info_topic: ""
+pub_topic: "obj_detection_world"
+sub_topic: "/tf_object_detection/obj_detection_msg"
+depth_topic: "/zed_goal/depth/depth_registered"
+camera_info_topic: "/zed_goal/left/camera_info"

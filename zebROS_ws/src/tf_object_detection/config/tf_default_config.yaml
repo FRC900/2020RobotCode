@@ -1,2 +1,2 @@
 min_confidence: 0.5
-image_topic: "/c920/rect_image"
+image_topic: "/zed_goal/left/image_rect_color"

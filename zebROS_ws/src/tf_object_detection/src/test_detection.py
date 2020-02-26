@@ -35,7 +35,7 @@ from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
-sub_topic = "/c920/rect_image"
+sub_topic = "/zed_goal/left/image_rect_color"
 pub_topic = "obj_detection_msg"
 
 # Takes a image, and using the tensorflow session and graph

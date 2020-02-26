@@ -1,0 +1,16 @@
+<launch>
+  <arg name="input_type" default="bag" /> <!-- video, bag, or live_camera -->
+
+  <group ns="tf_object_detection">
+    <rosparam command="load" file="$(find tf_object_detection)/config/tf_default_config.yaml" />
+    <node pkg="tf_object_detection" name="tf_object_detection" type="test_detection.py" output="screen">
+    </node>
+    <rosparam command="load" file="$(find screen_to_world)/config/tf_screen_to_world.yaml" />
+    <node pkg="screen_to_world" name="screen_to_world_node" type="screen_to_world_node" output="screen">
+    </node>
+  </group>
+
+  <node pkg="tf_object_detection" name="pub_video" type="pub_video.py" output="screen" if="$(eval input_type == 'video')">
+    <rosparam command="load" file="$(find tf_object_detection)/config/pub_video_config.yaml" />
+  </node>
+</launch>
