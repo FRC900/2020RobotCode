@@ -38,7 +38,7 @@ class GoToColorControlPanelAction {
 		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
 		
-		ros::Publisher cmd_vel_publisher_;
+		//ros::Publisher cmd_vel_publisher_;
 
 		//clients to call controllers
 		//e.g. ros::ServiceClient mech_controller_client_; //create a ros client to send requests to the controller
@@ -99,7 +99,7 @@ class GoToColorControlPanelAction {
 		climber_controller_client_=nh_.serviceClient<controllers_2020_msgs::ClimberSrv>("climber_controller", false, service_connection_header);
 
 		//initialize the publisher used to send messages to the drive base
-        cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
+        //cmd_vel_publisher_ = nh_.advertise<geometry_msgs::Twist>("swerve_drive_controller/cmd_vel", 1);
 	}
 
 		~GoToColorControlPanelAction (void)
@@ -135,6 +135,7 @@ class GoToColorControlPanelAction {
 
 		// Basic thread which spams cmd_vel to the drive base to
 		// continually drive forward during the climb
+		/*
 		void cmdVelThread()
 		{
 				ROS_INFO_STREAM("the callback is being called");
@@ -156,6 +157,7 @@ class GoToColorControlPanelAction {
 						r.sleep();
 				}
 		}
+		*/
 
 		//define the function to be executed when the actionlib server is called
 		void executeCB(const behaviors::GoToColorGoalConstPtr &goal)
@@ -186,8 +188,10 @@ class GoToColorControlPanelAction {
 				return;
 			}
 
+			/*
 			std::thread cmdVelThread(std::bind(&GoToColorControlPanelAction::cmdVelThread, this));
 			cmd_vel_foward_speed_ = 0;
+			*/
 
 			//Extend the climber to deploy the mechanism
 			if(!preempted_ && !timed_out_ && ros::ok())
@@ -205,6 +209,8 @@ class GoToColorControlPanelAction {
 
 			pause(climb_wait,"Extending climber");
 
+
+			/*
 			if(!preempted_ && !timed_out_ && ros::ok())
 				cmd_vel_forward_speed_ = drive_forward_speed; //Drive forward while we rotate
 
@@ -226,6 +232,7 @@ class GoToColorControlPanelAction {
 					r.sleep();
 				}
 			}
+			*/
 
 			double panel_rotations;
 			//Loop while calling rotation
@@ -271,7 +278,8 @@ class GoToColorControlPanelAction {
 					pause(spin_wait,"Spinning panel");
 				}
 			}
-	
+
+			/*
 			pause(friction_wait, "Holding friction while wheel stops"); //Pause a bit so we can hold friction while the wheel stops spinning
 
 			//Drive backwards
@@ -282,7 +290,8 @@ class GoToColorControlPanelAction {
 
 			//Finish -----------------------------------------------
 			stopped_ = true; //Stop driving
-			
+			*/
+
 			//Retract the climber
 			controller_2020_msgs::ClimberSrv climb_srv;
 			climb_srv.request.winch_set_point = 0;	
