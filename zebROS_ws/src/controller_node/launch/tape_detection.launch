@@ -9,7 +9,7 @@
 -->
 <launch>
   <arg name="live_camera" default="true" />
-  <arg name="camera_model" default="zed" />
+  <arg name="camera_model" default="zed2" />
 
   <!--
 		 ZED needs transforms for its cameras, but we've modified them
