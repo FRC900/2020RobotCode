@@ -290,6 +290,7 @@ class ShooterAction {
 				else if (as_.isPreemptRequested() || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
 					preempted_ = true;
+					//don't preempt the other one - the indexer actionlib server, so that we can finish shooting the current ball when preempted, before stopping
 				}
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
 					ROS_ERROR_STREAM(action_name_ << ": timed out during " << activity);

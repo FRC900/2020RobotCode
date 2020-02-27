@@ -11,7 +11,7 @@ std::shared_ptr<Linebreak> indexer_linebreak;
 std::shared_ptr<Linebreak> shooter_linebreak;
 
 //velocity variables, updated by talonStateCallback()
-double intake_velocity = 0; //default to 0
+double intake_percent_out = 0; //default to 0
 double indexer_velocity = 0;
 
 
@@ -62,8 +62,8 @@ void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 	}
 	else
 	{
-		intake_velocity = talon_state.speed[intake_idx];
-		indexer_velocity = talon_state.speed[indexer_idx];
+		intake_percent_out = talon_state.set_point[intake_idx];
+		indexer_velocity = talon_state.set_point[indexer_idx];
 	}
 }
 
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 
 	//loop and process logic
 	ros::Rate r(20);
-	double last_intake_velocity = 0;
+	double last_intake_percent_out = 0;
 	double last_indexer_velocity = 0;
 	std_msgs::UInt8 msg; //will be reused a lot
 	while(ros::ok())
@@ -108,14 +108,16 @@ int main(int argc, char **argv)
 		//TODO check that positive velocity means forward
 
 		//only do linebreak checks if this velocity is the same as last velocity - otherwise we can't guarantee the ball's direction of motion
-		if((intake_velocity > 0 && last_intake_velocity > 0) || (intake_velocity < 0 && last_intake_velocity < 0)) {
+		if((intake_percent_out > 0 && last_intake_percent_out > 0) || (intake_percent_out < 0 && last_intake_percent_out < 0)) {
 
 			//intake linebreak checks
-			if(intake_velocity > 0 && intake_linebreak->rising_edge_happened_) {
+			if(intake_percent_out > 0 && intake_linebreak->rising_edge_happened_) {
+				ROS_WARN_STREAM("Ball entered intake; percent out: " << intake_percent_out);
 				num_balls++;
 				intake_linebreak->resetPulseDetection();
 			}
-			else if(intake_velocity < 0 && intake_linebreak->falling_edge_happened_) {
+			else if(intake_percent_out < 0 && intake_linebreak->falling_edge_happened_) {
+				ROS_WARN_STREAM("Ball exited intake; percent out: " << intake_percent_out);
 				num_balls--;
 				intake_linebreak->resetPulseDetection();
 			}
@@ -125,10 +127,12 @@ int main(int argc, char **argv)
 
 			//indexer front linebreak checks
 			if(indexer_velocity > 0 && indexer_front_linebreak->rising_edge_happened_) {
+				ROS_WARN_STREAM("Ball entered indexer; speed setpoint: " << indexer_velocity);
 				num_indexer_balls++;
 				indexer_front_linebreak->resetPulseDetection();
 			}
 			if(indexer_velocity < 0 && indexer_front_linebreak->falling_edge_happened_) {
+				ROS_WARN_STREAM("Ball exited indexer; speed setpoint: " << indexer_velocity);
 				num_indexer_balls--;
 				indexer_front_linebreak->resetPulseDetection();
 			}
@@ -137,16 +141,19 @@ int main(int argc, char **argv)
 			if(indexer_velocity > 0 && indexer_linebreak->rising_edge_happened_) {
 				//NOTE: technically a pulse (rising then falling edge) while moving forward means properly stored, but can't detect that easily w/o assuming anything about velocity.
 				//Testing for a rising edge while moving forwards means essentially the same thing according to testing, so using that here
+				ROS_WARN_STREAM("Ball entered stored; speed setpoint: " << indexer_velocity);
 				num_stored_balls++;
 				indexer_linebreak->resetPulseDetection();
 			}
 			if(indexer_velocity < 0 && indexer_linebreak->falling_edge_happened_) {
+				ROS_WARN_STREAM("Ball exited stored; speed setpoint: " << indexer_velocity);
 				num_stored_balls--;
 				indexer_linebreak->resetPulseDetection();
 			}
 
 			//shooter linebreak checks
 			if(indexer_velocity > 0 && shooter_linebreak->falling_edge_happened_) {
+				ROS_WARN_STREAM("Ball left shooter; speed setpoint: " << indexer_velocity);
 				num_balls--;
 				num_indexer_balls--;
 				num_stored_balls--;
@@ -154,7 +161,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		last_intake_velocity = intake_velocity;
+		last_intake_percent_out = intake_percent_out;
 		last_indexer_velocity = indexer_velocity;
 
 

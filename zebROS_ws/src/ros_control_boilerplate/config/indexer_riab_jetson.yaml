@@ -89,6 +89,44 @@ indexer_controller:
         voltage_compensation_enable: True
         dynamic_reconfigure: True
 
+shooter_controller:
+    type: shooter_controller/ShooterController
+    shooter_joint: "shooter"
+    shooter:
+        joint: shooter_joint
+        type: talon_controllers/TalonVelocityCloseLoopController
+        feedback_type: CTRE_MagEncoder_Absolute
+        close_loop_values:
+            - {p: 0.06, i: 0.000, d: 0.0, f: 0.047, i_zone: 0}
+        invert_output: true
+        sensor_phase: false
+        peak_output_forward: 1.0
+        peak_output_reverse: -1.0
+        nominal_output_forward: 0.0
+        nominal_output_reverse: 0.0
+        voltage_compensation_enable: true
+        dynamic_reconfigure: True
+
+climber_controller:
+    type:  climber_controller_2020/ClimberController
+    winch_joint: "winch"
+    winch:
+        joint: climber_winch_joint
+        type: talon_controllers/TalonMotionMagicCloseLoopController
+        feedback_type: CTRE_MagEncoder_Absolute
+        close_loop_values:
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
+        invert_output: true
+        sensor_phase: false
+        peak_output_forward: 1.0
+        peak_output_reverse: -1.0
+        nominal_output_forward: 0.0
+        nominal_output_reverse: 0.0
+        motion_cruise_velocity: 3
+        motion_acceleration: 5
+        voltage_compensation_enable: True
+        dynamic_reconfigure: True
+
 # Used to listen for joint state published from the given topic
 # (in this case the rio) and copy them to internal copies of 
 # joint data

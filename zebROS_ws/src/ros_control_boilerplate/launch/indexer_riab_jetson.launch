@@ -11,6 +11,7 @@
 
 		<!-- Load controller settings -->
 		<rosparam file="$(find ros_control_boilerplate)/config/indexer_riab_jetson.yaml" command="load"/>
+		<rosparam file="$(find ros_control_boilerplate)/config/2020_shooter_params.yaml" command="load"/>
 		<rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller_jetson.yaml" command="load"/>
 		<!-- Load hardware interface -->
 		<node name="frcrobot_jetson_$(arg hw_or_sim)_interface" pkg="ros_control_boilerplate" type="frcrobot_$(arg hw_or_sim)_main"
