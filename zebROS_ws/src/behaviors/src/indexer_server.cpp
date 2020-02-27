@@ -40,7 +40,6 @@ class IndexerAction {
 		actionlib::SimpleActionClient<behavior_actions::IntakeAction> ac_intake_; //only used for preempting the intake actionlib server
 
 		//subscribers
-		ros::Subscriber joint_states_sub_;
 		ros::Subscriber n_indexer_balls_sub_;
 		ros::Subscriber n_stored_balls_sub_;
 
@@ -72,28 +71,6 @@ class IndexerAction {
 			{
 				timed_out_ = true;
 				ROS_ERROR_STREAM("indexer_server: timeout during - " << activity);
-			}
-		}
-
-
-		void jointStateCallback(const sensor_msgs::JointState &joint_state)
-		{
-			//update all linebreak sensors
-			if (! intake_linebreak_.update(joint_state) ) {
-				ROS_ERROR("intake linebreak update failed, preempting indexer server");
-				preempted_ = true;
-			}
-			if (! indexer_linebreak_.update(joint_state) ) {
-				ROS_ERROR("indexer linebreak update failed, preempting indexer server");
-				preempted_ = true;
-			}
-			if (! shooter_linebreak_.update(joint_state) ) {
-				ROS_ERROR("shooter linebreak update failed, preempting indexer server");
-				preempted_ = true;
-			}
-			if (! indexer_front_linebreak.update(joint_state) ) {
-				ROS_ERROR("indexer own ball linebreak update failed, preempting indexer server");
-				preempted_ = true;
 			}
 		}
 
@@ -484,7 +461,6 @@ class IndexerAction {
 			disable_intake_forwards_client_ = nh_.serviceClient<std_srvs::SetBool>("/frcrobot_jetson/intake_controller/intake_disable", false, service_connection_header);
 
 			//initialize subscribers
-			joint_states_sub_ = nh_.subscribe("/frcrobot_jetson/joint_states", 1, &IndexerAction::jointStateCallback, this);
 			n_indexer_balls_sub_ = nh_.subscribe("/num_indexer_powercells", 1, &IndexerAction::numIndexerBallsCallback, this);
 			n_stored_balls_sub_ = nh_.subscribe("/num_stored_powercells", 1, &IndexerAction::numStoredBallsCallback, this);
 		}
