@@ -210,7 +210,7 @@ namespace zv_utils {
 	    return a;
 	}
 
-	std::pair<double,double> slopeOfMasked(const ObjectType &ot, const cv::Mat &depth, const cv::Mat &mask, cv::Point2f fov) {
+	std::pair<double,double> slopeOfMasked(const ObjectType &ot, const cv::Mat &depth, const cv::Mat &mask, const image_geometry::PinholeCameraModel &model) {
 
 		CV_Assert(mask.depth() == CV_8U);
 		vector<double> slope_x_values;
@@ -224,7 +224,7 @@ namespace zv_utils {
 
 			for (int i = 0; i < depth.cols; i++) {
 				if (ptr_mask[i] && (ptr_depth[i] > 0)) {
-					cv::Point3f pos = ot.screenToWorldCoords(cv::Rect(i,j,0,0), ptr_depth[i], fov, depth.size(), 0);
+					cv::Point3f pos = ot.screenToWorldCoords(cv::Rect(i,j,0,0), ptr_depth[i], model);
 					slope_x_values.push_back(pos.x);
 					slope_y_values.push_back(pos.y);
 					slope_z_values.push_back(pos.z);
