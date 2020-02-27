@@ -41,6 +41,10 @@ class ShooterAction {
 		ros::Subscriber num_balls_sub_;
         std::atomic<int> num_balls_;
 
+		std::vector<double> dist_table_;
+		std::vector<double> speed_table_;
+		double hood_threshold_;
+
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
 		bool timed_out_;
@@ -74,42 +78,20 @@ class ShooterAction {
 			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
 		}
 
+		double lerp(double a, double b, double f)
+		{
+    		return a + f * (b - a);
+		}
+
 		bool getHoodAndVelocity(bool& hood_extended, double& shooter_speed)
 		{
 			field_obj::Detection local_goal_msg;
-			{
-				std::lock_guard<std::mutex> l(goal_msg_mutex_);
-				local_goal_msg = goal_msg_;
-			}
-
-			// use local_goal_msg here
-			// retrieve the speed_table values from config
-			/*double[][] speed_table_;
-			if(!nh.getParam("speed_table", speed_table)){
-				ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
-				speed_table = [][];
-			}*/
-
-			//initialize config values
-			std::vector<double> dist_table_;
-			if(!nh.getParam("dist_table", dist_table_)){
-				ROS_ERROR("Couldn't read dist_table in shooter_actionlib.yaml");
-			}
-
-			std::vector<double> speed_table_;
-			if(!nh.getParam("speed_table", speed_table_)){
-				ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
-			}
-
-			double hood_threshold_;
-			if(!nh.getParam("hood_threshold", hood_threshold_)){
-				ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
-				hood_threshold_ = 0.0;
-			}
-
+			std::lock_guard<std::mutex> l(goal_msg_mutex_);
+			local_goal_msg = goal_msg_;
+			
 			//get the goal object
 			geometry_msgs::Point32 goal_pos_ = null;
-			for (field_obj/Object obj : local_goal_msg.objects)
+			for (field_obj::Object obj : local_goal_msg.objects)
 			{
 				if(obj.id == "PowerSomething")
 				{
@@ -125,17 +107,15 @@ class ShooterAction {
 			double distance = sqrt(pow(x_val_, 2) sqrt(y_val_, 2));
 
 			//obtain speed and hood values
-			int counter = 0;
-			for (double d : dist_table_)
+			int counter = 1;
+			for (; counter < dist_table_.size()-1; counter++)
 			{
-				if(d == distance)
-				{
-					shooter_speed = speed_table_[counter];
+				if(dist_table_.at(counter) < distance)
 					break;
-				}
-				counter += 1;
 			}
 
+			shooter_speed = lerp(speed_table_.at(counter), speed_table_.at(counter-1), (distance-dist_table_.at(counter))/(dist_table_.at(counter-1)-dist_table_.at(counter)));
+			
 			if(distance > hood_threshold_)
 			{
 				hood_extended = true;
@@ -144,9 +124,10 @@ class ShooterAction {
 			{
 				hood_extended = false;
 			}
-
+			/*
 			hood_extended = true;
 			shooter_speed = 3;
+			*/
 			return true;
 		}
 
@@ -382,6 +363,16 @@ int main(int argc, char** argv) {
 	if (!n_params_shooter.getParam("wait_for_ready_timeout", shooter_action.wait_for_ready_timeout_)) {
 		ROS_ERROR("Could not read wait_for_ready_timeout in shooter_sever");
 		shooter_action.wait_for_ready_timeout_ = 10;
+	}
+	if(!n_params_shooter.getParam("dist_table", dist_table_)){
+		ROS_ERROR("Couldn't read dist_table in shooter_actionlib.yaml");
+	}
+	if(!n_params_shooter.getParam("speed_table", speed_table_)){
+		ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
+	}
+	if(!n_params_shooter.getParam("hood_threshold", hood_threshold_)){
+		ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
+		hood_threshold_ = 0.0;
 	}
 
 	ros::AsyncSpinner Spinner(2);
