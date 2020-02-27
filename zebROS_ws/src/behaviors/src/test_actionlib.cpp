@@ -505,6 +505,7 @@ bool callEject(bool intake_backwards, bool indexer_backwards)
 	}
 }
 
+#ifdef __linux__
 
 //function that runs when ctrl+C is pressed. Overriding the default one so that we can preempt actionlib servers when ctrl+C is pressed.
 void mySigIntHandler(int sig)
@@ -518,6 +519,7 @@ void mySigIntHandler(int sig)
 	ros::shutdown();
 }
 
+#endif
 
 int main (int argc, char **argv)
 {
@@ -610,9 +612,14 @@ int main (int argc, char **argv)
 
 	//Actually run stuff ---------------------------------
 
+#ifdef __linux__
 	ros::init(argc, argv, "test_actionlib", ros::init_options::NoSigintHandler); //last option for overriding the default ctrl+C handler
 	ros::NodeHandle nh;
 	signal(SIGINT, mySigIntHandler); //function to handle ctrl+C
+#else
+	ros::init(argc, argv, "test_actionlib");
+	ros::NodeHandle nh;
+#endif
 
 	//determine what to run and do it
 	std::string user_input;
