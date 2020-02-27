@@ -1,6 +1,6 @@
 #include <iomanip>
 #include <opencv2/highgui/highgui.hpp>
-#include "GoalDetector.hpp"
+#include "goal_detection/GoalDetector.hpp"
 #include "Utilities.hpp"
 
 using namespace std;

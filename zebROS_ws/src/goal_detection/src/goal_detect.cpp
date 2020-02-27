@@ -25,9 +25,9 @@
 #include "field_obj/Detection.h"
 #include "field_obj/Object.h"
 #include "objtype.hpp"
-#include "convert_coords.h"
+#include "goal_detection/convert_coords.h"
 
-#include "GoalDetector.hpp"
+#include "goal_detection/GoalDetector.hpp"
 #include "goal_detection/GoalDetectionConfig.h"
 #include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
 

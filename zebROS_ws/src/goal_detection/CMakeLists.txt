@@ -173,7 +173,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 
   add_library(GoalDetection
 	src/goal_detect.cpp
-    ../../../common/GoalDetector.cpp
+    src/GoalDetector.cpp
     ../../../common/Utilities.cpp
     ../../../common/objtype.cpp
     ../../../common/track3d.cpp

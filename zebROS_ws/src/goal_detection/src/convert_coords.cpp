@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "convert_coords.h"
+#include "goal_detection/convert_coords.h"
 #include <ros/ros.h>
 
 ConvertCoords::ConvertCoords(image_geometry::PinholeCameraModel model) {
