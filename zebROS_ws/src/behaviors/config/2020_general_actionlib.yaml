@@ -1,2 +1,2 @@
 actionlib_params:
-    linebreak_debounce_iterations: 3
+    linebreak_debounce_iterations: 1
