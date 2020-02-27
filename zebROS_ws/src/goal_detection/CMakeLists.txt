@@ -8,13 +8,17 @@ include ("../cmake_modules/CMakeOpt.cmake")
 ## is used, also find other catkin packages
 if (DEFINED CMAKE_TOOLCHAIN_FILE)
   find_package(catkin REQUIRED COMPONENTS
+	dynamic_reconfigure_wrapper
     field_obj
     geometry_msgs
+	image_geometry
+	image_transport
     message_filters
 	nodelet
     roscpp
     sensor_msgs
     std_msgs
+	teraranger_array
     tf2
     tf2_ros
   )
@@ -22,9 +26,9 @@ else()
   find_package(catkin REQUIRED COMPONENTS
     cv_bridge
 	dynamic_reconfigure_wrapper
-    geometry_msgs
     field_obj
     field_obj_tracker
+    geometry_msgs
 	image_geometry
 	image_transport
     message_filters
@@ -175,7 +179,6 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     src/GoalDetector.cpp
     src/Utilities.cpp
     ../../../common/hungarian.cpp
-    src/convert_coords.cpp
   )
 
   target_link_libraries(GoalDetection
