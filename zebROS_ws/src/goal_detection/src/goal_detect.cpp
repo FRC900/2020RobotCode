@@ -125,7 +125,6 @@ namespace goal_detection
 				gfd.reserve( gfd_power_port.size() + gfd_loading_bay.size() + gfd_test.size() );
 				gfd.insert( gfd.end(), gfd_power_port.begin(), gfd_power_port.end() );
 				gfd.insert( gfd.end(), gfd_loading_bay.begin(), gfd_loading_bay.end() );
-				gfd.insert( gfd.end(), gfd_test.begin(), gfd_test.end() );
 
 				field_obj::Detection gd_msg;
 

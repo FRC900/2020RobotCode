@@ -9,14 +9,14 @@ private:
   std::vector<std::pair<double, double> > beacons_;
   double boundaries_[4]; // xmin, xmax, ymin, ymax
   AssignmentProblemSolver solver_;
-  std::vector<double> distances(const std::pair<double, double> m,
-                                const std::vector<std::pair<double, double> > rel) const;
+  std::vector<double> distances(const std::pair<double, double>& m,
+                                const std::vector<std::pair<double, double> >& rel) const;
 
 public:
   std::vector<std::pair<double, double> > particle_relative(const Particle& p) const;
 
 public:
-  WorldModel(std::vector<std::pair<double, double> > beacons,
+  WorldModel(const std::vector<std::pair<double, double> >& beacons,
              double x_min, double x_max, double y_min, double y_max);
   std::vector<double> get_boundaries();
   bool is_in_world(const Particle& p) const;

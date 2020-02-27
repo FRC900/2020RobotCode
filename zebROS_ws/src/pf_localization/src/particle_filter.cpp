@@ -8,7 +8,7 @@
 #include <ros/ros.h>
 
 
-ParticleFilter::ParticleFilter(WorldModel w,
+ParticleFilter::ParticleFilter(const WorldModel& w,
                                double x_min, double x_max, double y_min, double y_max,
                                double ns, double rs, size_t n) :
                                world_(w), num_particles_(n),
@@ -23,8 +23,7 @@ void ParticleFilter::constrain_particles() {
   }
 }
 
-void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max) {
-  particles_.reserve(num_particles_);
+void ParticleFilter::init(const double x_min, const double x_max, const double y_min, const double y_max) {
   std::vector<double> bounds = world_.get_boundaries();
   double x_l = std::max(x_min, bounds[0]);
   double x_u = std::min(x_max, bounds[1]);
@@ -46,23 +45,27 @@ void ParticleFilter::init(double x_min, double x_max, double y_min, double y_max
 //Normalize weights to sum to 1
 void ParticleFilter::normalize() {
   double sum = 0;
-  for (Particle p : particles_) {
-    sum += p.weight;
+  for (const Particle& p : particles_) {
+    sum += p.weight_;
   }
   for (Particle& p : particles_) {
-    p.weight /= sum;
+    if (sum != 0) p.weight_ /= sum;
+    else p.weight_ = 1 / particles_.size();
   }
 }
 
-
-//adds random noise to particles
-void ParticleFilter::noise() {
-  std::normal_distribution<double> pos_dist(0, noise_stdev_);
+void ParticleFilter::noise_rot() {
   std::normal_distribution<double> rot_dist(0, rot_noise_stdev_);
   for (Particle& p : particles_) {
-    p.x += pos_dist(rng_);
-    p.y += pos_dist(rng_);
-    p.rot += rot_dist(rng_);
+    p.rot_ += rot_dist(rng_);
+  }
+}
+
+void ParticleFilter::noise_pos() {
+  std::normal_distribution<double> pos_dist(0, noise_stdev_);
+  for (Particle& p : particles_) {
+    p.x_ += pos_dist(rng_);
+    p.y_ += pos_dist(rng_);
   }
 }
 
@@ -71,11 +74,11 @@ void ParticleFilter::resample() {
   std::vector<Particle> new_particles;
   new_particles.reserve(num_particles_);
   for (int i = 0; i < num_particles_; i++) {
-    double r = ((double) rng_() - rng_.min()) / (rng_.max() - rng_.min());
+    const double r = ((double) rng_() - rng_.min()) / (rng_.max() - rng_.min());
     // std::cout << r << '\n';
     double a = 0;
-    for (Particle p : particles_) {
-      a += p.weight;
+    for (const Particle& p : particles_) {
+      a += p.weight_;
       if (a > r) {
         new_particles.push_back(p);
         break;
@@ -83,6 +86,7 @@ void ParticleFilter::resample() {
     }
   }
   particles_ = new_particles;
+  normalize();
 }
 
 Particle ParticleFilter::predict() {
@@ -90,43 +94,44 @@ Particle ParticleFilter::predict() {
   Particle res {0, 0, 0};
   double s = 0;
   double c = 0;
-  for (Particle& p : particles_) {
-    res.x += p.x * p.weight;
-    res.y += p.y * p.weight;
-    c += cos(p.rot) * p.weight;
-    c += sin(p.rot) * p.weight;
-    weight += p.weight;
+  for (const Particle& p : particles_) {
+    res.x_ += p.x_ * p.weight_;
+    res.y_ += p.y_ * p.weight_;
+    c += cos(p.rot_) * p.weight_;
+    s += sin(p.rot_) * p.weight_;
+    weight += p.weight_;
   }
-  res.x /= weight;
-  res.y /= weight;
+  res.x_ /= weight;
+  res.y_ /= weight;
   c /= weight;
   s /= weight;
-  res.rot = atan2(s, c);
+  res.rot_ = atan2(s, c);
   return res;
 }
 
 void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_rot) {
   for (Particle& p : particles_) {
-    // p.x += delta_x;
-    // p.y += delta_y;
-    p.rot += delta_rot;
-    p.x += delta_x * cos(p.rot) + delta_y * sin(p.rot);
-    p.y += delta_x * sin(p.rot) + delta_y * cos(p.rot);
+    // p.x_ += delta_x;
+    // p.y_ += delta_y;
+    p.rot_ += delta_rot;
+    p.x_ += delta_x * cos(p.rot_) + delta_y * sin(p.rot_);
+    p.y_ += delta_x * sin(p.rot_) + delta_y * cos(p.rot_);
   }
-  noise();
+  noise_pos();
   constrain_particles();
 }
 
 void ParticleFilter::set_rotation(double rot) {
   for (Particle& p : particles_) {
-    p.rot = rot;
+    p.rot_ = rot;
   }
+  noise_rot();
 }
 
 //assigns the reciprocal of the computed error of each particles assignment vector to the respective particle
 void ParticleFilter::assign_weights(std::vector<std::pair<double, double> > mBeacons) {
   for (Particle& p : particles_) {
-    p.weight = 1 / world_.total_distance(p, mBeacons);
+    p.weight_ = 1 / world_.total_distance(p, mBeacons);
   }
   normalize();
 }

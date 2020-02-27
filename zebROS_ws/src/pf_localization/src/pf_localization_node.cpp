@@ -15,6 +15,9 @@
 #include <vector>
 #include <utility>
 #include <XmlRpcValue.h>
+#include <cmath>
+
+#define USE_MATH_DEFINES_
 
 #define VERBOSE
 // #define EXTREME_VERBOSE
@@ -25,23 +28,22 @@ const std::string cmd_topic = "/frcrobot_jetson/swerve_drive_controller/cmd_vel_
 const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
 const std::string pub_topic = "predicted_pose";
-static ros::Publisher pub_;
 
-constexpr double pi = 3.14159;
-
+ros::Time last_time;
 double delta_x = 0;
 double delta_y = 0;
 double rot = 0;
 std::vector<std::pair<double, double> > measurement;
+ParticleFilter* pf = nullptr;
 
 double degToRad(double deg) {
-  double rad = (deg / 180) * pi;
+  double rad = (deg / 180) * M_PI;
   return rad;
 }
 
 //formats and prints particle attributes
 void print_particle(Particle p) {
-  ROS_INFO_STREAM(p.x << ", " << p.y << ", " << p.rot << ", " << p.weight);
+  ROS_INFO_STREAM(p.x_ << ", " << p.y_ << ", " << p.rot_ << ", " << p.weight_);
 }
 
 void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
@@ -50,6 +52,7 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
   tf2::convert(msg -> orientation, raw);
   tf2::Matrix3x3(raw).getRPY(roll, pitch, yaw);
   rot = degToRad(yaw);
+  pf->set_rotation(rot);
   #ifdef EXTREME_VERBOSE
   ROS_INFO("rotCallback called");
   #endif
@@ -60,18 +63,26 @@ void goalCallback(const field_obj::Detection::ConstPtr& msg){
   for(const field_obj::Object& p : msg->objects) {
     measurement.push_back(std::make_pair(p.location.y, p.location.x));
   }
+  if (measurement.size() > 0){
+    pf->assign_weights(measurement);
+    pf->resample();
+  }
   #ifdef EXTREME_VERBOSE
   ROS_INFO("goalCallback called");
   #endif
 }
 
 void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
-  double timestep = msg->header.stamp.sec;
+  double timestep = (msg->header.stamp - last_time).toSec();
   double x_vel = msg->twist.linear.x;
   double y_vel = msg->twist.linear.y;
 
   delta_x += x_vel * timestep;
   delta_y += y_vel * timestep;
+
+  last_time = msg->header.stamp;
+
+  pf->motion_update(delta_x, delta_y, 0);
 
   #ifdef EXTREME_VERBOSE
   ROS_INFO("cmdCallback called");
@@ -81,6 +92,7 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
 int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
+  last_time = ros::Time::now();
 
   #ifdef VERBOSE
   ROS_INFO_STREAM(nh_.getNamespace());
@@ -144,50 +156,40 @@ int main(int argc, char **argv) {
 
   ROS_INFO_STREAM(f_x_min << ' ' << i_x_min << ' ' << p_stdev);
 
-  beacons.reserve(xml_beacons.size());
   for (size_t i = 0; i < (unsigned) xml_beacons.size(); i++) {
     beacons.push_back(std::make_pair(xml_beacons[i][0], xml_beacons[i][1]));
   }
 
   WorldModel world(beacons, f_x_min, f_x_max, f_y_min, f_y_max);
-  ParticleFilter pf(world,
-                    i_x_min, i_x_max, i_y_min, i_y_max,
-                    p_stdev, r_stdev,
-                    num_particles);
+  pf = new ParticleFilter(world,
+                          i_x_min, i_x_max, i_y_min, i_y_max,
+                          p_stdev, r_stdev,
+                          num_particles);
 
   #ifdef VERBOSE
-  for (Particle p : pf.get_particles()) {
+  for (Particle p : pf->get_particles()) {
     print_particle(p);
   }
   ROS_INFO_STREAM("\n\n");
-  print_particle(pf.predict());
+  print_particle(pf->predict());
   ROS_INFO("pf localization initialized");
   #endif
 
-  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 10, rotCallback);
-  ros::Subscriber odom_sub = nh_.subscribe(cmd_topic, 10, cmdCallback);
-  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 10, goalCallback);
-
-  pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
+  ros::Subscriber rot_sub = nh_.subscribe(rot_topic, 1, rotCallback);
+  ros::Subscriber odom_sub = nh_.subscribe(cmd_topic, 1, cmdCallback);
+  ros::Subscriber goal_sub = nh_.subscribe(goal_pos_topic, 1, goalCallback);
+  ros::Publisher pub_ = nh_.advertise<pf_localization::pf_pose>(pub_topic, 1);
 
 
   ros::Rate rate(10);
   while (ros::ok()) {
 
-    pf.set_rotation(rot);
-    pf.motion_update(delta_x, delta_y, 0);
-    if (measurement.size() > 0){
-      pf.assign_weights(measurement);
-    }
-    Particle prediction = pf.predict();
-    if (measurement.size() > 0){
-      pf.resample();
-    }
+    Particle prediction = pf->predict();
 
     pf_localization::pf_pose pose;
-    pose.x = prediction.x;
-    pose.y = prediction.y;
-    pose.rot = prediction.rot;
+    pose.x = prediction.x_;
+    pose.y = prediction.y_;
+    pose.rot = prediction.rot_;
     pub_.publish(pose);
 
     delta_x = 0;
@@ -195,6 +197,8 @@ int main(int argc, char **argv) {
     rate.sleep();
     ros::spinOnce();
   }
+
+  delete pf;
 
   return 0;
 }
