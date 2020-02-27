@@ -149,7 +149,6 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ../../../common
-    ../../..
     include
   )
 
@@ -174,7 +173,7 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   add_library(GoalDetection
 	src/goal_detect.cpp
     src/GoalDetector.cpp
-    ../../../common/Utilities.cpp
+    src/Utilities.cpp
     ../../../common/objtype.cpp
     ../../../common/track3d.cpp
     ../../../common/kalman.cpp

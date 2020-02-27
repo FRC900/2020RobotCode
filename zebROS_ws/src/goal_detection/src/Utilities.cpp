@@ -1,4 +1,4 @@
-#include "Utilities.hpp"
+#include "goal_detection/Utilities.hpp"
 #include <numeric>
 using namespace std;
 
@@ -241,34 +241,5 @@ namespace zv_utils {
 		double z_score = (value - meanAndStddev.first) / meanAndStddev.second;
 		return 0.5 * erfc(-z_score * M_SQRT1_2);
 	}
-
-	class DataRecorder {
-		public:
-			DataRecorder(void) {}
-
-			DataRecorder(const string &file_name, const vector<string> &column_names) {
-				_data_file.open(file_name + ".csv");
-				_num_columns = column_names.size();
-				log(column_names);
-			}
-
-			~DataRecorder() { _data_file.close(); }
-
-			void log(const vector<string> &data) {
-				//this function won't do anything if the data file was not opened
-				//this makes it safe to not pass a DataRecorder to an object and it won't break everything
-
-				if(_data_file.is_open()) {
-					if(data.size() != _num_columns)
-						cerr << "Bad info log!" << endl;
-					for(size_t i = 0; i < data.size(); i++)
-						_data_file << data[i] << ",";
-					_data_file << "\n";
-				}
-			}
-		private:
-			size_t _num_columns;
-			ofstream _data_file;
-	};
 
 }
