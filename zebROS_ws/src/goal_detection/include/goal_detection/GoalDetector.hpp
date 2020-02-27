@@ -8,7 +8,7 @@
 #include "opencv2/core/core.hpp"
 #include <boost/circular_buffer.hpp>
 
-#include "track3d.hpp"
+#include "field_obj_tracker/track3d.hpp"
 
 struct DepthInfo
 {

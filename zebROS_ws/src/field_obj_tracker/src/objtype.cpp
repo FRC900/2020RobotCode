@@ -1,7 +1,7 @@
 // A class for defining objects we're trying to
 // detect.  The class stores information about shape
 // and size of the objects in real-world measurements
-#include "objtype.hpp"
+#include "field_obj_tracker/objtype.hpp"
 
 using namespace std;
 using namespace cv;

@@ -24,7 +24,7 @@
 
 #include "field_obj/Detection.h"
 #include "field_obj/Object.h"
-#include "objtype.hpp"
+#include "field_obj_tracker/objtype.hpp"
 #include "goal_detection/convert_coords.h"
 
 #include "goal_detection/GoalDetector.hpp"

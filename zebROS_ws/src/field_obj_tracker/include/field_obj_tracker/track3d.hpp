@@ -5,8 +5,8 @@
 #include <list>
 //#include <Eigen/Geometry>
 #include <boost/circular_buffer.hpp>
-#include "kalman.hpp"
-#include "objtype.hpp"
+#include "field_obj_tracker/kalman.hpp"
+#include "field_obj_tracker/objtype.hpp"
 
 const size_t TrackedObjectHistoryLength = 20;
 
