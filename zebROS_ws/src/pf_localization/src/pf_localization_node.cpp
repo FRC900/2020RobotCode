@@ -23,7 +23,7 @@
 // #define EXTREME_VERBOSE
 
 
-const std::string rot_topic = "/navx_jetson/zeroed_imu";
+const std::string rot_topic = "/imu/zeroed_imu";
 const std::string cmd_topic = "/frcrobot_jetson/swerve_drive_controller/cmd_vel_out";
 const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
