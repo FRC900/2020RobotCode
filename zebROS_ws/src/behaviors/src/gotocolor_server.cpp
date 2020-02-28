@@ -52,30 +52,36 @@ class GoToColorControlPanelAction {
 		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
-		double climb_wait;
-		double friction_wait;
-		double back_up_wait;
-		double spin_wait;
-
-		double drive_forward_speed;
-		double back_up_speed;
-
-		double avg_current;
-		double avg_current_limit;
-
-		int num_drive_motors;
-
 		std::string goal_color_ = "";
 		std::string current_color_;
 
+		/*
 		std::atomic<double> cmd_vel_forward_speed_;
         std::atomic<bool> stopped_;
+		*/
 
         //config variables, with defaults
         double server_timeout_; //overall timeout for your server
         double wait_for_server_timeout_; //timeout for waiting for other actionlib servers to become available before exiting this one
 
 	public:
+
+		double climb_wait;
+		double spin_wait;
+
+		/*
+		double drive_forward_speed;
+		double back_up_speed;
+		
+		double avg_current;
+		double avg_current_limit;
+
+		int num_drive_motors;
+
+		double friction_wait;
+		double back_up_wait;
+		*/
+
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
 		GoToColorControlPanelAction(const std::string &name, server_timeout, wait_for_server_timeout) :
 			as_(nh_, name, boost::bind(&GoToColorControlPanelAction::executeCB, this, _1), false),
@@ -203,7 +209,7 @@ class GoToColorControlPanelAction {
 				if(!climber_controller_client_.call(climb_srv))
 				{
 					ROS_ERROR_STREAM(action_name_ << ": preempt while calling climb service");
-					preempted = true;
+					preempted_ = true;
 				}
 			}
 
@@ -423,59 +429,63 @@ int main(int argc, char** argv) {
 	//get config values
 	ros::NodeHandle n;
 
-        double server_timeout = 10;
-        double wait_for_server_timeout = 10;
-
-	if (!n.getParam("/actionlib_gotocolor_params/drive_forward_speed", drive_forward_speed))
-        {
-                ROS_ERROR("Could not read drive_forward_speed in go_to_color_control_panel_server");
-                drive_forward_speed = 0.2;
-        }
-
-	if (!n.getParam("/actionlib_gotocolor_params/climb_wait_time", climb_wait))
-        {
-                ROS_ERROR("Could not read climb_wait_time in go_to_color_control_panel_server");
-                climb_wait = 1;
-        }
-
-	if (!n.getParam("/actionlib_gotocolor_params/friction_wait_time", friction_wait))
-        {
-                ROS_ERROR("Could not read friction_wait_time in go_to_color_control_panel_server");
-                friction_wait = .2;
-        }
-
-	if (!n.getParam("/actionlib_gotocolor_params/back_up_time", back_up_wait))
-        {
-                ROS_ERROR("Could not read back_up_time in go_to_color_control_panel_server");
-                back_up_wait = .5;
-        }
-
-	if (!n.getParam("/actionlib_gotocolor_params/back_up_speed", back_up_speed))
-        {
-                ROS_ERROR("Could not read back_up_time in go_to_color_control_panel_server");
-                back_up_speed = .5;
-        }
-
-	if (!n.getParam("/actionlib_gotocolor_params/avg_current_limit", avg_current_limit))
-        {
-                ROS_ERROR("Could not read avg_current_limit in go_to_color_control_panel_server");
-                avg_current_limit = .01;
-        }
-	
-	if (!n.getParam("/actionlib_gotocolor_params/num_drive_motors", num_drive_motors))
-        {
-                ROS_ERROR("Could not read num_drive_motors in go_to_color_control_panel_server");
-                num_drive_motors = 4;
-        }
-
-	if (!n.getParam("/actionlib_gotocolor_params/spin_pause", spin_wait))
-        {
-                ROS_ERROR("Could not read spin_pause in go_to_color_control_panel_server");
-                spin_wait = 1;
-        }
+    double server_timeout = 10;
+    double wait_for_server_timeout = 10;
 
 	//create the actionlib server
 	GoToColorControlPanelAction go_to_color_control_panel("go_to_color_control_panel", server_timeout, wait_for_server_timeout);
+
+	/*
+	if (!n.getParam("/actionlib_gotocolor_params/drive_forward_speed", go_to_color_control_panel.drive_forward_speed))
+        {
+                ROS_ERROR("Could not read drive_forward_speed in go_to_color_control_panel_server");
+                go_to_color_control_panel.drive_forward_speed = 0.2;
+        }
+	*/
+
+	if (!n.getParam("/actionlib_gotocolor_params/climb_wait_time", go_to_color_control_panel.climb_wait))
+        {
+                ROS_ERROR("Could not read climb_wait_time in go_to_color_control_panel_server");
+                go_to_color_control_panel.climb_wait = 1;
+        }
+
+	/*
+	if (!n.getParam("/actionlib_gotocolor_params/friction_wait_time", go_to_color_control_panel.friction_wait))
+        {
+                ROS_ERROR("Could not read friction_wait_time in go_to_color_control_panel_server");
+                go_to_color_control_panel.friction_wait = .2;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/back_up_time", go_to_color_control_panel.back_up_wait))
+        {
+                ROS_ERROR("Could not read back_up_time in go_to_color_control_panel_server");
+                go_to_color_control_panel.back_up_wait = .5;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/back_up_speed", go_to_color_control_panel.back_up_speed))
+        {
+                ROS_ERROR("Could not read back_up_time in go_to_color_control_panel_server");
+                go_to_color_control_panel.back_up_speed = .5;
+        }
+
+	if (!n.getParam("/actionlib_gotocolor_params/avg_current_limit", go_to_color_control_panel.avg_current_limit))
+        {
+                ROS_ERROR("Could not read avg_current_limit in go_to_color_control_panel_server");
+                go_to_color_control_panel.avg_current_limit = .01;
+        }
+	
+	if (!n.getParam("/actionlib_gotocolor_params/num_drive_motors", go_to_color_control_panel.num_drive_motors))
+        {
+                ROS_ERROR("Could not read num_drive_motors in go_to_color_control_panel_server");
+                go_to_color_control_panel.num_drive_motors = 4;
+        }
+	*/
+
+	if (!n.getParam("/actionlib_gotocolor_params/spin_pause", go_to_color_control_panel.spin_wait))
+        {
+                ROS_ERROR("Could not read spin_pause in go_to_color_control_panel_server");
+                go_to_color_control_panel.spin_wait = 1;
+        }
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
