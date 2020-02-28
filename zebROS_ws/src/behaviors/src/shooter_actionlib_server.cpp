@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/ShooterAction.h"
@@ -348,6 +349,11 @@ class ShooterAction {
 
 };
 
+bool sortDistDescending(std::map<std::string, double> m1, std::map<std::string, double> m2)
+{
+    return m1["dist"] > m2["dist"];
+}
+
 int main(int argc, char** argv) {
 	//create node
 	ros::init(argc, argv, "shooter_server");
@@ -380,6 +386,9 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
 		shooter_action.hood_threshold_ = 0.0;
 	}
+
+	std::sort(shooter_action.hood_up_table_.begin(), shooter_action.hood_up_table_.end(), sortDistDescending);
+    std::sort(shooter_action.hood_down_table_.begin(), shooter_action.hood_down_table_.end(), sortDistDescending);
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
