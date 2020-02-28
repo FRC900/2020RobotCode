@@ -13,7 +13,7 @@ namespace shooter_controller
         hardware_interface::PositionJointInterface *const pos_joint_iface = hw->get<hardware_interface::PositionJointInterface>();
 
         //Initialize piston joints
-        //shooter_hood_joint_ = pos_joint_iface->getHandle("shooter_hood_joint"); //joint name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
+        shooter_hood_joint_ = pos_joint_iface->getHandle("shooter_hood_joint"); //joint name comes from ros_control_boilerplate/config/[insert_year]_compbot_base_jetson.yaml
 
         //Initialize motor joints
         XmlRpc::XmlRpcValue shooter_motor_params;

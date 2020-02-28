@@ -91,7 +91,7 @@ class ShooterAction {
 			size_t counter = 1;
 			for (; counter < table.size()-1; counter++)
 				if(table.at(counter).at("dist") < dist)
-					break;		
+					break;
 			return lerp(table.at(counter).at("speed"), table.at(counter-1).at("speed"), (dist-table.at(counter).at("dist"))/(table.at(counter-1).at("dist")-table.at(counter).at("dist")));
 		}
 
@@ -128,7 +128,7 @@ class ShooterAction {
 			hood_extended = distance > hood_threshold_;
 			if(hood_extended)
 				shooter_speed = lerpTable(hood_up_table_, distance);
-			else	
+			else
 				shooter_speed = lerpTable(hood_down_table_, distance);
 
 			return true;
@@ -270,7 +270,7 @@ class ShooterAction {
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
 				state = action_client.getState().toString();
-
+				ROS_INFO_STREAM("Shooter wait for actionlib, ac_indexer_ state: " << state);
 				if(state == "PREEMPTED") {
 					ROS_ERROR_STREAM(action_name_ << ": external actionlib server returned preempted_ during " << activity);
 					preempted_ = true;
