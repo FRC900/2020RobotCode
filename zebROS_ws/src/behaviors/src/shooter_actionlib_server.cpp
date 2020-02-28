@@ -289,7 +289,7 @@ class ShooterAction {
 			while(!preempted_ && !timed_out_ && ros::ok())
 			{
 				state = action_client.getState().toString();
-
+				ROS_INFO_STREAM("Shooter wait for actionlib, ac_indexer_ state: " << state);
 				if(state == "PREEMPTED") {
 					ROS_ERROR_STREAM(action_name_ << ": external actionlib server returned preempted_ during " << activity);
 					preempted_ = true;

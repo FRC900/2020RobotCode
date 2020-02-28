@@ -11,15 +11,47 @@
 
 		<!-- Load controller settings -->
 		<rosparam file="$(find ros_control_boilerplate)/config/shooter_riab_jetson.yaml" command="load"/>
+		<rosparam file="$(find ros_control_boilerplate)/config/2020_shooter_params.yaml" command="load"/>
 		<rosparam file="$(find ros_control_boilerplate)/config/robot_code_ready_controller_jetson.yaml" command="load"/>
 		<!-- Load hardware interface -->
 		<node name="frcrobot_jetson_$(arg hw_or_sim)_interface" pkg="ros_control_boilerplate" type="frcrobot_$(arg hw_or_sim)_main"
 			output="screen" launch-prefix="$(arg launch_prefix)">
 		</node>
 
-		<!-- Load controller manager, use falcon1_controller instead of shooter_controller if want to use that -->
+		<!-- Load controller manager -->
 		<node name="ros_control_controller_manager" pkg="controller_manager" type="controller_manager" respawn="false"
-			output="screen" args="spawn shooter_controller talon_state_controller talon_config_controller joint_state_controller do2_controller joint_state_listener_controller match_state_listener_controller pdp_state_controller pcm_state_controller robot_code_ready_controller" />
+			output="screen" args="spawn indexer_controller shooter_controller turret_controller talon_state_controller talon_config_controller joint_state_controller joint_state_listener_controller match_state_listener_controller pdp_state_controller pcm_state_controller robot_code_ready_controller" />
 	</group>
+	<rosparam file="$(find behaviors)/config/2020_general_actionlib.yaml" command="load"/>
+
+	<node name="num_powercells_pub_node" pkg="behaviors" type="num_powercells_pub_node" output="screen" />
+	<param name="initial_num_powercells" value="3"/>                                 
+
+	<group ns="indexer">
+		<rosparam file="$(find behaviors)/config/indexerServer.yaml" command="load"/>
+		<node name="indexer_ac_server" pkg="behaviors" type="indexer_server" output="screen" />
+	</group>
+	<group ns="eject">
+		<rosparam file="$(find behaviors)/config/ejectServer.yaml" command="load"/>
+		<node name="eject_ac_server" pkg="behaviors" type="eject_server" output="screen" />
+	</group>
+	<group ns="powercell_intake">
+		<rosparam file="$(find behaviors)/config/intakePowercellServer.yaml" command="load"/>
+		<node name="intake_ac_server" pkg="behaviors" type="intake_powercell_server" output="screen" />
+	</group>
+	
+	<group ns="shooter">
+		<rosparam file="$(find behaviors)/config/shooter_actionlib.yaml" command="load"/>
+		<node name="shooter_ac_server" pkg="behaviors" type="shooter_actionlib_server" output="screen" />
+	</group>
+	<group ns="align_to_shoot">
+		<rosparam file="$(find behaviors)/config/align_to_shoot_actionlib.yaml" command="load"/>
+		<node name="align_to_shoot_server" pkg="behaviors" type="align_to_shoot_server" output="screen" />
+	</group>
+
+	<!-- vision align -->
+	<include file="$(find controller_node)/launch/tape_detection.launch">
+		<arg name="camera_model" value="zed2" />
+	</include>
 
 </launch>

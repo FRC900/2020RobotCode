@@ -1,4 +1,4 @@
-# ros_control_boilerplate Settings -----------------------
+p: ros_control_boilerplate Settings -----------------------
 # Settings for ros_control control loop
 generic_hw_control_loop:
   loop_hz: 100
@@ -8,14 +8,23 @@ hardware_interface:
    run_hal_robot: false
    can_interface: can0
    joints:
-       - {name: shooter_joint, type: can_talon_fx, can_id: 7,local: true} #use name: falcon1 for using the falcon controller
+       - {name: indexer_joint, type: can_talon_srx, can_id: 12, local: true} #TODO find actual can id
+       
+       - {name: turret_joint, type: can_talon_srx, can_id: 23, local: true}
+       - {name: shooter_joint, type: can_talon_fx, can_id: 7, local: true}
+       - {name: shooter_hood_joint, type: solenoid, local_hardware: false, local_update: true}
+       
        - {name: pdp, local: true, type: pdp}
-       - {name: compressor, local: true, type: compressor, pcm_id: 0}
        - {name: robot_code_ready_jetson, local: true, type: ready}
        - {name: robot_code_ready_rio, local: false, type: ready} # Probably not really needed?
-       - {name: do1, local: false, type: digital_output}
-       - {name: do2, local_update: true, local_hardware: false, type: digital_output}
-       
+       - {name: intake_joint, type: can_talon_srx, can_id: 9, local: true}
+       - {name: compressor, type: compressor, pcm_id: 0}
+
+       - {name: intake_linebreak, type: digital_input, local: false}
+       - {name: indexer_front_linebreak, type: digital_input, local: false}
+       - {name: indexer_linebreak, type: digital_input, local: false}
+       - {name: shooter_linebreak, type: digital_input, local: false}
+
 joint_state_controller:
    type:         joint_state_controller/JointStateController
    publish_rate: 100
@@ -41,6 +50,12 @@ joint_state_controller:
 # encoder state used by the hw manager and publishes it as
 # a ROS topic.  This is generic ROS stuff, so we'll have
 # to figure out what to map e.g. effort to in the Talon world
+talon_state_controller:
+   type:         talon_state_controller/TalonStateController
+   publish_rate: 100
+talon_config_controller:
+   type:         talon_config_controller/TalonConfigController
+   publish_rate: 5
 
 shooter_controller:
     type: shooter_controller/ShooterController
@@ -60,13 +75,45 @@ shooter_controller:
         voltage_compensation_enable: true
         dynamic_reconfigure: True
 
-        
-talon_state_controller:
-   type:         talon_state_controller/TalonStateController
-   publish_rate: 100
-talon_config_controller:
-   type:         talon_config_controller/TalonConfigController
-   publish_rate: 5
+turret_controller:
+    type: turret_controller/TurretController
+    turret_joint: 'turret'
+    turret_zero_timeout: 5.0
+    turret_zero_percent_output: 0.1
+    turret_zero_angle: 1.0472
+    turret:
+        type: talon_controllers/TalonMotionMagicCloseLoopController
+        joint: turret_joint
+        feedback_type: CTRE_MagEncoder_Absolute
+        close_loop_values:
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0} #not tuned
+        invert_output: true
+        sensor_phase: false
+        peak_output_forward: 1.0
+        peak_output_reverse: -1.0
+        nominal_output_forward: 0.0
+        nominal_output_reverse: 0.0
+        motion_cruise_velocity: 20
+        motion_acceleration: 100
+        voltage_compensation: true
+        dynamic_reconfigure: true
+        limit_switch_local_forward_source: "FeedbackConnector"
+        limit_switch_local_forward_normal: "NormallyOpen"
+        limit_switch_local_reverse_source: "FeedbackConnector"
+        limit_switch_local_reverse_normal: "NormallyOpen"
+        softlimit_forward_threshold: 1.0 #Placeholder value
+        softlimit_forward_enable: true
+        softlimit_reverse_threshold: -1.0 #Placeholder value
+        softlimit_reverse_enable: true 
+
+intake_controller:
+        type: intake_controller/IntakeController
+        intake_joint: "intake"
+        intake:
+                joint: intake_joint
+                type: talon_controllers/TalonPercentOutputController
+                invert_output: False
+
 
 shooter_controller:
     type: shooter_controller/ShooterController
@@ -137,37 +184,23 @@ intake_controller:
 # up with one of the names in the top-level joints list
 # above.  
 # The type is a talon_controllers/TalonController
-talon3_controller:
-    type: talon_controllers/TalonPercentOutputController
-    joint: talon3
-    dynamic_reconfigure: True
-    voltage_compensation_Enable: True
-    feedback_type: CTRE_MagEncoder_Absolute # Feedback type of the remote sensor, used for conversion to reasonable units?
-    remote_feedback_type: RemoteSensor0
-    remote_feedback_device_id0: 9
-    remote_feedback_filter0: TalonSRX_SelectedSensor
-    limit_switch_remote_forward_source: RemoteTalonSRX
-    limit_switch_remote_forward_normal: NormallyOpen
-    limit_switch_remote_forward_id: 9
-
-talon9_percentout_controller:
-    type: talon_controllers/TalonPercentOutputController
-    joint: talon9
-    feedback_type: CTRE_MagEncoder_Absolute
-    dynamic_reconfigure: True
-    voltage_compensation_Enable: True
-
-talon9_motionmagic_controller:
-    type: talon_controllers/TalonMotionMagicCloseLoopController
-    joint: talon9
-    feedback_type: CTRE_MagEncoder_Absolute
-    close_loop_values:
-        - {p: 0.0, i: 0.0, d: 0, f: 0.25, i_zone: 0}
-        - {p: 0.0, i: 0.0, d: 0, f: 0.0, i_zone: 0}
-    sensor_phase: False
-    invert_output: False
-    dynamic_reconfigure: True
-    voltage_compensation_Enable: True
+indexer_controller:
+    type:  indexer_controller/IndexerController
+    indexer_joint: "indexer"
+    indexer:
+        joint: indexer_joint
+        type: talon_controllers/TalonVelocityCloseLoopControllerInterface
+        feedback_type: CTRE_MagEncoder_Absolute
+        close_loop_values:
+            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
+        invert_output: true
+        sensor_phase: false
+        peak_output_forward: 1.0
+        peak_output_reverse: -1.0
+        nominal_output_forward: 0.0
+        nominal_output_reverse: 0.0
+        voltage_compensation_enable: True
+        dynamic_reconfigure: True
 
 # Used to listen for joint state published from the given topic
 # (in this case the rio) and copy them to internal copies of 
@@ -180,14 +213,11 @@ match_state_listener_controller:
     type:      state_listener_controller/MatchStateListenerController
     topic:     /frcrobot_rio/match_data
 
-do2_controller:
-    type: position_controllers/JointPositionController
-    joint: do2
+pcm_state_controller:
+   type:         pcm_state_controller/PCMStateController
+   publish_rate: 20
 
 pdp_state_controller:
    type:         pdp_state_controller/PDPStateController
    publish_rate: 20
 
-pcm_state_controller:
-   type : pcm_state_controller/PCMStateController
-   publish_rate: 20

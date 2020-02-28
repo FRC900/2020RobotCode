@@ -12,15 +12,16 @@ hardware_interface:
    joints:
        # Add a single unused talon on the rio to make sure keepalive signals are sent
        - {name: dummy_talon, local: false, type: can_talon_srx}
-         #- {name: talon9, local: false, type: can_talon_srx, can_id: 9}
-         #- {name: pdp, local: true, type: pdp }
-         #- {name: compressor, local: true, type: compressor, pcm_id: 0}
        - {name: robot_code_ready_jetson, local: false, type: ready}
-       - {name: robot_code_ready_rio, local: true, type: ready}
-       - {name: do1, local: true, type: digital_output, dio_channel: 1}
-       - {name: do2, local_update: false, local_hardware: true, type: digital_output, dio_channel: 2}
+       - {name: robot_code_ready_rio, local: true, type: ready} 
        - {name: joystick, type: joystick, id: 0 }
-       
+       - {name: intake_linebreak, type: digital_input, dio_channel: 0, invert: true, local: true}
+       - {name: indexer_front_linebreak, type: digital_input, dio_channel: 1, invert: true, local: true}
+       - {name: indexer_linebreak, type: digital_input, dio_channel: 2, invert: true, local: true}
+       - {name: shooter_linebreak, type: digital_input, dio_channel: 3, invert: true, local: true}
+
+       - {name: shooter_hood_joint, type: solenoid, pcm: 0, id: 4, local_hardware: true, local_update: false}
+
 joint_state_controller:
    type:         joint_state_controller/JointStateController
    publish_rate: 100
@@ -41,10 +42,6 @@ pdp_state_controller:
    type:         pdp_state_controller/PDPStateController
    publish_rate: 20
 
-pcm_state_controller:
-   type : pcm_state_controller/PCMStateController
-   publish_rate: 20
-
 match_state_controller:
    type:         match_state_controller/MatchStateController
    publish_rate: 20
@@ -56,34 +53,3 @@ robot_controller_state_controller:
 joint_state_listener_controller:
     type:      state_listener_controller/JointStateListenerController
     topic:     /frcrobot_jetson/joint_states
-
-do1_controller:
-    type: position_controllers/JointPositionController
-    joint: do1
-
-talon3_controller:
-    type: talon_controllers/TalonPercentOutputController
-    joint: talon3
-    feedback_type: CTRE_MagEncoder_Absolute
-
-talon9_controller:
-    type: talon_controllers/TalonPercentOutputController
-    joint: talon9
-    feedback_type: CTRE_MagEncoder_Absolute
-
-as726x_state_controller:
-    type: as726x_state_controller/AS726xStateController
-    joint_name: as726x
-    publish_rate: 20
-
-as726x_controller:
-    type: as726x_controller/AS726xController
-    joint_name: as726x
-    ind_led_current_limit: IND_LIMIT_1MA
-    ind_led_enable: false
-    drv_led_current_limit: DRV_LIMIT_12MA5
-    drv_led_enable: false
-    conversion_type: ONE_SHOT
-    channel_gain: GAIN_1X
-    integration_time: 10
-
