@@ -123,6 +123,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME} STATIC
+  src/convert_coords.cpp
   src/kalman.cpp
   src/objtype.cpp
   src/track3d.cpp
