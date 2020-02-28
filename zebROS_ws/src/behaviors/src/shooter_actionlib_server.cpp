@@ -4,6 +4,10 @@
 #include <atomic>
 #include <ros/console.h>
 #include <mutex>
+#include <cmath>
+#include <vector>
+#include <map>
+#include <string>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/ShooterAction.h"
@@ -100,32 +104,32 @@ class ShooterAction {
 			geometry_msgs::Point32 shooter_pos_;
 
 			//obtain distance via trig
-			double x_val_ = goal_pos_.x - shooter_pos_.x;
-			double y_val_ = goal_pos_.y - shooter_pos_.y;
-			double distance = sqrt(pow(x_val_, 2) + pow(y_val_, 2));
+			double distance = std::hypot(goal_pos_.x - shooter_pos_.x, goal_pos_.y - shooter_pos_.y);
 
 			//obtain speed and hood values
-			int counter = 1;
-			for (; counter < dist_table_.size()-1; counter++)
-			{
-				if(dist_table_.at(counter) < distance)
-					break;
-			}
-
-			shooter_speed = lerp(speed_table_.at(counter), speed_table_.at(counter-1), (distance-dist_table_.at(counter))/(dist_table_.at(counter-1)-dist_table_.at(counter)));
-
 			if(distance > hood_threshold_)
 			{
 				hood_extended = true;
+				int counter = 1;
+				for (; counter < hood_up_table_.size()-1; counter++)
+				{
+					if(hood_up_table_[counter]["dist"] < distance)
+						break;
+				}
+				shooter_speed = lerp(hood_up_table_[counter]["speed"], hood_up_table_[counter-1]["speed"], (distance-hood_up_table_[counter]["dist"])/(hood_up_table_[counter-1]["dist"]-hood_up_table_[counter]["dist"]));
+
 			}
 			else
 			{
 				hood_extended = false;
+				int counter = 1;
+				for (; counter < hood_down_table_.size()-1; counter++)
+				{
+					if(hood_down_table_[counter]["dist"] < distance)
+						break;
+				}
+				shooter_speed = lerp(hood_down_table_[counter]["speed"], hood_down_table_[counter-1]["speed"], (distance-hood_down_table_[counter]["dist"])/(hood_down_table_[counter-1]["dist"]-hood_down_table_[counter]["dist"]));
 			}
-			/*
-			hood_extended = true;
-			shooter_speed = 3;
-			*/
 			return true;
 		}
 
@@ -338,8 +342,8 @@ class ShooterAction {
 		double server_timeout_;
 		double wait_for_server_timeout_;
 		double wait_for_ready_timeout_;
-		std::vector<double> dist_table_;
-		std::vector<double> speed_table_;
+		std::vector<std::map<std::string, double>> hood_up_table_;
+		std::vector<std::map<std::string, double>> hood_down_table_;
 		double hood_threshold_;
 
 };
@@ -366,11 +370,11 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Could not read wait_for_ready_timeout in shooter_sever");
 		shooter_action.wait_for_ready_timeout_ = 10;
 	}
-	if(!n_params_shooter.getParam("dist_table", shooter_action.dist_table_)){
-		ROS_ERROR("Couldn't read dist_table in shooter_actionlib.yaml");
+	if(!n_params_shooter.getParam("hood_up_table", shooter_action.hood_up_table_)){
+		ROS_ERROR("Couldn't read hood_up_table in shooter_actionlib.yaml");
 	}
-	if(!n_params_shooter.getParam("speed_table", shooter_action.speed_table_)){
-		ROS_ERROR("Couldn't read speed_table in shooter_actionlib.yaml");
+	if(!n_params_shooter.getParam("hood_down_table", shooter_action.hood_down_table_)){
+		ROS_ERROR("Couldn't read hood_down_table in shooter_actionlib.yaml");
 	}
 	if(!n_params_shooter.getParam("hood_threshold", shooter_action.hood_threshold_)){
 		ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
