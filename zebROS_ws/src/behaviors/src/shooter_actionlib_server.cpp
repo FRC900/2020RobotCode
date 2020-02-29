@@ -112,6 +112,9 @@ class ShooterAction {
 			//TODO: GET POSITION OF SHOOTER
 			//subscribe to a node and pass in translated points
 			geometry_msgs::Point32 shooter_pos_;
+			shooter_pos_.x = 0;
+			shooter_pos_.y = 0;
+			shooter_pos_.z = 0;
 
 			//obtain distance via trig
 			const double distance = std::hypot(goal_pos_.x - shooter_pos_.x, goal_pos_.y - shooter_pos_.y);
