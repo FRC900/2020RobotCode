@@ -119,7 +119,7 @@ class ShooterAction {
 			//obtain distance via trig
 			const double distance = std::hypot(goal_pos_.x - shooter_pos_.x, goal_pos_.y - shooter_pos_.y);
 
-			if(distance > max_dist_)
+			if(distance > max_dist_ || distance < min_dist_)
 				return false;
 
 			//obtain speed and hood values
@@ -350,6 +350,7 @@ class ShooterAction {
 		std::vector<std::map<std::string, double>> hood_down_table_;
 		double hood_threshold_;
 		double max_dist_;
+		double min_dist_;
 
 };
 
@@ -448,6 +449,7 @@ int main(int argc, char** argv) {
     std::sort(shooter_action.hood_down_table_.begin(), shooter_action.hood_down_table_.end(), sortDistDescending);
 
 	shooter_action.max_dist_ = shooter_action.hood_up_table_.at(0).at("dist");
+	shooter_action.min_dist_ = shooter_action.hood_down_table_.back().at("dist");
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
