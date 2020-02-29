@@ -69,6 +69,18 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth, const
 			cout << power_port_info[i].contour_index << " cidx" << endl;
 #endif
 
+			if(objtype == POWER_PORT_2020){
+
+				Point2f tm(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y);
+
+				if(pointPolygonTest(goal_contours[i], tm, false) == 1){
+					#ifdef VERBOSE_BOILER
+						cout << "Top middle point of power port is not empty" << endl;
+					#endif
+					continue;
+				}
+			}
+
 			// If this is the first valid pair
 			// or if this pair has a higher combined
 			// confidence than the previously saved
