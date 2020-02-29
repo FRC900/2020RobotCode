@@ -64,15 +64,15 @@
 		<param name="odom1_relative" value="true" />
 -->
 		<!-- imu0 (NavX via Rio MXP): roll, pitch, yaw, x-acc, y-acc, z-acc -->
-		<!-- maybe add in r/p/y velocity? /-->
+		<!-- probably won't use roll or pitch but no harm fusing them -->
 		<param name="imu0" value="/imu/zeroed_imu" />
 		<rosparam param="imu0_config"> [false, false, false,
-                                        false, false, true, 
+                                        true,  true,  true,
                                         false, false, false,
                                         false, false, false,
                                         false, false, false]
         </rosparam>
-		<param name="imu0_differential" value="false"/>
+		<param name="imu0_differential" value="true"/>
 		<param name="imu0_relative"     value="false" />
 		<param name="imu0_nodelay"      value="true" />
 		<param name="imu0_remove_gravitational_acceleration" value="false" />

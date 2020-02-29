@@ -73,7 +73,15 @@ bool zeroSet(imu_zero::ImuZeroAngle::Request& req,
   {
 	  robot_localization::SetPose zeroPose;
 	  zeroPose.request.pose.header.stamp = ros::Time::now();
-	  zeroPose.request.pose.header.frame_id = "base_link";
+	  zeroPose.request.pose.header.frame_id = "odom";
+	  // Needs more pose.pose.pose
+	  zeroPose.request.pose.pose.pose.position.x	= 0;
+	  zeroPose.request.pose.pose.pose.position.y	= 0;
+	  zeroPose.request.pose.pose.pose.position.z	= 0;
+	  tf2::Quaternion tf2_quat;
+	  tf2_quat.setRPY(0,0,0);
+	  tf2_quat.normalize();
+	  zeroPose.request.pose.pose.pose.orientation = tf2::toMsg(tf2_quat);
 	  if (!ukf_zero_pos.call(zeroPose))
 		  ROS_ERROR("imu_zero : ukf_zero_pos call failed");
 	  //ROS_INFO("Zero pose: %s", zeroPose.response.message.c_str());
