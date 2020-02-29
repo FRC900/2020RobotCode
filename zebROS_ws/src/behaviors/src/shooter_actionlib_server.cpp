@@ -121,7 +121,7 @@ class ShooterAction {
 
 			if(distance > max_dist_ || distance < min_dist_)
 				return false;
-
+      
 			//obtain speed and hood values
 			hood_extended = distance > hood_threshold_;
 			if(hood_extended)
