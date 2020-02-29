@@ -84,17 +84,17 @@ turret_controller:
     turret:
         type: talon_controllers/TalonMotionMagicCloseLoopController
         joint: turret_joint
-        feedback_type: CTRE_MagEncoder_Absolute
+        feedback_type: QuadEncoder
         close_loop_values:
-            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0} #not tuned
+            - {p: 0.0, i: 0.000, d: 0.0, f: 4.0, i_zone: 0} #not tuned
         invert_output: true
         sensor_phase: false
         peak_output_forward: 1.0
         peak_output_reverse: -1.0
         nominal_output_forward: 0.0
         nominal_output_reverse: 0.0
-        motion_cruise_velocity: 20
-        motion_acceleration: 100
+        motion_cruise_velocity: 3.5
+        motion_acceleration: 10
         voltage_compensation: true
         dynamic_reconfigure: true
         limit_switch_local_forward_source: "FeedbackConnector"
@@ -102,9 +102,9 @@ turret_controller:
         limit_switch_local_reverse_source: "FeedbackConnector"
         limit_switch_local_reverse_normal: "NormallyOpen"
         softlimit_forward_threshold: 1.0 #Placeholder value
-        softlimit_forward_enable: true
+        softlimit_forward_enable: false
         softlimit_reverse_threshold: -1.0 #Placeholder value
-        softlimit_reverse_enable: true 
+        softlimit_reverse_enable: false 
 
 intake_controller:
         type: intake_controller/IntakeController
