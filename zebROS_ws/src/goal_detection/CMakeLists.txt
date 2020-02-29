@@ -8,36 +8,40 @@ include ("../cmake_modules/CMakeOpt.cmake")
 ## is used, also find other catkin packages
 if (DEFINED CMAKE_TOOLCHAIN_FILE)
   find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    geometry_msgs
+	dynamic_reconfigure_wrapper
     field_obj
+    geometry_msgs
+	image_geometry
+	image_transport
     message_filters
 	nodelet
-    std_msgs
+    roscpp
     sensor_msgs
+    std_msgs
+	teraranger_array
     tf2
     tf2_ros
   )
 else()
   find_package(catkin REQUIRED COMPONENTS
-    roscpp
-	image_transport
+    cv_bridge
 	dynamic_reconfigure_wrapper
     field_obj
-    message_filters
+    field_obj_tracker
     geometry_msgs
 	image_geometry
+	image_transport
+    message_filters
 	nodelet
-    std_msgs
+    roscpp
     sensor_msgs
+    std_msgs
 	teraranger_array
-    cv_bridge
     tf2
     tf2_ros
   )
 endif()
 
-find_package(orocos_kdl)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -149,7 +153,6 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ../../../common
-    ../../..
     include
   )
 
@@ -173,13 +176,9 @@ if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 
   add_library(GoalDetection
 	src/goal_detect.cpp
-    ../../../common/GoalDetector.cpp
-    ../../../common/Utilities.cpp
-    ../../../common/objtype.cpp
-    ../../../common/track3d.cpp
-    ../../../common/kalman.cpp
+    src/GoalDetector.cpp
+    src/Utilities.cpp
     ../../../common/hungarian.cpp
-    src/convert_coords.cpp
   )
 
   target_link_libraries(GoalDetection
