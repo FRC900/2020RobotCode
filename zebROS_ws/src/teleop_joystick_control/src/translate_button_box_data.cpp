@@ -51,23 +51,23 @@ void rawDataCB(const sensor_msgs::Joy::ConstPtr &raw_msg)
 	processed_msg.bottomSwitchDownPress	= !processed_msg_last.bottomSwitchDownButton	&& processed_msg.bottomSwitchDownButton;
 
 	// Creating release booleans by comparing the last publish to the current one
-	processed_msg.lockingSwitchPress	= processed_msg_last.lockingSwitchButton	&& !processed_msg.lockingSwitchButton;
-	processed_msg.topRedPress			= processed_msg_last.topRedButton			&& !processed_msg.topRedButton;
-	processed_msg.leftRedPress			= processed_msg_last.leftRedButton			&& !processed_msg.leftRedButton;
-	processed_msg.rightRedPress			= processed_msg_last.rightRedButton			&& !processed_msg.rightRedButton;
-	processed_msg.leftSwitchUpPress		= processed_msg_last.leftSwitchUpButton		&& !processed_msg.leftSwitchUpButton;
-	processed_msg.leftSwitchDownPress	= processed_msg_last.leftSwitchDownButton	&& !processed_msg.leftSwitchDownButton;
-	processed_msg.rightSwitchUpPress	= processed_msg_last.rightSwitchUpButton	&& !processed_msg.rightSwitchUpButton;
-	processed_msg.rightSwitchDownPress	= processed_msg_last.rightSwitchDownButton	&& !processed_msg.rightSwitchDownButton;
-	processed_msg.leftBluePress			= processed_msg_last.leftBlueButton			&& !processed_msg.leftBlueButton;
-	processed_msg.rightBluePress		= processed_msg_last.rightBlueButton		&& !processed_msg.rightBlueButton;
-	processed_msg.yellowPress			= processed_msg_last.yellowButton			&& !processed_msg.yellowButton;
-	processed_msg.leftGreenPress		= processed_msg_last.leftGreenButton		&& !processed_msg.leftGreenButton;
-	processed_msg.rightGreenPress		= processed_msg_last.rightGreenButton		&& !processed_msg.rightGreenButton;
-	processed_msg.topGreenPress			= processed_msg_last.topGreenButton			&& !processed_msg.topGreenButton;
-	processed_msg.bottomGreenPress		= processed_msg_last.bottomGreenButton		&& !processed_msg.bottomGreenButton;
-	processed_msg.bottomSwitchUpPress	= processed_msg_last.bottomSwitchUpButton	&& !processed_msg.bottomSwitchUpButton;
-	processed_msg.bottomSwitchDownPress	= processed_msg_last.bottomSwitchDownButton	&& !processed_msg.bottomSwitchDownButton;
+	processed_msg.lockingSwitchRelease		= processed_msg_last.lockingSwitchButton	&& !processed_msg.lockingSwitchButton;
+	processed_msg.topRedRelease				= processed_msg_last.topRedButton			&& !processed_msg.topRedButton;
+	processed_msg.leftRedRelease			= processed_msg_last.leftRedButton			&& !processed_msg.leftRedButton;
+	processed_msg.rightRedRelease			= processed_msg_last.rightRedButton			&& !processed_msg.rightRedButton;
+	processed_msg.leftSwitchUpRelease		= processed_msg_last.leftSwitchUpButton		&& !processed_msg.leftSwitchUpButton;
+	processed_msg.leftSwitchDownRelease		= processed_msg_last.leftSwitchDownButton	&& !processed_msg.leftSwitchDownButton;
+	processed_msg.rightSwitchUpRelease		= processed_msg_last.rightSwitchUpButton	&& !processed_msg.rightSwitchUpButton;
+	processed_msg.rightSwitchDownRelease	= processed_msg_last.rightSwitchDownButton	&& !processed_msg.rightSwitchDownButton;
+	processed_msg.leftBlueRelease			= processed_msg_last.leftBlueButton			&& !processed_msg.leftBlueButton;
+	processed_msg.rightBlueRelease			= processed_msg_last.rightBlueButton		&& !processed_msg.rightBlueButton;
+	processed_msg.yellowRelease				= processed_msg_last.yellowButton			&& !processed_msg.yellowButton;
+	processed_msg.leftGreenRelease			= processed_msg_last.leftGreenButton		&& !processed_msg.leftGreenButton;
+	processed_msg.rightGreenRelease			= processed_msg_last.rightGreenButton		&& !processed_msg.rightGreenButton;
+	processed_msg.topGreenRelease			= processed_msg_last.topGreenButton			&& !processed_msg.topGreenButton;
+	processed_msg.bottomGreenRelease		= processed_msg_last.bottomGreenButton		&& !processed_msg.bottomGreenButton;
+	processed_msg.bottomSwitchUpRelease		= processed_msg_last.bottomSwitchUpButton	&& !processed_msg.bottomSwitchUpButton;
+	processed_msg.bottomSwitchDownRelease	= processed_msg_last.bottomSwitchDownButton	&& !processed_msg.bottomSwitchDownButton;
 
 	// So that processed_msg is published every time a new raw message is translated
 	processed_data_pub.publish(processed_msg);

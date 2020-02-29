@@ -15,6 +15,8 @@
 #include "teleop_joystick_control/RobotOrient.h"
 #include "teleop_joystick_control/OrientStrafingAngle.h"
 
+#include "frc_msgs/ButtonBoxState.h"
+
 #include <controllers_2020_msgs/ClimberSrv.h>
 #include <controllers_2020_msgs/ControlPanelSrv.h>
 #include <controllers_2020_msgs/IndexerSrv.h>
@@ -88,6 +90,10 @@ bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::R
 {
 	orient_strafing_angle = req.angle;
 	return true;
+}
+
+void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& event)
+{
 }
 
 void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& event)
@@ -726,11 +732,13 @@ int main(int argc, char **argv)
 	{
 		std::stringstream s;
 		s << "/teleop/translator";
-		s << j;
+		s << (j+1);
 		s << "/joystick_states";
 		topic_array.push_back(s.str());
 		subscriber_array.push_back(n.subscribe(topic_array[j], 1, &evaluateCommands));
 	}
+
+	ros::Subscriber button_box_sub = n.subscribe("button_box_translator/button_box_states", 1, &buttonBoxCallback);
 
 	ROS_WARN("joy_init");
 
