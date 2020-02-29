@@ -30,9 +30,11 @@ const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 const std::string pub_topic = "predicted_pose";
 
 ros::Time last_time;
+ros::Time last_measurement;
 double delta_x = 0;
 double delta_y = 0;
 double rot = 0;
+double noise_delta_t = 0;  // if the time since the last measurement is greater than this, positional noise will not be applied
 std::vector<std::pair<double, double> > measurement;
 ParticleFilter* pf = nullptr;
 
@@ -67,6 +69,7 @@ void goalCallback(const field_obj::Detection::ConstPtr& msg){
     pf->assign_weights(measurement);
     pf->resample();
   }
+  last_measurement = ros::Time::now();
   #ifdef EXTREME_VERBOSE
   ROS_INFO("goalCallback called");
   #endif
@@ -83,6 +86,7 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
   last_time = msg->header.stamp;
 
   pf->motion_update(delta_x, delta_y, 0);
+  if ((ros::Time::now() - last_measurement).toSec() < noise_delta_t) pf->noise_pos();
 
   #ifdef EXTREME_VERBOSE
   ROS_INFO("cmdCallback called");
@@ -93,6 +97,7 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
   last_time = ros::Time::now();
+  last_measurement = ros::Time::now();
 
   #ifdef VERBOSE
   ROS_INFO_STREAM(nh_.getNamespace());
@@ -104,8 +109,19 @@ int main(int argc, char **argv) {
 
   std::vector<std::pair<double, double> > beacons;
 
-  nh_.getParam("num_particles", num_particles);
-  nh_.getParam("beacons", xml_beacons);
+  if (!nh_.getParam("noise_delta_t", noise_delta_t)) {
+    ROS_ERROR("noise_delta_t not specified");
+    return -1;
+  }
+
+  if (!nh_.getParam("num_particles", num_particles)) {
+    ROS_ERROR("num_particles not specified");
+    return -1;
+  }
+  if (!nh_.getParam("beacons", xml_beacons)) {
+    ROS_ERROR("failed to load beacons");
+    return -1;
+  }
 
   if (!nh_.getParam("field_dims/x_min", f_x_min)) {
     ROS_ERROR("field dimension not specified");

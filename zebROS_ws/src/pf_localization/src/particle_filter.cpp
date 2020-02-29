@@ -117,7 +117,6 @@ void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_
     p.x_ += delta_x * cos(p.rot_) + delta_y * sin(p.rot_);
     p.y_ += delta_x * sin(p.rot_) + delta_y * cos(p.rot_);
   }
-  noise_pos();
   constrain_particles();
 }
 

@@ -1,3 +1,5 @@
+noise_delta_t: 1.0
+
 field_dims:
   x_min: 0.0
   x_max: 4.0
