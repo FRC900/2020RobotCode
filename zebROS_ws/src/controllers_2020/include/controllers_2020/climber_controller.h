@@ -57,12 +57,12 @@ class ClimberController : public controller_interface::MultiInterfaceController<
 			bool cmdService(controllers_2020_msgs::ClimberSrv::Request &req,
 							controllers_2020_msgs::ClimberSrv::Response &res);
         private:
-			talon_controllers::TalonMotionMagicCloseLoopControllerInterface winch_joint_; //TODO correct type?
+			talon_controllers::TalonPercentOutputControllerInterface winch_joint_; //TODO correct type?
 			hardware_interface::JointHandle deploy_joint_; //piston to deploy the climber
 			hardware_interface::JointHandle brake_joint_; //piston brake
 
 			ros::ServiceServer climber_service_;
-			realtime_tools::RealtimeBuffer<ClimberCommand> cmd_buffer_;
+			realtime_tools::RealtimeBuffer<ClimberCommand> percent_out_cmd_buffer_;
 
 
 }; //class

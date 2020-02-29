@@ -36,15 +36,13 @@ namespace climber_controller_2020
     }
 
     void ClimberController::starting(const ros::Time &/*time*/) {
-        // Set the initial position of the winch to 0
-        winch_joint_.setSelectedSensorPosition(0.0);
         //give command buffer(s) an initial value
-        cmd_buffer_.writeFromNonRT(ClimberCommand(0.0, false, true));
+        percent_out_cmd_buffer_.writeFromNonRT(ClimberCommand(0.0, false, true));
     }
 
     void ClimberController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
         //grab value from command buffer(s)
-        const ClimberCommand cmd = *(cmd_buffer_.readFromRT());
+        const ClimberCommand cmd = *(percent_out_cmd_buffer_.readFromRT());
 		const bool brake_cmd = cmd.brake_;
 		const bool deploy_cmd = cmd.deploy_;
 		const double winch_set_point_cmd = cmd.winch_set_point_;
