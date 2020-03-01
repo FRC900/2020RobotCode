@@ -178,8 +178,7 @@ turret_controller:
     turret_zero_percent_output: 0.2
     turret_zero_angle: 0.5472
 
-    turret:
-        type: talon_controllers/TalonPercentOutputController #changes to motion magic after zeroing
+    turret: #starts as a percent out controller then switches to motion magic after zeroing
         joint: turret_joint
         feedback_type: QuadEncoder
         close_loop_values:
@@ -202,7 +201,6 @@ turret_controller:
         softlimit_forward_enable: true
         softlimit_reverse_threshold: -0.2
         softlimit_reverse_enable: true
-        status_10_motionmagic_period: 10
 
 # This one creates the /talon_states topic necessary in ROS
 # It doesn't actually control anything, just takes the internal

@@ -144,7 +144,7 @@ class AlignToShootAction
 			}
 		}
 
-		double getTurretPosition()
+		bool getTurretPosition(double &setpoint)
 		{
 			//use goal_msg and angle of robot to determine turret position
 			// will need to implement zed -> robot -> turret transforms, and probably do that transform in the goalDetectionCallback
@@ -172,8 +172,6 @@ class AlignToShootAction
 					found_goal = true;
 				}
 			}
-
-			double setpoint = 0; //default if ZED can't find goal
 
 			if(found_goal)
 			{
@@ -203,8 +201,12 @@ class AlignToShootAction
 				setpoint = align_angle * ratio_setpoint_to_angle;
 				ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
 			}
+			else
+			{
+				return false;
+			}
 
-			return setpoint;
+			return true;
 		}
 
 		void executeCB(const behavior_actions::AlignToShootGoalConstPtr &goal)
@@ -229,11 +231,18 @@ class AlignToShootAction
 			ROS_INFO_STREAM(action_name_ << ": calling turret controller");
 			//call controller client, if failed set preempted_ = true, and log an error msg
 			controllers_2020_msgs::TurretSrv srv;
-			srv.request.set_point = getTurretPosition();
-			if (!turret_controller_client_.call(srv))
+			if( ! getTurretPosition(srv.request.set_point))
 			{
-				ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
+				ROS_ERROR("Align server - couldn't get turret setpoint");
 				preempted_ = true;
+			}
+			if(!preempted_ && !timed_out_ && ros::ok())
+			{
+				if (!turret_controller_client_.call(srv))
+				{
+					ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
+					preempted_ = true;
+				}
 			}
 
 			const double start_turret_time = ros::Time::now().toSec();
