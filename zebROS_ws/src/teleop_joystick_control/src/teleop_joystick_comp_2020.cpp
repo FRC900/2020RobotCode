@@ -364,6 +364,8 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	if(button_box.bottomSwitchDownRelease)
 	{
 	}
+
+	last_header_stamp = button_box.header.stamp;
 }
 
 void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& event)
@@ -618,8 +620,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick2: leftStickY
 			if(abs(joystick_states_array[0].leftStickY) > diagnostics_config.left_stick_trigger_point)
 			{
-				shooter_controller_cmd.request.set_velocity += (std::copysign(diagnostics_config.shooter_setpoint_rate, joystick_states_array[1].leftStickY)
-						*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				shooter_controller_cmd.request.set_velocity += (std::copysign(diagnostics_config.shooter_setpoint_rate, joystick_states_array[0].leftStickY)
+						*(joystick_states_array[0].header.stamp - last_header_stamp).toSec());
 				ROS_WARN_STREAM("Calling shooter controller with set_velocity = " << shooter_controller_cmd.request.set_velocity
 						<< " (" << (shooter_controller_cmd.request.set_velocity*30/M_PI) << " rpm)");
 				shooter_controller_client.call(shooter_controller_cmd);
@@ -628,8 +630,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick2: leftStickX
 			if(abs(joystick_states_array[0].leftStickX) > diagnostics_config.left_stick_trigger_point)
 			{
-				turret_controller_cmd.request.set_point += (std::copysign(diagnostics_config.turret_setpoint_rate, joystick_states_array[1].leftStickX)
-						*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				turret_controller_cmd.request.set_point += (std::copysign(diagnostics_config.turret_setpoint_rate, joystick_states_array[0].leftStickX)
+						*(joystick_states_array[0].header.stamp - last_header_stamp).toSec());
 				turret_controller_cmd.request.set_point = std::clamp(turret_controller_cmd.request.set_point, -diagnostics_config.turret_angle_limit, diagnostics_config.turret_angle_limit);
 				ROS_WARN_STREAM("Calling turret controller with set_point = " << turret_controller_cmd.request.set_point);
 				turret_controller_client.call(turret_controller_cmd);
@@ -638,8 +640,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick2: rightStickY
 			if(abs(joystick_states_array[0].rightStickY) > 0.5) //TODO Make a trigger point config value
 			{
-				indexer_controller_cmd.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[1].leftStickY)
-						*(joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				indexer_controller_cmd.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[0].leftStickY)
+						*(joystick_states_array[0].header.stamp - last_header_stamp).toSec());
 				ROS_WARN_STREAM("Calling indexer controller with indexer_velocity = " << indexer_controller_cmd.request.indexer_velocity
 						<< " (" << (indexer_controller_cmd.request.indexer_velocity*30/M_PI) << " rpm)");
 				indexer_controller_client.call(indexer_controller_cmd);
@@ -752,7 +754,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 			if(joystick_states_array[0].bumperRightButton)
 			{
-				intake_roller_controller_cmd.request.percent_out	+= diagnostics_config.intake_setpoint_rate*(joystick_states_array[1].header.stamp - last_header_stamp).toSec();
+				intake_roller_controller_cmd.request.percent_out	+= diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
 				intake_roller_controller_cmd.request.percent_out = std::clamp(intake_roller_controller_cmd.request.percent_out, -1.0, 1.0);
 				ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_controller_cmd.request.percent_out);
 				intake_roller_controller_client.call(intake_roller_controller_cmd);
@@ -772,7 +774,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick2: rightTrigger
 			if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
 			{
-				intake_roller_controller_cmd.request.percent_out	-= diagnostics_config.intake_setpoint_rate*(joystick_states_array[1].header.stamp - last_header_stamp).toSec();
+				intake_roller_controller_cmd.request.percent_out	-= diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
 				intake_roller_controller_cmd.request.percent_out = std::clamp(intake_roller_controller_cmd.request.percent_out, -1.0, 1.0);
 				ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_controller_cmd.request.percent_out);
 				intake_roller_controller_client.call(intake_roller_controller_cmd);
@@ -815,7 +817,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 			if(joystick_states_array[0].directionUpButton)
 			{
-				climber_controller_cmd.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				climber_controller_cmd.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((joystick_states_array[0].header.stamp - last_header_stamp).toSec());
 				climber_controller_cmd.request.winch_set_point = std::clamp(climber_controller_cmd.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
 				ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_controller_cmd.request.winch_set_point);
 				climber_controller_client.call(climber_controller_cmd);
@@ -830,7 +832,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 			if(joystick_states_array[0].directionDownButton)
 			{
-				climber_controller_cmd.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((joystick_states_array[1].header.stamp - last_header_stamp).toSec());
+				climber_controller_cmd.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((joystick_states_array[0].header.stamp - last_header_stamp).toSec());
 				climber_controller_cmd.request.winch_set_point = std::clamp(climber_controller_cmd.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
 				ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_controller_cmd.request.winch_set_point);
 				climber_controller_client.call(climber_controller_cmd);
