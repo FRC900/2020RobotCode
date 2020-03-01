@@ -16,6 +16,9 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <sensor_msgs/Imu.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/PointStamped.h>
 
 //create the class for the actionlib server
 class AlignToShootAction
@@ -39,6 +42,9 @@ class AlignToShootAction
 
 		//clients to call controllers
 		ros::ServiceClient turret_controller_client_;
+
+                tf2_ros::Buffer tf_buffer_;
+                std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -64,6 +70,9 @@ class AlignToShootAction
 
 			//initialize client used to call controllers
 			turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
+
+                        // initialize transform listener
+                        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
 		}
 
 		~AlignToShootAction(void)
@@ -151,7 +160,44 @@ class AlignToShootAction
 				std::lock_guard<std::mutex> l(goal_msg_mutex_);
 				local_goal_msg = goal_msg_;
 			}
-			return 2;
+
+			//get the goal position
+			geometry_msgs::Point32 goal_pos_;
+			for (const field_obj::Object &obj : local_goal_msg.objects)
+			{
+				if(obj.id == "PowerPort")
+				{
+					goal_pos_ = obj.location;
+				}
+			}
+
+                        // find transformed goal position
+                        geometry_msgs::PointStamped goal_pos_from_zed;
+                        goal_pos_from_zed.header = local_goal_msg.header;
+                        goal_pos_from_zed.point.x = goal_pos_.x;
+                        goal_pos_from_zed.point.y = goal_pos_.y;
+                        goal_pos_from_zed.point.z = goal_pos_.z;
+
+                        geometry_msgs::PointStamped transformed_goal_pos;
+                        geometry_msgs::TransformStamped zed_to_turret_transform;
+                        try {
+                            zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
+                            tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
+                        }
+                        catch (tf2::TransformException &ex) {
+                            ROS_WARN("%s", ex.what());
+                            return 0;
+                        }
+                        ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
+                        ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
+
+			const double align_angle = atan2(transformed_goal_pos.point.y, transformed_goal_pos.point.x);
+			ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
+			double ratio_setpoint_to_angle = 0.907 / (M_PI / 2); //range of turret movement = pi/2 radians = 0.907 setpoint units
+			const double setpoint = align_angle * ratio_setpoint_to_angle;
+			ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+
+			return setpoint;
 		}
 
 		void executeCB(const behavior_actions::AlignToShootGoalConstPtr &goal)
