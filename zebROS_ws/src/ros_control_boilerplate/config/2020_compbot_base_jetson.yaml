@@ -201,6 +201,7 @@ turret_controller:
         softlimit_forward_enable: true
         softlimit_reverse_threshold: -0.2
         softlimit_reverse_enable: true
+        conversion_factor: 0.577  # Range of turret motion = pi/2 radians = 0.907 motor units. 0.907 / (pi/2) = 0.577
 
 # This one creates the /talon_states topic necessary in ROS
 # It doesn't actually control anything, just takes the internal
