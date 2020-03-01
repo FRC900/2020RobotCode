@@ -164,39 +164,46 @@ class AlignToShootAction
 
 			//get the goal position
 			geometry_msgs::Point32 goal_pos_;
+			bool found_goal = false;
 			for (const field_obj::Object &obj : local_goal_msg.objects)
 			{
-				if(obj.id == "PowerPort")
+				if(obj.id == "power_port")
 				{
 					goal_pos_ = obj.location;
+					found_goal = true;
 				}
 			}
 
-                        // find transformed goal position
-                        geometry_msgs::PointStamped goal_pos_from_zed;
-                        goal_pos_from_zed.header = local_goal_msg.header;
-                        goal_pos_from_zed.point.x = goal_pos_.x;
-                        goal_pos_from_zed.point.y = goal_pos_.y;
-                        goal_pos_from_zed.point.z = goal_pos_.z;
+			double setpoint = 0; //default if ZED can't find goal
 
-                        geometry_msgs::PointStamped transformed_goal_pos;
-                        geometry_msgs::TransformStamped zed_to_turret_transform;
-                        try {
-                            zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
-                            tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
-                        }
-                        catch (tf2::TransformException &ex) {
-                            ROS_WARN("%s", ex.what());
-                            return 0;
-                        }
-                        ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
-                        ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
+			if(found_goal)
+			{
+                            // find transformed goal position
+                            geometry_msgs::PointStamped goal_pos_from_zed;
+                            goal_pos_from_zed.header = local_goal_msg.header;
+                            goal_pos_from_zed.point.x = goal_pos_.x;
+                            goal_pos_from_zed.point.y = goal_pos_.y;
+                            goal_pos_from_zed.point.z = goal_pos_.z;
 
-			const double align_angle = atan2(transformed_goal_pos.point.y, transformed_goal_pos.point.x);
-			ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
-			double ratio_setpoint_to_angle = 0.907 / (M_PI / 2); //range of turret movement = pi/2 radians = 0.907 setpoint units
-			const double setpoint = align_angle * ratio_setpoint_to_angle;
-			ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+                            geometry_msgs::PointStamped transformed_goal_pos;
+                            geometry_msgs::TransformStamped zed_to_turret_transform;
+                            try {
+                                zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
+                                tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
+                            }
+                            catch (tf2::TransformException &ex) {
+                                ROS_WARN("%s", ex.what());
+                                return 0;
+                            }
+                            ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
+                            ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
+
+                            const double align_angle = atan2(transformed_goal_pos.point.y, transformed_goal_pos.point.x);
+				ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
+				double ratio_setpoint_to_angle = 0.907 / (M_PI / 2); //range of turret movement = pi/2 radians = 0.907 setpoint units
+				setpoint = align_angle * ratio_setpoint_to_angle;
+				ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+			}
 
 			return setpoint;
 		}
