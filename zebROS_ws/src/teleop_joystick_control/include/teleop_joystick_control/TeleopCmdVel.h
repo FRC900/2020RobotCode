@@ -68,13 +68,13 @@ class TeleopCmdVel
 			//ROS_INFO_STREAM(__LINE__ << " "  << xSpeed << " " << ySpeed);
 
 			// Rotation is a bit simpler since it is just one independent axis
-			const double rightStickX = dead_zone_check(event.rightStickX, config.joystick_deadzone);
+			const double trigger_diff = (event.leftTrigger - event.rightTrigger);
 
 			// Scale the input by a power function to increase resolution
 			// of the slower settings. Use copysign to preserve the sign
 			// of the original input (keeps the direction correct)
-			double rotation = pow(rightStickX, config.rotation_pow);
-			rotation  = copysign(rotation, event.rightStickX);
+			double rotation = pow(trigger_diff, config.rotation_pow);
+			rotation  = copysign(rotation, trigger_diff);
 			rotation *= max_rot;
 
 			// Rate-limit changes in rotation
@@ -104,7 +104,7 @@ class TeleopCmdVel
 
 				vel.linear.x = rotatedJoyVector[1];
 				vel.linear.y = rotatedJoyVector[0];
-				vel.angular.z = -rotation;
+				vel.angular.z = rotation;
 			}
 
 			return vel;

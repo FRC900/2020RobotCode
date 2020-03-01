@@ -94,6 +94,7 @@ bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::R
 
 void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& event)
 {
+	ROS_INFO_STREAM("Button Box callback running!");
 }
 
 void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& event)
@@ -124,6 +125,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 	//Only do this for the first joystick
 	if(joystick_id == 0)
 	{
+		ROS_INFO_STREAM("js0 callback running!");
+
 		bool dummy_bb_toggle = false;
 
 		if(!dummy_bb_toggle /*TODO Replace with actual toggle value*/)
@@ -168,6 +171,14 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: buttonB
 			if(joystick_states_array[0].buttonBPress)
 			{
+			}
+			if(joystick_states_array[0].buttonBButton)
+			{
+				teleop_cmd_vel->setSlowMode(true);
+			}
+			else
+			{
+				teleop_cmd_vel->setSlowMode(false);
 			}
 			if(joystick_states_array[0].buttonBRelease)
 			{
@@ -254,11 +265,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: rightTrigger
 			if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
 			{
-				teleop_cmd_vel->setSlowMode(true);
 			}
 			else
 			{
-				teleop_cmd_vel->setSlowMode(false);
 			}
 
 			//Joystick1: directionLeft
