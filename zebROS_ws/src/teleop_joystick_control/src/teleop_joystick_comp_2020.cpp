@@ -114,7 +114,7 @@ bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::R
 
 void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& event)
 {
-	ROS_INFO_STREAM("Button Box callback running!");
+	//ROS_INFO_STREAM("Button Box callback running!");
 
 	button_box = *(event.getMessage());
 
