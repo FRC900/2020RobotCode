@@ -79,32 +79,33 @@ turret_controller:
     type: turret_controller/TurretController
     turret_joint: 'turret'
     turret_zero_timeout: 5.0
-    turret_zero_percent_output: 0.1
-    turret_zero_angle: 1.0472
+    turret_zero_percent_output: 0.2
+    turret_zero_angle: 0.5472
     turret:
-        type: talon_controllers/TalonMotionMagicCloseLoopController
+        type: talon_controllers/TalonPercentOutputController
         joint: turret_joint
         feedback_type: QuadEncoder
         close_loop_values:
-            - {p: 0.0, i: 0.000, d: 0.0, f: 4.0, i_zone: 0} #not tuned
+            - {p: 2.8, i: 0.000, d: 0.0, f: 5.0, i_zone: 0} #tuned for the cart
         invert_output: true
         sensor_phase: false
         peak_output_forward: 1.0
         peak_output_reverse: -1.0
-        nominal_output_forward: 0.0
-        nominal_output_reverse: 0.0
-        motion_cruise_velocity: 3.5
-        motion_acceleration: 10
+        nominal_output_forward: 0.1
+        nominal_output_reverse: -0.1
+        motion_cruise_velocity: 2.5
+        motion_acceleration: 5.0
         voltage_compensation: true
         dynamic_reconfigure: true
         limit_switch_local_forward_source: "FeedbackConnector"
         limit_switch_local_forward_normal: "NormallyOpen"
         limit_switch_local_reverse_source: "FeedbackConnector"
         limit_switch_local_reverse_normal: "NormallyOpen"
-        softlimit_forward_threshold: 1.0 #Placeholder value
+        softlimit_forward_threshold: 0.45
         softlimit_forward_enable: false
-        softlimit_reverse_threshold: -1.0 #Placeholder value
-        softlimit_reverse_enable: false 
+        softlimit_reverse_threshold: -0.2
+        softlimit_reverse_enable: false
+        status_10_motionmagic_period: 10
 
 intake_controller:
         type: intake_controller/IntakeController

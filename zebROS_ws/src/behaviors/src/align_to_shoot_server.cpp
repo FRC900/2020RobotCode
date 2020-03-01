@@ -4,6 +4,7 @@
 #include <atomic>
 #include <mutex>
 #include <ros/console.h>
+#include <cmath>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/AlignToShootAction.h"
@@ -151,7 +152,24 @@ class AlignToShootAction
 				std::lock_guard<std::mutex> l(goal_msg_mutex_);
 				local_goal_msg = goal_msg_;
 			}
-			return 2;
+
+			//get the goal position
+			geometry_msgs::Point32 goal_pos_;
+			for (const field_obj::Object &obj : local_goal_msg.objects)
+			{
+				if(obj.id == "PowerPort")
+				{
+					goal_pos_ = obj.location;
+				}
+			}
+
+			const double align_angle = atan2(goal_pos_.y, goal_pos_.x);
+			ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
+			double ratio_setpoint_to_angle = 0.907 / (M_PI / 2); //range of turret movement = pi/2 radians = 0.907 setpoint units
+			const double setpoint = align_angle * ratio_setpoint_to_angle;
+			ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+
+			return setpoint;
 		}
 
 		void executeCB(const behavior_actions::AlignToShootGoalConstPtr &goal)
