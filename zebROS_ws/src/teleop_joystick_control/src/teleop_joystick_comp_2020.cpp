@@ -140,6 +140,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			sendRobotZero = false;
 		}
 
+		teleop_cmd_vel->setSlowMode(joystick_states_array[0].buttonAButton);
+
 		//Joystick1: buttonA
 		if(joystick_states_array[0].buttonAPress)
 		{
@@ -215,7 +217,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 
 		if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0)) //TODO Make a trigger point config value
 		{
-			enable_pub_msg.data = true;
+			enable_pub_msg.data = false;
 		}
 		else
 		{
@@ -235,11 +237,11 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick1: rightTrigger
 		if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
 		{
-			teleop_cmd_vel->setSlowMode(true);
+	//		teleop_cmd_vel->setSlowMode(true);
 		}
 		else
 		{
-			teleop_cmd_vel->setSlowMode(false);
+	//		teleop_cmd_vel->setSlowMode(false);
 		}
 
 		//Joystick1: directionLeft

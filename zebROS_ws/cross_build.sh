@@ -12,9 +12,8 @@ elif [[ ! $ROS_ROOT = "$HOME/wpilib/2020/roborio/arm-frc2020-linux-gnueabi/opt/r
 fi
 
 catkin config --profile cross -x _isolated --install --blacklist \
-	field_obj_tracker \
 	goal_detection \
-	pf_localization \
+	field_obj_tracker \
 	realsense2_camera \
 	realsense2_description \
 	robot_visualizer \
