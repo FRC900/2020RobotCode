@@ -111,7 +111,7 @@ class ShooterAction {
 			geometry_msgs::Point32 goal_pos_;
 			for (const field_obj::Object &obj : local_goal_msg.objects)
 			{
-				if(obj.id == "PowerPort")
+				if(obj.id == "power_port")
 				{
 					goal_pos_ = obj.location;
 				}
