@@ -51,7 +51,7 @@ hardware_interface:
        - {name: joystick_rumble, type: rumble, rumble_port: 0}
        - {name: robot_code_ready_jetson, local: false, type: ready}
        - {name: robot_code_ready_rio, local: true, type: ready}
-       - {name: green_led, local: true, type: digital_output, dio_channel: 0}
+       - {name: green_led, local: true, type: digital_output, dio_channel: 4}
          
 # Create controllers for each joint
 #
