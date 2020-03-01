@@ -33,7 +33,11 @@
 
 std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 
+bool diagnostics_mode = false;
+
 double orient_strafing_angle = 0.0;
+
+frc_msgs::ButtonBoxState button_box;
 
 // array of joystick_states messages for multiple joysticks
 std::vector <frc_msgs::JoystickState> joystick_states_array;
@@ -95,6 +99,183 @@ bool orientStrafingAngleCallback(teleop_joystick_control::OrientStrafingAngle::R
 void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& event)
 {
 	ROS_INFO_STREAM("Button Box callback running!");
+
+	button_box = *(event.getMessage());
+
+	if(button_box.lockingSwitchPress)
+	{
+	}
+	if(button_box.lockingSwitchButton)
+	{
+		diagnostics_mode = true;
+	}
+	else
+	{
+		diagnostics_mode = false;
+	}
+	if(button_box.lockingSwitchRelease)
+	{
+	}
+
+	if(button_box.topRedPress)
+	{
+	}
+	if(button_box.topRedButton)
+	{
+	}
+	if(button_box.topRedRelease)
+	{
+	}
+
+	if(button_box.leftRedPress)
+	{
+	}
+	if(button_box.leftRedButton)
+	{
+	}
+	if(button_box.leftRedRelease)
+	{
+	}
+
+	if(button_box.rightRedPress)
+	{
+	}
+	if(button_box.rightRedButton)
+	{
+	}
+	if(button_box.rightRedRelease)
+	{
+	}
+
+	if(button_box.leftSwitchUpPress)
+	{
+	}
+	if(button_box.leftSwitchUpButton)
+	{
+	}
+	if(button_box.leftSwitchUpRelease)
+	{
+	}
+
+	if(button_box.leftSwitchDownPress)
+	{
+	}
+	if(button_box.leftSwitchDownButton)
+	{
+	}
+	if(button_box.leftSwitchDownRelease)
+	{
+	}
+
+	if(button_box.rightSwitchUpPress)
+	{
+	}
+	if(button_box.rightSwitchUpButton)
+	{
+	}
+	if(button_box.rightSwitchUpRelease)
+	{
+	}
+
+	if(button_box.rightSwitchDownPress)
+	{
+	}
+	if(button_box.rightSwitchDownButton)
+	{
+	}
+	if(button_box.rightSwitchDownRelease)
+	{
+	}
+
+	if(button_box.leftBluePress)
+	{
+	}
+	if(button_box.leftBlueButton)
+	{
+	}
+	if(button_box.leftBlueRelease)
+	{
+	}
+
+	if(button_box.rightBluePress)
+	{
+	}
+	if(button_box.rightBlueButton)
+	{
+	}
+	if(button_box.rightBlueRelease)
+	{
+	}
+
+	if(button_box.yellowPress)
+	{
+	}
+	if(button_box.yellowButton)
+	{
+	}
+	if(button_box.yellowRelease)
+	{
+	}
+
+	if(button_box.leftGreenPress)
+	{
+	}
+	if(button_box.leftGreenButton)
+	{
+	}
+	if(button_box.leftGreenRelease)
+	{
+	}
+
+	if(button_box.rightGreenPress)
+	{
+	}
+	if(button_box.rightGreenButton)
+	{
+	}
+	if(button_box.rightGreenRelease)
+	{
+	}
+
+	if(button_box.topGreenPress)
+	{
+	}
+	if(button_box.topGreenButton)
+	{
+	}
+	if(button_box.topGreenRelease)
+	{
+	}
+
+	if(button_box.bottomGreenPress)
+	{
+	}
+	if(button_box.bottomGreenButton)
+	{
+	}
+	if(button_box.bottomGreenRelease)
+	{
+	}
+
+	if(button_box.bottomSwitchUpPress)
+	{
+	}
+	if(button_box.bottomSwitchUpButton)
+	{
+	}
+	if(button_box.bottomSwitchUpRelease)
+	{
+	}
+
+	if(button_box.bottomSwitchDownPress)
+	{
+	}
+	if(button_box.bottomSwitchDownButton)
+	{
+	}
+	if(button_box.bottomSwitchDownRelease)
+	{
+	}
 }
 
 void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& event)
