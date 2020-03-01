@@ -4,11 +4,6 @@
 #include <talon_state_msgs/TalonState.h>
 #include <std_msgs/UInt8.h>
 
-//linebreaks, need to initialize in main() after the node handle is created, but using shared pointers to make them global (so jointStateCallback() can access)
-std::shared_ptr<Linebreak> intake_linebreak;
-std::shared_ptr<Linebreak> indexer_front_linebreak;
-std::shared_ptr<Linebreak> indexer_linebreak;
-std::shared_ptr<Linebreak> shooter_linebreak;
 
 //velocity variables, updated by talonStateCallback()
 double intake_percent_out = 0; //default to 0
@@ -16,22 +11,6 @@ double indexer_velocity = 0;
 
 
 //subscriber callback functions
-
-void jointStateCallback(const sensor_msgs::JointState &joint_state)
-{
-	if(!intake_linebreak->update(joint_state)) {
-		ROS_ERROR("Num balls publisher node failed to update intake linebreak");
-	}
-	if(!indexer_front_linebreak->update(joint_state)) {
-		ROS_ERROR("Num balls publisher node failed to update indexer front linebreak");
-	}
-	if(!indexer_linebreak->update(joint_state)) {
-		ROS_ERROR("Num balls publisher node failed to update indexer linebreak");
-	}
-	if(!shooter_linebreak->update(joint_state)) {
-		ROS_ERROR("Num balls publisher node failed to update shooter linebreak");
-	}
-}
 
 void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 {
@@ -75,13 +54,12 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 
 	//initialize linebreaks
-	intake_linebreak = std::make_shared<Linebreak>("intake_linebreak");
-	indexer_front_linebreak = std::make_shared<Linebreak>("indexer_front_linebreak");
-	indexer_linebreak = std::make_shared<Linebreak>("indexer_linebreak");
-	shooter_linebreak = std::make_shared<Linebreak>("shooter_linebreak");
+	Linebreak intake_linebreak("intake_linebreak");
+	Linebreak indexer_front_linebreak("indexer_front_linebreak");
+	Linebreak indexer_linebreak("indexer_linebreak");
+	Linebreak shooter_linebreak("shooter_linebreak");
 
 	//subscribers
-	ros::Subscriber joint_states_sub = nh.subscribe("/frcrobot_jetson/joint_states", 1, jointStateCallback);
 	ros::Subscriber talon_states_sub = nh.subscribe("/frcrobot_jetson/talon_states", 1, talonStateCallback);
 
 	//publishers
@@ -111,53 +89,53 @@ int main(int argc, char **argv)
 		if((intake_percent_out > 0 && last_intake_percent_out > 0) || (intake_percent_out < 0 && last_intake_percent_out < 0)) {
 
 			//intake linebreak checks
-			if(intake_percent_out > 0 && intake_linebreak->rising_edge_happened_) {
+			if(intake_percent_out > 0 && intake_linebreak.rising_edge_happened_) {
 				ROS_WARN_STREAM("Ball entered intake; percent out: " << intake_percent_out);
 				num_balls++;
-				intake_linebreak->resetPulseDetection();
+				intake_linebreak.resetPulseDetection();
 			}
-			else if(intake_percent_out < 0 && intake_linebreak->falling_edge_happened_) {
+			else if(intake_percent_out < 0 && intake_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball exited intake; percent out: " << intake_percent_out);
 				num_balls--;
-				intake_linebreak->resetPulseDetection();
+				intake_linebreak.resetPulseDetection();
 			}
 		}
 
 		if((indexer_velocity > 0 && last_indexer_velocity > 0) || (indexer_velocity < 0 && last_indexer_velocity < 0)) {
 
 			//indexer front linebreak checks
-			if(indexer_velocity > 0 && indexer_front_linebreak->rising_edge_happened_) {
+			if(indexer_velocity > 0 && indexer_front_linebreak.rising_edge_happened_) {
 				ROS_WARN_STREAM("Ball entered indexer; speed setpoint: " << indexer_velocity);
 				num_indexer_balls++;
-				indexer_front_linebreak->resetPulseDetection();
+				indexer_front_linebreak.resetPulseDetection();
 			}
-			if(indexer_velocity < 0 && indexer_front_linebreak->falling_edge_happened_) {
+			if(indexer_velocity < 0 && indexer_front_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball exited indexer; speed setpoint: " << indexer_velocity);
 				num_indexer_balls--;
-				indexer_front_linebreak->resetPulseDetection();
+				indexer_front_linebreak.resetPulseDetection();
 			}
 
 			//indexer storage linebreak checks
-			if(indexer_velocity > 0 && indexer_linebreak->rising_edge_happened_) {
+			if(indexer_velocity > 0 && indexer_linebreak.rising_edge_happened_) {
 				//NOTE: technically a pulse (rising then falling edge) while moving forward means properly stored, but can't detect that easily w/o assuming anything about velocity.
 				//Testing for a rising edge while moving forwards means essentially the same thing according to testing, so using that here
 				ROS_WARN_STREAM("Ball entered stored; speed setpoint: " << indexer_velocity);
 				num_stored_balls++;
-				indexer_linebreak->resetPulseDetection();
+				indexer_linebreak.resetPulseDetection();
 			}
-			if(indexer_velocity < 0 && indexer_linebreak->falling_edge_happened_) {
+			if(indexer_velocity < 0 && indexer_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball exited stored; speed setpoint: " << indexer_velocity);
 				num_stored_balls--;
-				indexer_linebreak->resetPulseDetection();
+				indexer_linebreak.resetPulseDetection();
 			}
 
 			//shooter linebreak checks
-			if(indexer_velocity > 0 && shooter_linebreak->falling_edge_happened_) {
+			if(indexer_velocity > 0 && shooter_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball left shooter; speed setpoint: " << indexer_velocity);
 				num_balls--;
 				num_indexer_balls--;
 				num_stored_balls--;
-				shooter_linebreak->resetPulseDetection();
+				shooter_linebreak.resetPulseDetection();
 			}
 		}
 
@@ -177,10 +155,10 @@ int main(int argc, char **argv)
 
 
 		//reset linebreak detection so we know that any rising/falling edges happened after the last iteration of the loop
-		intake_linebreak->resetPulseDetection();
-		indexer_front_linebreak->resetPulseDetection();
-		indexer_linebreak->resetPulseDetection();
-		shooter_linebreak->resetPulseDetection();
+		intake_linebreak.resetPulseDetection();
+		indexer_front_linebreak.resetPulseDetection();
+		indexer_linebreak.resetPulseDetection();
+		shooter_linebreak.resetPulseDetection();
 
 		//ros stuff
 		ros::spinOnce();

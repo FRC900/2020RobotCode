@@ -513,10 +513,6 @@ void mySigIntHandler(int sig)
 	//preempt all actionlib servers
 	ROS_WARN("Preempting all actionlib servers");
 	actionlib::SimpleActionClient<behavior_actions::IntakeAction>("/powercell_intake/powercell_intake_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
-	actionlib::SimpleActionClient<behavior_actions::IndexerAction>("/indexer/indexer_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
-	actionlib::SimpleActionClient<behavior_actions::EjectAction>("/eject/eject_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
-	actionlib::SimpleActionClient<behavior_actions::ShooterAction>("/shooter/shooter_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
-	actionlib::SimpleActionClient<behavior_actions::AlignToShootAction>("/align_to_shoot/align_to_shoot_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
 
 	ROS_ERROR("Calling shutdown");
 	//stop this node
@@ -524,7 +520,6 @@ void mySigIntHandler(int sig)
 }
 
 #endif
-
 
 int main (int argc, char **argv)
 {
