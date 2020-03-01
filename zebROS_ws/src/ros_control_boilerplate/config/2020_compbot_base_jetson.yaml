@@ -197,9 +197,9 @@ turret_controller:
         limit_switch_local_forward_normal: "NormallyOpen"
         limit_switch_local_reverse_source: "FeedbackConnector"
         limit_switch_local_reverse_normal: "NormallyOpen"
-        softlimit_forward_threshold: 0.45
+        softlimit_forward_threshold: 0.2
         softlimit_forward_enable: true
-        softlimit_reverse_threshold: -0.2
+        softlimit_reverse_threshold: -0.45
         softlimit_reverse_enable: true
         conversion_factor: 0.577  # Range of turret motion = pi/2 radians = 0.907 motor units. 0.907 / (pi/2) = 0.577
 
