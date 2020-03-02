@@ -221,7 +221,10 @@
    <item>
     <widget class="QLabel" name="n_balls_display">
      <property name="text">
-      <string>Num Balls Display</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;Couldn't&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;find #&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;balls&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="pixmap">
+      <pixmap resource="resource.qrc">:/images/5_balls.png</pixmap>
      </property>
     </widget>
    </item>
@@ -231,7 +234,7 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="resource.qrc">:/images/yellow_circle.png</pixmap>
+      <pixmap>:/images/yellow_circle.png</pixmap>
      </property>
     </widget>
    </item>
@@ -252,6 +255,7 @@
  </widget>
  <resources>
   <include location="resource.qrc"/>
+  <include location="../../../../../.designer/backup/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

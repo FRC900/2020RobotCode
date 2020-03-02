@@ -10,9 +10,12 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup
 from python_qt_binding.QtCore import QCoreApplication
 from python_qt_binding.QtGui import QPixmap 
+import resource_rc
+
 from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
 import std_msgs.msg
+
 
 class Dashboard(Plugin):
 
@@ -79,17 +82,22 @@ class Dashboard(Plugin):
         # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        self.sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
+        self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
 
         # publish thread
         publish_thread = threading.Thread(target=self.publish_thread) #args=(self,))
         publish_thread.start()
 
         # number balls display
-        label = self._widget.n_balls_display
-        yellow_circle = QPixmap("~/2020RobotCode/zebROS_ws/src/rqt_dashboard/src/rqt_dashboard/yellow_circle.png")
-        label.setPixmap(yellow_circle)
-        print(yellow_circle.isNull())
+        self.zero_balls = QPixmap(":/images/0_balls.png")
+        self.one_ball = QPixmap(":/images/1_ball.png")
+        self.two_balls = QPixmap(":/images/2_balls.png")
+        self.three_balls = QPixmap(":/images/3_balls.png")
+        self.four_balls = QPixmap(":/images/4_balls.png")
+        self.five_balls = QPixmap(":/images/5_balls.png")
+        self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
+        self._widget.n_balls_display.setPixmap(self.five_balls)
+        self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
         
 
         # Show _widget.windowTitle on left-top of each plugin (when 
@@ -125,6 +133,25 @@ class Dashboard(Plugin):
 	    self._widget.auto_state_display.setText("Error")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
 
+
+    def nBallsCallback(self, msg):
+        display = self._widget.n_balls_display
+        if msg.data == 0:
+            display.setPixmap(self.zero_balls)
+        elif msg.data == 1:
+            display.setPixmap(self.one_ball)
+        elif msg.data == 2:
+            display.setPixmap(self.two_balls)
+        elif msg.data == 3:
+            display.setPixmap(self.three_balls)
+        elif msg.data == 4:
+            display.setPixmap(self.four_balls)
+        elif msg.data == 5:
+            display.setPixmap(self.five_balls)
+        elif msg.data > 5:
+            display.setPixmap(self.more_than_five_balls)
+        else:
+            display.setText("Couldn't read # balls")
 
 
     def setImuAngle(self):
