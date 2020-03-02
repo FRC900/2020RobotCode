@@ -189,8 +189,8 @@ class AlignToShootAction
 					tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
 				}
 				catch (tf2::TransformException &ex) {
-					ROS_WARN("%s", ex.what());
-					return 0;
+					ROS_WARN("Align to shoot server failed to do ZED->turret transform - %s", ex.what());
+					return false;
 				}
 				ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
 				ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
