@@ -63,7 +63,7 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 void goalCallback(const field_obj::Detection::ConstPtr& msg){
   measurement.clear();
   for(const field_obj::Object& p : msg->objects) {
-    measurement.push_back(std::make_pair(p.location.y, p.location.x));
+    measurement.push_back(std::make_pair(p.location.x, p.location.y));
   }
   if (measurement.size() > 0){
     pf->assign_weights(measurement);
@@ -86,7 +86,10 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
   last_time = msg->header.stamp;
 
   pf->motion_update(delta_x, delta_y, 0);
-  if ((ros::Time::now() - last_measurement).toSec() < noise_delta_t) pf->noise_pos();
+  if ((ros::Time::now() - last_measurement).toSec() < noise_delta_t) {
+    pf->noise_pos();
+    pf->noise_rot();
+  }
 
   #ifdef EXTREME_VERBOSE
   ROS_INFO("cmdCallback called");

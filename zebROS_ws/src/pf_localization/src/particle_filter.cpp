@@ -50,7 +50,7 @@ void ParticleFilter::normalize() {
   }
   for (Particle& p : particles_) {
     if (sum != 0) p.weight_ /= sum;
-    else p.weight_ = 1 / particles_.size();
+    else p.weight_ = 1.0 / particles_.size();
   }
 }
 
