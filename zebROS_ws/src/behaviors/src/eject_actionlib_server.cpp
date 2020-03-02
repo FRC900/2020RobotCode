@@ -15,8 +15,6 @@
 
 #include "behaviors/linebreak.h" //contains the Linebreak class, which has logic for processing linebreak signals
 
-#include "behaviors/linebreak.h" //contains the Linebreak class, which has logic for processing linebreak signals
-
 //create the class for the actionlib server
 class EjectAction {
 	protected:

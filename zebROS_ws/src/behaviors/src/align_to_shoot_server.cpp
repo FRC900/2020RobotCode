@@ -4,7 +4,6 @@
 #include <atomic>
 #include <mutex>
 #include <ros/console.h>
-#include <cmath>
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/AlignToShootAction.h"
