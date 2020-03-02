@@ -63,7 +63,7 @@ shooter_controller:
     shooter:
         joint: shooter_joint
         type: talon_controllers/TalonVelocityCloseLoopController
-        feedback_type: CTRE_MagEncoder_Absolute
+        feedback_type: IntegratedSensor
         close_loop_values:
             - {p: 0.06, i: 0.000, d: 0.0, f: 0.047, i_zone: 0}
         invert_output: true
@@ -79,16 +79,16 @@ turret_controller:
     type: turret_controller/TurretController
     turret_joint: 'turret'
     turret_zero_timeout: 5.0
-    turret_zero_percent_output: 0.2
-    turret_zero_angle: 0.5472
-    turret:
-        type: talon_controllers/TalonPercentOutputController
+    turret_zero_percent_output: -0.2
+    turret_zero_angle: -0.5472
+
+    turret: #starts as a percent out controller then switches to motion magic after zeroing
         joint: turret_joint
         feedback_type: QuadEncoder
         close_loop_values:
             - {p: 2.8, i: 0.000, d: 0.0, f: 5.0, i_zone: 0} #tuned for the cart
-        invert_output: true
-        sensor_phase: false
+        invert_output: false
+        sensor_phase: true
         peak_output_forward: 1.0
         peak_output_reverse: -1.0
         nominal_output_forward: 0.1
@@ -101,11 +101,11 @@ turret_controller:
         limit_switch_local_forward_normal: "NormallyOpen"
         limit_switch_local_reverse_source: "FeedbackConnector"
         limit_switch_local_reverse_normal: "NormallyOpen"
-        softlimit_forward_threshold: 0.45
-        softlimit_forward_enable: false
-        softlimit_reverse_threshold: -0.2
-        softlimit_reverse_enable: false
-        status_10_motionmagic_period: 10
+        softlimit_forward_threshold: 0.2
+        softlimit_forward_enable: true
+        softlimit_reverse_threshold: -0.45
+        softlimit_reverse_enable: true
+        conversion_factor: 0.577  # Range of turret motion = pi/2 radians = 0.907 motor units. 0.907 / (pi/2) = 0.577
 
 intake_controller:
         type: intake_controller/IntakeController
