@@ -37,6 +37,7 @@
 std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 
 bool diagnostics_mode = false;
+bool green_led_on = true;
 
 double orient_strafing_angle = 0.0;
 
@@ -52,6 +53,8 @@ std::vector <std::string> topic_array;
 ros::Publisher orient_strafing_enable_pub;
 ros::Publisher orient_strafing_setpoint_pub;
 ros::Publisher orient_strafing_state_pub;
+
+ros::Publisher green_led_pub;
 
 teleop_joystick_control::TeleopJoystickCompConfig config;
 teleop_joystick_control::TeleopJoystickCompDiagnosticsConfig diagnostics_config;
@@ -76,6 +79,8 @@ controllers_2020_msgs::IntakeRollerSrv intake_roller_controller_cmd;
 controllers_2020_msgs::ShooterSrv shooter_controller_cmd;
 controllers_2020_msgs::TurretSrv turret_controller_cmd;
 
+
+
 std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::EjectAction>> eject_ac;
 
 double imu_angle;
@@ -92,7 +97,7 @@ void imuCallback(const sensor_msgs::Imu &imuState)
 		imu_angle = -yaw;
 }
 
-void preemptActionlibServers()
+void preemptActionlibServers(void)
 {
 }
 
@@ -992,6 +997,8 @@ int main(int argc, char **argv)
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
 
+	green_led_pub = n.advertise<std_msgs::Float64>("/frcrobot_rio/green_led_controller/command", 1);
+
 	orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("orient_strafing/pid_enable", 1);
 	orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("orient_strafing/setpoint", 1);
 	orient_strafing_state_pub = n.advertise<std_msgs::Float64>("orient_strafing/state", 1);
@@ -1002,6 +1009,8 @@ int main(int argc, char **argv)
 	ros::ServiceServer robot_orient_service = n.advertiseService("robot_orient", orientCallback);
 
 	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
+
+	eject_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::EjectAction>>("/eject/eject_server", true);
 
 	climber_controller_client = n.serviceClient<controllers_2020_msgs::ClimberSrv>("/frcrobot_jetson/climber_controller_2020/climber_command");
 	indexer_controller_client = n.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command");
