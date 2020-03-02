@@ -200,7 +200,15 @@ class AlignToShootAction
 				ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
 				double ratio_setpoint_to_angle = 0.907 / (M_PI / 2); //range of turret movement = pi/2 radians = 0.907 setpoint units
 				setpoint = align_angle * ratio_setpoint_to_angle;
-				ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+                                if(setpoint < turret_soft_limit_reverse_ || setpoint > turret_soft_limit_forward_)
+                                {
+                                    ROS_ERROR_STREAM("Align server - align setpoint " << setpoint << " out of range");
+                                    return false;
+                                }
+                                else 
+                                {
+                                    ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+                                }
 			}
 			else
 			{
@@ -366,6 +374,9 @@ class AlignToShootAction
 		double turn_turret_timeout_; //timeout for waiting for turret to go to position
 		double max_turret_position_error_;
 
+                double turret_soft_limit_forward_;
+                double turret_soft_limit_reverse_;
+
 };
 
 int main(int argc, char **argv)
@@ -378,6 +389,17 @@ int main(int argc, char **argv)
 
 	//create the actionlib server
 	AlignToShootAction align_to_shoot_action("align_to_shoot_server");
+
+        if(!n.getParam("/frcrobot_jetson/turret_controller/turret/softlimit_forward_threshold", align_to_shoot_action.turret_soft_limit_forward_))
+        {
+            ROS_ERROR("Could not read turret_soft_limit_forward in align_server");
+            align_to_shoot_action.turret_soft_limit_forward_ = 0.45;
+        }
+        if(!n.getParam("/frcrobot_jetson/turret_controller/turret/softlimit_reverse_threshold", align_to_shoot_action.turret_soft_limit_reverse_))
+        {
+            ROS_ERROR("Could not read turret_soft_limit_reverse in align_server");
+            align_to_shoot_action.turret_soft_limit_reverse_ = -0.2;
+        }
 
 	ros::NodeHandle n_params_align(n, "actionlib_align_to_shoot_params"); //node handle for a lower-down namespace
 	if (!n_params_align.getParam("server_timeout", align_to_shoot_action.server_timeout_))
