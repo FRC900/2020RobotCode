@@ -43,8 +43,8 @@ class AlignToShootAction
 		//clients to call controllers
 		ros::ServiceClient turret_controller_client_;
 
-		tf2_ros::Buffer tf_buffer_;
-		std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+                tf2_ros::Buffer tf_buffer_;
+                tf2_ros::TransformListener tf_listener_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -56,9 +56,10 @@ class AlignToShootAction
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
 		AlignToShootAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&AlignToShootAction::executeCB, this, _1), false),
-			action_name_(name)
-	{
-		as_.start(); //start the actionlib server
+			action_name_(name),
+                        tf_listener_(tf_buffer_)
+		{
+			as_.start(); //start the actionlib server
 
 		//do networking stuff
 		std::map<std::string, std::string> service_connection_header;
@@ -70,9 +71,6 @@ class AlignToShootAction
 
 		//initialize client used to call controllers
 		turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
-
-		// initialize transform listener
-		tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
 	}
 
 		~AlignToShootAction(void)
