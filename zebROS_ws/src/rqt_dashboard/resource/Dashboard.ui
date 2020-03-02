@@ -226,6 +226,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="image_label">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap resource="resource.qrc">:/images/yellow_circle.png</pixmap>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -240,6 +250,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>
