@@ -96,7 +96,7 @@ class Dashboard(Plugin):
         self.four_balls = QPixmap(":/images/4_balls.png")
         self.five_balls = QPixmap(":/images/5_balls.png")
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
-        self._widget.n_balls_display.setPixmap(self.five_balls)
+        
         self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
         
 
