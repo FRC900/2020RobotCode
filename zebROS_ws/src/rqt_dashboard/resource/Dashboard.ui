@@ -221,20 +221,7 @@
    <item>
     <widget class="QLabel" name="n_balls_display">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;Couldn't&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;find #&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;balls&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="pixmap">
-      <pixmap resource="resource.qrc">:/images/5_balls.png</pixmap>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="image_label">
-     <property name="text">
-      <string/>
-     </property>
-     <property name="pixmap">
-      <pixmap>:/images/yellow_circle.png</pixmap>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;# balls not&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;published yet&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
     </widget>
    </item>
@@ -255,7 +242,6 @@
  </widget>
  <resources>
   <include location="resource.qrc"/>
-  <include location="../../../../../.designer/backup/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

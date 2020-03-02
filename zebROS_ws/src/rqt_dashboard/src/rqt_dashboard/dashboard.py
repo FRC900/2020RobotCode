@@ -98,7 +98,7 @@ class Dashboard(Plugin):
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
         
         self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
-        
+        self.n_balls = -1 #don't know n balls at first 
 
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
@@ -113,8 +113,9 @@ class Dashboard(Plugin):
 
 
     def autoStateCallback(self, msg):
-	self.autoState = msg.id
-        self.displayAutoState()
+        if(self.autoState != msg.id):
+	    self.autoState = msg.id
+            self.displayAutoState()
     
     def displayAutoState(self):
         if self.autoState == 0:
@@ -135,23 +136,26 @@ class Dashboard(Plugin):
 
 
     def nBallsCallback(self, msg):
-        display = self._widget.n_balls_display
-        if msg.data == 0:
-            display.setPixmap(self.zero_balls)
-        elif msg.data == 1:
-            display.setPixmap(self.one_ball)
-        elif msg.data == 2:
-            display.setPixmap(self.two_balls)
-        elif msg.data == 3:
-            display.setPixmap(self.three_balls)
-        elif msg.data == 4:
-            display.setPixmap(self.four_balls)
-        elif msg.data == 5:
-            display.setPixmap(self.five_balls)
-        elif msg.data > 5:
-            display.setPixmap(self.more_than_five_balls)
-        else:
-            display.setText("Couldn't read # balls")
+        if(self.n_balls != msg.data):
+            self.n_balls = msg.data
+            display = self._widget.n_balls_display
+            
+            if msg.data == 0:
+                display.setPixmap(self.zero_balls)
+            elif msg.data == 1:
+                display.setPixmap(self.one_ball)
+            elif msg.data == 2:
+                display.setPixmap(self.two_balls)
+            elif msg.data == 3:
+                display.setPixmap(self.three_balls)
+            elif msg.data == 4:
+                display.setPixmap(self.four_balls)
+            elif msg.data == 5:
+                display.setPixmap(self.five_balls)
+            elif msg.data > 5:
+                display.setPixmap(self.more_than_five_balls)
+            else:
+                display.setText("Couldn't read # balls")
 
 
     def setImuAngle(self):
@@ -159,8 +163,8 @@ class Dashboard(Plugin):
 
         # call the service
         try:
-            rospy.wait_for_service("/navx_jetson/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
-            caller = rospy.ServiceProxy("/navx_jetson/set_imu_zero", ImuZeroAngle)
+            rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
+            caller = rospy.ServiceProxy("/imu/set_imu_zero", ImuZeroAngle)
             caller(angle)
             # change button to green color to indicate that the service call went through
             self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
