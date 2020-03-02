@@ -253,6 +253,319 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.102, 0.102));
 			name_ = "test_target";
 			break;
+		case red_power_port_high_goal:
+			depth_ = 0;
+			height_ = .889;
+			//height_ = 2.49555;			commented out heights will be the z-position
+			width_ = 1.02;
+			positions_.push_back(Point2f(15.98295,5.806186));
+			name_ = "red_power_port_high_goal";
+			break;
+		case blue_power_port_high_goal:
+			depth_ = 0;
+			height_ = .889;
+			//height_ = 2.49555;
+			width_ = 1.02;
+			positions_.push_back(Point2f(0,2.404364));
+			name_ = "blue_power_port_high_goal";
+			break;
+		case red_power_port_low_goal:
+			depth_=0;
+			width_=.86;
+			height_ =.254;
+			//height_ = 0.5842;
+			name_="red_power_port_high_goal";
+			positions_.push_back(Point2f(0,2.404364));
+			break;
+		case blue_power_port_low_goal:
+			depth_=0;
+			width_=.86;
+			height_=.254;
+			//height_ = 0.5842;
+			name_="blue_power_port_low_goal";
+			positions_.push_back(Point2f(15.98295,5.806186));
+			break;
+		case power_cell:
+			height_ = 0.18;
+			width_ = 0.18;
+			depth_ = 0.18;		// need to ask what to do if no set position (power cell) or size (tape)
+			name_="power_cell";
+			break;
+		case power_port_yellow_graphics:
+			height_=.4572;
+			//height_ = 1.412875;
+			width_=.6604;
+			depth_=0;
+			name_="power_port_yellow_graphics";
+			positions_.push_back(Point2f(0,2.404364));
+			positions_.push_back(Point2f(15.98295,5.806186));
+			break;
+		case red_power_port_first_logo:
+			height_=.26;
+			//height_ = 2.2098;
+			width_ = .355;
+			depth_ = 0;
+			name_ = "red_power_port_first_logo";
+			positions_.push_back(Point2f(0,4.840986));
+			positions_.push_back(Point2f(15.80515,7.198614));
+			break;
+		case blue_power_port_first_logo:
+			height_=.26;
+			//height_ = 2.2098;
+                        width_ = .355;
+                        depth_ = 0;
+			name_ = "blue_power_port_first_logo";
+			positions_.push_back(Point2f(15.98295,3.369564));
+                        positions_.push_back(Point2f(.1778, 1.011936));
+			break;
+		case red_loading_bay_tape:
+			height_ = .533;
+			//height_ = .4572;
+			width_ = 0.62;
+			depth_ = 0;
+			name_ = "red_loading_bay_tape";
+			positions_.push_back(Point2f(0,6.128766));
+			break;
+		case blue_loading_bay_tape:
+			height_ = .533;
+			//height_ = .4572;
+			width_ = .62;
+			depth_ = 0;
+			name_ = "blue_loading_bay_tape";
+			positions_.push_back(Point2f(15.98295,2.081784));
+			break;
+		case red_loading_bay_left_graphics:
+			height_ = 0.4318;
+			//height_ = .508;
+			width_ = 0.1651;
+			depth_ = 0;
+			name_ = "red_loading_bay_left_graphics";
+			positions_.push_back(Point2f(0,6.263386));
+			break;
+		case red_loading_bay_right_graphics:
+			height_ = 0.654;
+			//height_ = .6096;
+			width_ = .1651;
+			depth_ = 0;
+			name_ = "red_loading_bay_right_graphics";
+			positions_.push_back(Point2f(0,5.044186));
+			break;
+		case blue_loading_bay_left_graphics:
+			height_ = .4318;
+			//height_ = .508;
+			width_ = .1651;
+			depth_ = 0;
+			name_ = "blue_loading_bay_left_graphics";
+			positions_.push_back(Point2f(15.983204,1.947164));
+			break;
+		case blue_loading_bay_right_graphics:
+			height_ = 0.654;
+			//height_ = .6096;
+			width_ = .1651;
+			depth_ = 0;
+			name_ = "blue_loading_bay_right_graphics";
+			positions_.push_back(Point2f(15.983204,3.166364));
+			break;
+		case red_tape_corner:
+			height_ = 0;			//need the other dimensions?
+			name_ = "red_tape_corner";
+			positions_.push_back(Point2f(.762,5.65404));
+			positions_.push_back(Point2f(15.221204,5.80644));
+			positions_.push_back(Point2f(5.246878,6.80085));
+			positions_.push_back(Point2f(10.73658,6.80085));
+			break;
+		case blue_tape_corner:
+			height_ = 0;			//need the other dimensions?
+			name_ = "blue_tape_corner";
+			positions_.push_back(Point2f(.762,2.40436));
+			positions_.push_back(Point2f(15.221204,2.556764));
+			positions_.push_back(Point2f(10.73658,1.4097));
+			positions_.push_back(Point2f(5.246878,1.4097));
+			break;
+		case red_ds_light:
+			height_ = .214;
+			//height_ = 1.9304;
+			width_ = 0.0762;
+			depth_ = 0.0762;
+			positions_.push_back(Point2f(.381,.659892));
+			positions_.push_back(Point2f(0,3.952875));
+			positions_.push_back(Point2f(.381,7.550658));
+			name_ = "red_ds_light";
+			break;
+		case blue_ds_light:
+			height_ = .214;
+			//height_ = 1.9304;
+			width_ = 0.0762;
+			depth_ = 0.0762;
+			name_ = "blue_ds_light";
+			positions_.push_back(Point2f(15.60195,.659892));
+			positions_.push_back(Point2f(15.98295,4.257675));
+			positions_.push_back(Point2f(15.60195,7.550658));
+			break;
+		case ds_light:
+			height_ = .214;
+                        //height_ = 1.9304;
+                        width_ = 0.0762;
+                        depth_ = 0.0762;
+                        positions_.push_back(Point2f(.381,.659892));
+                        positions_.push_back(Point2f(0,3.952875));
+                        positions_.push_back(Point2f(.381,7.550658));
+                        name_ = "ds_light";
+			positions_.push_back(Point2f(15.60195,.659892));
+                        positions_.push_back(Point2f(15.98295,4.257675));
+                        positions_.push_back(Point2f(15.60195,7.550658));
+                        break;
+		case control_panel_light:
+			height_ = .214;
+			//height = 1.003;
+			width_ = 0.0762;
+			depth_ = .0762;
+			name_ = "control_panel_light";
+			positions_.push_back(Point2f(6.88975,6.85165));
+			positions_.push_back(Point2f(9.09828,1.3716));
+			break;
+		case yellow_control_panel_light:
+			height_ = .214;
+                        //height = 1.003;
+                        width_ = 0.0762;
+                        depth_ = .0762;
+                        name_ = "yellow_control_panel_light";
+                        positions_.push_back(Point2f(6.88975,6.85165));
+                        positions_.push_back(Point2f(9.09828,1.3716));
+                        break;
+		case red_shield_generator_light:
+			height_ = .214;
+			//height_ = 2.39395
+			width_ = .0762;
+			depth_ = .0762;
+			name_ = "red_shield_generator_light";
+			positions_.push_back(Point2f(10.103993,3.230245));
+			break;
+		case blue_shield_generator_light:
+			height_ = .214;
+			//height_ = 2.39395;
+			width_ = .0762;
+			depth_ = .0762;
+			name_ = "blue_shield_generator_light";
+			positions_.push_back(Point2f(5.879719,4.980305));
+			break;
+		case shield_generator_light:
+			height_ = .214;
+                        //height_ = 2.39395;
+                        width_ = .0762;
+                        depth_ = .0762;
+                        name_ = "shield_generator_light";
+                        positions_.push_back(Point2f(5.879719,4.980305));
+                        positions_.push_back(Point2f(10.103993,3.230245));
+			break;
+		case shield_generator_backstop:
+			height_ = .1651;
+			//height_ = 2.220722;
+			width_ = .2286;
+			depth_ = .0635;
+			name_ = "shield_generator_backstop";
+			positions_.push_back(Point2f(10.753852,4.1459912));
+			positions_.push_back(Point2f(7.241286,5.8960512));
+			positions_.push_back(Point2f(8.741918,2.314498));
+			positions_.push_back(Point2f(5.230368,4.0645588));
+			break;
+		case shield_generator_first_logo:
+			height_ = .203;
+			//height_ = 2.67335;
+			width_ = .203;
+			depth_ = 0;
+			name_ = "shield_generator_first_logo";
+			positions_.push_back(Point2f(8.17702,1.867912));
+			positions_.push_back(Point2f(9.480042,2.406904));
+			positions_.push_back(Point2f(5.795264,2.853944));
+			positions_.push_back(Point2f(5.256276,4.156964));
+			positions_.push_back(Point2f(6.503162,5.803646));
+			positions_.push_back(Point2f(7.806182,6.342634));
+			positions_.push_back(Point2f(10.188956,5.356606));
+			positions_.push_back(Point2f(10.727944,4.053586));
+		case shield_generator_yellow_stripe:
+			height_ = .5334;
+			//height_ = 2.54635
+			width_ = .508;
+			depth_ = 0;
+			name_ = "shield_generator_yellow_stripe";
+			positions_.push_back(Point2f(8.86333,1.583182));
+			positions_.push_back(Point2f(9.195308,1.720596));
+			positions_.push_back(Point2f(5.1089306,3.138678));
+			positions_.push_back(Point2f(4.971542,3.4706306));
+			positions_.push_back(Point2f(6.787896,6.4899794));
+			positions_.push_back(Point2f(7.119874,6.627368));
+			positions_.push_back(Point2f(10.8752894,5.071872));
+			positions_.push_back(Point2f(11.012678,4.739894));
+			break;
+		case shield_generator_floor_center_intersection:
+			height_ = 0;
+			//no object dimensions... can we fix this?
+			name_ = "shield_generator_floor_center_intersection";
+			positions_.push_back(Point2f(7.991856,4.105275));
+			break;
+		case red_blue_black_shield_generator_floor_intersection:
+			height_ = 0;
+			//no object dimensions
+			name_ = "red_blue_black_shield_generator_floor_intersection";
+			positions_.push_back(Point2f(5.879719,4.980305));
+			positions_.push_back(Point2f(10.103993,3.230245));
+			break;
+		case blue_black_shield_generator_floor_intersection:
+			height_ = 0;
+			// no object dimensions
+			name_ = "blue_black_shield_generator_floor_intersection";
+			positions_.push_back(Point2f(6.986143,2.36093));
+			break;
+		case red_black_shield_generator_floor_intersection:
+			height_ = 0;
+			// no object dimensions
+			name_ = "red_black_shield_generator_floor_intersection";
+			positions_.push_back(Point2f(8.997569,5.84962));
+			break;
+		case red_shield_pillar_intersection:
+			height_ = 0;
+			// no object dimensions
+			name_ = "red_shield_pillar_intersection";
+			positions_.push_back(Point2f(11.10996,4.97459));
+			positions_.push_back(Point2f(6.885178,6.72465));
+			break;
+		case blue_shield_pillar_intersection:
+			height_ = 0;
+			// no object dimensions
+			name_ = "blue_shield_pillar_intersection";
+			positions_.push_back(Point2f(9.098026,1.4859));
+			positions_.push_back(Point2f(4.87426,3.23596));
+			break;
+		case blue_shield_pillar_intersection:
+			height_ = 0;
+			// no object dimensions
+			name_ = "blue_shield_pillar_intersection";
+			positions_.push_back(Point2f(4.87426,3.23596));
+			positions_.push_back(Point2f(9.098026,1.4859));
+			break;
+		case control_panel:
+			height_ = 0.05;
+			//height_ = .9144;
+			width_ = .81;
+			depth_ = .81;
+			name_ = "control_panel";
+			positions_.push_back(Point2f(9.26465,.70485));
+			positions_.push_back(Point2f(6.7183,7.5057));
+			break;
+		case ds_numbers:
+			//needs dimensions
+			//height_ = 1.9304;
+			name_ = "ds_numbers";
+			positions_.push_back(Point2f(15.79245,7.220712));
+			positions_.push_back(Point2f(15.98298,4.964557));
+			positions_.push_back(Point2f(15.98298,3.550793));
+			positions_.push_back(Point2f(15.79245,.989838));
+			positions_.push_back(Point2f(.1905,7.220712));
+			positions_.push_back(Point2f(0,4.65963));
+			positions_.push_back(Point2f(0,3.245993));
+			positions_.push_back(Point2f(.1905,.989838));
+			break;
 		default:
 			cerr << "error initializing object!" << endl;
 	}

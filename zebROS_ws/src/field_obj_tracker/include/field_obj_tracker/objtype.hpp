@@ -18,7 +18,44 @@ enum ObjectNum
     RIGHT_CARGO_2019,
 	POWER_PORT_2020,
 	LOADING_BAY_2020,
-	TEST_TARGET_2020
+	TEST_TARGET_2020,
+	power_cell,
+	red_power_port_high_goal,
+	blue_power_port_high_goal,
+	red_power_port_low_goal,
+	blue_power_port_low_goal,
+	power_port_yellow_graphics,
+	red_power_port_first_logo,
+	blue_power_port_first_logo,
+	red_loading_bay_tape,
+	blue_loading_bay_tape,
+	red_loading_bay_left_graphics,
+	red_loading_bay_right_graphics,
+	blue_loading_bay_left_graphics,
+	blue_loading_bay_right_graphics,
+	red_tape_corner,
+	blue_tape_corner,
+	red_ds_light,
+	blue_ds_light,
+	ds_light,
+	control_panel_light,
+	yellow_control_panel_light,
+	shield_generator_light,
+	red_shield_generator_light,
+	blue_shield_generator_light,
+	shield_generator_backstop,
+	shield_generator_first_logo,
+	shield_generator_yellow_stripe,
+	shield_generator_floor_center_intersection,
+	red_black_shield_generator_floor_intersection,
+	blue_black_shield_generator_floor_intersection,
+	red_blue_black_shield_generator_floor_intersection,
+	red_shield_pillar_intersection,
+	blue_shield_pillar_intersection,
+	ds_numbers,
+	control_panel,
+	red_robot,
+	blue_robot
 };
 
 //class to hold the type of object that a detected object is
@@ -60,6 +97,7 @@ class ObjectType
 		cv::Rect worldToScreenCoords(const cv::Point3f &_position, const image_geometry::PinholeCameraModel &model) const;
 
 		float expectedDepth(const cv::Rect &screen_position, const image_geometry::PinholeCameraModel &model) const;
+		enum DepthSampleLocation { UNIFORM, CENTER, EDGES, };
 
 	private:
 		std::vector< cv::Point2f > contour_;
@@ -73,6 +111,8 @@ class ObjectType
 		float real_height_ = 0;
 		std::string name_;
 		cv::Point2f com_; //center of mass
+		std::vector<std::pair<float, float> > positions_;
+		DepthSampleLocation depth_sample_location_;
 
 		//called by constructor to compute properties
 		void computeProperties(void);
