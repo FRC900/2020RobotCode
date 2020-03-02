@@ -183,16 +183,27 @@ class ShooterAction {
 				//determine shooter velocity/hood raise and go there with shooter
 				ROS_INFO_STREAM(action_name_ << ": spinning up the shooter");
 				controllers_2020_msgs::ShooterSrv srv;
-				bool shooter_hood_raise;
-				double shooter_velocity;
-				if(!getHoodAndVelocity(shooter_hood_raise, shooter_velocity))
+				if(goal->mode == 1)
 				{
-					ROS_ERROR_STREAM(action_name_ << " tried to shoot ball while out of range");
-					preempted_ = true;
-					break;
+				
 				}
-				srv.request.shooter_hood_raise = shooter_hood_raise;
-				srv.request.set_velocity = shooter_velocity;
+				else if (goal->mode == 2)
+				{
+
+				}
+				else //last option for goal->mode is 0=auto shooting, but also make this the default
+				{
+					bool shooter_hood_raise;
+					double shooter_velocity;
+					if(!getHoodAndVelocity(shooter_hood_raise, shooter_velocity))
+					{
+						ROS_ERROR_STREAM(action_name_ << " tried to shoot ball while out of range");
+						preempted_ = true;
+						break;
+					}
+					srv.request.shooter_hood_raise = shooter_hood_raise;
+					srv.request.set_velocity = shooter_velocity;
+				}
 				if(!shooter_client_.call(srv))
 				{
 					ROS_ERROR_STREAM(action_name_ << " can't call shooter service");
@@ -374,6 +385,8 @@ class ShooterAction {
 		double hood_threshold_;
 		double max_dist_;
 		double min_dist_;
+		double near_shooting_speed_; //with hood down
+		double far_shooting_speed_; //with hood up
 
 };
 
