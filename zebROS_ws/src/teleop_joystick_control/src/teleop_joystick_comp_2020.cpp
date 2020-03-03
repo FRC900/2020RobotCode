@@ -27,6 +27,7 @@
 
 #include "actionlib/client/simple_action_client.h"
 #include "behavior_actions/EjectAction.h"
+#include "behavior_actions/IntakeAction.h"
 
 #include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
 #include "teleop_joystick_control/TeleopJoystickCompConfig.h"
@@ -82,6 +83,7 @@ controllers_2020_msgs::TurretSrv turret_controller_cmd;
 
 
 std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::EjectAction>> eject_ac;
+std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::IntakeAction>> intake_ac;
 
 double imu_angle;
 
@@ -99,6 +101,9 @@ void imuCallback(const sensor_msgs::Imu &imuState)
 
 void preemptActionlibServers(void)
 {
+	ROS_WARN_STREAM("Preempting actionlib servers!");
+	eject_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+	intake_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 }
 
 bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
@@ -218,7 +223,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.leftSwitchDownPress)
 	{
-		//climber up (don't if not deployed)
+		//climber down (don't if not deployed)
 		if(climber_controller_cmd.request.climber_deploy)
 		{
 			//Unbrake climber
@@ -226,7 +231,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			ROS_WARN_STREAM("Calling climber controller to release brake!");
 
 			//Set percent out
-			climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+			climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
 			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 			climber_controller_client.call(climber_controller_cmd);
 		}
@@ -292,14 +297,14 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 		if(control_panel_mode == "rotation")
 		{
 		}
-		if(control_panel_mode == "increment")
+		else if(control_panel_mode == "increment")
 		{
 			control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
 			ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
 			control_panel_controller_client.call(control_panel_controller_cmd);
 			control_panel_controller_cmd.request.control_panel_rotations = 0.0;
 		}
-		if(control_panel_mode == "position")
+		else if(control_panel_mode == "position")
 		{
 		}
 	}
@@ -451,13 +456,50 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 				sendRobotZero = false;
 			}
 
+			static bool right_stick_pressed = false;
+
+			if(joystick_states_array[0].rightStickY > 0.5) //TODO Make a trigger point config value
+			{
+				//Call intake server, but only once
+				if(!right_stick_pressed)
+				{
+					preemptActionlibServers();
+					ROS_WARN_STREAM("Calling intake server!");
+					behavior_actions::IntakeGoal goal;
+					intake_ac->sendGoal(goal);
+				}
+
+				right_stick_pressed = true;
+			}
+			else
+			{
+				//Preempt intake server, but only once
+				if(right_stick_pressed)
+				{
+					ROS_WARN_STREAM("Preempting intake server!");
+					intake_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+				}
+
+				right_stick_pressed = false;
+			}
+
 			//Joystick1: buttonA
 			if(joystick_states_array[0].buttonAPress)
 			{
-				//Control panel task based off of BB switch
-				// Up - Rotation task
-				// Off - Increment by one color
-				// Down - Position task
+				//Call control panel depending on control_panel_mode
+				if(control_panel_mode == "rotation")
+				{
+				}
+				else if(control_panel_mode == "increment")
+				{
+					control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
+					ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
+					control_panel_controller_client.call(control_panel_controller_cmd);
+					control_panel_controller_cmd.request.control_panel_rotations = 0.0;
+				}
+				else if(control_panel_mode == "position")
+				{
+				}
 			}
 			if(joystick_states_array[0].buttonAButton)
 			{
@@ -606,7 +648,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionDown
 			if(joystick_states_array[0].directionDownPress)
 			{
-				//climber up (don't if not deployed)
+				//climber down (don't if not deployed)
 				if(climber_controller_cmd.request.climber_deploy)
 				{
 					//Unbrake climber
@@ -614,7 +656,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 					ROS_WARN_STREAM("Calling climber controller to release brake!");
 
 					//Set percent out
-					climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+					climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
 					ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 					climber_controller_client.call(climber_controller_cmd);
 				}
@@ -889,7 +931,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			if(joystick_states_array[0].directionDownPress)
 			{
 				//Set percent out
-				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+				climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
 				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 				climber_controller_client.call(climber_controller_cmd);
 			}
@@ -983,17 +1025,9 @@ int main(int argc, char **argv)
 		ROS_ERROR("Could not read climber_align_angle in teleop_joystick_comp");
 	}
 
-	if(!n_diagnostics_params.getParam("climber_setpoint_rate", diagnostics_config.climber_setpoint_rate))
+	if(!n_diagnostics_params.getParam("climber_percent_out", diagnostics_config.climber_percent_out))
 	{
 		ROS_ERROR("Could not read climber_setpoint_rate in teleop_joystick_comp");
-	}
-	if(!n_diagnostics_params.getParam("climber_low_bound", diagnostics_config.climber_low_bound))
-	{
-		ROS_ERROR("Could not read climber_low_bound in teleop_joystick_comp");
-	}
-	if(!n_diagnostics_params.getParam("climber_high_bound", diagnostics_config.climber_high_bound))
-	{
-		ROS_ERROR("Could not read climber_high_bound in teleop_joystick_comp");
 	}
 	if(!n_diagnostics_params.getParam("shooter_setpoint_rate", diagnostics_config.shooter_setpoint_rate))
 	{
@@ -1017,7 +1051,7 @@ int main(int argc, char **argv)
 	}
 	if(!n_diagnostics_params.getParam("indexer_setpoint_rate", diagnostics_config.indexer_setpoint_rate))
 	{
-		ROS_ERROR("Could not read intake_setpoint_rate in teleop_joystick_comp");
+		ROS_ERROR("Could not read indexer_setpoint_rate in teleop_joystick_comp");
 	}
 	if(!n_diagnostics_params.getParam("control_panel_increment", diagnostics_config.control_panel_increment))
 	{
@@ -1027,7 +1061,7 @@ int main(int argc, char **argv)
 	orient_strafing_angle = config.climber_align_angle;
 
 	//Initialize the climber command
-	climber_controller_cmd.request.winch_set_point = 0.0;
+	climber_controller_cmd.request.winch_percent_out = 0.0;
 	climber_controller_cmd.request.climber_deploy = true;
 	climber_controller_cmd.request.climber_elevator_brake = true;
 
@@ -1075,8 +1109,9 @@ int main(int argc, char **argv)
 	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
 
 	eject_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::EjectAction>>("/eject/eject_server", true);
+	intake_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::IntakeAction>>("/intake/intake_server", true);
 
-	climber_controller_client = n.serviceClient<controllers_2020_msgs::ClimberSrv>("/frcrobot_jetson/climber_controller_2020/climber_command");
+	climber_controller_client = n.serviceClient<controllers_2020_msgs::ClimberSrv>("/frcrobot_jetson/climber_controller/climber_command");
 	indexer_controller_client = n.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command");
 	intake_arm_controller_client = n.serviceClient<controllers_2020_msgs::IntakeArmSrv>("/frcrobot_jetson/intake_controller/intake_arm_command");
 	intake_roller_controller_client = n.serviceClient<controllers_2020_msgs::IntakeRollerSrv>("/frcrobot_jetson/intake_controller/intake_roller_command");

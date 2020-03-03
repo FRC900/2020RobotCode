@@ -93,7 +93,6 @@ namespace climber_controller_2020
 									   controllers_2020_msgs::ClimberSrv::Response &res) {
         if(isRunning())
         {
-			ROS_INFO_STREAM("ClimberController called");
 			//assign request value to command buffer(s)
             cmd_buffer_.writeFromNonRT(ClimberCommand(req.winch_percent_out, req.climber_deploy, req.climber_elevator_brake));
         }
