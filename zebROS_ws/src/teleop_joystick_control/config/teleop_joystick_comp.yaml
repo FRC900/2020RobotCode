@@ -15,9 +15,7 @@ teleop_params:
     climber_align_angle: 1.178097 # 3*pi/8 radians or 67.5 degrees
 
 teleop_diagnostics_params:
-    climber_setpoint_rate: 6.28 #Rate of change in position in radians/second
-    climber_low_bound: 0.0
-    climber_high_bound: 1000.0
+    climber_percent_out: 0.6 
     shooter_setpoint_rate: 10.472 #Rate of change in angular velocity in radians/second^2 (100 rpm/second)
     left_stick_trigger_point: 0.5
     turret_setpoint_rate: 0.6981 #Rate of change in position of turret in radians/second
