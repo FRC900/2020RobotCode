@@ -47,7 +47,7 @@ namespace climber_controller_2020
         const ClimberCommand cmd = *(cmd_buffer_.readFromRT());
 		const bool brake_cmd = cmd.brake_;
 		const bool deploy_cmd = cmd.deploy_;
-		const double winch_set_point_cmd = cmd.winch_set_point_;
+		const double winch_percent_out_cmd = cmd.winch_percent_out_;
 
         //Set values of the pistons based on the command. Can be 1.0, 0.0, or -1.0. -1.0 is only used with double solenoids
         if(brake_cmd == true){
@@ -65,8 +65,15 @@ namespace climber_controller_2020
 		}
 
 		//set value of motors
-		winch_joint_.setCommand(winch_set_point_cmd);
-    }
+		if(brake_cmd)
+		{
+			winch_joint_.setCommand(0.0);
+		}
+		else
+		{
+			winch_joint_.setCommand(winch_percent_out_cmd);
+    	}
+	}
 
     void ClimberController::stopping(const ros::Time &/*time*/) {
     }
@@ -76,7 +83,7 @@ namespace climber_controller_2020
         if(isRunning())
         {
             //assign request value to command buffer(s)
-            cmd_buffer_.writeFromNonRT(ClimberCommand(req.winch_set_point, req.climber_deploy, req.climber_elevator_brake));
+            cmd_buffer_.writeFromNonRT(ClimberCommand(req.winch_percent_out, req.climber_deploy, req.climber_elevator_brake));
         }
         else
         {
