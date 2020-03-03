@@ -273,21 +273,23 @@ int main(int argc, char** argv)
 			}
 			else if(action_data["type"] == "intake_actionlib_server")
 			{
+				//for some reason this is necessary, even if the server has been up and running for a while
+				if(!intake_ac.waitForServer(ros::Duration(5))){
+					ROS_ERROR("Auto node - couldn't find intake actionlib server");
+					auto_state = ERROR;
+					if(auto_state_pub_thread.joinable()){
+						auto_state_pub_thread.join();
+					}
+					return 1;
+				}
+
 				if(action_data["goal"] == "stop")
 				{
 					intake_ac.cancelGoalsAtAndBeforeTime(ros::Time::now());	
-				} else {
-					if(!intake_ac.waitForServer(ros::Duration(5))){
-						ROS_ERROR("Auto node - couldn't find intake actionlib server");
-						auto_state = ERROR;
-						if(auto_state_pub_thread.joinable()){
-							auto_state_pub_thread.join();
-						}
-						return 1;
-					} //for some reason this is necessary, even if the server has been up and running for a while
+				}
+				else {
 					behavior_actions::IntakeGoal goal;
 					intake_ac.sendGoal(goal);
-					waitForActionlibServer(intake_ac, 100, "intake server");
 				}
 			}
 			else if(action_data["type"] == "shooter_actionlib_server")
