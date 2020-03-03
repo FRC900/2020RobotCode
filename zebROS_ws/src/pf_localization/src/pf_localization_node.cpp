@@ -35,7 +35,7 @@ double delta_x = 0;
 double delta_y = 0;
 double rot = 0;
 double noise_delta_t = 0;  // if the time since the last measurement is greater than this, positional noise will not be applied
-std::vector<std::pair<double, double> > measurement;
+std::vector<Beacon > measurement;
 ParticleFilter* pf = nullptr;
 
 double degToRad(double deg) {
@@ -63,7 +63,8 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 void goalCallback(const field_obj::Detection::ConstPtr& msg){
   measurement.clear();
   for(const field_obj::Object& p : msg->objects) {
-    measurement.push_back(std::make_pair(p.location.x, p.location.y));
+    Beacon m {p.location.x, p.location.y, p.id};
+    measurement.push_back(m);
   }
   if (measurement.size() > 0){
     pf->assign_weights(measurement);
@@ -110,7 +111,7 @@ int main(int argc, char **argv) {
   double f_x_min, f_x_max, f_y_min, f_y_max, i_x_min, i_x_max, i_y_min, i_y_max, p_stdev, r_stdev;
   int num_particles;
 
-  std::vector<std::pair<double, double> > beacons;
+  std::vector<Beacon > beacons;
 
   if (!nh_.getParam("noise_delta_t", noise_delta_t)) {
     ROS_ERROR("noise_delta_t not specified");
@@ -176,7 +177,8 @@ int main(int argc, char **argv) {
   ROS_INFO_STREAM(f_x_min << ' ' << i_x_min << ' ' << p_stdev);
 
   for (size_t i = 0; i < (unsigned) xml_beacons.size(); i++) {
-    beacons.push_back(std::make_pair(xml_beacons[i][0], xml_beacons[i][1]));
+    Beacon b {xml_beacons[i][0], xml_beacons[i][1], xml_beacons[i][2]};
+    beacons.push_back(b);
   }
 
   WorldModel world(beacons, f_x_min, f_x_max, f_y_min, f_y_max);
