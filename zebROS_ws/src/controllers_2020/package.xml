@@ -49,10 +49,7 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-<<<<<<< HEAD
-=======
   <build_depend>dynamic_reconfigure_wrapper</build_depend>
->>>>>>> Added Control Panel Controller Code
   <build_depend>hardware_interface</build_depend>
   <build_depend>pluginlib</build_depend>
   <build_depend>realtime_tools</build_depend>
