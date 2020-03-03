@@ -2,6 +2,7 @@
 #include <behaviors/linebreak.h>
 #include <sensor_msgs/JointState.h>
 #include <talon_state_msgs/TalonState.h>
+#include <frc_msgs/MatchSpecificData.h>
 #include <std_msgs/UInt8.h>
 
 
@@ -45,12 +46,15 @@ void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 		indexer_velocity = talon_state.set_point[indexer_idx];
 	}
 }
-/*
-void matchDataCallback(const
-{
-	if(
 
-*/
+//Checks whether or not the robot is disabled
+bool disabled = true;
+
+void matchDataCallback(const frc_msgs::MatchSpecificData & matchdata)
+{
+	disabled = matchdata.Disabled;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -92,6 +96,7 @@ int main(int argc, char **argv)
 		//TODO check that positive velocity means forward
 
 		//only do linebreak checks if this velocity is the same as last velocity - otherwise we can't guarantee the ball's direction of motion
+	if (disabled == false) {
 		if((intake_percent_out > 0 && last_intake_percent_out > 0) || (intake_percent_out < 0 && last_intake_percent_out < 0)) {
 
 			//intake linebreak checks
@@ -168,6 +173,7 @@ int main(int argc, char **argv)
 
 		//ros stuff
 		ros::spinOnce();
-		r.sleep();
+		r.sleep();i
+	}
 	}
 }
