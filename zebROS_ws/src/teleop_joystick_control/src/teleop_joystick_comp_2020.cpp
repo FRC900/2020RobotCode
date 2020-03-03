@@ -205,6 +205,10 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 			climber_controller_client.call(climber_controller_cmd);
 		}
+		else
+		{
+			ROS_WARN_STREAM("Cannot run climber winch unless climber is deployed!");
+		}
 	}
 	if(button_box.leftSwitchUpButton)
 	{
@@ -235,6 +239,10 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 			climber_controller_client.call(climber_controller_cmd);
 		}
+		else
+		{
+			ROS_WARN_STREAM("Cannot run climber winch unless climber is deployed!");
+		}
 	}
 	if(button_box.leftSwitchDownButton)
 	{
@@ -253,6 +261,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.rightSwitchUpPress)
 	{
+		ROS_WARN_STREAM("Setting control_panel_mode = rotation");
 	}
 	if(button_box.rightSwitchUpButton)
 	{
@@ -264,10 +273,12 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.rightSwitchUpRelease)
 	{
+		ROS_WARN_STREAM("Setting control_panel_mode = increment");
 	}
 
 	if(button_box.rightSwitchDownPress)
 	{
+		ROS_WARN_STREAM("Setting control_panel_mode = position");
 	}
 	if(button_box.rightSwitchDownButton)
 	{
@@ -275,6 +286,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.rightSwitchDownRelease)
 	{
+		ROS_WARN_STREAM("Setting control_panel_mode = increment");
 	}
 
 	if(button_box.leftBluePress)
