@@ -65,8 +65,6 @@ class ObjectType
 {
 	public:
 		//in this constructor there are contours prebuilt for game objects
-		//1 - ball (2016 Game)
-		//2 - bin (2015 Game)
 
 		ObjectType(ObjectNum contour_type_id);
 
@@ -97,7 +95,6 @@ class ObjectType
 		cv::Rect worldToScreenCoords(const cv::Point3f &_position, const image_geometry::PinholeCameraModel &model) const;
 
 		float expectedDepth(const cv::Rect &screen_position, const image_geometry::PinholeCameraModel &model) const;
-		enum DepthSampleLocation { UNIFORM, CENTER, EDGES, };
 
 	private:
 		std::vector< cv::Point2f > contour_;
@@ -111,6 +108,8 @@ class ObjectType
 		float real_height_ = 0;
 		std::string name_;
 		cv::Point2f com_; //center of mass
+
+    // properties for object
 		std::vector<cv::Point3f> positions_;
 		DepthSampleLocation depth_sample_location_;
 

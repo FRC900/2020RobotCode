@@ -11,7 +11,6 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 	switch(contour_type_id) {
 		//loads one of the preset shapes into the
 		//object
-
 		case POWER_PORT_2020: //target on the POWER PORT (2020)
 			depth_ = 0;
 			real_height_ = 1.4796516; // TODO: Fix this using actual height
@@ -24,6 +23,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.2785669,0.381));
 			contour_.push_back(Point2f(0.0586588,0));
 			name_ = "power_port";
+			depth_sample_location_ = TAPE;
 			break;
 		case LOADING_BAY_2020: //target on the LOADING BAY (2020)
 			depth_ = 0;
@@ -39,6 +39,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.127,0.0508));
 			contour_.push_back(Point2f(0.127,0.2286));
 			name_ = "loading_bay";
+			depth_sample_location_ = TAPE;
 			break;
 		case TEST_TARGET_2020:
 			depth_ = 0;
@@ -48,6 +49,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.102, 0));
 			contour_.push_back(Point2f(0.102, 0.102));
 			name_ = "test_target";
+			depth_sample_location_ = TAPE;
 			break;
 		case RED_POWER_PORT_HIGH_GOAL:
 			depth_ = 0;
@@ -55,6 +57,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			width_ = 1.02;
 			positions_.push_back(Point3f(15.98295,5.806186, 2.49555));
 			name_ = "red_power_port_high_goal";
+			depth_sample_location_ = CORNERS;
 			break;
 		case BLUE_POWER_PORT_HIGH_GOAL:
 			depth_ = 0;
@@ -62,6 +65,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			width_ = 1.02;
 			positions_.push_back(Point3f(0,2.404364, 2.49555));
 			name_ = "blue_power_port_high_goal";
+			depth_sample_location_ = CORNERS;
 			break;
 		case RED_POWER_PORT_LOW_GOAL:
 			depth_=0;
@@ -69,6 +73,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			height_ =.254;
 			name_="red_power_port_high_goal";
 			positions_.push_back(Point3f(0,2.404364, 0.5842));
+			depth_sample_location_ = EDGES;
 			break;
 		case BLUE_POWER_PORT_LOW_GOAL:
 			depth_=0;
@@ -76,12 +81,14 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			height_=.254;
 			name_="blue_power_port_low_goal";
 			positions_.push_back(Point3f(15.98295,5.806186, 0.5842));
+			depth_sample_location_ = EDGES;
 			break;
 		case POWER_CELL:
 			height_ = 0.18;
 			width_ = 0.18;
 			depth_ = 0.18;
 			name_="power_cell";
+			depth_sample_location_ = CENTER;
 			break;
 		case POWER_PORT_YELLOW_GRAPHICS:
 			height_= .4572;
@@ -90,6 +97,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			name_="power_port_yellow_graphics";
 			positions_.push_back(Point3f(0,2.404364, 1.412875));
 			positions_.push_back(Point3f(15.98295,5.806186, 1.412875));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case RED_POWER_PORT_FIRST_LOGO:
 			height_= .26;
@@ -98,6 +106,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			name_ = "red_power_port_first_logo";
 			positions_.push_back(Point3f(0,4.840986, 2.2098));
 			positions_.push_back(Point3f(15.80515,7.198614, 2.2098));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case BLUE_POWER_PORT_FIRST_LOGO:
 			height_=.26;
@@ -106,6 +115,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			name_ = "blue_power_port_first_logo";
 			positions_.push_back(Point3f(15.98295,3.369564, 2.2098));
       positions_.push_back(Point3f(.1778, 1.011936, 2.2098));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case RED_LOADING_BAY_TAPE:
 			height_ = .533;
@@ -113,6 +123,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			name_ = "red_loading_bay_tape";
 			positions_.push_back(Point3f(0,6.128766, 0.4572));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case BLUE_LOADING_BAY_TAPE:
 			height_ = .533;
@@ -120,6 +131,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			name_ = "blue_loading_bay_tape";
 			positions_.push_back(Point3f(15.98295,2.081784,0.4572));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case RED_LOADING_BAY_LEFT_GRAPHICS:
 			height_ = 0.4318;
@@ -127,6 +139,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			name_ = "red_loading_bay_left_graphics";
 			positions_.push_back(Point3f(0,6.263386,0.508));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case RED_LOADING_BAY_RIGHT_GRAPHICS:
 			height_ = 0.654;
@@ -134,6 +147,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			name_ = "red_loading_bay_right_graphics";
 			positions_.push_back(Point3f(0,5.044186,0.6096));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case BLUE_LOADING_BAY_LEFT_GRAPHICS:
 			height_ = .4318;
@@ -141,6 +155,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			name_ = "blue_loading_bay_left_graphics";
 			positions_.push_back(Point3f(15.983204,1.947164,0.508));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case BLUE_LOADING_BAY_RIGHT_GRAPHICS:
 			height_ = 0.654;
@@ -148,6 +163,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			depth_ = 0;
 			name_ = "blue_loading_bay_right_graphics";
 			positions_.push_back(Point3f(15.983204,3.166364,0.6096));
+			depth_sample_location_ = UNIFORM;
 			break;
 		case RED_TAPE_CORNER:
 			height_ = 0;			//need the other dimensions
