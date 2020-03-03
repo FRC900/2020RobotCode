@@ -51,9 +51,9 @@ std::vector<double> WorldModel::distances(const Beacon& m,
 }
 
 //gets the coordinates of all the beacons relative to a give particle
-std::vector<Beacon> WorldModel::particle_relative(const Particle& p) const {
+std::vector<Beacon> WorldModel::single_particle_relative(const Particle& p, const std::vector<Beacon> bcns) const {
   std::vector<Beacon> res;
-  for (const Beacon& b : beacons_) {
+  for (const Beacon& b : bcns) {
     double x = b.x_ - p.x_;
     double y = b.y_ - p.y_;
     double r = hypot(x, y);
@@ -67,6 +67,10 @@ std::vector<Beacon> WorldModel::particle_relative(const Particle& p) const {
   return res;
 }
 
+std::vector<Beacon> WorldModel::particle_relative(const Particle& p, const Particle& offset) const {
+  return single_particle_relative(offset, single_particle_relative(p, beacons_));
+}
+
 std::vector<Beacon> WorldModel::of_type(const std::vector<Beacon>& bcns, std::string type) {
   std::vector<Beacon> res;
   for (Beacon b : bcns) {
@@ -78,22 +82,7 @@ std::vector<Beacon> WorldModel::of_type(const std::vector<Beacon>& bcns, std::st
 }
 
 //Uses hungarian algorithm to pair particle relative beacons and robot relative beacons and returns the total error (sum of distance errors from particle to robot beacons)
-double WorldModel::total_distance(const Particle& p, const std::vector<Beacon>& m) {
-  // std::vector<int> assignment;
-  // assignment.reserve(m.size());
-  // std::vector<std::vector<double> > dists;
-  // dists.reserve(m.size());
-  // std::vector<Beacon> rel = particle_relative(p);
-  // for (const Beacon& b : m) {
-  //   dists.push_back(distances(b, rel));
-  // }
-  // solver_.Solve(dists, assignment);
-  // double res = 0;
-  // for (size_t i = 0; i < assignment.size(); i++) {
-  //   if (assignment[i] < 0) continue;
-  //   res += dists[i][assignment[i]];
-  // }
-
+double WorldModel::total_distance(const Particle& p, const std::vector<Beacon>& m, const Particle& offset) {
   double total_res = 0;
   std::map<std::string, std::vector<Beacon> > by_type;
   for (Beacon b : m) {
@@ -105,7 +94,7 @@ double WorldModel::total_distance(const Particle& p, const std::vector<Beacon>& 
   for (std::pair<std::string, std::vector<Beacon> > m_of_type : by_type) {
     std::vector<int> assignment;
     std::vector<std::vector<double> > dists;
-    std::vector<Beacon> rel = of_type(particle_relative(p), m_of_type.first);
+    std::vector<Beacon> rel = of_type(particle_relative(p, offset), m_of_type.first);
     for (const Beacon& b : m_of_type.second) {
       dists.push_back(distances(b, rel));
     }

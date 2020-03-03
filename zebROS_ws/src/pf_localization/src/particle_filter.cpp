@@ -128,9 +128,9 @@ void ParticleFilter::set_rotation(double rot) {
 }
 
 //assigns the reciprocal of the computed error of each particles assignment vector to the respective particle
-void ParticleFilter::assign_weights(std::vector<Beacon > mBeacons) {
+void ParticleFilter::assign_weights(std::vector<Beacon > mBeacons, const Particle& offset) {
   for (Particle& p : particles_) {
-    p.weight_ = 1 / world_.total_distance(p, mBeacons);
+    p.weight_ = 1 / world_.total_distance(p, mBeacons, offset);
   }
   normalize();
 }

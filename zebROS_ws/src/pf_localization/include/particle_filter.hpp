@@ -27,7 +27,7 @@ public:
   void noise_pos();
   void motion_update(double delta_x, double delta_y, double delta_rot);
   void set_rotation(double rot);
-  void assign_weights(std::vector<Beacon > mBeacons);
+  void assign_weights(std::vector<Beacon > mBeacons, const Particle& offset);
   void resample();
   std::vector<Particle> get_particles() const;
 };

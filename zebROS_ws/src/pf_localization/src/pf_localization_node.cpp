@@ -67,7 +67,7 @@ void goalCallback(const field_obj::Detection::ConstPtr& msg){
     measurement.push_back(m);
   }
   if (measurement.size() > 0){
-    pf->assign_weights(measurement);
+    pf->assign_weights(measurement, Particle());
     pf->resample();
   }
   last_measurement = ros::Time::now();
