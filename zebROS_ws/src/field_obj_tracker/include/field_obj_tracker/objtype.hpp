@@ -6,56 +6,56 @@
 
 enum ObjectNum
 {
-    UNINITIALIZED,
-    BALL_2017,
-    BIN_2016,
-    GOAL_2016,
-    TOP_TAPE_2017,
-    BOTTOM_TAPE_2017,
-    SWITCH_2018,
-    CUBE_2018,
-    LEFT_CARGO_2019,
-    RIGHT_CARGO_2019,
+  UNINITIALIZED,
 	POWER_PORT_2020,
 	LOADING_BAY_2020,
 	TEST_TARGET_2020,
-	power_cell,
-	red_power_port_high_goal,
-	blue_power_port_high_goal,
-	red_power_port_low_goal,
-	blue_power_port_low_goal,
-	power_port_yellow_graphics,
-	red_power_port_first_logo,
-	blue_power_port_first_logo,
-	red_loading_bay_tape,
-	blue_loading_bay_tape,
-	red_loading_bay_left_graphics,
-	red_loading_bay_right_graphics,
-	blue_loading_bay_left_graphics,
-	blue_loading_bay_right_graphics,
-	red_tape_corner,
-	blue_tape_corner,
-	red_ds_light,
-	blue_ds_light,
-	ds_light,
-	control_panel_light,
-	yellow_control_panel_light,
-	shield_generator_light,
-	red_shield_generator_light,
-	blue_shield_generator_light,
-	shield_generator_backstop,
-	shield_generator_first_logo,
-	shield_generator_yellow_stripe,
-	shield_generator_floor_center_intersection,
-	red_black_shield_generator_floor_intersection,
-	blue_black_shield_generator_floor_intersection,
-	red_blue_black_shield_generator_floor_intersection,
-	red_shield_pillar_intersection,
-	blue_shield_pillar_intersection,
-	ds_numbers,
-	control_panel,
-	red_robot,
-	blue_robot
+	POWER_CELL,
+	RED_POWER_PORT_HIGH_GOAL,
+	BLUE_POWER_PORT_HIGH_GOAL,
+	RED_POWER_PORT_LOW_GOAL,
+	BLUE_POWER_PORT_LOW_GOAL,
+	POWER_PORT_YELLOW_GRAPHICS,
+	RED_POWER_PORT_FIRST_LOGO,
+	BLUE_POWER_PORT_FIRST_LOGO,
+	RED_LOADING_BAY_TAPE,
+	BLUE_LOADING_BAY_TAPE,
+	RED_LOADING_BAY_LEFT_GRAPHICS,
+	RED_LOADING_BAY_RIGHT_GRAPHICS,
+	BLUE_LOADING_BAY_LEFT_GRAPHICS,
+	BLUE_LOADING_BAY_RIGHT_GRAPHICS,
+	RED_TAPE_CORNER,
+	BLUE_TAPE_CORNER,
+	RED_DS_LIGHT,
+	BLUE_DS_LIGHT,
+	DS_LIGHT,
+	CONTROL_PANEL_LIGHT,
+	YELLOW_CONTROL_PANEL_LIGHT,
+	SHIELD_GENERATOR_LIGHT,
+	RED_SHIELD_GENERATOR_LIGHT,
+	BLUE_SHIELD_GENERATOR_LIGHT,
+	SHIELD_GENERATOR_BACKSTOP,
+	SHIELD_GENERATOR_FIRST_LOGO,
+	SHIELD_GENERATOR_YELLOW_STRIPE,
+	SHIELD_GENERATOR_FLOOR_CENTER_INTERSECTION,
+	RED_BLACK_SHIELD_GENERATOR_FLOOR_INTERSECTION,
+	BLUE_BLACK_SHIELD_GENERATOR_FLOOR_INTERSECTION,
+	RED_BLUE_BLACK_SHIELD_GENERATOR_FLOOR_INTERSECTION,
+	RED_SHIELD_PILLAR_INTERSECTION,
+	BLUE_SHIELD_PILLAR_INTERSECTION,
+	DS_NUMBERS,
+	CONTROL_PANEL,
+	RED_ROBOT,
+	BLUE_ROBOT
+};
+
+enum DepthSampleLocation
+{
+  UNIFORM,
+  CENTER,
+  EDGES,
+  CORNERS,
+  TAPE
 };
 
 //class to hold the type of object that a detected object is
@@ -111,7 +111,7 @@ class ObjectType
 		float real_height_ = 0;
 		std::string name_;
 		cv::Point2f com_; //center of mass
-		std::vector<std::pair<float, float> > positions_;
+		std::vector<cv::Point3f> positions_;
 		DepthSampleLocation depth_sample_location_;
 
 		//called by constructor to compute properties
