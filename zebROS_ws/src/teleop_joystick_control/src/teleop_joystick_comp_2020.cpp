@@ -39,7 +39,7 @@ std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 bool diagnostics_mode = false;
 bool green_led_on = true;
 
-double orient_strafing_angle = 0.0;
+double orient_strafing_angle;
 
 std::string control_panel_mode = "increment";
 std::string shooter_mode = "auto";
@@ -142,7 +142,8 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.topRedPress)
 	{
-		//Preempt all actionlib
+		//Preempt everything
+		preemptActionlibServers();
 	}
 	if(button_box.topRedButton)
 	{
@@ -187,38 +188,62 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.leftSwitchUpPress)
 	{
+		//climber up (don't if not deployed)
+		if(climber_controller_cmd.request.climber_deploy)
+		{
+			//Unbrake climber
+			climber_controller_cmd.request.climber_elevator_brake = false;
+			ROS_WARN_STREAM("Calling climber controller to release brake!");
+
+			//Set percent out
+			climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+			climber_controller_client.call(climber_controller_cmd);
+		}
 	}
 	if(button_box.leftSwitchUpButton)
-	{
-		//climber up
-		climber_controller_cmd.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((button_box.header.stamp - last_header_stamp).toSec());
-		climber_controller_cmd.request.winch_set_point = std::clamp(climber_controller_cmd.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
-		ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_controller_cmd.request.winch_set_point);
-		climber_controller_client.call(climber_controller_cmd);
-	}
-	else
 	{
 	}
 	if(button_box.leftSwitchUpRelease)
 	{
+		//Brake climber
+		climber_controller_cmd.request.climber_elevator_brake = true;
+		ROS_WARN_STREAM("Calling climber controller to engage brake!");
+
+		//Set percent out to zero
+		climber_controller_cmd.request.winch_percent_out = 0.0;
+		ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+		climber_controller_client.call(climber_controller_cmd);
 	}
 
 	if(button_box.leftSwitchDownPress)
 	{
+		//climber up (don't if not deployed)
+		if(climber_controller_cmd.request.climber_deploy)
+		{
+			//Unbrake climber
+			climber_controller_cmd.request.climber_elevator_brake = false;
+			ROS_WARN_STREAM("Calling climber controller to release brake!");
+
+			//Set percent out
+			climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+			climber_controller_client.call(climber_controller_cmd);
+		}
 	}
 	if(button_box.leftSwitchDownButton)
-	{
-		//climber down
-		climber_controller_cmd.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((button_box.header.stamp - last_header_stamp).toSec());
-		climber_controller_cmd.request.winch_set_point = std::clamp(climber_controller_cmd.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
-		ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_controller_cmd.request.winch_set_point);
-		climber_controller_client.call(climber_controller_cmd);
-	}
-	else
 	{
 	}
 	if(button_box.leftSwitchDownRelease)
 	{
+		//Brake climber
+		climber_controller_cmd.request.climber_elevator_brake = true;
+		ROS_WARN_STREAM("Calling climber controller to engage brake!");
+
+		//Set percent out to zero
+		climber_controller_cmd.request.winch_percent_out = 0.0;
+		ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+		climber_controller_client.call(climber_controller_cmd);
 	}
 
 	if(button_box.rightSwitchUpPress)
@@ -249,13 +274,10 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.leftBluePress)
 	{
-		//Toggle climber deploy (don't if climber is up)
-		if(climber_controller_cmd.request.winch_set_point == 0.0)
-		{
-			climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
-			ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
-			climber_controller_client.call(climber_controller_cmd);
-		}
+		//Toggle climber deploy
+		climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
+		ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
+		climber_controller_client.call(climber_controller_cmd);
 	}
 	if(button_box.leftBlueButton)
 	{
@@ -447,6 +469,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: buttonB
 			if(joystick_states_array[0].buttonBPress)
 			{
+				//Shoot based on shooter var
 			}
 			if(joystick_states_array[0].buttonBButton)
 			{
@@ -456,12 +479,14 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 			if(joystick_states_array[0].buttonBRelease)
 			{
+				//Stop shooting based on shooter var
 			}
 
 			//Joystick1: buttonX
 			if(joystick_states_array[0].buttonXPress)
 			{
-				// Preempt all actionlib servers.
+				//Preempt everything
+				preemptActionlibServers();
 			}
 			if(joystick_states_array[0].buttonXButton)
 			{
@@ -484,46 +509,42 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: bumperLeft
 			if(joystick_states_array[0].bumperLeftPress)
 			{
-				//Intake down and rolling in
 			}
 			if(joystick_states_array[0].bumperLeftButton)
 			{
 			}
 			if(joystick_states_array[0].bumperLeftRelease)
 			{
-				//Intake up and stop rolling
 			}
 
 			//Joystick1: bumperRight
 			if(joystick_states_array[0].bumperRightPress)
 			{
-				//Start shooting
 			}
 			if(joystick_states_array[0].bumperRightButton)
 			{
 			}
 			if(joystick_states_array[0].bumperRightRelease)
 			{
-				//Stop shooting
 			}
 
-			//Joystick1: leftTrigger
-			if(joystick_states_array[0].leftTrigger >= 0.5)
+			std_msgs::Bool enable_pub_msg;
+
+			//Joystick1: directionLeft
+			if(joystick_states_array[0].directionLeftPress)
 			{
 			}
-			else
+			if(joystick_states_array[0].directionLeftButton)
 			{
-			}
-
-			/*std_msgs::Bool enable_pub_msg;
-
-			if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0)) //TODO Make a trigger point config value
-			{
+				// Align for climbing
 				enable_pub_msg.data = true;
 			}
 			else
 			{
 				enable_pub_msg.data = false;
+			}
+			if(joystick_states_array[0].directionLeftRelease)
+			{
 			}
 
 			orient_strafing_enable_pub.publish(enable_pub_msg);
@@ -536,30 +557,13 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			imu_angle_msg.data = imu_angle;
 			orient_strafing_state_pub.publish(imu_angle_msg);
 
-			//Joystick1: rightTrigger
-			if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
-			{
-			}
-			else
-			{
-			}*/
-
-			//Joystick1: directionLeft
-			if(joystick_states_array[0].directionLeftPress)
-			{
-			}
-			if(joystick_states_array[0].directionLeftButton)
-			{
-			}
-			if(joystick_states_array[0].directionLeftRelease)
-			{
-			}
-
 			//Joystick1: directionRight
 			if(joystick_states_array[0].directionRightPress)
 			{
-				// Align for climbing?
-				// Not actually written yet.
+				//Toggle climber deploy
+				climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
+				ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionRightButton)
 			{
@@ -571,23 +575,63 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionUp
 			if(joystick_states_array[0].directionUpPress)
 			{
+				//climber up (don't if not deployed)
+				if(climber_controller_cmd.request.climber_deploy)
+				{
+					//Unbrake climber
+					climber_controller_cmd.request.climber_elevator_brake = false;
+					ROS_WARN_STREAM("Calling climber controller to release brake!");
+
+					//Set percent out
+					climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+					ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+					climber_controller_client.call(climber_controller_cmd);
+				}
 			}
 			if(joystick_states_array[0].directionUpButton)
 			{
 			}
 			if(joystick_states_array[0].directionUpRelease)
 			{
+				//Brake climber
+				climber_controller_cmd.request.climber_elevator_brake = true;
+				ROS_WARN_STREAM("Calling climber controller to engage brake!");
+
+				//Set percent out to zero
+				climber_controller_cmd.request.winch_percent_out = 0.0;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 
 			//Joystick1: directionDown
 			if(joystick_states_array[0].directionDownPress)
 			{
+				//climber up (don't if not deployed)
+				if(climber_controller_cmd.request.climber_deploy)
+				{
+					//Unbrake climber
+					climber_controller_cmd.request.climber_elevator_brake = false;
+					ROS_WARN_STREAM("Calling climber controller to release brake!");
+
+					//Set percent out
+					climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+					ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+					climber_controller_client.call(climber_controller_cmd);
+				}
 			}
 			if(joystick_states_array[0].directionDownButton)
 			{
 			}
 			if(joystick_states_array[0].directionDownRelease)
 			{
+				//Brake climber
+				climber_controller_cmd.request.climber_elevator_brake = true;
+				ROS_WARN_STREAM("Calling climber controller to engage brake!");
+
+				//Set percent out to zero
+				climber_controller_cmd.request.winch_percent_out = 0.0;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 
 			//Joystick1: stickLeft
@@ -622,7 +666,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		}
 		else
 		{
-			//Joystick2: leftStickY
+			//Joystick1 Diagnostics: leftStickY
 			if(abs(joystick_states_array[0].leftStickY) > diagnostics_config.left_stick_trigger_point)
 			{
 				shooter_controller_cmd.request.set_velocity += (std::copysign(diagnostics_config.shooter_setpoint_rate, joystick_states_array[0].leftStickY)
@@ -632,7 +676,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 				shooter_controller_client.call(shooter_controller_cmd);
 			}
 
-			//Joystick2: leftStickX
+			//Joystick1 Diagnostics: leftStickX
 			if(abs(joystick_states_array[0].leftStickX) > diagnostics_config.left_stick_trigger_point)
 			{
 				turret_controller_cmd.request.set_point += (std::copysign(diagnostics_config.turret_setpoint_rate, joystick_states_array[0].leftStickX)
@@ -642,7 +686,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 				turret_controller_client.call(turret_controller_cmd);
 			}
 
-			//Joystick2: rightStickY
+			//Joystick1 Diagnostics: rightStickY
 			if(abs(joystick_states_array[0].rightStickY) > 0.5) //TODO Make a trigger point config value
 			{
 				indexer_controller_cmd.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[0].leftStickY)
@@ -652,12 +696,12 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 				indexer_controller_client.call(indexer_controller_cmd);
 			}
 
-			//Joystick2: rightStickX
+			//Joystick1 Diagnostics: rightStickX
 			if(abs(joystick_states_array[0].rightStickX) > 0.5) //TODO Make a trigger point config value
 			{
 			}
 
-			//Joystick2: stickLeft
+			//Joystick1 Diagnostics: stickLeft
 			if(joystick_states_array[0].stickLeftPress)
 			{
 				shooter_controller_cmd.request.set_velocity = 0.0;
@@ -671,7 +715,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: stickRight
+			//Joystick1 Diagnostics: stickRight
 			if(joystick_states_array[0].stickRightPress)
 			{
 				indexer_controller_cmd.request.indexer_velocity = 0.0;
@@ -685,7 +729,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: buttonA
+			//Joystick1 Diagnostics: buttonA
 			if(joystick_states_array[0].buttonAPress)
 			{
 				control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
@@ -700,7 +744,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: buttonB
+			//Joystick1 Diagnostics: buttonB
 			if(joystick_states_array[0].buttonBPress)
 			{
 				intake_roller_controller_cmd.request.percent_out = 0.0;
@@ -714,9 +758,15 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: buttonX
+			//Joystick1 Diagnostics: buttonX
 			if(joystick_states_array[0].buttonXPress)
 			{
+				green_led_on = !green_led_on;
+				std_msgs::Float64 green_led_position;
+				green_led_position.data = green_led_on ? 0.0 : 1.0;
+
+				ROS_WARN_STREAM("Calling green LED controller with green_led_on = " << green_led_on);
+				green_led_pub.publish(green_led_position);
 			}
 			if(joystick_states_array[0].buttonXButton)
 			{
@@ -725,7 +775,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: buttonY
+			//Joystick1 Diagnostics: buttonY
 			if(joystick_states_array[0].buttonYPress)
 			{
 				intake_arm_controller_cmd.request.intake_arm_extend = !intake_arm_controller_cmd.request.intake_arm_extend;
@@ -739,7 +789,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: bumperLeft
+			//Joystick1 Diagnostics: bumperLeft
 			if(joystick_states_array[0].bumperLeftPress)
 			{
 				shooter_controller_cmd.request.shooter_hood_raise = !shooter_controller_cmd.request.shooter_hood_raise;
@@ -753,7 +803,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: bumperRight
+			//Joystick1 Diagnostics: bumperRight
 			if(joystick_states_array[0].bumperRightPress)
 			{
 			}
@@ -768,7 +818,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: leftTrigger
+			//Joystick1 Diagnostics: leftTrigger
 			if(joystick_states_array[0].leftTrigger >= 0.5) //TODO Make a trigger point config value
 			{
 			}
@@ -776,7 +826,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: rightTrigger
+			//Joystick1 Diagnostics: rightTrigger
 			if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
 			{
 				intake_roller_controller_cmd.request.percent_out	-= diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
@@ -788,11 +838,11 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: directionLeft
+			//Joystick1 Diagnostics: directionLeft
 			if(joystick_states_array[0].directionLeftPress)
 			{
-				climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
-				ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
+				climber_controller_cmd.request.climber_elevator_brake = !climber_controller_cmd.request.climber_elevator_brake;
+				ROS_WARN_STREAM("Calling climber controller with climber_elevator_brake = " << climber_controller_cmd.request.climber_elevator_brake);
 				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionLeftButton)
@@ -802,11 +852,11 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: directionRight
+			//Joystick1 Diagnostics: directionRight
 			if(joystick_states_array[0].directionRightPress)
 			{
-				climber_controller_cmd.request.climber_elevator_brake = !climber_controller_cmd.request.climber_elevator_brake;
-				ROS_WARN_STREAM("Calling climber controller with climber_elevator_brake = " << climber_controller_cmd.request.climber_elevator_brake);
+				climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
+				ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
 				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionRightButton)
@@ -816,34 +866,42 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick2: directionUp
+			//Joystick1 Diagnostics: directionUp
 			if(joystick_states_array[0].directionUpPress)
 			{
+				//Set percent out
+				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionUpButton)
 			{
-				climber_controller_cmd.request.winch_set_point += diagnostics_config.climber_setpoint_rate*((joystick_states_array[0].header.stamp - last_header_stamp).toSec());
-				climber_controller_cmd.request.winch_set_point = std::clamp(climber_controller_cmd.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
-				ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_controller_cmd.request.winch_set_point);
-				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionUpRelease)
 			{
+				//Set percent out to zero
+				climber_controller_cmd.request.winch_percent_out = 0.0;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 
-			//Joystick2: directionDown
+			//Joystick1 Diagnostics: directionDown
 			if(joystick_states_array[0].directionDownPress)
 			{
+				//Set percent out
+				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionDownButton)
 			{
-				climber_controller_cmd.request.winch_set_point -= diagnostics_config.climber_setpoint_rate*((joystick_states_array[0].header.stamp - last_header_stamp).toSec());
-				climber_controller_cmd.request.winch_set_point = std::clamp(climber_controller_cmd.request.winch_set_point, diagnostics_config.climber_low_bound, diagnostics_config.climber_high_bound);
-				ROS_WARN_STREAM("Calling climber controller with winch_set_point = " << climber_controller_cmd.request.winch_set_point);
-				climber_controller_client.call(climber_controller_cmd);
 			}
 			if(joystick_states_array[0].directionDownRelease)
 			{
+				//Set percent out to zero
+				climber_controller_cmd.request.winch_percent_out = 0.0;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
 			}
 		}
 
@@ -920,6 +978,10 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Could not read rotate_rate_limit_time in teleop_joystick_comp");
 	}
+	if(!n_params.getParam("climber_align_angle", config.climber_align_angle))
+	{
+		ROS_ERROR("Could not read climber_align_angle in teleop_joystick_comp");
+	}
 
 	if(!n_diagnostics_params.getParam("climber_setpoint_rate", diagnostics_config.climber_setpoint_rate))
 	{
@@ -961,6 +1023,8 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Could not read control_panel_increment in teleop_joystick_comp");
 	}
+
+	orient_strafing_angle = config.climber_align_angle;
 
 	//Initialize the climber command
 	climber_controller_cmd.request.winch_set_point = 0.0;
