@@ -45,7 +45,12 @@ void talonStateCallback(const talon_state_msgs::TalonState &talon_state)
 		indexer_velocity = talon_state.set_point[indexer_idx];
 	}
 }
+/*
+void matchDataCallback(const
+{
+	if(
 
+*/
 
 int main(int argc, char **argv)
 {
@@ -61,6 +66,7 @@ int main(int argc, char **argv)
 
 	//subscribers
 	ros::Subscriber talon_states_sub = nh.subscribe("/frcrobot_jetson/talon_states", 1, talonStateCallback);
+	ros::Subscriber match_data_sub = nh.subscribe("/frcrobot_rio/match_data", 1, matchDataCallback);
 
 	//publishers
 	ros::Publisher num_balls_pub = nh.advertise<std_msgs::UInt8>("num_powercells", 1);
