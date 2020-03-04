@@ -221,22 +221,22 @@ pdp_state_controller:
    type:         pdp_state_controller/PDPStateController
    publish_rate: 20
    things_plugged_in_pdp_channel: 
-        ["thing1", #id 1
-         "thing2", #id 2
-         "thing3", #id 3
-         "thing4", #id 4 
-         "thing5", #id 5 
-         "thing6", #id 6 
-         "thing7", #id 7
-         "thing8", #id 8
-         "thing9", #id 9 
-         "thing10", #id 10
-         "thing11", #id 11 
-         "thing12", #id 12
-         "thing13", #id 13
-         "thing14", #id 14
-         "thing15", #id 15
-         "thing16" #id 16
+        ["", #id 1
+         "bl_drive", #id 2
+         "fl_drive", #id 3
+         "fl_angle", #id 4 
+         "intake_joint", #id 5 
+         "", #id 6 
+         "", #id 7
+         "", #id 8
+         "", #id 9 
+         "br_angle", #id 10
+         "fr_angle", #id 11 
+         "", #id 12
+         "climber_winch_joint", #id 13
+         "br_drive", #id 14
+         "fr_drive", #id 15
+         "" #id 16
         ]
 
 pcm_state_controller:

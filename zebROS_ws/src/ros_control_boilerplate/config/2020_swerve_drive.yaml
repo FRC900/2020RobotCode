@@ -1,4 +1,3 @@
-#TODO: FIX ALL CONSTANTS
 swerve_drive_controller:
     type:       talon_swerve_drive_controller/TalonSwerveDriveController
     
@@ -7,14 +6,14 @@ swerve_drive_controller:
     publish_cmd: True
     pose_covariance_diagonal: [0.001, 0.001, 1000000.0, 1000000.0, 1000000.0, 1000.0]
     twist_covariance_diagonal: [0.001, 0.001, 1000000.0, 1000000.0, 1000000.0, 1000.0]
-    # fix me
-    wheel_radius: 0.0381 # m
+
+    wheel_radius: 0.0508 # m
     cmd_vel_timout: 0.5
-    max_speed: 3.0
-    max_accel: 1.8
-    max_brake_accel: 2.5
+    max_speed: 3.0 # TODO
+    max_accel: 1.8 # TODO
+    max_brake_accel: 2.5 # TODO 
     ang_accel_conv: 2.0
-    max_rotational_vel: 10
+    max_rotational_vel: 10 # TODO
     
     f_s: 0.12
     f_a: 0.005 #use torque curve instead? TODO: FIX
@@ -30,7 +29,7 @@ swerve_drive_controller:
     motor_stall_torque: 1.4
     motor_quantity: 4
     invert_wheel_angle: False
-    ratio_encoder_to_rotations: 0.5714 # TODO?
+    ratio_encoder_to_rotations: 0.148148148 # Test me 
     ratio_motor_to_rotations: 1 # TODO?
     ratio_motor_to_steering: 1 # TODO?
     encoder_drive_get_V_units: 1 
@@ -40,7 +39,7 @@ swerve_drive_controller:
     encoder_steering_get_units: 1
     encoder_steering_set_units: 1
 
-    wheel_coords: [[-0.26035, 0.26035], [0.26035, 0.26035], [-0.26035, -0.26035], [0.26035, -0.26035]]
+    wheel_coords: [[-0.28575, 0.28575], [0.28575, 0.28575], [-0.28575, -0.28575], [0.28575, -0.28575]]
  
     cmd_vel_timeout: 0.5 # we test this separately, give plenty for the other tests
     speed_joint_fl:
