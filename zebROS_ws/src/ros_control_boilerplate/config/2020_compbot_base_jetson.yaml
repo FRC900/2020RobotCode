@@ -461,9 +461,5 @@ bl_drive_position_controller:
     voltage_compensation_enable: true
     dynamic_reconfigure: True
         
-control_panel_intake_controller:
-    type: talon_controllers/TalonMotionMagicCloseLoopController
-    joint: control_panel_joint
-    feedback_type: CTRE_MagEncoder_Absolute
 
 
