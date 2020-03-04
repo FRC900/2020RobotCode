@@ -78,6 +78,9 @@ namespace climber_controller_2020
 		//set value of motors
 		if(brake_cmd)
 		{
+			if(winch_percent_out_cmd != 0.0)
+				ROS_WARN_STREAM("Cannot move climber because brake is engaged!");
+
 			winch_joint_.setCommand(0.0);
 		}
 		else
