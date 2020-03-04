@@ -214,6 +214,8 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 
 	}
 
+	can_error_count_ = 0;
+
 	for (size_t i = 0; i < num_can_ctre_mcs_; i++)
 	{
 		ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
