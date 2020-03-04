@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 				shooter_linebreak.resetPulseDetection();
 			}
 		}
-
+		}
 		last_intake_percent_out = intake_percent_out;
 		last_indexer_velocity = indexer_velocity;
 
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 		indexer_front_linebreak.resetPulseDetection();
 		indexer_linebreak.resetPulseDetection();
 		shooter_linebreak.resetPulseDetection();
-	}
+
 		//ros stuff
 		ros::spinOnce();
 		r.sleep();
