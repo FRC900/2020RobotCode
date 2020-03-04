@@ -165,7 +165,7 @@ int main(int argc, char** argv)
 	actionlib::SimpleActionClient<behavior_actions::ElevatorAction> elevator_ac("/elevator/elevator_server", true);
 	actionlib::SimpleActionClient<path_follower::PathAction> path_ac("/path_follower/path_follower_server", true); //TODO fix this path
 	actionlib::SimpleActionClient<behavior_actions::ShooterAction> shooter_ac("/shooter/shooter_server", true);
-	actionlib::SimpleActionClient<behavior_actions::IntakeAction> intake_ac("/intake/intake_server", true);
+	actionlib::SimpleActionClient<behavior_actions::IntakeAction> intake_ac("/powercell_intake/powercell_intake_server", true);
 
 	//other variables
 	ros::Rate r(10); //used in various places where we wait TODO: config?
