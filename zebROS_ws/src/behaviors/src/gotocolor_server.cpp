@@ -13,7 +13,7 @@
 #include <string>
 
 //include action files - for this actionlib server and any it sends requests to
-#include "behaviors/GoToColorAction.h"
+#include "behavior_actions/GoToColorAction.h"
 
 //include controller service files and other service files
 // e.g. #include "controller_package/ControllerSrv.h"
@@ -24,7 +24,7 @@
 #include "controllers_2020_msgs/ClimberSrv.h"
 #include "geometry_msgs/Twist.h"
 #include "talon_state_msgs/TalonState.h"
-#include "std_msgs/Int8"
+#include "std_msgs/Int8.h"
 
 enum colors{blue, red, yellow, green};
 
@@ -35,7 +35,7 @@ class GoToColorControlPanelAction {
         ros::Subscriber match_sub_;
 		//ros::Subscriber talon_states_sub_;
 		ros::Subscriber color_detect_sub_;
-		actionlib::SimpleActionServer<behaviors::GoToColorAction> as_; //create the actionlib server
+		actionlib::SimpleActionServer<behavior_actions::GoToColorAction> as_; //create the actionlib server
 		std::string action_name_;
 		
 		//ros::Publisher cmd_vel_publisher_;
@@ -73,7 +73,7 @@ class GoToColorControlPanelAction {
 		double drive_forward_speed;
 		double back_up_speed;
 		
-		double avg_current;
+		double avg_current;header
 		double avg_current_limit;
 
 		int num_drive_motors;
@@ -83,7 +83,7 @@ class GoToColorControlPanelAction {
 		*/
 
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
-		GoToColorControlPanelAction(const std::string &name, server_timeout, wait_for_server_timeout) :
+		GoToColorControlPanelAction(const std::string &name, double server_timeout, double wait_for_server_timeout) :
 			as_(nh_, name, boost::bind(&GoToColorControlPanelAction::executeCB, this, _1), false),
 			action_name_(name),
                         server_timeout_(server_timeout),
@@ -96,7 +96,7 @@ class GoToColorControlPanelAction {
 		std::map<std::string, std::string> service_connection_header;
 		service_connection_header["tcp_nodelay"] = "1";
 
-		match_sub_=nh_.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback. this);
+		match_sub_=nh_.subscribe("/frcrobot_rio/match_data", 1, &GoToColorControlPanelAction::matchColorCallback, this);
 		color_detect_sub_=nh_.subscribe("/color_detected", 1, &GoToColorControlPanelAction::detectColorCallback, this);
 		//talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
 
@@ -166,7 +166,7 @@ class GoToColorControlPanelAction {
 		*/
 
 		//define the function to be executed when the actionlib server is called
-		void executeCB(const behaviors::GoToColorGoalConstPtr &goal)
+		void executeCB(const behavior_actions::GoToColorGoalConstPtr &goal)
 		{
 			ROS_INFO("%s: Running callback", action_name_.c_str());
 
@@ -202,10 +202,10 @@ class GoToColorControlPanelAction {
 			//Extend the climber to deploy the mechanism
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
-				controller_2020_msgs::ClimberSrv climb_srv;
+				controllers_2020_msgs::ClimberSrv climb_srv;
 				climb_srv.request.winch_set_point = 0;
 				climb_srv.request.climber_deploy = true;
-				climb_srv.request.climber_elevator_break = true;
+				climb_srv.request.climber_elevator_brake = true;
 				if(!climber_controller_client_.call(climb_srv))
 				{
 					ROS_ERROR_STREAM(action_name_ << ": preempt while calling climb service");
@@ -253,7 +253,7 @@ class GoToColorControlPanelAction {
 				spin_srv.request.fms_color = goal_color_;
 				if(color_algorithm_client_.call(spin_srv))
 				{
-					panel_rotations = srv.response.rotate;
+					panel_rotations = spin_srv.response.rotate;
 				} else {
 					ROS_ERROR_STREAM(action_name_ << ": preempt while calling color algorithm");
 					preempted_ = true;
@@ -261,7 +261,7 @@ class GoToColorControlPanelAction {
                       
 				if(!preempted_ && !timed_out_ && ros::ok()) //Send rotation to control panel controller
 				{
-					controller_2020_msgs::ControlPanelSrv panel_srv;
+					controllers_2020_msgs::ControlPanelSrv panel_srv;
                     panel_srv.request.control_panel_rotations = panel_rotations; //Might need to be negative, but hopefully not?
 					if(!control_panel_controller_client_.call(panel_srv)) {
 						ROS_ERROR_STREAM(action_name_ << ": preempt while calling control panel controller");
@@ -299,10 +299,10 @@ class GoToColorControlPanelAction {
 			*/
 
 			//Retract the climber
-			controller_2020_msgs::ClimberSrv climb_srv;
+			controllers_2020_msgs::ClimberSrv climb_srv;
 			climb_srv.request.winch_set_point = 0;	
 			climb_srv.request.climber_deploy = false;
-			climb_srv.request.climber_elevator_break = true;
+			climb_srv.request.climber_elevator_brake = true;
 			if(!climber_controller_client_.call(climb_srv))
 			{
 				ROS_ERROR_STREAM(action_name_ << ": preempt while calling climb service");
@@ -312,23 +312,23 @@ class GoToColorControlPanelAction {
 			pause(climb_wait,"Retracting climber");
 
 			//log result and set actionlib server state appropriately
-			behaviors::GoToColorResult result;
+			behavior_actions::GoToColorResult result;
 
 			if(preempted_) {
 				ROS_WARN("%s: Finished - Preempted", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = false;
 				as_.setPreempted(result);
 			}
 			else if(timed_out_) {
 				ROS_WARN("%s: Finished - Timed Out", action_name_.c_str());
-				result.timed_out_ = true;
+				result.timed_out = true;
 				result.success = false;
 				as_.setSucceeded(result); //timed out is encoded as succeeded b/c actionlib doesn't have a timed out state
 			}
 			else { //implies succeeded
 				ROS_INFO("%s: Finished - Succeeded", action_name_.c_str());
-				result.timed_out_ = false;
+				result.timed_out = false;
 				result.success = true;
 				as_.setSucceeded(result);
 			}
@@ -381,7 +381,8 @@ class GoToColorControlPanelAction {
 		}
 
 		void matchColorCallback(const frc_msgs::MatchSpecificData &match_data){
-			goal_color_= std::toupper(match_data.controlPanelColor);
+			if(match_data.gameSpecificData.length() > 0)
+				goal_color_= std::toupper(match_data.gameSpecificData.at(0));
 		}
 
 		void detectColorCallback(const std_msgs::Int8 &color_data){
