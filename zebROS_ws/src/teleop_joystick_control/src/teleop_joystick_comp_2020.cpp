@@ -67,7 +67,7 @@ void imuCallback(const sensor_msgs::Imu &imuState)
 	tf2::Matrix3x3(imuQuat).getRPY(roll, pitch, yaw);
 
 	if (yaw == yaw) // ignore NaN results
-		imu_angle = -yaw;
+		imu_angle = yaw;
 }
 
 void preemptActionlibServers()
@@ -210,12 +210,12 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		else
 		{
 		}
-/*
+
 		std_msgs::Bool enable_pub_msg;
 
 		if((joystick_states_array[0].leftTrigger >= 0.5) && (cmd_vel.angular.z == 0.0)) //TODO Make a trigger point config value
 		{
-			enable_pub_msg.data = false;
+			enable_pub_msg.data = true;
 		}
 		else
 		{
@@ -235,13 +235,13 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		//Joystick1: rightTrigger
 		if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
 		{
-	//		teleop_cmd_vel->setSlowMode(true);
+			teleop_cmd_vel->setSlowMode(true);
 		}
 		else
 		{
-	//		teleop_cmd_vel->setSlowMode(false);
+			teleop_cmd_vel->setSlowMode(false);
 		}
-*/
+
 		//Joystick1: directionLeft
 		if(joystick_states_array[0].directionLeftPress)
 		{
@@ -284,15 +284,6 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		}
 		if(joystick_states_array[0].directionDownRelease)
 		{
-		}
-
-		if(joystick_states_array[0].rightTrigger > 0.5)
-		{
-			teleop_cmd_vel->setSlowMode(true);
-		}
-		else
-		{
-			teleop_cmd_vel->setSlowMode(false);
 		}
 	}
 	else if(joystick_id == 1)
