@@ -251,7 +251,6 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 
 		bool DSErrorCallback(ros_control_boilerplate::DSError::Request &req, ros_control_boilerplate::DSError::Response &res);
 		ros::ServiceServer ds_error_server_;
-		ros::ServiceClient ds_error_client_;
 };  // class
 
 }  // namespace
