@@ -286,7 +286,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 		{
 		}
 
-		if(joystick_states_array[0].stickRightButton)
+		if(joystick_states_array[0].rightTrigger > 0.5)
 		{
 			teleop_cmd_vel->setSlowMode(true);
 		}
