@@ -718,6 +718,36 @@ int32_t HAL_SetJoystickOutputs(int32_t, int64_t,
 	return -1;
 }
 
+#include "ros_control_boilerplate/DSError.h"
+// This will be called by non-Rio code which wants to report an error
+// It will make a service call to the rio ds_error_service with the
+// error data. The rio is then responsible for making an call to
+// the actual DS-connected HAL_SendError function to display it on
+// the DS.
+int32_t HAL_SendError(HAL_Bool isError, int32_t errorCode, HAL_Bool isLVCode, const char * details, const char *location, const char *callStack, HAL_Bool printMsg)
+{
+    ROS_ERROR_STREAM("HAL_SendError called : errorCode = " << errorCode
+			<< " = " <<  HAL_GetErrorMessage(errorCode)
+			<< " : " << details);
+
+	ros::NodeHandle nh;
+	ros::ServiceClient ds_error_client_ = nh.serviceClient<ros_control_boilerplate::DSError>("/frcrobot_rio/ds_error_service");
+	if (!ds_error_client_.waitForExistence(ros::Duration(5)))
+	{
+		ROS_ERROR("Timeout waiting for /frcrobot_rio/ds_error_service");
+		return -1;
+	}
+
+	ros_control_boilerplate::DSError msg;
+	msg.request.error_code = errorCode;
+	msg.request.details    = details;
+	if (!ds_error_client_.call(msg.request, msg.response))
+	{
+		ROS_ERROR("ds_error_client call failed");
+	}
+	return 0;
+}
+
 #include <frc/Timer.h>
 double frc::Timer::GetFPGATimestamp()
 {
@@ -873,6 +903,10 @@ const char* HAL_GetErrorMessage(int32_t code) {
       return ERR_FRCSystem_NetCommNotResponding_MESSAGE;
     case ERR_FRCSystem_NoDSConnection:
       return ERR_FRCSystem_NoDSConnection_MESSAGE;
+    case HAL_CAN_BUFFER_OVERRUN:
+      return HAL_CAN_BUFFER_OVERRUN_MESSAGE;
+    case HAL_LED_CHANNEL_ERROR:
+      return HAL_LED_CHANNEL_ERROR_MESSAGE;
     default:
       return "Unknown error status";
   }
