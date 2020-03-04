@@ -170,10 +170,9 @@ int main(int argc, char **argv)
 		indexer_front_linebreak.resetPulseDetection();
 		indexer_linebreak.resetPulseDetection();
 		shooter_linebreak.resetPulseDetection();
-
+	}
 		//ros stuff
 		ros::spinOnce();
-		r.sleep();i
-	}
+		r.sleep();
 	}
 }
