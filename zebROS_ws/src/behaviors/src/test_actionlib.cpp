@@ -277,7 +277,7 @@ bool callClimber(int step)
 	}
 }
 
-bool callShooter()
+bool callShooter(int mode)
 {
 	//create client to call actionlib server
 	actionlib::SimpleActionClient<behavior_actions::ShooterAction> shooter_ac("/shooter/shooter_server", true);
@@ -291,6 +291,7 @@ bool callShooter()
 	ROS_INFO("Sending goal to shooter server.");
 	// send a goal to the action
 	behavior_actions::ShooterGoal goal;
+	goal.mode = mode;
 	shooter_ac.sendGoal(goal);
 
 	//wait for the action to return
@@ -513,6 +514,7 @@ void mySigIntHandler(int sig)
 	//preempt all actionlib servers
 	ROS_WARN("Preempting all actionlib servers");
 	actionlib::SimpleActionClient<behavior_actions::IntakeAction>("/powercell_intake/powercell_intake_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
+	actionlib::SimpleActionClient<behavior_actions::ShooterAction>("/shooter/shooter_server", true).cancelGoalsAtAndBeforeTime(ros::Time::now());
 
 	ROS_ERROR("Calling shutdown");
 	//stop this node
@@ -720,7 +722,10 @@ int main (int argc, char **argv)
 	}
 	else if(what_to_run == "shooter")
 	{
-		callShooter();
+		int mode;
+		std::cout << "Mode? (0-auto, 1-near, 2-far)\n";
+		std::cin >> mode;
+		callShooter(mode);
 	}
 	else if(what_to_run == "indexer")
 	{

@@ -15,8 +15,8 @@
 
 //include action files - for this actionlib server and any it sends requests to
 #include "behavior_actions/ShooterAction.h"
-#include "behavior_actions/IndexerGoal.h"
 #include "behavior_actions/IndexerAction.h"
+#include "behavior_actions/AlignToShootAction.h"
 
 #include "behavior_actions/enumerated_indexer_actions.h"
 
@@ -24,10 +24,11 @@
 #include "controllers_2020_msgs/ShooterSrv.h"
 #include "controllers_2020_msgs/IndexerSrv.h"
 
-//include msg types for goal subscriber
+//include msg types
 #include "field_obj/Detection.h"
 #include "std_msgs/Bool.h"
 #include "std_msgs/UInt8.h"
+#include "std_msgs/Float64.h"
 
 //create the class for the actionlib server
 class ShooterAction {
@@ -40,7 +41,11 @@ class ShooterAction {
 		//clients to call controllers
 		ros::ServiceClient shooter_client_; //create a ros client to send requests to the controller
 
+		//publisher to turn green light on/off
+		ros::Publisher green_light_pub_;
+
 		//clients to call actionlib server
+		actionlib::SimpleActionClient<behavior_actions::AlignToShootAction> ac_align_;
 		actionlib::SimpleActionClient<behavior_actions::IndexerAction> ac_indexer_;
 
 		ros::Subscriber ready_to_shoot_sub_;
@@ -49,7 +54,7 @@ class ShooterAction {
 		std::mutex goal_msg_mutex_;
 		field_obj::Detection goal_msg_;
 		ros::Subscriber num_balls_sub_;
-        std::atomic<int> num_balls_;
+		std::atomic<int> num_balls_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -57,8 +62,8 @@ class ShooterAction {
 		ros::Rate r{10}; //used for wait loops, curly brackets needed so it doesn't think this is a function
 		double start_time_;
 
-                tf2_ros::Buffer tf_buffer_;
-                tf2_ros::TransformListener tf_listener_;
+        tf2_ros::Buffer tf_buffer_;
+        tf2_ros::TransformListener tf_listener_;
 
 		//Use to make pauses while still checking timed_out_ and preempted_
 		bool pause(const double duration, const std::string &activity)
@@ -101,6 +106,18 @@ class ShooterAction {
 			return lerp(table.at(counter).at("speed"), table.at(counter-1).at("speed"), (dist-table.at(counter).at("dist"))/(table.at(counter-1).at("dist")-table.at(counter).at("dist")));
 		}
 
+		void turnGreenLightOn(bool turn_on)
+		{
+			std_msgs::Float64 msg;
+			if(turn_on) {
+				msg.data = 0.0; //0 is on so the default is on
+			}
+			else {
+				msg.data = 1.0;
+			}
+			green_light_pub_.publish(msg);
+		}
+
 		bool getHoodAndVelocity(bool& hood_extended, double& shooter_speed)
 		{
 			field_obj::Detection local_goal_msg;
@@ -117,25 +134,25 @@ class ShooterAction {
 				}
 			}
 
-                        // find transformed goal position
-                        geometry_msgs::PointStamped goal_pos_from_zed;
-                        goal_pos_from_zed.header = local_goal_msg.header;
-                        goal_pos_from_zed.point.x = goal_pos_.x;
-                        goal_pos_from_zed.point.y = goal_pos_.y;
-                        goal_pos_from_zed.point.z = goal_pos_.z;
+			// find transformed goal position
+			geometry_msgs::PointStamped goal_pos_from_zed;
+			goal_pos_from_zed.header = local_goal_msg.header;
+			goal_pos_from_zed.point.x = goal_pos_.x;
+			goal_pos_from_zed.point.y = goal_pos_.y;
+			goal_pos_from_zed.point.z = goal_pos_.z;
 
-                        geometry_msgs::PointStamped transformed_goal_pos;
-                        geometry_msgs::TransformStamped zed_to_turret_transform;
-                        try {
-                            zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
-                            tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
-                        }
-                        catch (tf2::TransformException &ex) {
-                            ROS_WARN("Shooter actionlib server failed to do ZED->turret transform - %s", ex.what());
-                            return false;
-                        }
-                        ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
-                        ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
+			geometry_msgs::PointStamped transformed_goal_pos;
+			geometry_msgs::TransformStamped zed_to_turret_transform;
+			try {
+				zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
+				tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
+			}
+			catch (tf2::TransformException &ex) {
+				ROS_WARN("Shooter actionlib server failed to do ZED->turret transform - %s", ex.what());
+				return false;
+			}
+			ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
+			ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
 
 			//obtain distance via trig
 			const double distance = std::hypot(transformed_goal_pos.point.x, transformed_goal_pos.point.y);
@@ -165,6 +182,7 @@ class ShooterAction {
 			if(!ac_indexer_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
 				ROS_ERROR_STREAM(action_name_ << " couldn't find indexer actionlib server");
+				turnGreenLightOn(false);
 				as_.setPreempted();
 				return;
 			}
@@ -173,8 +191,21 @@ class ShooterAction {
 			if(! shooter_client_.waitForExistence(ros::Duration(wait_for_server_timeout_)))
 			{
 				ROS_ERROR_STREAM(action_name_ << " can't find controllers_2020_msgs");
+				turnGreenLightOn(false);
 				as_.setPreempted();
 				return;
+			}
+
+			//make sure green light is on
+			turnGreenLightOn(true);
+
+
+			//align the turret, only for auto mode
+			if(goal->mode == 0)
+			{
+				behavior_actions::AlignToShootGoal align_goal;
+				ac_align_.sendGoal(align_goal);
+					//don't wait for it to finish, so we can start spinning up the shooter while its going. Will only call the indexer actionlib server if the align succeeded
 			}
 
 			//keep shooting balls until we don't have any
@@ -183,27 +214,29 @@ class ShooterAction {
 				//determine shooter velocity/hood raise and go there with shooter
 				ROS_INFO_STREAM(action_name_ << ": spinning up the shooter");
 				controllers_2020_msgs::ShooterSrv srv;
-				if(goal->mode == 1)
+				bool shooter_hood_raise;
+				double shooter_velocity;
+				if(goal->mode == 1) //near fixed shooting
 				{
-				
+					shooter_hood_raise = false;
+					shooter_velocity = near_shooting_speed_;
 				}
-				else if (goal->mode == 2)
+				else if (goal->mode == 2) //far fixed shooting
 				{
-
+					shooter_hood_raise = true;
+					shooter_velocity = far_shooting_speed_;
 				}
 				else //last option for goal->mode is 0=auto shooting, but also make this the default
 				{
-					bool shooter_hood_raise;
-					double shooter_velocity;
 					if(!getHoodAndVelocity(shooter_hood_raise, shooter_velocity))
 					{
 						ROS_ERROR_STREAM(action_name_ << " tried to shoot ball while out of range");
 						preempted_ = true;
 						break;
 					}
-					srv.request.shooter_hood_raise = shooter_hood_raise;
-					srv.request.set_velocity = shooter_velocity;
 				}
+				srv.request.shooter_hood_raise = shooter_hood_raise;
+				srv.request.set_velocity = shooter_velocity;
 				if(!shooter_client_.call(srv))
 				{
 					ROS_ERROR_STREAM(action_name_ << " can't call shooter service");
@@ -238,13 +271,22 @@ class ShooterAction {
 				//feed ball into the shooter
 				if(!preempted_ && !timed_out_ && ros::ok())
 				{
-					ROS_INFO_STREAM(action_name_ << ": calling indexer server to feed one ball into the shooter");
-					//Call actionlib server
-					behavior_actions::IndexerGoal indexer_goal;
-					indexer_goal.action = SHOOT_ONE_BALL;
-					ac_indexer_.sendGoal(indexer_goal);
-					//wait for actionlib server
-					waitForActionlibServer(ac_indexer_, 30, "calling indexer server"); //method defined below. Args: action client, timeout in sec, description of activity
+					//check if the turret align finished - only for auto mode though
+					std::string align_state = ac_align_.getState().toString();
+					if(align_state == "SUCCEEDED" || goal->mode != 0) //0 is auto mode
+					{
+						ROS_INFO_STREAM(action_name_ << ": calling indexer server to feed one ball into the shooter");
+						//Call actionlib server
+						behavior_actions::IndexerGoal indexer_goal;
+						indexer_goal.action = SHOOT_ONE_BALL;
+						ac_indexer_.sendGoal(indexer_goal);
+						//wait for actionlib server
+						waitForActionlibServer(ac_indexer_, 30, "calling indexer server", true); //method defined below. Args: action client, timeout in sec, description of activity
+							//note: last arg is ignore_preempt, we want to wait for the current ball to finish shooting when the shooter is preempted - so don't stop waiting if we get preempted
+					}
+					else {
+						r.sleep();
+					}
 				}
 			}
 
@@ -264,6 +306,10 @@ class ShooterAction {
 			ac_indexer_.sendGoal(indexer_goal);
 			//wait for actionlib server
 			waitForActionlibServer(ac_indexer_, 30, "calling indexer server"); //method defined below. Args: action client, timeout in sec, description of activity
+
+			//turn green light off, we're done with it
+			turnGreenLightOn(false);
+
 
 			//log result and set actionlib server state appropriately
 			behavior_actions::ShooterResult result;
@@ -290,7 +336,7 @@ class ShooterAction {
 
 		}
 
-		void waitForActionlibServer(auto &action_client, double timeout, const std::string &activity)
+		void waitForActionlibServer(auto &action_client, double timeout, const std::string &activity, bool ignore_preempt=false)
 			//activity is a description of what we're waiting for, e.g. "waiting for mechanism to extend" - helps identify where in the server this was called (for error msgs)
 		{
 			double request_time = ros::Time::now().toSec();
@@ -317,10 +363,10 @@ class ShooterAction {
 					break; //stop waiting
 				}
 				//checks related to this file's actionlib server
-				else if (as_.isPreemptRequested() || !ros::ok()) {
+				else if ( (!ignore_preempt && as_.isPreemptRequested()) || !ros::ok()) {
 					ROS_ERROR_STREAM(action_name_ << ": preempted_ during " << activity);
 					preempted_ = true;
-					//don't preempt the other one - the indexer actionlib server, so that we can finish shooting the current ball when preempted, before stopping
+					action_client.cancelGoalsAtAndBeforeTime(ros::Time::now());
 				}
 				else if (ros::Time::now().toSec() - start_time_ > server_timeout_) {
 					ROS_ERROR_STREAM(action_name_ << ": timed out during " << activity);
@@ -355,6 +401,7 @@ class ShooterAction {
 		ShooterAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&ShooterAction::executeCB, this, _1), false),
 			action_name_(name),
+			ac_align_("/align_to_shoot/align_to_shoot_server", true),
 			ac_indexer_("/indexer/indexer_server", true),
 			tf_listener_(tf_buffer_)
 	{
@@ -367,6 +414,10 @@ class ShooterAction {
 		//initialize client used to call controllers
 		shooter_client_ = nh_.serviceClient<controllers_2020_msgs::ShooterSrv>("/frcrobot_jetson/shooter_controller/shooter_command", false, service_connection_header);
 
+		//green light publisher to turn it on/off - planned to not use
+		green_light_pub_ = nh_.advertise<std_msgs::Float64>("/frcrobot_rio/green_led_controller/command", 1);
+
+		//subscribers
 		ready_to_shoot_sub_ = nh_.subscribe("/frcrobot_jetson/shooter_controller/ready_to_shoot", 5, &ShooterAction::shooterReadyCB, this);
 		goal_sub_ = nh_.subscribe("/goal_detection/goal_detect_msg", 5, &ShooterAction::goalDetectionCB, this);
 		num_balls_sub_ = nh_.subscribe("/num_indexer_powercells", 5, &ShooterAction::numBallsCB, this); //subscribing to indexer powercells b/c can't shoot balls in the intake
@@ -392,7 +443,7 @@ class ShooterAction {
 
 bool sortDistDescending(const std::map<std::string, double> &m1, const std::map<std::string, double> &m2)
 {
-    return m1.at("dist") > m2.at("dist");
+	return m1.at("dist") > m2.at("dist");
 }
 
 int main(int argc, char** argv) {
@@ -417,7 +468,15 @@ int main(int argc, char** argv) {
 		ROS_ERROR("Could not read wait_for_ready_timeout in shooter_server");
 		shooter_action.wait_for_ready_timeout_ = 10;
 	}
-	
+	if (!n_params_shooter.getParam("near_shooting_speed", shooter_action.near_shooting_speed_)) {
+		ROS_ERROR("Could not read near_shooting_speed in shooter_server");
+		shooter_action.near_shooting_speed_ = 10;
+	}
+	if (!n_params_shooter.getParam("far_shooting_speed", shooter_action.far_shooting_speed_)) {
+		ROS_ERROR("Could not read far_shooting_speed in shooter_server");
+		shooter_action.far_shooting_speed_ = 10;
+	}
+
 	XmlRpc::XmlRpcValue hood_up_list;
 	if(!n_params_shooter.getParam("hood_up_table", hood_up_list)){
 		ROS_ERROR("Couldn't read hood_up_table in shooter_actionlib.yaml");
@@ -428,20 +487,20 @@ int main(int argc, char** argv) {
 
 		std::map<std::string, double> shooter_map;
 
-	    if (shooter_point.hasMember("dist"))
-	    {
-		    XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
-		    if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+		if (shooter_point.hasMember("dist"))
+		{
+			XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
+			if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
 				ROS_ERROR("An invalid shooter distance was specified (expecting an double) in hood_up_table in shooter_actionlib.yaml");
-		    shooter_map["dist"] = xml_dist;
+			shooter_map["dist"] = xml_dist;
 		}
 
 		if (shooter_point.hasMember("speed"))
-	    {
-		    XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
-		    if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+		{
+			XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
+			if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
 				ROS_ERROR("An invalid shooter speed was specified (expecting an double) in hood_up_table in shooter_actionlib.yaml");
-		    shooter_map["speed"] = xml_speed;
+			shooter_map["speed"] = xml_speed;
 		}
 
 		shooter_action.hood_up_table_.push_back(shooter_map);
@@ -458,32 +517,32 @@ int main(int argc, char** argv) {
 
 		std::map<std::string, double> shooter_map;
 
-	    if (shooter_point.hasMember("dist"))
-	    {
-		    XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
-		    if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+		if (shooter_point.hasMember("dist"))
+		{
+			XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
+			if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
 				ROS_ERROR("An invalid shooter distance was specified (expecting an double) in hood_down_table in shooter_actionlib.yaml");
-		    shooter_map["dist"] = xml_dist;
+			shooter_map["dist"] = xml_dist;
 		}
 
 		if (shooter_point.hasMember("speed"))
-	    {
-		    XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
-		    if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+		{
+			XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
+			if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
 				ROS_ERROR("An invalid shooter speed was specified (expecting an double) in hood_down_table in shooter_actionlib.yaml");
-		    shooter_map["speed"] = xml_speed;
+			shooter_map["speed"] = xml_speed;
 		}
 
 		shooter_action.hood_down_table_.push_back(shooter_map);
 	}
-	
+
 	if(!n_params_shooter.getParam("hood_threshold", shooter_action.hood_threshold_)){
 		ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
 		shooter_action.hood_threshold_ = 0.0;
 	}
 
 	std::sort(shooter_action.hood_up_table_.begin(), shooter_action.hood_up_table_.end(), sortDistDescending);
-    std::sort(shooter_action.hood_down_table_.begin(), shooter_action.hood_down_table_.end(), sortDistDescending);
+	std::sort(shooter_action.hood_down_table_.begin(), shooter_action.hood_down_table_.end(), sortDistDescending);
 
 	shooter_action.max_dist_ = shooter_action.hood_up_table_.front().at("dist");
 	shooter_action.min_dist_ = shooter_action.hood_down_table_.back().at("dist");

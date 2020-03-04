@@ -10,3 +10,7 @@ actionlib_shooter_params:
     hood_down_table: 
         - {dist: 10.0, speed: 315.0}
         - {dist: 2.0, speed: 250.0}
+
+    #fixed speeds for manual shooting
+    near_shooting_speed: 300.0 #with hood down
+    far_shooting_speed: 415.0 #with hood up
