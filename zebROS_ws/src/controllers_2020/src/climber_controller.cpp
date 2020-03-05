@@ -46,7 +46,7 @@ namespace climber_controller_2020
         winch_joint_.setSelectedSensorPosition(0.0);
 
 		// set reverse softlimit to just a bit above initial position
-		winch_joint_.setReverseSoftLimitThreshold(0.1);
+		winch_joint_.setReverseSoftLimitThreshold(softlimit_offset_);
 		winch_joint_.setReverseSoftLimitEnable(true);
 
         //give command buffer(s) an initial value
