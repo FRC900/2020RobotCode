@@ -4,11 +4,17 @@
 #include <talon_state_msgs/TalonState.h>
 #include <frc_msgs/MatchSpecificData.h>
 #include <std_msgs/UInt8.h>
-
+#include <std_srvs/Empty.h>
 
 //velocity variables, updated by talonStateCallback()
 double intake_percent_out = 0; //default to 0
 double indexer_velocity = 0;
+	
+//storage variables for num balls
+int num_balls = 3; //default is 3
+int num_indexer_balls = 3;
+int num_stored_balls = 3;
+
 
 
 //subscriber callback functions
@@ -55,6 +61,15 @@ void matchDataCallback(const frc_msgs::MatchSpecificData & matchdata)
 	disabled = matchdata.Disabled;
 }
 
+//Callback function to reset all ball counters
+bool resetBall(std_srvs::Empty::Request &req,
+			   std_srvs::Empty::Response &res)
+{
+	num_balls = 0;
+	num_indexer_balls = 0;
+	num_stored_balls = 0;
+	return true;
+}
 
 int main(int argc, char **argv)
 {
@@ -77,10 +92,8 @@ int main(int argc, char **argv)
 	ros::Publisher num_indexer_balls_pub = nh.advertise<std_msgs::UInt8>("num_indexer_powercells", 1);
 	ros::Publisher num_stored_balls_pub = nh.advertise<std_msgs::UInt8>("num_stored_powercells", 1);
 
-	//storage variables for num balls
-	int num_balls = 3; //default is 3
-	int num_indexer_balls = 3;
-	int num_stored_balls = 3;
+	//reset all ball counts to 0
+	ros::ServiceServer reset_ball_count = nh.advertiseService("reset_ball", resetBall);
 
 	//checks to make sure the parameter read was successful
 	if(nh.getParam("/initial_num_powercells", num_balls))
