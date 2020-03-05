@@ -67,7 +67,7 @@ bool rotate(color_spin::color_algorithm::Request &req,
 		 {
 			 case 'R': res.rotate = -.125;
 					   break;
-			 case 'C': res.rotate = .125;
+			 case 'B': res.rotate = .125;
 					   break;
 			 case 'G': res.rotate = .25;
 					   break;
