@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include <utility>
+#include <cmath>
 
 #include <iostream>
 #include <ros/ros.h>
@@ -109,30 +110,49 @@ Particle ParticleFilter::predict() {
   return res;
 }
 
-void ParticleFilter::motion_update(double delta_x, double delta_y, double delta_rot) {
+bool ParticleFilter::motion_update(double delta_x, double delta_y, double delta_rot) {
   for (Particle& p : particles_) {
     // p.x_ += delta_x;
     // p.y_ += delta_y;
+    double abs_delta_x = delta_x * cos(p.rot_) + delta_y * sin(p.rot_);
+    double abs_delta_y = delta_x * sin(p.rot_) + delta_y * cos(p.rot_);
+    if (std::isnan(delta_rot + abs_delta_x + abs_delta_y) || std::isinf(delta_rot + abs_delta_x + abs_delta_y)) {
+      return false;
+    }
     p.rot_ += delta_rot;
-    p.x_ += delta_x * cos(p.rot_) + delta_y * sin(p.rot_);
-    p.y_ += delta_x * sin(p.rot_) + delta_y * cos(p.rot_);
+    p.x_ += abs_delta_x;
+    p.y_ += abs_delta_y;
   }
   constrain_particles();
+  return true;
 }
 
-void ParticleFilter::set_rotation(double rot) {
+bool ParticleFilter::set_rotation(double rot) {
+  if (std::isnan(rot) || std::isinf(rot)) {
+    return false;
+  }
   for (Particle& p : particles_) {
     p.rot_ = rot;
   }
   noise_rot();
+  return true;
 }
 
 //assigns the reciprocal of the computed error of each particles assignment vector to the respective particle
-void ParticleFilter::assign_weights(std::vector<Beacon > mBeacons, const Particle& offset) {
+bool ParticleFilter::assign_weights(std::vector<Beacon > mBeacons, const Particle& offset) {
+  double test_sum = offset.x_ + offset.y_ + offset.rot_;
+  for (Beacon b : mBeacons) {
+    test_sum += b.x_ + b.y_;
+  }
+  if (std::isnan(test_sum) || std::isinf(test_sum)) {
+    return false;
+  }
+
   for (Particle& p : particles_) {
     p.weight_ = 1 / world_.total_distance(p, mBeacons, offset);
   }
   normalize();
+  return true;
 }
 
 std::vector<Particle> ParticleFilter::get_particles() const {
