@@ -15,8 +15,11 @@ import resource_rc
 from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
 import std_msgs.msg
+import roslibpy
 
 
+client = roslibpy.Ros(host='localhost',port = 9090)
+client.run()
 class Dashboard(Plugin):
 
     msg_data = "default"
