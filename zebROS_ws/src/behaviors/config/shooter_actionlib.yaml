@@ -14,3 +14,7 @@ actionlib_shooter_params:
     #fixed speeds for manual shooting
     near_shooting_speed: 300.0 #with hood down
     far_shooting_speed: 415.0 #with hood up
+
+    #fine tuning config, read by teleop code
+    speed_tuning_increment: 20 #shooter velocity units
+    turret_tuning_increment: 0.15 #radians

@@ -29,6 +29,7 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/UInt8.h"
 #include "std_msgs/Float64.h"
+#include "behavior_actions/ShooterOffset.h"
 
 //create the class for the actionlib server
 class ShooterAction {
@@ -48,13 +49,19 @@ class ShooterAction {
 		actionlib::SimpleActionClient<behavior_actions::AlignToShootAction> ac_align_;
 		actionlib::SimpleActionClient<behavior_actions::IndexerAction> ac_indexer_;
 
+		//subscribing stuff
 		ros::Subscriber ready_to_shoot_sub_;
-		std::atomic<bool> ready_to_shoot_;
+		std::atomic<bool> ready_to_shoot_ = false;
+
 		ros::Subscriber goal_sub_;
 		std::mutex goal_msg_mutex_;
 		field_obj::Detection goal_msg_;
+
 		ros::Subscriber num_balls_sub_;
-		std::atomic<int> num_balls_;
+		std::atomic<int> num_balls_ = 3;
+
+		ros::Subscriber shooter_offset_sub_;
+		std::atomic<double> speed_offset_ = 0;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -179,6 +186,10 @@ class ShooterAction {
 			preempted_ = false;
 			timed_out_ = false;
 
+			//make sure green light is on
+			turnGreenLightOn(true);
+
+			//wait for actionlib servers
 			if(!ac_indexer_.waitForServer(ros::Duration(wait_for_server_timeout_)))
 			{
 				ROS_ERROR_STREAM(action_name_ << " couldn't find indexer actionlib server");
@@ -196,8 +207,6 @@ class ShooterAction {
 				return;
 			}
 
-			//make sure green light is on
-			turnGreenLightOn(true);
 
 
 			//align the turret, only for auto mode
@@ -236,7 +245,7 @@ class ShooterAction {
 					}
 				}
 				srv.request.shooter_hood_raise = shooter_hood_raise;
-				srv.request.set_velocity = shooter_velocity;
+				srv.request.set_velocity = shooter_velocity + speed_offset_;
 				if(!shooter_client_.call(srv))
 				{
 					ROS_ERROR_STREAM(action_name_ << " can't call shooter service");
@@ -394,6 +403,11 @@ class ShooterAction {
 		void numBallsCB(const std_msgs::UInt8 &msg)
 		{
 			num_balls_ = msg.data;
+		}
+
+		void shooterOffsetCB(const behavior_actions::ShooterOffset &msg)
+		{
+			speed_offset_ = msg.speed_offset;
 		}
 
 	public:

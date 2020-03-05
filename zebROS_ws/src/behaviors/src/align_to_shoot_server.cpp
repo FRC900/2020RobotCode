@@ -12,6 +12,7 @@
 #include "controllers_2020_msgs/TurretSrv.h"
 
 #include "field_obj/Detection.h"
+#include "behavior_actions/ShooterOffset.h"
 #include "talon_state_msgs/TalonState.h"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
@@ -37,14 +38,17 @@ class AlignToShootAction
 		ros::Subscriber talon_states_sub_;
 		std::atomic<double> cur_turret_position_;
 
-		ros::Subscriber robot_heading_sub_;
+		ros::Subscriber robot_heading_sub_; //result from this not used
 		std::atomic<double> robot_yaw_;
+
+		ros::Subscriber shooter_offset_sub_;
+		std::atomic<double> angle_offset_ = 0;
 
 		//clients to call controllers
 		ros::ServiceClient turret_controller_client_;
 
-                tf2_ros::Buffer tf_buffer_;
-                tf2_ros::TransformListener tf_listener_;
+		tf2_ros::Buffer tf_buffer_;
+		tf2_ros::TransformListener tf_listener_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -57,9 +61,9 @@ class AlignToShootAction
 		AlignToShootAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&AlignToShootAction::executeCB, this, _1), false),
 			action_name_(name),
-                        tf_listener_(tf_buffer_)
-		{
-			as_.start(); //start the actionlib server
+			tf_listener_(tf_buffer_)
+	{
+		as_.start(); //start the actionlib server
 
 		//do networking stuff
 		std::map<std::string, std::string> service_connection_header;
@@ -68,6 +72,7 @@ class AlignToShootAction
 		goal_detection_data_sub_ = nh_.subscribe("/goal_detection/goal_detect_msg", 1, &AlignToShootAction::goalDetectionCallback, this);
 		talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &AlignToShootAction::talonStateCallback, this);
 		//robot_heading_sub_ = nh_.subscribe("/imu/data", 1, &AlignToShootAction::robotHeadingCallback, this);
+		shooter_offset_sub_ = nh_.subscribe("/teleop/teleop_shooter_offsets", 1, &AlignToShootAction::shooterOffsetCB, this);
 
 		//initialize client used to call controllers
 		turret_controller_client_ = nh_.serviceClient<controllers_2020_msgs::TurretSrv>("/frcrobot_jetson/turret_controller/turret_command", false, service_connection_header);
@@ -102,6 +107,11 @@ class AlignToShootAction
 			}
 
 			return false; //wait loop must've been broken by preempt, global timeout, or ros not ok
+		}
+
+		void shooterOffsetCB(const behavior_actions::ShooterOffset &msg)
+		{
+			angle_offset_ = msg.turret_offset;
 		}
 
 		void goalDetectionCallback(const field_obj::Detection &msg)
@@ -196,15 +206,15 @@ class AlignToShootAction
 				const double align_angle = -atan2(transformed_goal_pos.point.y, transformed_goal_pos.point.x);
 				ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
 				setpoint = align_angle;
-                                if(setpoint < turret_soft_limit_reverse_ || setpoint > turret_soft_limit_forward_)
-                                {
-                                    ROS_ERROR_STREAM("Align server - align setpoint " << setpoint << " out of range");
-                                    return false;
-                                }
-                                else 
-                                {
-                                    ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
-                                }
+				if(setpoint < turret_soft_limit_reverse_ || setpoint > turret_soft_limit_forward_)
+				{
+					ROS_ERROR_STREAM("Align server - align setpoint " << setpoint << " out of range");
+					return false;
+				}
+				else 
+				{
+					ROS_WARN_STREAM("Align server - Align setpoint: " << setpoint);
+				}
 			}
 			else
 			{
@@ -236,11 +246,14 @@ class AlignToShootAction
 			ROS_INFO_STREAM(action_name_ << ": calling turret controller");
 			//call controller client, if failed set preempted_ = true, and log an error msg
 			controllers_2020_msgs::TurretSrv srv;
-			if( ! getTurretPosition(srv.request.set_point))
+			double set_point = 0;
+			if( ! getTurretPosition(set_point))
 			{
 				ROS_ERROR("Align server - couldn't get turret setpoint");
 				preempted_ = true;
 			}
+			set_point += angle_offset_;
+			srv.request.set_point = set_point;
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
 				if (!turret_controller_client_.call(srv))
@@ -370,8 +383,8 @@ class AlignToShootAction
 		double turn_turret_timeout_; //timeout for waiting for turret to go to position
 		double max_turret_position_error_;
 
-                double turret_soft_limit_forward_;
-                double turret_soft_limit_reverse_;
+		double turret_soft_limit_forward_;
+		double turret_soft_limit_reverse_;
 
 };
 
@@ -386,16 +399,16 @@ int main(int argc, char **argv)
 	//create the actionlib server
 	AlignToShootAction align_to_shoot_action("align_to_shoot_server");
 
-        if(!n.getParam("/frcrobot_jetson/turret_controller/turret/softlimit_forward_threshold", align_to_shoot_action.turret_soft_limit_forward_))
-        {
-            ROS_ERROR("Could not read turret_soft_limit_forward in align_server");
-            align_to_shoot_action.turret_soft_limit_forward_ = 0.45;
-        }
-        if(!n.getParam("/frcrobot_jetson/turret_controller/turret/softlimit_reverse_threshold", align_to_shoot_action.turret_soft_limit_reverse_))
-        {
-            ROS_ERROR("Could not read turret_soft_limit_reverse in align_server");
-            align_to_shoot_action.turret_soft_limit_reverse_ = -0.2;
-        }
+	if(!n.getParam("/frcrobot_jetson/turret_controller/turret/softlimit_forward_threshold", align_to_shoot_action.turret_soft_limit_forward_))
+	{
+		ROS_ERROR("Could not read turret_soft_limit_forward in align_server");
+		align_to_shoot_action.turret_soft_limit_forward_ = 0.45;
+	}
+	if(!n.getParam("/frcrobot_jetson/turret_controller/turret/softlimit_reverse_threshold", align_to_shoot_action.turret_soft_limit_reverse_))
+	{
+		ROS_ERROR("Could not read turret_soft_limit_reverse in align_server");
+		align_to_shoot_action.turret_soft_limit_reverse_ = -0.2;
+	}
 
 	ros::NodeHandle n_params_align(n, "actionlib_align_to_shoot_params"); //node handle for a lower-down namespace
 	if (!n_params_align.getParam("server_timeout", align_to_shoot_action.server_timeout_))
