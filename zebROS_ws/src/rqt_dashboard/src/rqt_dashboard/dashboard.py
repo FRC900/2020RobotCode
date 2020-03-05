@@ -16,7 +16,6 @@ from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
 import std_msgs.msg
 
-lock = Lock()
 
 class Dashboard(Plugin):
 
@@ -47,6 +46,8 @@ class Dashboard(Plugin):
         # Give QObjects reasonable names
         self._widget.setObjectName('DashboardUi')
 
+
+        #self.lock = Lock()
 
         # Set up signal-slot connections
         self._widget.set_imu_angle_button.clicked.connect(self.setImuAngle)
@@ -83,7 +84,6 @@ class Dashboard(Plugin):
         # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
 
         # publish thread
         publish_thread = Thread(target=self.publish_thread) #args=(self,))
@@ -98,7 +98,6 @@ class Dashboard(Plugin):
         self.five_balls = QPixmap(":/images/5_balls.png")
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
         
-        self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
         self.n_balls = -1 #don't know n balls at first 
 
         # Show _widget.windowTitle on left-top of each plugin (when 
@@ -110,18 +109,25 @@ class Dashboard(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
+        
+        #initialize subscribers last, so that any callbacks they execute won't interfere with init
+        self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
+        self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
+
+    def nullCallback(self, msg):
+        pass
 
 
 
     def autoStateCallback(self, msg):
-        lock.aquire()
+        #self.lock.acquire()
         if(self.autoState != msg.id):
 	    self.autoState = msg.id
             self.displayAutoState()
-        lock.release()
+        #self.lock.release()
 
     def displayAutoState(self):
-        lock.aquire()
+        #self.lock.acquire()
         if self.autoState == 0:
             self._widget.auto_state_display.setText("Not ready")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
@@ -137,10 +143,10 @@ class Dashboard(Plugin):
 	elif self.autoState == 4:
 	    self._widget.auto_state_display.setText("Error")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
-        lock.release()
+        #self.lock.release()
 
     def nBallsCallback(self, msg):
-        lock.aquire()
+        #self.lock.acquire()
         if(self.n_balls != msg.data):
             self.n_balls = msg.data
             display = self._widget.n_balls_display
@@ -161,12 +167,13 @@ class Dashboard(Plugin):
                 display.setPixmap(self.more_than_five_balls)
             else:
                 display.setText("Couldn't read # balls")
-        lock.release()
+        #self.lock.release()
 
     def setImuAngle(self):
-        lock.aquire()
+        print("setting imu")
+        #self.lock.acquire()
         angle = self._widget.imu_angle.value() # imu_angle is the text field (doublespinbox) that the user can edit to change the navx angle, defaulting to zero
-
+        
         # call the service
         try:
             rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
@@ -177,26 +184,27 @@ class Dashboard(Plugin):
 
         except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
             self.errorPopup("Imu Set Angle Error", e)
-        lock.release()
+        #self.lock.release()
+        print("finished setting imu")
 
     def imuAngleChanged(self):
-        lock.aquire()
+        #self.lock.acquire()
         # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
         self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
-        lock.release()
+        #self.lock.release()
 
     def errorPopup(self, title, e):
-        lock.aquire()
+        #self.lock.acquire()
         msg_box = QMessageBox()
         msg_box.setWindowTitle(title)
         msg_box.setIcon(QMessageBox.Warning)
         msg_box.setText("%s"%e)
         msg_box.exec_()
-        lock.release()
+        #self.lock.release()
 
     #Publisher -> fake Auto States
     def publish_thread(self):
-        lock.aquire()
+        #self.lock.acquire()
         pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
         r = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
@@ -204,7 +212,7 @@ class Dashboard(Plugin):
             h.stamp = rospy.Time.now()
             pub.publish(h, self.auto_mode_button_group.checkedId())
             r.sleep()
-        lock.release()
+        #self.lock.release()
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
