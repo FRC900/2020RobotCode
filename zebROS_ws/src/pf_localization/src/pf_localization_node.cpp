@@ -7,6 +7,7 @@
 
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/Imu.h>
@@ -37,6 +38,8 @@ double rot = 0;
 double noise_delta_t = 0;  // if the time since the last measurement is greater than this, positional noise will not be applied
 std::vector<Beacon > measurement;
 ParticleFilter* pf = nullptr;
+tf2_ros::Buffer tf_buffer_;
+tf2_ros::TransformListener tf_listener_(tf_buffer_);
 
 double degToRad(double deg) {
   double rad = (deg / 180) * M_PI;
@@ -62,12 +65,23 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 
 void goalCallback(const field_obj::Detection::ConstPtr& msg){
   measurement.clear();
+  geometry_msgs::TransformStamped zed_to_baselink = tf_buffer_.lookupTransform("base_link", msg->header.frame_id, ros::Time::now());
+
+  double roll, pitch, yaw;
+  tf2::Quaternion raw;
+  tf2::convert(zed_to_baselink.transform.rotation, raw);
+  tf2::Matrix3x3(raw).getRPY(roll, pitch, yaw);
+  double r = degToRad(yaw);
+
+  double tx = zed_to_baselink.transform.translation.x;
+  double ty = zed_to_baselink.transform.translation.y;
+
   for(const field_obj::Object& p : msg->objects) {
     Beacon m {p.location.x, p.location.y, p.id};
     measurement.push_back(m);
   }
   if (measurement.size() > 0){
-    pf->assign_weights(measurement, Particle());
+    pf->assign_weights(measurement, Particle(tx, ty, r));
     pf->resample();
   }
   last_measurement = ros::Time::now();

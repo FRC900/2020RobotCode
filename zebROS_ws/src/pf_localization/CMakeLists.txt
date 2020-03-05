@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_filters
   message_generation
   std_msgs
+  tf2_ros
   geometry_msgs
   field_obj
 )
