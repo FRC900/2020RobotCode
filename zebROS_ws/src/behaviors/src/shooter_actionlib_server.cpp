@@ -115,6 +115,7 @@ class ShooterAction {
 
 		void turnGreenLightOn(bool turn_on)
 		{
+			/* commented out b/c we want to leave the light on all the time for now
 			std_msgs::Float64 msg;
 			if(turn_on) {
 				msg.data = 0.0; //0 is on so the default is on
@@ -123,6 +124,7 @@ class ShooterAction {
 				msg.data = 1.0;
 			}
 			green_light_pub_.publish(msg);
+			*/
 		}
 
 		bool getHoodAndVelocity(bool& hood_extended, double& shooter_speed)
