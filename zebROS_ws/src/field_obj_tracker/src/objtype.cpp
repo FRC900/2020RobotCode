@@ -14,6 +14,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 		case POWER_PORT_2020: //target on the POWER PORT (2020)
 			depth_ = 0;
 			real_height_ = 1.4796516; // TODO: Fix this using actual height
+			name_ = "power_port";
 			contour_.push_back(Point2f(0,0));
 			contour_.push_back(Point2f(0.2492375,0.4318));
 			contour_.push_back(Point2f(0.7477125,0.4318));
@@ -22,12 +23,12 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.7183831,0.381));
 			contour_.push_back(Point2f(0.2785669,0.381));
 			contour_.push_back(Point2f(0.0586588,0));
-			name_ = "power_port";
 			depth_sample_location_ = TAPE;
 			break;
 		case LOADING_BAY_2020: //target on the LOADING BAY (2020)
 			depth_ = 0;
 			real_height_ = -.3046984; // TODO: fix this using actual height
+			name_ = "loading_bay";
 			contour_.push_back(Point2f(0.0508,0.2286));
 			contour_.push_back(Point2f(0.0508,0));
 			contour_.push_back(Point2f(0,0));
@@ -38,33 +39,32 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			contour_.push_back(Point2f(0.0508,0.0508));
 			contour_.push_back(Point2f(0.127,0.0508));
 			contour_.push_back(Point2f(0.127,0.2286));
-			name_ = "loading_bay";
 			depth_sample_location_ = TAPE;
 			break;
 		case TEST_TARGET_2020:
 			depth_ = 0;
 			real_height_ = 0; // TODO: fix this using actual height
+			name_ = "test_target";
 			contour_.push_back(Point2f(0, 0));
 			contour_.push_back(Point2f(0, 0.102));
 			contour_.push_back(Point2f(0.102, 0));
 			contour_.push_back(Point2f(0.102, 0.102));
-			name_ = "test_target";
 			depth_sample_location_ = TAPE;
 			break;
 		case RED_POWER_PORT_HIGH_GOAL:
 			depth_ = 0;
 			height_ = .889;
 			width_ = 1.02;
-			positions_.push_back(Point3f(15.98295,5.806186, 2.49555));
 			name_ = "red_power_port_high_goal";
+			positions_.push_back(Point3f(15.98295,5.806186, 2.49555));
 			depth_sample_location_ = CORNERS;
 			break;
 		case BLUE_POWER_PORT_HIGH_GOAL:
 			depth_ = 0;
 			height_ = .889;
 			width_ = 1.02;
-			positions_.push_back(Point3f(0,2.404364, 2.49555));
 			name_ = "blue_power_port_high_goal";
+			positions_.push_back(Point3f(0,2.404364, 2.49555));
 			depth_sample_location_ = CORNERS;
 			break;
 		case RED_POWER_PORT_LOW_GOAL:
@@ -185,10 +185,11 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			height_ = 0.214;
 			width_ = 0.0762;
 			depth_ = 0.0762;
+			name_ = "red_ds_light";
 			positions_.push_back(Point3f(0.381,.659892,1.9304));
 			positions_.push_back(Point3f(0,3.952875,1.9304));
 			positions_.push_back(Point3f(0.381,7.550658,1.9304));
-			name_ = "red_ds_light";
+			depth_sample_location_ = CENTER;
 			break;
 		case BLUE_DS_LIGHT:
 			height_ = .214;
@@ -198,18 +199,20 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			positions_.push_back(Point3f(15.60195,0.659892, 1.9304));
 			positions_.push_back(Point3f(15.98295,4.257675, 1.9304));
 			positions_.push_back(Point3f(15.60195,7.550658, 1.9304));
+			depth_sample_location_ = CENTER;
 			break;
 		case DS_LIGHT:
 			height_ = .214;
       width_ = 0.0762;
       depth_ = 0.0762;
+			name_ = "ds_light";
       positions_.push_back(Point3f(.381,.659892, 1.9304));
       positions_.push_back(Point3f(0,3.952875, 1.9304));
       positions_.push_back(Point3f(.381,7.550658, 1.9304));
 			positions_.push_back(Point3f(15.60195,.659892, 1.9304));
       positions_.push_back(Point3f(15.98295,4.257675, 1.9304));
       positions_.push_back(Point3f(15.60195,7.550658, 1.9304));
-			name_ = "ds_light";
+			depth_sample_location_ = CENTER;
       break;
 		case CONTROL_PANEL_LIGHT:
 			height_ = 0.214;
