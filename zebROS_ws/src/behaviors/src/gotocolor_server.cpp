@@ -100,7 +100,7 @@ class GoToColorControlPanelAction {
 		color_detect_sub_=nh_.subscribe("/color_detected", 1, &GoToColorControlPanelAction::detectColorCallback, this);
 		//talon_states_sub_ = nh_.subscribe("/frcrobot_jetson/talon_states", 1, &GoToColorControlPanelAction::talonStateCallback, this);
 
-		color_algorithm_client_=nh_.serviceClient<color_spin::color_algorithm>("color_spin_algorithm", false, service_connection_header);
+		color_algorithm_client_=nh_.serviceClient<color_spin::color_algorithm>("color_algorithm", false, service_connection_header);
 		control_panel_controller_client_=nh_.serviceClient<controllers_2020_msgs::ControlPanelSrv>("control_panel_controller", false, service_connection_header);
 		climber_controller_client_=nh_.serviceClient<controllers_2020_msgs::ClimberSrv>("climber_controller", false, service_connection_header);
 
@@ -425,16 +425,16 @@ class GoToColorControlPanelAction {
 };
 int main(int argc, char** argv) {
 	//create node
-	ros::init(argc, argv, "server_name_server");
+	ros::init(argc, argv, "go_to_color_server");
 
 	//get config values
 	ros::NodeHandle n;
 
-    double server_timeout = 10;
+    double server_timeout = 100;
     double wait_for_server_timeout = 10;
 
 	//create the actionlib server
-	GoToColorControlPanelAction go_to_color_control_panel("go_to_color_control_panel", server_timeout, wait_for_server_timeout);
+	GoToColorControlPanelAction go_to_color_control_panel("go_to_color_server", server_timeout, wait_for_server_timeout);
 
 	/*
 	if (!n.getParam("/actionlib_gotocolor_params/drive_forward_speed", go_to_color_control_panel.drive_forward_speed))
