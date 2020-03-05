@@ -110,7 +110,12 @@ int main(int argc, char **argv)
 			}
 			else if(intake_percent_out < 0 && intake_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball exited intake; percent out: " << intake_percent_out);
+				if(num_balls > 0) {
 				num_balls--;
+				}
+				else {
+				ROS_ERROR("Sensor detected ball being shot but number of balls was already at 0");
+				}
 				intake_linebreak.resetPulseDetection();
 			}
 		}
@@ -125,7 +130,12 @@ int main(int argc, char **argv)
 			}
 			if(indexer_velocity < 0 && indexer_front_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball exited indexer; speed setpoint: " << indexer_velocity);
+				if(num_indexer_balls > 0) {
 				num_indexer_balls--;
+				}
+				else {
+				ROS_ERROR("Sensor detected ball being shot but number of balls was already at 0");
+				}
 				indexer_front_linebreak.resetPulseDetection();
 			}
 
@@ -139,16 +149,37 @@ int main(int argc, char **argv)
 			}
 			if(indexer_velocity < 0 && indexer_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball exited stored; speed setpoint: " << indexer_velocity);
+				if(num_stored_balls > 0) {
 				num_stored_balls--;
+				}
+				else {
+				ROS_ERROR("Sensor detected ball being shot but number of balls was already at 0");
+				}
+
 				indexer_linebreak.resetPulseDetection();
 			}
 
 			//shooter linebreak checks
 			if(indexer_velocity > 0 && shooter_linebreak.falling_edge_happened_) {
 				ROS_WARN_STREAM("Ball left shooter; speed setpoint: " << indexer_velocity);
+				if(num_balls > 0) {
 				num_balls--;
+				}
+				else {
+				ROS_ERROR("Sensor detected ball being shot but number of balls was already at 0");
+				}
+				if(num_indexer_balls > 0) {
 				num_indexer_balls--;
+				}
+				else {
+				ROS_ERROR("Sensor detected ball being shot but number of balls was already at 0");
+				}
+				if(num_stored_balls > 0) {
 				num_stored_balls--;
+				}
+				else {
+				ROS_ERROR("Sensor detected ball being shot but number of balls was already at 0");
+				}
 				shooter_linebreak.resetPulseDetection();
 			}
 		}
