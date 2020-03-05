@@ -42,7 +42,7 @@ class AlignToShootAction
 		std::atomic<double> robot_yaw_;
 
 		ros::Subscriber shooter_offset_sub_;
-		std::atomic<double> angle_offset_ = 0;
+		std::atomic<double> angle_offset_{0};
 
 		//clients to call controllers
 		ros::ServiceClient turret_controller_client_;
@@ -245,17 +245,18 @@ class AlignToShootAction
 			ros::Rate r(10);
 			ROS_INFO_STREAM(action_name_ << ": calling turret controller");
 			//call controller client, if failed set preempted_ = true, and log an error msg
-			controllers_2020_msgs::TurretSrv srv;
 			double set_point = 0;
 			if( ! getTurretPosition(set_point))
 			{
 				ROS_ERROR("Align server - couldn't get turret setpoint");
 				preempted_ = true;
 			}
-			set_point += angle_offset_;
-			srv.request.set_point = set_point;
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
+				controllers_2020_msgs::TurretSrv srv;
+				set_point += angle_offset_;
+				srv.request.set_point = set_point;
+
 				if (!turret_controller_client_.call(srv))
 				{
 					ROS_ERROR_STREAM("Failed to call turret_controller_client_ in AlignToShootAction");
@@ -275,7 +276,7 @@ class AlignToShootAction
 					preempted_ = true;
 				}
 				//test if succeeded, if so, break out of the loop
-				else if (fabs(cur_turret_position_ - srv.request.set_point) < max_turret_position_error_)
+				else if (fabs(cur_turret_position_ - set_point) < max_turret_position_error_)
 				{
 					ROS_INFO_STREAM(action_name_ << ": succeeded to call turret controller");
 					aligned_ = true;

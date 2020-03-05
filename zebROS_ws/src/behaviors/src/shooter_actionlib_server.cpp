@@ -27,7 +27,6 @@
 //include msg types
 #include "field_obj/Detection.h"
 #include "std_msgs/Bool.h"
-#include "std_msgs/UInt8.h"
 #include "std_msgs/Float64.h"
 #include "behavior_actions/ShooterOffset.h"
 
@@ -51,17 +50,14 @@ class ShooterAction {
 
 		//subscribing stuff
 		ros::Subscriber ready_to_shoot_sub_;
-		std::atomic<bool> ready_to_shoot_ = false;
+		std::atomic<bool> ready_to_shoot_{false};
 
 		ros::Subscriber goal_sub_;
 		std::mutex goal_msg_mutex_;
 		field_obj::Detection goal_msg_;
 
-		ros::Subscriber num_balls_sub_;
-		std::atomic<int> num_balls_ = 3;
-
 		ros::Subscriber shooter_offset_sub_;
-		std::atomic<double> speed_offset_ = 0;
+		std::atomic<double> speed_offset_{0};
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -219,8 +215,8 @@ class ShooterAction {
 					//don't wait for it to finish, so we can start spinning up the shooter while its going. Will only call the indexer actionlib server if the align succeeded
 			}
 
-			//keep shooting balls until we don't have any
-			while(num_balls_ > 0 && !timed_out_ && !preempted_ && ros::ok())
+			//keep shooting balls until driver says stop
+			while(!timed_out_ && !preempted_ && ros::ok())
 			{
 				//determine shooter velocity/hood raise and go there with shooter
 				ROS_INFO_STREAM(action_name_ << ": spinning up the shooter");
@@ -402,11 +398,6 @@ class ShooterAction {
 			goal_msg_ = msg;
 		}
 
-		void numBallsCB(const std_msgs::UInt8 &msg)
-		{
-			num_balls_ = msg.data;
-		}
-
 		void shooterOffsetCB(const behavior_actions::ShooterOffset &msg)
 		{
 			speed_offset_ = msg.speed_offset;
@@ -436,7 +427,6 @@ class ShooterAction {
 		//subscribers
 		ready_to_shoot_sub_ = nh_.subscribe("/frcrobot_jetson/shooter_controller/ready_to_shoot", 5, &ShooterAction::shooterReadyCB, this);
 		goal_sub_ = nh_.subscribe("/goal_detection/goal_detect_msg", 5, &ShooterAction::goalDetectionCB, this);
-		num_balls_sub_ = nh_.subscribe("/num_indexer_powercells", 5, &ShooterAction::numBallsCB, this); //subscribing to indexer powercells b/c can't shoot balls in the intake
 	}
 
 		~ShooterAction(void)
@@ -486,11 +476,11 @@ int main(int argc, char** argv) {
 	}
 	if (!n_params_shooter.getParam("near_shooting_speed", shooter_action.near_shooting_speed_)) {
 		ROS_ERROR("Could not read near_shooting_speed in shooter_server");
-		shooter_action.near_shooting_speed_ = 10;
+		shooter_action.near_shooting_speed_ = 300; //TODO fix
 	}
 	if (!n_params_shooter.getParam("far_shooting_speed", shooter_action.far_shooting_speed_)) {
 		ROS_ERROR("Could not read far_shooting_speed in shooter_server");
-		shooter_action.far_shooting_speed_ = 10;
+		shooter_action.far_shooting_speed_ = 415; //TODO fix
 	}
 
 	XmlRpc::XmlRpcValue hood_up_list;
