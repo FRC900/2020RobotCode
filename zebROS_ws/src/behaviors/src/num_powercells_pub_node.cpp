@@ -82,9 +82,12 @@ int main(int argc, char **argv)
 	int num_indexer_balls = 3;
 	int num_stored_balls = 3;
 
-	nh.getParam("/initial_num_powercells", num_balls);
-	num_indexer_balls = num_balls; //assume all the initial balls are properly stored in the indexer
-	num_stored_balls = num_balls;
+	//checks to make sure the parameter read was successful
+	if(nh.getParam("/initial_num_powercells", num_balls))
+	{
+		num_indexer_balls = num_balls; //assume all the initial balls are properly stored in the indexer
+		num_stored_balls = num_balls;
+	}
 
 	//loop and process logic
 	ros::Rate r(20);
