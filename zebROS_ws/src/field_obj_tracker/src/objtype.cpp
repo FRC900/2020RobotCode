@@ -352,7 +352,10 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
 			cerr << "error initializing object!" << endl;
 	}
 
-	computeProperties();
+	//only compute properties if it is a retroreflective tape target
+	if(depth_sample_location_ == TAPE){
+			computeProperties();
+	}
 }
 
 ObjectType::ObjectType(const vector< Point2f > &contour_in, const string &name_in, const float &depth_in) :
