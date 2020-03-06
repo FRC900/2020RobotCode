@@ -42,8 +42,11 @@ bool green_led_on = true;
 
 double orient_strafing_angle;
 
-std::string control_panel_mode = "increment";
-std::string shooter_mode = "auto";
+enum ControlPanelMode{ rotation, increment, position };
+ControlPanelMode control_panel_mode = increment;
+
+enum ShooterMode{ high, automatic, low };
+ShooterMode shooter_mode = automatic;
 
 frc_msgs::ButtonBoxState button_box;
 
@@ -265,11 +268,11 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.rightSwitchUpButton)
 	{
-		control_panel_mode = "rotation";
+		control_panel_mode = rotation;
 	}
 	else if(!button_box.rightSwitchDownButton)
 	{
-		control_panel_mode = "increment";
+		control_panel_mode = increment;
 	}
 	if(button_box.rightSwitchUpRelease)
 	{
@@ -282,7 +285,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.rightSwitchDownButton)
 	{
-		control_panel_mode = "position";
+		control_panel_mode = position;
 	}
 	if(button_box.rightSwitchDownRelease)
 	{
@@ -306,18 +309,20 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	if(button_box.rightBluePress)
 	{
 		//Call control panel depending on control_panel_mode
-		if(control_panel_mode == "rotation")
+		switch(control_panel_mode)
 		{
-		}
-		else if(control_panel_mode == "increment")
-		{
-			control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
-			ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
-			control_panel_controller_client.call(control_panel_controller_cmd);
-			control_panel_controller_cmd.request.control_panel_rotations = 0.0;
-		}
-		else if(control_panel_mode == "position")
-		{
+			case rotation :
+				//Call server with rotation
+				break;
+			case increment :
+				control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
+				ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
+				control_panel_controller_client.call(control_panel_controller_cmd);
+				control_panel_controller_cmd.request.control_panel_rotations = 0.0;
+				break;
+			case position :
+				//Call server with position
+				break;
 		}
 	}
 	if(button_box.rightBlueButton)
@@ -329,14 +334,26 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.yellowPress)
 	{
-		//Start shooting depending on shooter var
+		//Start shooting depending on shooter_mode
+		switch(shooter_mode)
+		{
+			case high :
+				//Call server with mode high
+				break;
+			case automatic :
+				//Call server with mode automatic
+				break;
+			case low :
+				//Call server with mode low
+				break;
+		}
 	}
 	if(button_box.yellowButton)
 	{
 	}
 	if(button_box.yellowRelease)
 	{
-		//Stop shooting depending on shooter var
+		//Stop shooting (preempt)
 	}
 
 	if(button_box.leftGreenPress)
@@ -388,11 +405,11 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.bottomSwitchUpButton)
 	{
-		shooter_mode = "high";
+		shooter_mode = high;
 	}
 	else if(!button_box.bottomSwitchDownButton)
 	{
-		shooter_mode = "auto";
+		shooter_mode = automatic;
 	}
 	if(button_box.bottomSwitchUpRelease)
 	{
@@ -403,7 +420,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.bottomSwitchDownButton)
 	{
-		shooter_mode = "low";
+		shooter_mode = low;
 	}
 	if(button_box.bottomSwitchDownRelease)
 	{
@@ -499,18 +516,20 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			if(joystick_states_array[0].buttonAPress)
 			{
 				//Call control panel depending on control_panel_mode
-				if(control_panel_mode == "rotation")
+				switch(control_panel_mode)
 				{
-				}
-				else if(control_panel_mode == "increment")
-				{
-					control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
-					ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
-					control_panel_controller_client.call(control_panel_controller_cmd);
-					control_panel_controller_cmd.request.control_panel_rotations = 0.0;
-				}
-				else if(control_panel_mode == "position")
-				{
+					case rotation :
+						//Call server with rotation
+						break;
+					case increment :
+						control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
+						ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
+						control_panel_controller_client.call(control_panel_controller_cmd);
+						control_panel_controller_cmd.request.control_panel_rotations = 0.0;
+						break;
+					case position :
+						//Call server with position
+						break;
 				}
 			}
 			if(joystick_states_array[0].buttonAButton)
@@ -523,7 +542,19 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: buttonB
 			if(joystick_states_array[0].buttonBPress)
 			{
-				//Shoot based on shooter var
+				//Start shooting depending on shooter_mode
+				switch(shooter_mode)
+				{
+					case high :
+						//Call server with mode high
+						break;
+					case automatic :
+						//Call server with mode automatic
+						break;
+					case low :
+						//Call server with mode low
+						break;
+				}
 			}
 			if(joystick_states_array[0].buttonBButton)
 			{
@@ -533,7 +564,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 			if(joystick_states_array[0].buttonBRelease)
 			{
-				//Stop shooting based on shooter var
+				//Stop shooting (preempt)
 			}
 
 			//Joystick1: buttonX
