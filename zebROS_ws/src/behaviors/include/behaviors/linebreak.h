@@ -90,8 +90,8 @@ class Linebreak {
 			pulsed_ = false;
 		}
 
-		Linebreak(std::string &name)
-			:name_(name);//name as found in joint_states
+		Linebreak(const std::string &name)
+			: name_(name) //name as found in joint_states
 		{
 			//general stuff
 			idx_ = std::numeric_limits<size_t>::max(); //bigger than any number. Will be this until we actually set it
