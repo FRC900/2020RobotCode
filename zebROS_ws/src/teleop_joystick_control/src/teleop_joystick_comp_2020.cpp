@@ -135,6 +135,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.lockingSwitchPress)
 	{
+		ROS_WARN_STREAM("Enabling diagnostics mode!");
 	}
 	if(button_box.lockingSwitchButton)
 	{
@@ -146,6 +147,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.lockingSwitchRelease)
 	{
+		ROS_WARN_STREAM("Disabling diagnostics mode!");
 	}
 
 	if(button_box.topRedPress)
@@ -485,33 +487,6 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 				sendRobotZero = false;
 			}
 
-			static bool right_stick_pressed = false;
-
-			if(joystick_states_array[0].rightStickY > 0.5) //TODO Make a trigger point config value
-			{
-				//Call intake server, but only once
-				if(!right_stick_pressed)
-				{
-					preemptActionlibServers();
-					ROS_WARN_STREAM("Calling intake server!");
-					behavior_actions::IntakeGoal goal;
-					intake_ac->sendGoal(goal);
-				}
-
-				right_stick_pressed = true;
-			}
-			else
-			{
-				//Preempt intake server, but only once
-				if(right_stick_pressed)
-				{
-					ROS_WARN_STREAM("Preempting intake server!");
-					intake_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
-				}
-
-				right_stick_pressed = false;
-			}
-
 			//Joystick1: buttonA
 			if(joystick_states_array[0].buttonAPress)
 			{
@@ -618,6 +593,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionLeft
 			if(joystick_states_array[0].directionLeftPress)
 			{
+				ROS_WARN_STREAM("Snapping to angle for climb!");
 			}
 			if(joystick_states_array[0].directionLeftButton)
 			{
@@ -733,11 +709,35 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 			}
 
-			//Joystick1: stickRight
-			if(joystick_states_array[0].stickRightPress)
+			static bool left_trigger_pressed = false;
+
+			if(joystick_states_array[0].leftTrigger > config.trigger_threshold)
 			{
+				//Call intake server, but only once
+				if(!left_trigger_pressed)
+				{
+					preemptActionlibServers();
+					ROS_WARN_STREAM("Calling intake server!");
+					behavior_actions::IntakeGoal goal;
+					intake_ac->sendGoal(goal);
+				}
+
+				left_trigger_pressed = true;
 			}
-			if(joystick_states_array[0].stickRightButton)
+			else
+			{
+				//Preempt intake server, but only once
+				if(left_trigger_pressed)
+				{
+					ROS_WARN_STREAM("Preempting intake server!");
+					intake_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+				}
+
+				left_trigger_pressed = false;
+			}
+
+			//Joystick1: rightTrigger
+			if(joystick_states_array[0].rightTrigger > config.trigger_threshold)
 			{
 				teleop_cmd_vel->setSlowMode(true);
 			}
@@ -745,14 +745,11 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 				teleop_cmd_vel->setSlowMode(false);
 			}
-			if(joystick_states_array[0].stickRightRelease)
-			{
-			}
 		}
 		else
 		{
 			//Joystick1 Diagnostics: leftStickY
-			if(abs(joystick_states_array[0].leftStickY) > diagnostics_config.left_stick_trigger_point)
+			if(abs(joystick_states_array[0].leftStickY) > config.stick_threshold)
 			{
 				shooter_controller_cmd.request.set_velocity += (std::copysign(diagnostics_config.shooter_setpoint_rate, joystick_states_array[0].leftStickY)
 						*(joystick_states_array[0].header.stamp - last_header_stamp).toSec());
@@ -762,7 +759,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 
 			//Joystick1 Diagnostics: leftStickX
-			if(abs(joystick_states_array[0].leftStickX) > diagnostics_config.left_stick_trigger_point)
+			if(abs(joystick_states_array[0].leftStickX) > config.stick_threshold)
 			{
 				turret_controller_cmd.request.set_point += (std::copysign(diagnostics_config.turret_setpoint_rate, joystick_states_array[0].leftStickX)
 						*(joystick_states_array[0].header.stamp - last_header_stamp).toSec());
@@ -772,7 +769,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 
 			//Joystick1 Diagnostics: rightStickY
-			if(abs(joystick_states_array[0].rightStickY) > 0.5) //TODO Make a trigger point config value
+			if(abs(joystick_states_array[0].rightStickY) > config.stick_threshold)
 			{
 				indexer_controller_cmd.request.indexer_velocity += (std::copysign(diagnostics_config.indexer_setpoint_rate, joystick_states_array[0].leftStickY)
 						*(joystick_states_array[0].header.stamp - last_header_stamp).toSec());
@@ -782,7 +779,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 
 			//Joystick1 Diagnostics: rightStickX
-			if(abs(joystick_states_array[0].rightStickX) > 0.5) //TODO Make a trigger point config value
+			if(abs(joystick_states_array[0].rightStickX) > config.stick_threshold)
 			{
 			}
 
@@ -894,7 +891,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 			if(joystick_states_array[0].bumperRightButton)
 			{
-				intake_roller_controller_cmd.request.percent_out	+= diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
+				intake_roller_controller_cmd.request.percent_out -= diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
 				intake_roller_controller_cmd.request.percent_out = std::clamp(intake_roller_controller_cmd.request.percent_out, -1.0, 1.0);
 				ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_controller_cmd.request.percent_out);
 				intake_roller_controller_client.call(intake_roller_controller_cmd);
@@ -904,7 +901,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 
 			//Joystick1 Diagnostics: leftTrigger
-			if(joystick_states_array[0].leftTrigger >= 0.5) //TODO Make a trigger point config value
+			if(joystick_states_array[0].leftTrigger > config.trigger_threshold)
 			{
 			}
 			else
@@ -912,9 +909,9 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			}
 
 			//Joystick1 Diagnostics: rightTrigger
-			if(joystick_states_array[0].rightTrigger >= 0.5) //TODO Make a trigger point config value
+			if(joystick_states_array[0].rightTrigger > config.trigger_threshold)
 			{
-				intake_roller_controller_cmd.request.percent_out	-= diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
+				intake_roller_controller_cmd.request.percent_out += diagnostics_config.intake_setpoint_rate*(joystick_states_array[0].header.stamp - last_header_stamp).toSec();
 				intake_roller_controller_cmd.request.percent_out = std::clamp(intake_roller_controller_cmd.request.percent_out, -1.0, 1.0);
 				ROS_WARN_STREAM("Calling intake controller with percent_out = " << intake_roller_controller_cmd.request.percent_out);
 				intake_roller_controller_client.call(intake_roller_controller_cmd);
@@ -1067,6 +1064,14 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Could not read climber_align_angle in teleop_joystick_comp");
 	}
+	if(!n_params.getParam("trigger_threshold", config.trigger_threshold))
+	{
+		ROS_ERROR("Could not read trigger_threshold in teleop_joystick_comp");
+	}
+	if(!n_params.getParam("stick_threshold", config.stick_threshold))
+	{
+		ROS_ERROR("Could not read stick_threshold in teleop_joystick_comp");
+	}
 
 	if(!n_diagnostics_params.getParam("climber_percent_out", diagnostics_config.climber_percent_out))
 	{
@@ -1075,10 +1080,6 @@ int main(int argc, char **argv)
 	if(!n_diagnostics_params.getParam("shooter_setpoint_rate", diagnostics_config.shooter_setpoint_rate))
 	{
 		ROS_ERROR("Could not read shooter_setpoint_rate in teleop_joystick_comp");
-	}
-	if(!n_diagnostics_params.getParam("left_stick_trigger_point", diagnostics_config.left_stick_trigger_point))
-	{
-		ROS_ERROR("Could not read left_stick_trigger_point in teleop_joystick_comp");
 	}
 	if(!n_diagnostics_params.getParam("turret_setpoint_rate", diagnostics_config.turret_setpoint_rate))
 	{
