@@ -38,8 +38,6 @@ double rot = 0;
 double noise_delta_t = 0;  // if the time since the last measurement is greater than this, positional noise will not be applied
 std::vector<Beacon > measurement;
 ParticleFilter* pf = nullptr;
-tf2_ros::Buffer tf_buffer_;
-tf2_ros::TransformListener tf_listener_(tf_buffer_);
 
 double degToRad(double deg) {
   double rad = (deg / 180) * M_PI;
@@ -64,6 +62,8 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 }
 
 void goalCallback(const field_obj::Detection::ConstPtr& msg){
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_(tf_buffer_);
   measurement.clear();
   geometry_msgs::TransformStamped zed_to_baselink = tf_buffer_.lookupTransform("base_link", msg->header.frame_id, ros::Time::now());
 
@@ -112,6 +112,7 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
 }
 
 int main(int argc, char **argv) {
+  ROS_INFO("pf main");
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
   last_time = ros::Time::now();
