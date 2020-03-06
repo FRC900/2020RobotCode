@@ -23,6 +23,7 @@ public:
   void constrain_to_world(Particle& p) const;
   void init_particle(Particle& p, double x_min, double x_max, double y_min, double y_max);
   double total_distance(const Particle& p, const std::vector<Beacon>& m, const Particle& offset);
+  double total_angle(const Particle& p, const std::vector<BearingBeacon>& m, const Particle& offset);
 };
 
 #endif

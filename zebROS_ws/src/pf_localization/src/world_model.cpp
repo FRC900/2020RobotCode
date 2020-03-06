@@ -109,3 +109,32 @@ double WorldModel::total_distance(const Particle& p, const std::vector<Beacon>& 
 
   return total_res;
 }
+
+// like total_distance, but bearing only
+double WorldModel::total_angle(const Particle& p, const std::vector<BearingBeacon>& m, const Particle& offset) {
+  double total_res = 0;
+  std::map<std::string, std::vector<BearingBeacon> > by_type;
+  for (BearingBeacon b : m) {
+    if (by_type.count(b.type_) == 0) {
+      by_type[b.type_] = std::vector<Beacon>();
+    }
+    by_type[b.type_].push_back(b);
+  }
+  for (std::pair<std::string, std::vector<BearingBeacon> > m_of_type : by_type) {
+    std::vector<int> assignment;
+    std::vector<std::vector<double> > dists;
+    std::vector<Beacon> rel = of_type(particle_relative(p, offset), m_of_type.first);
+    for (const Beacon& b : m_of_type.second) {
+      dists.push_back(distances(b, rel));
+    }
+    solver_.Solve(dists, assignment);
+    double res = 0;
+    for (size_t i = 0; i < assignment.size(); i++) {
+      if (assignment[i] < 0) continue;
+      res += dists[i][assignment[i]];
+    }
+    total_res += res;
+  }
+
+  return total_res;
+}
