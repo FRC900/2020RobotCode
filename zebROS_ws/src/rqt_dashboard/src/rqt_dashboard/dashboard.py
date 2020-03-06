@@ -16,8 +16,11 @@ from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
 import std_msgs.msg
 
+from python_qt_binding import QtCore
 
 class Dashboard(Plugin):
+    autoStateSignal = QtCore.pyqtSignal(int)
+    nBallsSignal = QtCore.pyqtSignal(int)
 
     msg_data = "default"
     def __init__(self, context):
@@ -113,6 +116,8 @@ class Dashboard(Plugin):
         #initialize subscribers last, so that any callbacks they execute won't interfere with init
         self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
         self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
+        self.autoStateSignal.connect(self.autoStateSlot)
+        self.nBallsSignal.connect(self.nBallsSlot)
 
     def nullCallback(self, msg):
         pass
@@ -120,9 +125,12 @@ class Dashboard(Plugin):
 
 
     def autoStateCallback(self, msg):
+        self.autoStateSignal.emit(int(msg.id));
+
+    def autoStateSlot(self, state):
         #self.lock.acquire()
-        if(self.autoState != msg.id):
-	    self.autoState = msg.id
+        if(self.autoState != state):
+            self.autoState = state
             self.displayAutoState()
         #self.lock.release()
 
@@ -146,24 +154,26 @@ class Dashboard(Plugin):
         #self.lock.release()
 
     def nBallsCallback(self, msg):
-        #self.lock.acquire()
-        if(self.n_balls != msg.data):
-            self.n_balls = msg.data
+        self.nBallsSignal.emit(int(msg.id))
+
+    def nBallsSlot(self, state):
+        if(self.n_balls != state):
+            self.n_balls = state
             display = self._widget.n_balls_display
             
-            if msg.data == 0:
+            if state == 0:
                 display.setPixmap(self.zero_balls)
-            elif msg.data == 1:
+            elif state == 1:
                 display.setPixmap(self.one_ball)
-            elif msg.data == 2:
+            elif state == 2:
                 display.setPixmap(self.two_balls)
-            elif msg.data == 3:
+            elif state == 3:
                 display.setPixmap(self.three_balls)
-            elif msg.data == 4:
+            elif state == 4:
                 display.setPixmap(self.four_balls)
-            elif msg.data == 5:
+            elif state == 5:
                 display.setPixmap(self.five_balls)
-            elif msg.data > 5:
+            elif state > 5:
                 display.setPixmap(self.more_than_five_balls)
             else:
                 display.setText("Couldn't read # balls")
