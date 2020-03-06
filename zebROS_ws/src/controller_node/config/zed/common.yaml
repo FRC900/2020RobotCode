@@ -27,7 +27,7 @@ general:
     verbose:                    true
     svo_compression:            2                               # `0`: LOSSLESS, `1`: AVCHD, `2`: HEVC
     self_calib:                 true                            # enable/disable self calibration at starting
-    camera_flip:                true
+    camera_flip:                false
 
 video:
     img_resample_factor:        1.0                             # Resample factor for images [0.01,1.0] The SDK works with native image sizes, but publishes rescaled image.

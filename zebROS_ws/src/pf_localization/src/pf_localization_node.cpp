@@ -30,6 +30,8 @@ const std::string goal_pos_topic = "/goal_detection/goal_detect_msg";
 
 const std::string pub_topic = "predicted_pose";
 
+tf2_ros::Buffer tf_buffer_;
+
 ros::Time last_time;
 ros::Time last_measurement;
 double delta_x = 0;
@@ -62,8 +64,6 @@ void rotCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 }
 
 void goalCallback(const field_obj::Detection::ConstPtr& msg){
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_(tf_buffer_);
   measurement.clear();
   geometry_msgs::TransformStamped zed_to_baselink = tf_buffer_.lookupTransform("base_link", msg->header.frame_id, ros::Time::now());
 
@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
   ros::NodeHandle nh_;
   last_time = ros::Time::now();
   last_measurement = ros::Time::now();
+  tf2_ros::TransformListener tf_listener_(tf_buffer_);
 
   #ifdef VERBOSE
   ROS_INFO_STREAM(nh_.getNamespace());
