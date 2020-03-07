@@ -57,7 +57,12 @@ class Dashboard(Plugin):
         # Set up signal-slot connections
         self._widget.set_imu_angle_button.clicked.connect(self.setImuAngle)
         self._widget.imu_angle.valueChanged.connect(self.imuAngleChanged)
-
+        
+        self._widget.auto_wall_dist_button.clicked.connect(self.setAutoWallDist)
+        self._widget.auto_wall_dist.valueChanged.connect(self.autoWallDistChanged)
+        
+        self._widget.ball_reset_button.clicked.connect(self.resetBallCount)
+        self.widget.ball_reset_count.valueChanged.connect(self.resetBallChanged)
         
         # Add buttons for auto modes
         v_layout = self._widget.auto_mode_v_layout #vertical layout storing the buttons
@@ -239,6 +244,28 @@ class Dashboard(Plugin):
         self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
         #self.lock.release()
 
+
+    def setAutoWallDist(self):
+        print("setting auto wall distance")
+        #self.lock.acquire()
+        distance = self._widget.auto_wall_dist.value()
+        
+        self._widget.auto_wall_dist_button.setStyleSheet("background-color:#5eff00;")
+
+        print("finished setting auto wall distance")
+
+    def autoWallDistChanged(self):
+        self._widget.auto_wall_dist_button.setStyleSheet("background-color:#ff0000;")
+    
+    def resetBallCount:
+        new_ball_count = self._widget.ball_reset_count.value()
+
+        self._widget.ball_reset_button.setStyleSheet("background-color:#5eff00;")
+
+    def resetBallChanged:
+        self._widget.ball_reset_button.setStyleSheet("background-color:#ff0000;")
+
+
     def errorPopup(self, title, e):
         #self.lock.acquire()
         msg_box = QMessageBox()
@@ -256,7 +283,7 @@ class Dashboard(Plugin):
         while not rospy.is_shutdown():
             h = std_msgs.msg.Header()
             h.stamp = rospy.Time.now()
-            pub.publish(h, self.auto_mode_button_group.checkedId())
+            pub.publish(h, self.auto_mode_button_group.checkedId(), self._widget.auto_wall_dist.value())
             r.sleep()
         #self.lock.release()
 

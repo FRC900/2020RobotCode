@@ -147,12 +147,22 @@
          <item>
           <widget class="QLabel" name="label_7">
            <property name="text">
-            <string>TextLabel</string>
+            <string>Distance from Side Wall:</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+          <widget class="QDoubleSpinBox" name="auto_wall_dist"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="auto_wall_dist_button">
+           <property name="styleSheet">
+            <string notr="true">background-color:#ff0000</string>
+           </property>
+           <property name="text">
+            <string>Set Distance</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -240,7 +250,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Reset # Balls</string>
+          <string>Reset # Balls:</string>
          </property>
         </widget>
        </item>
@@ -274,8 +284,7 @@
        </item>
       </layout>
      </item>
-	  
-	 <item>
+     <item>
       <widget class="QPushButton" name="pushButton_2">
        <property name="styleSheet">
         <string notr="true">background-color:#ff0000</string>
