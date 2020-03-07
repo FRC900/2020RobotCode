@@ -18,6 +18,7 @@
 
 //VARIABLES ---------------------------------------------------------
 int auto_mode = -1; //-1 if nothing selected
+double distance_from_center = 0.0; // distance from robot to center of goal; left is positive, right is negative
 std::vector<std::string> auto_steps; //stores string of action names to do, read from the auto mode array in the config file
 
 bool auto_started = false; //set to true when enter auto time period
@@ -60,6 +61,7 @@ void matchDataCallback(const frc_msgs::MatchSpecificData::ConstPtr& msg)
 void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
 {
 	auto_mode = msg->auto_mode;
+	distance_from_center = 2.404 - msg->distance_from_wall;
 }
 
 
@@ -338,6 +340,10 @@ int main(int argc, char** argv)
 				{
 					point.x = (double) points_config[i][0];
 					point.y = (double) points_config[i][1];
+					if(action_data["goal"]["apply_offset"])
+					{
+						point.y -= distance_from_center; // if the robot is not centered to goal, adjust path
+					}
 					point.z = (double) points_config[i][2];
 					goal.points.push_back(point);
 				}
