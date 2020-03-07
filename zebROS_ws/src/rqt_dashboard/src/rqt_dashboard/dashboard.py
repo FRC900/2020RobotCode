@@ -119,10 +119,6 @@ class Dashboard(Plugin):
         self.autoStateSignal.connect(self.autoStateSlot)
         self.nBallsSignal.connect(self.nBallsSlot)
 
-    def nullCallback(self, msg):
-        pass
-
-
 
     def autoStateCallback(self, msg):
         self.autoStateSignal.emit(int(msg.id));
@@ -154,7 +150,7 @@ class Dashboard(Plugin):
         #self.lock.release()
 
     def nBallsCallback(self, msg):
-        self.nBallsSignal.emit(int(msg.id))
+        self.nBallsSignal.emit(int(msg.data))
 
     def nBallsSlot(self, state):
         if(self.n_balls != state):
