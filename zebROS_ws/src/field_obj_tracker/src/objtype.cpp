@@ -162,7 +162,7 @@ ObjectType::ObjectType(ObjectNum contour_type_id=UNINITIALIZED) {
                         name_ = "blue_tape_corner";
                         positions_.push_back(Point3f(0.762,5.806186,0));
                         positions_.push_back(Point3f(15.221204,5.653786,0));
-                        positions_.push_back(Point3f(10.73658,6.80085,,0));
+                        positions_.push_back(Point3f(10.73658,6.80085,0));
                         positions_.push_back(Point3f(5.246878,6.80085,0));
                         break;
                 case RED_DS_LIGHT:
