@@ -86,7 +86,7 @@ class Dashboard(Plugin):
         # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        listener1 = roslibpy.Topic(client, '/auto/auto_state', AutoState)
+        listener1 = roslibpy.Topic(client, '/auto/auto_state', 'behavior_actions/AutoState')
         self.auto_state_sub = listener1.subscribe(self.autoStateCallback)
 
         # publish thread
@@ -101,7 +101,7 @@ class Dashboard(Plugin):
         self.four_balls = QPixmap(":/images/4_balls.png")
         self.five_balls = QPixmap(":/images/5_balls.png")
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
-        listener2 = roslibpy.Topic(client,'/num_powercells',std_msgs.msg._UInt8)
+        listener2 = roslibpy.Topic(client,'/num_powercells','std_msgs/UInt8')
         self.n_balls_sub = listener2.subscribe(self.nBallsCallback)
         self.n_balls = -1 #don't know n balls at first 
 
@@ -118,7 +118,6 @@ class Dashboard(Plugin):
 
 
     def autoStateCallback(self, msg):
-        print('ji')
         if(self.autoState != msg.id):
 	    self.autoState = msg.id
             self.displayAutoState()
@@ -176,7 +175,6 @@ class Dashboard(Plugin):
             #Service Request-rosbridge
             request = roslibpy.ServiceRequest()
             result = service.call(request)
-            print(result)
             #result(angle)
             # change button to green color to indicate that the service call went through
             self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
@@ -201,15 +199,14 @@ class Dashboard(Plugin):
     def publish_thread(self):
         client1 = roslibpy.Ros(host='localhost', port=5803)
         client1.run()
-        pub = roslibpy.Topic(client1, AutoMode, '/auto/auto_mode')
-#        pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
+        
+        pub = roslibpy.Topic(client1, '/auto/auto_mode', 'behavior_actions/AutoMode',queue_length=10)
         r = rospy.Rate(10) # 10hz
+        pub.advertise()
         while client1.is_connected:
             h = std_msgs.msg.Header()
             h.stamp = rospy.Time.now()
-            #print(h,self.auto_mode_button_group.checkedId())
-            pub.publish(roslibpy.Message({h:self.auto_mode_button_group.checkedId()}))
-            #,'data2':self.auto_mode_button_group.checkedId()}))
+            pub.publish(roslibpy.Message({'header':h,'auto_mode':self.auto_mode_button_group.checkedId()}))
             r.sleep()
         pub.unadvertise()
         client1.terminate()
