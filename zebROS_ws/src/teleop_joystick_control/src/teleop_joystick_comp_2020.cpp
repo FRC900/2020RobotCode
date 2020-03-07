@@ -16,6 +16,7 @@
 #include "teleop_joystick_control/OrientStrafingAngle.h"
 
 #include "frc_msgs/ButtonBoxState.h"
+#include "frc_msgs/MatchSpecificData.h"
 
 #include <controllers_2020_msgs/ClimberSrv.h>
 #include <controllers_2020_msgs/ControlPanelSrv.h>
@@ -39,6 +40,7 @@ std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 
 bool diagnostics_mode = false;
 bool green_led_on = true;
+bool can_climb = false;
 
 double orient_strafing_angle;
 
@@ -198,21 +200,26 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.leftSwitchUpPress)
 	{
-		//climber up (don't if not deployed)
-		if(climber_controller_cmd.request.climber_deploy)
+		if(can_climb)
 		{
-			//Unbrake climber
-			climber_controller_cmd.request.climber_elevator_brake = false;
-			ROS_WARN_STREAM("Calling climber controller to release brake!");
+			//climber up (don't if not deployed)
+			if(climber_controller_cmd.request.climber_deploy)
+			{
+				//Unbrake climber
+				climber_controller_cmd.request.climber_elevator_brake = false;
+				ROS_WARN_STREAM("Calling climber controller to release brake!");
 
-			//Set percent out
-			climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
-			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
-			climber_controller_client.call(climber_controller_cmd);
-		}
-		else
-		{
-			ROS_WARN_STREAM("Cannot run climber winch unless climber is deployed!");
+				//Set percent out
+				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
+			}
+			else
+			{
+				ROS_WARN_STREAM("Cannot run climber winch unless climber is deployed!");
+			}
+		} else {
+			ROS_WARN_STREAM("Cannot climb unless match is in end game!");
 		}
 	}
 	if(button_box.leftSwitchUpButton)
@@ -999,6 +1006,11 @@ void jointStateCallback(const sensor_msgs::JointState &joint_state)
 {
 }
 
+void matchStateCallback(const frc_msgs::MatchSpecificData &msg)
+{
+	can_climb = msg.matchTimeRemaining <= config.climber_time_lock && !msg.Autonomous;
+}
+
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "Joystick_controller");
@@ -1006,6 +1018,8 @@ int main(int argc, char **argv)
 	ros::NodeHandle n_params(n, "teleop_params");
 	ros::NodeHandle n_diagnostics_params(n, "teleop_diagnostics_params");
 	ros::NodeHandle n_swerve_params(n, "/frcrobot_jetson/swerve_drive_controller");
+
+
 
 	int num_joysticks = 1;
 	if(!n_params.getParam("num_joysticks", num_joysticks))
@@ -1071,6 +1085,10 @@ int main(int argc, char **argv)
 	if(!n_params.getParam("stick_threshold", config.stick_threshold))
 	{
 		ROS_ERROR("Could not read stick_threshold in teleop_joystick_comp");
+	}
+	if(!n_params.getParam("climber_time_lock", config.climber_time_lock))
+	{
+		ROS_ERROR("Could not read climber_time_lock in teleop_joystick_comp");
 	}
 
 	if(!n_diagnostics_params.getParam("climber_percent_out", diagnostics_config.climber_percent_out))
