@@ -239,21 +239,25 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.leftSwitchDownPress)
 	{
-		//climber down (don't if not deployed)
-		if(climber_controller_cmd.request.climber_deploy)
-		{
-			//Unbrake climber
-			climber_controller_cmd.request.climber_elevator_brake = false;
-			ROS_WARN_STREAM("Calling climber controller to release brake!");
+		if(can_climb) {
+			//climber down (don't if not deployed)
+			if(climber_controller_cmd.request.climber_deploy)
+			{
+				//Unbrake climber
+				climber_controller_cmd.request.climber_elevator_brake = false;
+				ROS_WARN_STREAM("Calling climber controller to release brake!");
 
-			//Set percent out
-			climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
-			ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
-			climber_controller_client.call(climber_controller_cmd);
-		}
-		else
-		{
-			ROS_WARN_STREAM("Cannot run climber winch unless climber is deployed!");
+				//Set percent out
+				climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
+				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+				climber_controller_client.call(climber_controller_cmd);
+			}
+			else
+			{
+				ROS_WARN_STREAM("Cannot run climber winch unless climber is deployed!");
+			}
+		} else {
+			ROS_WARN_STREAM("Cannot climb unless match is in endgame!");
 		}
 	}
 	if(button_box.leftSwitchDownButton)
@@ -643,17 +647,22 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionUp
 			if(joystick_states_array[0].directionUpPress)
 			{
-				//climber up (don't if not deployed)
-				if(climber_controller_cmd.request.climber_deploy)
+				if(can_climb)
 				{
-					//Unbrake climber
-					climber_controller_cmd.request.climber_elevator_brake = false;
-					ROS_WARN_STREAM("Calling climber controller to release brake!");
+					//climber up (don't if not deployed)
+					if(climber_controller_cmd.request.climber_deploy)
+					{
+						//Unbrake climber
+						climber_controller_cmd.request.climber_elevator_brake = false;
+						ROS_WARN_STREAM("Calling climber controller to release brake!");
 
-					//Set percent out
-					climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
-					ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
-					climber_controller_client.call(climber_controller_cmd);
+						//Set percent out
+						climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out;
+						ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+						climber_controller_client.call(climber_controller_cmd);
+					}
+				} else {
+					ROS_WARN_STREAM("Cannot climb unless match is in endgame!");
 				}
 			}
 			if(joystick_states_array[0].directionUpButton)
@@ -674,17 +683,23 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionDown
 			if(joystick_states_array[0].directionDownPress)
 			{
-				//climber down (don't if not deployed)
-				if(climber_controller_cmd.request.climber_deploy)
+				
+				if(can_climb)
 				{
-					//Unbrake climber
-					climber_controller_cmd.request.climber_elevator_brake = false;
-					ROS_WARN_STREAM("Calling climber controller to release brake!");
+					//climber down (don't if not deployed)
+					if(climber_controller_cmd.request.climber_deploy)
+					{
+						//Unbrake climber
+						climber_controller_cmd.request.climber_elevator_brake = false;
+						ROS_WARN_STREAM("Calling climber controller to release brake!");
 
-					//Set percent out
-					climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
-					ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
-					climber_controller_client.call(climber_controller_cmd);
+						//Set percent out
+						climber_controller_cmd.request.winch_percent_out = -diagnostics_config.climber_percent_out;
+						ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
+						climber_controller_client.call(climber_controller_cmd);
+					}
+				} else {
+					ROS_WARN_STREAM("Cannot climb unless match is in endgame!");
 				}
 			}
 			if(joystick_states_array[0].directionDownButton)
@@ -1166,6 +1181,7 @@ int main(int argc, char **argv)
 	ros::Subscriber imu_heading = n.subscribe("/imu/zeroed_imu", 1, &imuCallback);
 	ros::Subscriber joint_states_sub = n.subscribe("/frcrobot_jetson/joint_states", 1, &jointStateCallback);
 
+	ros::Subscriber match_state_sub = n.subscribe("/frcrobot_rio/match_data", 1, matchStateCallback);
 	ros::ServiceServer robot_orient_service = n.advertiseService("robot_orient", orientCallback);
 
 	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
