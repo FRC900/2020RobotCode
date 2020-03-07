@@ -27,11 +27,16 @@ hardware_interface:
        - {name: intake_arm_joint, type: solenoid, local_hardware: false, local_update: true}
        - {name: intake_joint, type: can_talon_srx, can_id: 33, local: true}
 
+         # - {name: shooter_joint, type: can_talon_srx, can_id: 32, local: true}
+         # - {name: shooter_hood_joint, type: solenoid, local_hardware: false, local_update: true}
+
        - {name: climber_winch_joint, type: can_talon_srx, can_id: 40, local: true} #TODO fix can id
        - {name: climber_deploy_joint, type: double_solenoid, local_hardware: false, local_update: true}
        - {name: climber_elevator_brake_joint, type: solenoid, local_hardware: false, local_update: true}
        
        - {name: indexer_joint, type: can_talon_srx, can_id: 35, local: true} #TODO find actual can id
+
+         # - {name: control_panel_joint, type: can_talon_srx, can_id: 34, local: true}
 
        - {name: fl_drive, type: can_talon_srx, can_id: 21, local: true}
        - {name: fl_angle, type: can_talon_srx, can_id: 11, local: true}
