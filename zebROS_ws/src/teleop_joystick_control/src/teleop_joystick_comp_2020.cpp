@@ -27,8 +27,12 @@
 #include <controllers_2020_msgs/TurretSrv.h>
 
 #include "actionlib/client/simple_action_client.h"
+#include "behavior_actions/AlignToShootAction.h"
 #include "behavior_actions/EjectAction.h"
+#include "behavior_actions/IndexerAction.h"
 #include "behavior_actions/IntakeAction.h"
+#include "behavior_actions/PathAction.h"
+#include "behavior_actions/ShooterAction.h"
 
 #include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
 #include "teleop_joystick_control/TeleopJoystickCompConfig.h"
@@ -85,10 +89,12 @@ controllers_2020_msgs::IntakeRollerSrv intake_roller_controller_cmd;
 controllers_2020_msgs::ShooterSrv shooter_controller_cmd;
 controllers_2020_msgs::TurretSrv turret_controller_cmd;
 
-
-
+std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::AlignToShootAction>> align_shooter_ac;
 std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::EjectAction>> eject_ac;
+std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::IndexerAction>> indexer_ac;
 std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::IntakeAction>> intake_ac;
+std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::PathAction>> path_ac;
+std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::ShooterAction>> shooter_ac;
 
 double imu_angle;
 
@@ -107,8 +113,11 @@ void imuCallback(const sensor_msgs::Imu &imuState)
 void preemptActionlibServers(void)
 {
 	ROS_WARN_STREAM("Preempting actionlib servers!");
+	align_shooter_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 	eject_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 	intake_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+	path_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+	shooter_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 }
 
 bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
@@ -154,8 +163,14 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.topRedPress)
 	{
-		//Preempt everything
+		//Panic, preempt everything, retract everything
 		preemptActionlibServers();
+
+		indexer_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+
+		intake_arm_controller_cmd.request.intake_arm_extend = false;
+		ROS_WARN_STREAM("Calling intake server with intake_arm_extend = " << intake_arm_controller_cmd.request.intake_arm_extend);
+		intake_arm_controller_client.call(intake_arm_controller_cmd);
 	}
 	if(button_box.topRedButton)
 	{
@@ -556,8 +571,14 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: buttonX
 			if(joystick_states_array[0].buttonXPress)
 			{
-				//Preempt everything
+				//Panic, preempt everything, retract everything
 				preemptActionlibServers();
+
+				indexer_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+
+				intake_arm_controller_cmd.request.intake_arm_extend = false;
+				ROS_WARN_STREAM("Calling intake server with intake_arm_extend = " << intake_arm_controller_cmd.request.intake_arm_extend);
+				intake_arm_controller_client.call(intake_arm_controller_cmd);
 			}
 			if(joystick_states_array[0].buttonXButton)
 			{
@@ -683,7 +704,6 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionDown
 			if(joystick_states_array[0].directionDownPress)
 			{
-				
 				if(can_climb)
 				{
 					//climber down (don't if not deployed)
@@ -1186,8 +1206,12 @@ int main(int argc, char **argv)
 
 	ros::ServiceServer orient_strafing_angle_service = n.advertiseService("orient_strafing_angle", orientStrafingAngleCallback);
 
+	align_shooter_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::AlignToShootAction>>("/align_to_shoot/align_to_shoot_server", true);
 	eject_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::EjectAction>>("/eject/eject_server", true);
+	indexer_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::IndexerAction>>("/indexer/indexer_server", true);
 	intake_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::IntakeAction>>("/intake/intake_server", true);
+	path_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::PathAction>>("/path/path_server", true);
+	shooter_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::ShooterAction>>("/shooter/shooter_server", true);
 
 	climber_controller_client = n.serviceClient<controllers_2020_msgs::ClimberSrv>("/frcrobot_jetson/climber_controller/climber_command");
 	indexer_controller_client = n.serviceClient<controllers_2020_msgs::IndexerSrv>("/frcrobot_jetson/indexer_controller/indexer_command");
