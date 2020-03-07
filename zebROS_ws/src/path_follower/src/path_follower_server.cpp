@@ -160,13 +160,15 @@ class PathAction
 				spline_gen_srv.request.points[i].positions[1] = goal->points[i].y;
 				spline_gen_srv.request.points[i].positions[2] = goal->points[i].z;
 
-				spline_gen_srv.request.constraints[i].corner1 = goal->constraints[i].corner1;
-				spline_gen_srv.request.constraints[i].corner2 = goal->constraints[i].corner2;
-				spline_gen_srv.request.constraints[i].max_accel = goal->constraints[i].max_accel;
-				spline_gen_srv.request.constraints[i].max_decel = goal->constraints[i].max_decel;
-				spline_gen_srv.request.constraints[i].max_vel = goal->constraints[i].max_vel;
-				spline_gen_srv.request.constraints[i].max_cent_accel = goal->constraints[i].max_cent_accel;
-				spline_gen_srv.request.constraints[i].path_limit_distance = goal->constraints[i].path_limit_distance;
+				spline_gen_srv.request.constraints[i].corner1.x = (goal->constraints[i].corner1.x == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].corner1.x);
+				spline_gen_srv.request.constraints[i].corner2.x = (goal->constraints[i].corner2.x == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].corner2.x);
+				spline_gen_srv.request.constraints[i].corner1.y = (goal->constraints[i].corner1.y == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].corner1.y);
+				spline_gen_srv.request.constraints[i].corner2.y = (goal->constraints[i].corner2.y == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].corner2.y);
+				spline_gen_srv.request.constraints[i].max_accel = (goal->constraints[i].max_accel == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].max_accel);
+				spline_gen_srv.request.constraints[i].max_decel = (goal->constraints[i].max_decel == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].max_decel);
+				spline_gen_srv.request.constraints[i].max_vel = (goal->constraints[i].max_vel == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].max_vel);
+				spline_gen_srv.request.constraints[i].max_cent_accel = (goal->constraints[i].max_cent_accel == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].max_cent_accel);
+				spline_gen_srv.request.constraints[i].path_limit_distance = (goal->constraints[i].path_limit_distance == 0 ? std::numeric_limits<double>::max() : goal->constraints[i].path_limit_distance);
 			}
 
 			if (!spline_gen_cli_.call(spline_gen_srv))
