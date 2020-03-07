@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   rqt_gui
   rqt_gui_py
   imu_zero
-  #  ros_bridge
 )
 
 ## System dependencies are found with CMake's conventions

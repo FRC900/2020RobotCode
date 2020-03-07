@@ -18,16 +18,17 @@ import std_msgs.msg
 import roslibpy
 
 
-client = roslibpy.Ros(host='localhost',port = 9090)
-client.run()
+
 class Dashboard(Plugin):
 
     msg_data = "default"
     def __init__(self, context):
+        #Start client -rosbridge
+        client = roslibpy.Ros(host='localhost', port=5803)
+        client.run()
         super(Dashboard, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName('Dashboard')
-
         # Process standalone plugin command-line arguments
         from argparse import ArgumentParser
         parser = ArgumentParser()
@@ -85,7 +86,8 @@ class Dashboard(Plugin):
         # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
+        listener1 = roslibpy.Topic(client, '/auto/auto_state', AutoState)
+        self.auto_state_sub = listener1.subscribe(self.autoStateCallback)
 
         # publish thread
         publish_thread = threading.Thread(target=self.publish_thread) #args=(self,))
@@ -99,8 +101,8 @@ class Dashboard(Plugin):
         self.four_balls = QPixmap(":/images/4_balls.png")
         self.five_balls = QPixmap(":/images/5_balls.png")
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
-        
-        self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
+        listener2 = roslibpy.Topic(client,'/num_powercells',std_msgs.msg._UInt8)
+        self.n_balls_sub = listener2.subscribe(self.nBallsCallback)
         self.n_balls = -1 #don't know n balls at first 
 
         # Show _widget.windowTitle on left-top of each plugin (when 
@@ -116,6 +118,7 @@ class Dashboard(Plugin):
 
 
     def autoStateCallback(self, msg):
+        print('ji')
         if(self.autoState != msg.id):
 	    self.autoState = msg.id
             self.displayAutoState()
@@ -162,19 +165,25 @@ class Dashboard(Plugin):
 
 
     def setImuAngle(self):
+        client = roslibpy.Ros(host='localhost',port = 5803)
+        client.run()
         angle = self._widget.imu_angle.value() # imu_angle is the text field (doublespinbox) that the user can edit to change the navx angle, defaulting to zero
-
         # call the service
         try:
-            rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
-            caller = rospy.ServiceProxy("/imu/set_imu_zero", ImuZeroAngle)
-            caller(angle)
+            service = roslibpy.Service(client,'/imu/set_imu_zero',ImuZeroAngle)
+           # rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
+            #TODO remove print
+            #Service Request-rosbridge
+            request = roslibpy.ServiceRequest()
+            result = service.call(request)
+            print(result)
+            #result(angle)
             # change button to green color to indicate that the service call went through
             self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
 
         except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
-            self.errorPopup("Imu Set Angle Error", e)
-
+            self.errorPopup("Imu Set Angle Error", e) 
+        client.close()
 
     def imuAngleChanged(self):
         # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
@@ -190,16 +199,23 @@ class Dashboard(Plugin):
 
     #Publisher -> fake Auto States
     def publish_thread(self):
-        pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
+        client1 = roslibpy.Ros(host='localhost', port=5803)
+        client1.run()
+        pub = roslibpy.Topic(client1, AutoMode, '/auto/auto_mode')
+#        pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
         r = rospy.Rate(10) # 10hz
-        while not rospy.is_shutdown():
+        while client1.is_connected:
             h = std_msgs.msg.Header()
             h.stamp = rospy.Time.now()
-            pub.publish(h, self.auto_mode_button_group.checkedId())
+            #print(h,self.auto_mode_button_group.checkedId())
+            pub.publish(roslibpy.Message({h:self.auto_mode_button_group.checkedId()}))
+            #,'data2':self.auto_mode_button_group.checkedId()}))
             r.sleep()
+        pub.unadvertise()
+        client1.terminate()
 
     def shutdown_plugin(self):
-        # TODO unregister all publishers here
+        # TODO unregister all publishers here 
         pass
 
     def save_settings(self, plugin_settings, instance_settings):
@@ -218,3 +234,4 @@ class Dashboard(Plugin):
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
         pass
+
