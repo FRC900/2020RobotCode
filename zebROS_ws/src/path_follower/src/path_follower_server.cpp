@@ -152,13 +152,23 @@ class PathAction
 			base_trajectory::GenerateSpline spline_gen_srv;
 			const size_t point_num = goal->points.size();
 			spline_gen_srv.request.points.resize(point_num);
+			spline_gen_srv.request.constraints.resize(point_num);
 			for (size_t i = 0; i < point_num; i++)
 			{
 				spline_gen_srv.request.points[i].positions.resize(3);
 				spline_gen_srv.request.points[i].positions[0] = goal->points[i].x;
 				spline_gen_srv.request.points[i].positions[1] = goal->points[i].y;
 				spline_gen_srv.request.points[i].positions[2] = goal->points[i].z;
+
+				spline_gen_srv.request.constraints[i].corner1 = goal->constraints[i].corner1;
+				spline_gen_srv.request.constraints[i].corner2 = goal->constraints[i].corner2;
+				spline_gen_srv.request.constraints[i].max_accel = goal->constraints[i].max_accel;
+				spline_gen_srv.request.constraints[i].max_decel = goal->constraints[i].max_decel;
+				spline_gen_srv.request.constraints[i].max_vel = goal->constraints[i].max_vel;
+				spline_gen_srv.request.constraints[i].max_cent_accel = goal->constraints[i].max_cent_accel;
+				spline_gen_srv.request.constraints[i].path_limit_distance = goal->constraints[i].path_limit_distance;
 			}
+
 			if (!spline_gen_cli_.call(spline_gen_srv))
 			{
 				ROS_ERROR_STREAM("Can't call spline gen service in path_follower_server");
@@ -317,6 +327,7 @@ int main(int argc, char **argv)
 	double server_timeout = 5.0;
 	int ros_rate = 20;
 	double start_point_radius = 0.05;
+
 	std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
 	nh.getParam("/path_follower/path_follower/lookahead_distance", lookahead_distance);
 	nh.getParam("/path_follower/path_follower/final_pos_tol", final_pos_tol);
