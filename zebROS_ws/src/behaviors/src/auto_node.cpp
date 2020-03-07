@@ -303,6 +303,7 @@ int main(int argc, char** argv)
 					return 1;
 				} //for some reason this is necessary, even if the server has been up and running for a while
 				behavior_actions::ShooterGoal goal;
+                                goal.mode = 0;
 				shooter_ac.sendGoal(goal);
 				waitForActionlibServer(shooter_ac, 100, "intake server");
 			}
