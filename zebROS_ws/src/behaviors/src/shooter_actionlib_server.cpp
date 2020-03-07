@@ -5,7 +5,9 @@
 #include <ros/console.h>
 #include <mutex>
 #include <cmath>
+#include <thread>
 #include <vector>
+#include <functional>
 #include <map>
 #include <string>
 #include <algorithm>
@@ -29,6 +31,13 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/Float64.h"
 #include "behavior_actions/ShooterOffset.h"
+
+
+bool sortDistDescending(const std::map<std::string, double> &m1, const std::map<std::string, double> &m2)
+{
+	return m1.at("dist") > m2.at("dist");
+}
+
 
 //create the class for the actionlib server
 class ShooterAction {
@@ -58,6 +67,8 @@ class ShooterAction {
 
 		ros::Subscriber shooter_offset_sub_;
 		std::atomic<double> speed_offset_{0};
+
+		std::thread in_range_pub_thread_;
 
 		//variables to store if server was preempted_ or timed out. If either true, skip everything (if statements). If both false, we assume success.
 		bool preempted_;
@@ -130,47 +141,55 @@ class ShooterAction {
 			local_goal_msg = goal_msg_;
 
 			//get the goal position
+			bool found_goal = false;
 			geometry_msgs::Point32 goal_pos_;
 			for (const field_obj::Object &obj : local_goal_msg.objects)
 			{
 				if(obj.id == "power_port")
 				{
 					goal_pos_ = obj.location;
+					found_goal = true;
 				}
 			}
 
-			// find transformed goal position
-			geometry_msgs::PointStamped goal_pos_from_zed;
-			goal_pos_from_zed.header = local_goal_msg.header;
-			goal_pos_from_zed.point.x = goal_pos_.x;
-			goal_pos_from_zed.point.y = goal_pos_.y;
-			goal_pos_from_zed.point.z = goal_pos_.z;
+			if(found_goal)
+			{
+				// find transformed goal position
+				geometry_msgs::PointStamped goal_pos_from_zed;
+				goal_pos_from_zed.header = local_goal_msg.header;
+				goal_pos_from_zed.point.x = goal_pos_.x;
+				goal_pos_from_zed.point.y = goal_pos_.y;
+				goal_pos_from_zed.point.z = goal_pos_.z;
 
-			geometry_msgs::PointStamped transformed_goal_pos;
-			geometry_msgs::TransformStamped zed_to_turret_transform;
-			try {
-				zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
-				tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
+				geometry_msgs::PointStamped transformed_goal_pos;
+				geometry_msgs::TransformStamped zed_to_turret_transform;
+				try {
+					zed_to_turret_transform = tf_buffer_.lookupTransform("turret_center", "zed_camera_center", ros::Time::now());
+					tf2::doTransform(goal_pos_from_zed, transformed_goal_pos, zed_to_turret_transform);
+				}
+				catch (tf2::TransformException &ex) {
+					ROS_WARN("Shooter actionlib server failed to do ZED->turret transform - %s", ex.what());
+					return false;
+				}
+				ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
+				ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
+
+				//obtain distance via trig
+				const double distance = std::hypot(transformed_goal_pos.point.x, transformed_goal_pos.point.y);
+
+				if(distance > max_dist_ || distance < min_dist_)
+					return false;
+
+				//obtain speed and hood values
+				hood_extended = distance > hood_threshold_;
+				if(hood_extended)
+					shooter_speed = lerpTable(hood_up_table_, distance);
+				else
+					shooter_speed = lerpTable(hood_down_table_, distance);
 			}
-			catch (tf2::TransformException &ex) {
-				ROS_WARN("Shooter actionlib server failed to do ZED->turret transform - %s", ex.what());
-				return false;
+			else {
+				return false; //if didn't find a goal, return false
 			}
-			ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
-			ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
-
-			//obtain distance via trig
-			const double distance = std::hypot(transformed_goal_pos.point.x, transformed_goal_pos.point.y);
-
-			if(distance > max_dist_ || distance < min_dist_)
-				return false;
-
-			//obtain speed and hood values
-			hood_extended = distance > hood_threshold_;
-			if(hood_extended)
-				shooter_speed = lerpTable(hood_up_table_, distance);
-			else
-				shooter_speed = lerpTable(hood_down_table_, distance);
 
 			return true;
 		}
@@ -235,12 +254,35 @@ class ShooterAction {
 				}
 				else //last option for goal->mode is 0=auto shooting, but also make this the default
 				{
-					if(!getHoodAndVelocity(shooter_hood_raise, shooter_velocity))
+					//run a while loop in case the ZED takes its sweet time detecting a goal
+					const double get_speed_start_time = ros::Time::now().toSec();
+					bool got_speed = false;
+					while(!timed_out_ && !preempted_ && ros::ok())
 					{
-						ROS_ERROR_STREAM(action_name_ << " tried to shoot ball while out of range");
+						got_speed = getHoodAndVelocity(shooter_hood_raise, shooter_velocity);
+						if(as_.isPreemptRequested() || !ros::ok())
+						{
+							ROS_ERROR("Shooter server - Preempted while waiting for hood/velocity values");
+							preempted_ = true;
+						}
+						else if(ros::Time::now().toSec() - start_time_ > server_timeout_ || ros::Time::now().toSec() - get_speed_start_time > get_speed_timeout_)
+						{
+							ROS_ERROR("Shooter server timed out while waiting for shooter speed/hood to be determined");
+							timed_out_ = true;
+						}
+						else if(!got_speed)
+						{
+							r.sleep();
+						}
+					}
+
+					if(!got_speed)
+					{
+						ROS_ERROR_STREAM(action_name_ << " couldn't get shooter speed, out of range or no goal detected");
 						preempted_ = true;
 						break;
 					}
+
 				}
 				srv.request.shooter_hood_raise = shooter_hood_raise;
 				srv.request.set_velocity = shooter_velocity + speed_offset_;
@@ -404,6 +446,29 @@ class ShooterAction {
 		}
 
 	public:
+		//thread to publish if target is visible/within range
+		void publishInRangeThread()
+		{
+		#ifdef __linux__
+			//give the thread a name
+			pthread_setname_np(pthread_self(), "shooter_in_range_pub_thread");
+		#endif
+
+			ros::Publisher in_range_pub = nh_.advertise<std_msgs::Bool>("shooter_in_range", 1);
+			ros::Rate r(2); //2 hz is fine for GUI display
+			std_msgs::Bool msg;
+
+			while(ros::ok())
+			{
+				bool hood_extended;
+				double shooter_speed;
+				msg.data = getHoodAndVelocity(hood_extended, shooter_speed); //returns true if we detected a goal and are within range, false otherwise
+				in_range_pub.publish(msg);
+
+				r.sleep();
+			}
+		}
+
 		//Constructor - create actionlib server; the executeCB function will run every time the actionlib server is called
 		ShooterAction(const std::string &name) :
 			as_(nh_, name, boost::bind(&ShooterAction::executeCB, this, _1), false),
@@ -412,6 +477,106 @@ class ShooterAction {
 			ac_indexer_("/indexer/indexer_server", true),
 			tf_listener_(tf_buffer_)
 	{
+
+		//get config values ------------------------------------
+		ros::NodeHandle n_params_shooter(nh_, "actionlib_shooter_params"); //node handle for a lower-down namespace
+		if (!n_params_shooter.getParam("server_timeout", server_timeout_)) {
+			ROS_ERROR("Could not read server_timeout in shooter_server");
+			server_timeout_ = 10;
+		}
+		if (!n_params_shooter.getParam("wait_for_server_timeout", wait_for_server_timeout_)) {
+			ROS_ERROR("Could not read wait_for_server_timeout in shooter_server");
+			wait_for_server_timeout_ = 10;
+		}
+		if (!n_params_shooter.getParam("wait_for_ready_timeout", wait_for_ready_timeout_)) {
+			ROS_ERROR("Could not read wait_for_ready_timeout in shooter_server");
+			wait_for_ready_timeout_ = 10;
+		}
+		if (!n_params_shooter.getParam("near_shooting_speed", near_shooting_speed_)) {
+			ROS_ERROR("Could not read near_shooting_speed in shooter_server");
+			near_shooting_speed_ = 300; //TODO fix
+		}
+		if (!n_params_shooter.getParam("far_shooting_speed", far_shooting_speed_)) {
+			ROS_ERROR("Could not read far_shooting_speed in shooter_server");
+			far_shooting_speed_ = 415; //TODO fix
+		}
+		if (!n_params_shooter.getParam("get_speed_timeout", get_speed_timeout_)) {
+			ROS_ERROR("Could not read get_speed_timeout in shooter_server");
+			get_speed_timeout_ = 1;
+		}
+
+		XmlRpc::XmlRpcValue hood_up_list;
+		if(!n_params_shooter.getParam("hood_up_table", hood_up_list)){
+			ROS_ERROR("Couldn't read hood_up_table in shooter_actionlib.yaml");
+		}
+		for(int i = 0; i < hood_up_list.size(); i++)
+		{
+			XmlRpc::XmlRpcValue &shooter_point = hood_up_list[i];
+
+			std::map<std::string, double> shooter_map;
+
+			if (shooter_point.hasMember("dist"))
+			{
+				XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
+				if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+					ROS_ERROR("An invalid shooter distance was specified (expecting an double) in hood_up_table in shooter_actionlib.yaml");
+				shooter_map["dist"] = xml_dist;
+			}
+
+			if (shooter_point.hasMember("speed"))
+			{
+				XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
+				if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+					ROS_ERROR("An invalid shooter speed was specified (expecting an double) in hood_up_table in shooter_actionlib.yaml");
+				shooter_map["speed"] = xml_speed;
+			}
+
+			hood_up_table_.push_back(shooter_map);
+		}
+
+		XmlRpc::XmlRpcValue hood_down_list;
+		if(!n_params_shooter.getParam("hood_down_table", hood_down_list)){
+			ROS_ERROR("Couldn't read hood_down_table in shooter_actionlib.yaml");
+		}
+
+		for(int i = 0; i < hood_down_list.size(); i++)
+		{
+			XmlRpc::XmlRpcValue &shooter_point = hood_down_list[i];
+
+			std::map<std::string, double> shooter_map;
+
+			if (shooter_point.hasMember("dist"))
+			{
+				XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
+				if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+					ROS_ERROR("An invalid shooter distance was specified (expecting an double) in hood_down_table in shooter_actionlib.yaml");
+				shooter_map["dist"] = xml_dist;
+			}
+
+			if (shooter_point.hasMember("speed"))
+			{
+				XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
+				if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
+					ROS_ERROR("An invalid shooter speed was specified (expecting an double) in hood_down_table in shooter_actionlib.yaml");
+				shooter_map["speed"] = xml_speed;
+			}
+
+			hood_down_table_.push_back(shooter_map);
+		}
+
+		if(!n_params_shooter.getParam("hood_threshold", hood_threshold_)){
+			ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
+			hood_threshold_ = 0.0;
+		}
+
+		std::sort(hood_up_table_.begin(), hood_up_table_.end(), sortDistDescending);
+		std::sort(hood_down_table_.begin(), hood_down_table_.end(), sortDistDescending);
+
+		max_dist_ = hood_up_table_.front().at("dist");
+		min_dist_ = hood_down_table_.back().at("dist");
+		//end reading config ------------------------------------------------------
+
+
 		as_.start(); //start the actionlib server
 
 		//do networking stuff
@@ -427,10 +592,17 @@ class ShooterAction {
 		//subscribers
 		ready_to_shoot_sub_ = nh_.subscribe("/frcrobot_jetson/shooter_controller/ready_to_shoot", 5, &ShooterAction::shooterReadyCB, this);
 		goal_sub_ = nh_.subscribe("/goal_detection/goal_detect_msg", 5, &ShooterAction::goalDetectionCB, this);
+
+		//publish thread for if in range
+		in_range_pub_thread_ = std::thread(std::bind(&ShooterAction::publishInRangeThread, this));
 	}
 
 		~ShooterAction(void)
 		{
+			if(in_range_pub_thread_.joinable())
+			{
+				in_range_pub_thread_.join();
+			}
 		}
 
 		//config values
@@ -444,13 +616,9 @@ class ShooterAction {
 		double min_dist_;
 		double near_shooting_speed_; //with hood down
 		double far_shooting_speed_; //with hood up
-
+		double get_speed_timeout_;
 };
 
-bool sortDistDescending(const std::map<std::string, double> &m1, const std::map<std::string, double> &m2)
-{
-	return m1.at("dist") > m2.at("dist");
-}
 
 int main(int argc, char** argv) {
 	//create node
@@ -460,98 +628,6 @@ int main(int argc, char** argv) {
 	//create the actionlib server
 	ShooterAction shooter_action("shooter_server");
 
-	//get config values
-	ros::NodeHandle n_params_shooter(nh, "actionlib_shooter_params"); //node handle for a lower-down namespace
-	if (!n_params_shooter.getParam("server_timeout", shooter_action.server_timeout_)) {
-		ROS_ERROR("Could not read server_timeout in shooter_server");
-		shooter_action.server_timeout_ = 10;
-	}
-	if (!n_params_shooter.getParam("wait_for_server_timeout", shooter_action.wait_for_server_timeout_)) {
-		ROS_ERROR("Could not read wait_for_server_timeout in shooter_server");
-		shooter_action.wait_for_server_timeout_ = 10;
-	}
-	if (!n_params_shooter.getParam("wait_for_ready_timeout", shooter_action.wait_for_ready_timeout_)) {
-		ROS_ERROR("Could not read wait_for_ready_timeout in shooter_server");
-		shooter_action.wait_for_ready_timeout_ = 10;
-	}
-	if (!n_params_shooter.getParam("near_shooting_speed", shooter_action.near_shooting_speed_)) {
-		ROS_ERROR("Could not read near_shooting_speed in shooter_server");
-		shooter_action.near_shooting_speed_ = 300; //TODO fix
-	}
-	if (!n_params_shooter.getParam("far_shooting_speed", shooter_action.far_shooting_speed_)) {
-		ROS_ERROR("Could not read far_shooting_speed in shooter_server");
-		shooter_action.far_shooting_speed_ = 415; //TODO fix
-	}
-
-	XmlRpc::XmlRpcValue hood_up_list;
-	if(!n_params_shooter.getParam("hood_up_table", hood_up_list)){
-		ROS_ERROR("Couldn't read hood_up_table in shooter_actionlib.yaml");
-	}
-	for(int i = 0; i < hood_up_list.size(); i++)
-	{
-		XmlRpc::XmlRpcValue &shooter_point = hood_up_list[i];
-
-		std::map<std::string, double> shooter_map;
-
-		if (shooter_point.hasMember("dist"))
-		{
-			XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
-			if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
-				ROS_ERROR("An invalid shooter distance was specified (expecting an double) in hood_up_table in shooter_actionlib.yaml");
-			shooter_map["dist"] = xml_dist;
-		}
-
-		if (shooter_point.hasMember("speed"))
-		{
-			XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
-			if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
-				ROS_ERROR("An invalid shooter speed was specified (expecting an double) in hood_up_table in shooter_actionlib.yaml");
-			shooter_map["speed"] = xml_speed;
-		}
-
-		shooter_action.hood_up_table_.push_back(shooter_map);
-	}
-
-	XmlRpc::XmlRpcValue hood_down_list;
-	if(!n_params_shooter.getParam("hood_down_table", hood_down_list)){
-		ROS_ERROR("Couldn't read hood_down_table in shooter_actionlib.yaml");
-	}
-
-	for(int i = 0; i < hood_down_list.size(); i++)
-	{
-		XmlRpc::XmlRpcValue &shooter_point = hood_down_list[i];
-
-		std::map<std::string, double> shooter_map;
-
-		if (shooter_point.hasMember("dist"))
-		{
-			XmlRpc::XmlRpcValue &xml_dist = shooter_point["dist"];
-			if (!xml_dist.valid() || xml_dist.getType() != XmlRpc::XmlRpcValue::TypeDouble)
-				ROS_ERROR("An invalid shooter distance was specified (expecting an double) in hood_down_table in shooter_actionlib.yaml");
-			shooter_map["dist"] = xml_dist;
-		}
-
-		if (shooter_point.hasMember("speed"))
-		{
-			XmlRpc::XmlRpcValue &xml_speed = shooter_point["speed"];
-			if (!xml_speed.valid() || xml_speed.getType() != XmlRpc::XmlRpcValue::TypeDouble)
-				ROS_ERROR("An invalid shooter speed was specified (expecting an double) in hood_down_table in shooter_actionlib.yaml");
-			shooter_map["speed"] = xml_speed;
-		}
-
-		shooter_action.hood_down_table_.push_back(shooter_map);
-	}
-
-	if(!n_params_shooter.getParam("hood_threshold", shooter_action.hood_threshold_)){
-		ROS_ERROR("Couldn't read hood_threshold in shooter_actionlib.yaml");
-		shooter_action.hood_threshold_ = 0.0;
-	}
-
-	std::sort(shooter_action.hood_up_table_.begin(), shooter_action.hood_up_table_.end(), sortDistDescending);
-	std::sort(shooter_action.hood_down_table_.begin(), shooter_action.hood_down_table_.end(), sortDistDescending);
-
-	shooter_action.max_dist_ = shooter_action.hood_up_table_.front().at("dist");
-	shooter_action.min_dist_ = shooter_action.hood_down_table_.back().at("dist");
 
 	ros::AsyncSpinner Spinner(2);
 	Spinner.start();
