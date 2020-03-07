@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>800</height>
+    <width>1750</width>
+    <height>907</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -273,6 +273,17 @@
         </widget>
        </item>
       </layout>
+     </item>
+	  
+	 <item>
+      <widget class="QPushButton" name="pushButton_2">
+       <property name="styleSheet">
+        <string notr="true">background-color:#ff0000</string>
+       </property>
+       <property name="text">
+        <string>Reset Jetson</string>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer">
