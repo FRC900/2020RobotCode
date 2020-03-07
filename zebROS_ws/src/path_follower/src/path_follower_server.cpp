@@ -159,6 +159,14 @@ class PathAction
 				spline_gen_srv.request.points[i].positions[1] = goal->points[i].y;
 				spline_gen_srv.request.points[i].positions[2] = goal->points[i].z;
 			}
+			spline_gen_srv.request.constraints.corner1;
+			spline_gen_srv.request.constraints.corner2;
+			spline_gen_srv.request.constraints.max_accel;
+			spline_gen_srv.request.constraints.max_decel;
+			spline_gen_srv.request.constraints.max_vel;
+			spline_gen_srv.request.constraints.max_cent_accel;
+			spline_gen_srv.request.constraints.path_limit_distance;
+
 			if (!spline_gen_cli_.call(spline_gen_srv))
 			{
 				ROS_ERROR_STREAM("Can't call spline gen service in path_follower_server");
@@ -317,6 +325,18 @@ int main(int argc, char **argv)
 	double server_timeout = 5.0;
 	int ros_rate = 20;
 	double start_point_radius = 0.05;
+
+	//constraints
+	double corner_1x = std::numeric_limits<double>::max();
+	double corner_1y = std::numeric_limits<double>::max();
+	double corner_2x = std::numeric_limits<double>::max();
+	double corner_2y = std::numeric_limits<double>::max();
+	double max_accel = std::numeric_limits<double>::max();
+	double max_decel = std::numeric_limits<double>::max();
+	double max_vel = std::numeric_limits<double>::max();
+	double max_cent_accel = std::numeric_limits<double>::max();
+	double path_limit_distance = std::numeric_limits<double>::max();
+
 	std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
 	nh.getParam("/path_follower/path_follower/lookahead_distance", lookahead_distance);
 	nh.getParam("/path_follower/path_follower/final_pos_tol", final_pos_tol);
@@ -324,6 +344,15 @@ int main(int argc, char **argv)
 	nh.getParam("/path_follower/path_follower/ros_rate", ros_rate);
 	nh.getParam("/path_follower/path_follower/start_point_radius", start_point_radius);
 	nh.getParam("/path_follower/path_follower/odom_topic", odom_topic);
+	nh.getParam("/path_follower/path_follower/corner_1x", corner_1x);
+	nh.getParam("/path_follower/path_follower/corner_1y", corner_1y);
+	nh.getParam("/path_follower/path_follower/corner_2x", corner_2x);
+	nh.getParam("/path_follower/path_follower/corner_2y", corner_2y);
+	nh.getParam("/path_follower/path_follower/max_accel", max_accel);
+	nh.getParam("/path_follower/path_follower/max_decel", max_decel);
+	nh.getParam("/path_follower/path_follower/max_vel", max_vel);
+	nh.getParam("/path_follower/path_follower/max_cent_accel", max_cent_accel);
+	nh.getParam("/path_follower/path_follower/path_limit_distance", path_limit_distance);
 
 	PathAction path_action_server("path_follower_server", nh,
 								  lookahead_distance,
