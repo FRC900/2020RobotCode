@@ -7,9 +7,9 @@ import sys
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup
+from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup, QSpacerItem, QSizePolicy
 from python_qt_binding.QtCore import QCoreApplication
-from python_qt_binding.QtGui import QPixmap 
+from python_qt_binding.QtGui import QPixmap
 import resource_rc
 
 from behavior_actions.msg import AutoState, AutoMode
@@ -21,6 +21,8 @@ from python_qt_binding import QtCore
 class Dashboard(Plugin):
     autoStateSignal = QtCore.pyqtSignal(int)
     nBallsSignal = QtCore.pyqtSignal(int)
+    shooterInRangeSignal = QtCore.pyqtSignal(bool)
+    turretInRangeSignal = QtCore.pyqtSignal(bool)
 
     msg_data = "default"
     def __init__(self, context):
@@ -67,6 +69,7 @@ class Dashboard(Plugin):
                
                 new_auto_mode = QWidget()
                 new_h_layout = QHBoxLayout()
+                new_h_layout.setContentsMargins(0,0,0,0)
 
                 new_button = QRadioButton("Mode " + str(i))
                 new_button.setStyleSheet("font-weight: bold") 
@@ -74,7 +77,10 @@ class Dashboard(Plugin):
                 new_h_layout.addWidget( new_button )
                 
                 new_h_layout.addWidget( QLabel(", ".join(auto_sequence)) )
-                
+
+                hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+                new_h_layout.addItem(hSpacer)
+
                 new_auto_mode.setLayout( new_h_layout )
                 v_layout.addWidget(new_auto_mode)
             else:
@@ -103,6 +109,13 @@ class Dashboard(Plugin):
         
         self.n_balls = -1 #don't know n balls at first 
 
+        #in range stuff
+        self.shooter_in_range = False
+        self.turret_in_range = False
+        self.in_range_pixmap = QPixmap(":/images/GreenTarget.png")
+        self.not_in_range_pixmap = QPixmap(":/images/RedTarget.png")
+        self._widget.in_range_display.setPixmap(self.not_in_range_pixmap)
+
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
@@ -116,8 +129,13 @@ class Dashboard(Plugin):
         #initialize subscribers last, so that any callbacks they execute won't interfere with init
         self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
         self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
+        self.shooter_in_range_sub = rospy.Subscriber("/shooter/shooter_in_range", std_msgs.msg.Bool, self.shooterInRangeCallback)
+        self.turret_in_range_sub = rospy.Subscriber("/align_to_shoot/turret_in_range", std_msgs.msg.Bool, self.turretInRangeCallback)
+        
         self.autoStateSignal.connect(self.autoStateSlot)
         self.nBallsSignal.connect(self.nBallsSlot)
+        self.shooterInRangeSignal.connect(self.shooterInRangeSlot)
+        self.turretInRangeSignal.connect(self.turretInRangeSlot)
 
 
     def autoStateCallback(self, msg):
@@ -175,6 +193,28 @@ class Dashboard(Plugin):
                 display.setText("Couldn't read # balls")
         #self.lock.release()
 
+    def shooterInRangeCallback(self, msg):
+        self.shooterInRangeSignal.emit(bool(msg.data))
+
+    def shooterInRangeSlot(self, in_range):
+        self.shooter_in_range = in_range #set here so that it's set synchronously with the other slots
+
+    def turretInRangeCallback(self, msg):
+        self.turretInRangeSignal.emit(bool(msg.data))
+        self.updateInRange()
+
+    def turretInRangeSlot(self, in_range):
+        self.turret_in_range = in_range #set here so that it's set synchronously with the other slots
+        self.updateInRange()
+
+    def updateInRange(self):
+        display = self._widget.in_range_display
+        if(self.shooter_in_range and self.turret_in_range):
+            display.setPixmap(self.in_range_pixmap)
+        else:
+            display.setPixmap(self.not_in_range_pixmap)
+
+
     def setImuAngle(self):
         print("setting imu")
         #self.lock.acquire()
@@ -221,8 +261,10 @@ class Dashboard(Plugin):
         #self.lock.release()
 
     def shutdown_plugin(self):
-        # TODO unregister all publishers here
-        pass
+        self.auto_state_sub.unregister()
+        self.n_balls_sub.unregister()
+        self.shooter_in_range_sub.unregister()
+        self.turret_in_range_sub.unregister()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
