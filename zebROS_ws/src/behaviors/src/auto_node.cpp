@@ -61,7 +61,7 @@ void matchDataCallback(const frc_msgs::MatchSpecificData::ConstPtr& msg)
 void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
 {
 	auto_mode = msg->auto_mode;
-	distance_from_center = 2.404 - msg->distance_from_wall;
+	distance_from_center = -1 * (2.404 - msg->distance_from_wall); // left is positive, right is negative
 }
 
 
