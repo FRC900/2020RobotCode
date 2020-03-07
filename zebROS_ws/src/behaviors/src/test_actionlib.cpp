@@ -394,7 +394,7 @@ bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setp
 		return false;
 	}
 }
-bool callAlignToShoot()
+bool callAlignToShoot(int mode)
 {
 	actionlib::SimpleActionClient<behavior_actions::AlignToShootAction> align_to_shoot_ac("/align_to_shoot/align_to_shoot_server", true);
 
@@ -407,6 +407,7 @@ bool callAlignToShoot()
 
 	ROS_INFO("callAlignToShoot : Sending goal to the server.");
 	behavior_actions::AlignToShootGoal align_goal;
+	align_goal.mode = mode;
 	align_to_shoot_ac.sendGoal(align_goal);
 
 	//wait for the action to return
@@ -749,7 +750,10 @@ int main (int argc, char **argv)
 	}
 	else if(what_to_run == "align_to_shoot")
 	{
-		callAlignToShoot();
+		int mode;
+		std::cout << "Mode? (0 = auto; 1+ = face straight ahead)\n";
+		std::cin >> mode;
+		callAlignToShoot(mode);
 	}
 	else
 	{

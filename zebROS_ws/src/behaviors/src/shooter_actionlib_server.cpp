@@ -226,13 +226,11 @@ class ShooterAction {
 
 
 
-			//align the turret, only for auto mode
-			if(goal->mode == 0)
-			{
-				behavior_actions::AlignToShootGoal align_goal;
-				ac_align_.sendGoal(align_goal);
-					//don't wait for it to finish, so we can start spinning up the shooter while its going. Will only call the indexer actionlib server if the align succeeded
-			}
+			//align the turret
+			behavior_actions::AlignToShootGoal align_goal;
+			align_goal.mode = goal->mode;
+			ac_align_.sendGoal(align_goal);
+				//don't wait for it to finish, so we can start spinning up the shooter while its going. Will only call the indexer actionlib server if the align succeeded
 
 			//keep shooting balls until driver says stop
 			while(!timed_out_ && !preempted_ && ros::ok())
@@ -320,9 +318,9 @@ class ShooterAction {
 				//feed ball into the shooter
 				if(!preempted_ && !timed_out_ && ros::ok())
 				{
-					//check if the turret align finished - only for auto mode though
+					//check if the turret align finished
 					std::string align_state = ac_align_.getState().toString();
-					if(align_state == "SUCCEEDED" || goal->mode != 0) //0 is auto mode
+					if(align_state == "SUCCEEDED")
 					{
 						ROS_INFO_STREAM(action_name_ << ": calling indexer server to feed one ball into the shooter");
 						//Call actionlib server

@@ -280,10 +280,10 @@ class AlignToShootAction
 		//thread to publish if target is visible/within range
 		void publishInRangeThread()
 		{
-		#ifdef __linux__
+#ifdef __linux__
 			//give the thread a name
 			pthread_setname_np(pthread_self(), "align_in_range_pub_thread");
-		#endif
+#endif
 
 			ros::Publisher in_range_pub = nh_.advertise<std_msgs::Bool>("turret_in_range", 1);
 			ros::Rate r(2); //2 hz is fine for GUI display
@@ -321,32 +321,37 @@ class AlignToShootAction
 			ROS_INFO_STREAM(action_name_ << ": calling turret controller");
 			//run a while loop to get the angle to shoot in case the ZED takes a while to detect a goal (b/c we just turned on the light)
 			double set_point = 0;
-			const double get_angle_start_time = ros::Time::now().toSec();
-			bool got_angle = false;
-			while(!got_angle && !preempted_ && !timed_out_ && ros::ok())
+			if(goal->mode == 0)
 			{
-				got_angle = getTurretPosition(set_point);
-				if(as_.isPreemptRequested() || !ros::ok())
+				const double get_angle_start_time = ros::Time::now().toSec();
+				bool got_angle = false;
+				while(!got_angle && !preempted_ && !timed_out_ && ros::ok())
 				{
-					ROS_ERROR("Align server - Preempted while waiting angle to align value");
+					got_angle = getTurretPosition(set_point);
+					if(as_.isPreemptRequested() || !ros::ok())
+					{
+						ROS_ERROR("Align server - Preempted while waiting angle to align value");
+						preempted_ = true;
+					}
+					else if(ros::Time::now().toSec() - start_time_ > server_timeout_ || ros::Time::now().toSec() - get_angle_start_time > get_angle_timeout_)
+					{
+						ROS_ERROR("Align server timed out while waiting for turret angle to be determined");
+						timed_out_ = true;
+					}
+					else if(!got_angle)
+					{
+						r.sleep();
+					}
+				}
+
+				if(!got_angle)
+				{
+					ROS_ERROR_STREAM(action_name_ << " couldn't get shooter speed, out of range or no goal detected");
 					preempted_ = true;
 				}
-				else if(ros::Time::now().toSec() - start_time_ > server_timeout_ || ros::Time::now().toSec() - get_angle_start_time > get_angle_timeout_)
-				{
-					ROS_ERROR("Align server timed out while waiting for turret angle to be determined");
-					timed_out_ = true;
-				}
-				else if(!got_angle)
-				{
-					r.sleep();
-				}
 			}
+			//else, goal mode != 0, so leave the set_point at its default of 0
 
-			if(!got_angle)
-			{
-				ROS_ERROR_STREAM(action_name_ << " couldn't get shooter speed, out of range or no goal detected");
-				preempted_ = true;
-			}
 
 			//call controller client, if failed set preempted_ = true, and log an error msg
 			if(!preempted_ && !timed_out_ && ros::ok())
