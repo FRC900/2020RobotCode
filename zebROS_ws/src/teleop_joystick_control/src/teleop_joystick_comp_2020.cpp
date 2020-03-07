@@ -220,6 +220,8 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			//climber up (don't if not deployed)
 			if(climber_controller_cmd.request.climber_deploy)
 			{
+				preemptActionlibServers();
+
 				//Unbrake climber
 				climber_controller_cmd.request.climber_elevator_brake = false;
 				ROS_WARN_STREAM("Calling climber controller to release brake!");
@@ -258,6 +260,8 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			//climber down (don't if not deployed)
 			if(climber_controller_cmd.request.climber_deploy)
 			{
+				preemptActionlibServers();
+
 				//Unbrake climber
 				climber_controller_cmd.request.climber_elevator_brake = false;
 				ROS_WARN_STREAM("Calling climber controller to release brake!");
@@ -322,6 +326,8 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.leftBluePress)
 	{
+		preemptActionlibServers();
+
 		//Toggle climber deploy
 		climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
 		ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
@@ -343,6 +349,9 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 				//Call server with rotation
 				break;
 			case increment :
+
+				preemptActionlibServers();
+
 				control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
 				ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
 				control_panel_controller_client.call(control_panel_controller_cmd);
@@ -523,6 +532,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 						//Call server with rotation
 						break;
 					case increment :
+						preemptActionlibServers();
+
 						control_panel_controller_cmd.request.control_panel_rotations = diagnostics_config.control_panel_increment;
 						ROS_WARN_STREAM("Calling control panel controller with control_panel_rotations = " << control_panel_controller_cmd.request.control_panel_rotations);
 						control_panel_controller_client.call(control_panel_controller_cmd);
@@ -653,6 +664,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			//Joystick1: directionRight
 			if(joystick_states_array[0].directionRightPress)
 			{
+				preemptActionlibServers();
+
 				//Toggle climber deploy
 				climber_controller_cmd.request.climber_deploy = !climber_controller_cmd.request.climber_deploy;
 				ROS_WARN_STREAM("Calling climber controller with climber_deploy = " << climber_controller_cmd.request.climber_deploy);
@@ -673,6 +686,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 					//climber up (don't if not deployed)
 					if(climber_controller_cmd.request.climber_deploy)
 					{
+						preemptActionlibServers();
+
 						//Unbrake climber
 						climber_controller_cmd.request.climber_elevator_brake = false;
 						ROS_WARN_STREAM("Calling climber controller to release brake!");
@@ -709,6 +724,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 					//climber down (don't if not deployed)
 					if(climber_controller_cmd.request.climber_deploy)
 					{
+						preemptActionlibServers();
+
 						//Unbrake climber
 						climber_controller_cmd.request.climber_elevator_brake = false;
 						ROS_WARN_STREAM("Calling climber controller to release brake!");
@@ -1159,7 +1176,7 @@ int main(int argc, char **argv)
 
 	//Initialize the climber command
 	climber_controller_cmd.request.winch_percent_out = 0.0;
-	climber_controller_cmd.request.climber_deploy = true;
+	climber_controller_cmd.request.climber_deploy = false;
 	climber_controller_cmd.request.climber_elevator_brake = true;
 
 	//Initialize the control panel command
