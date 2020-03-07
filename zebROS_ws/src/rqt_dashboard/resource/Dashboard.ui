@@ -80,6 +80,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="set_imu_angle_button">
+         <property name="focusPolicy">
+          <enum>Qt::StrongFocus</enum>
+         </property>
          <property name="autoFillBackground">
           <bool>false</bool>
          </property>
@@ -261,6 +264,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="pushButton">
+         <property name="focusPolicy">
+          <enum>Qt::StrongFocus</enum>
+         </property>
          <property name="text">
           <string>Reset</string>
          </property>
