@@ -1209,7 +1209,7 @@ int main(int argc, char **argv)
 	align_shooter_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::AlignToShootAction>>("/align_to_shoot/align_to_shoot_server", true);
 	eject_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::EjectAction>>("/eject/eject_server", true);
 	indexer_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::IndexerAction>>("/indexer/indexer_server", true);
-	intake_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::IntakeAction>>("/intake/intake_server", true);
+	intake_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::IntakeAction>>("/powercell_intake/powercell_intake_server", true);
 	path_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::PathAction>>("/path/path_server", true);
 	shooter_ac = std::make_shared<actionlib::SimpleActionClient<behavior_actions::ShooterAction>>("/shooter/shooter_server", true);
 
