@@ -25,6 +25,8 @@ bool auto_started = false; //set to true when enter auto time period
 bool auto_stopped = false; //set to true if driver stops auto (callback: stopAuto() ) - note: this node will keep doing actions during teleop if not finished and the driver doesn't stop auto
 //All actions check if(auto_started && !auto_stopped) before proceeding.
 
+double goal_to_wall_y_dist = 2.404;
+
 enum AutoStates {
 	NOT_READY,
 	READY,
@@ -61,7 +63,7 @@ void matchDataCallback(const frc_msgs::MatchSpecificData::ConstPtr& msg)
 void updateAutoMode(const behavior_actions::AutoMode::ConstPtr& msg)
 {
 	auto_mode = msg->auto_mode;
-	distance_from_center = -1 * (2.404 - msg->distance_from_wall); // left is positive, right is negative
+	distance_from_center = -1 * (goal_to_wall_y_dist - msg->distance_from_wall); // left is positive, right is negative
 }
 
 
@@ -227,6 +229,10 @@ int main(int argc, char** argv)
 
 	//other variables
 	ros::Rate r(10); //used in various places where we wait TODO: config?
+	if(! nh.getParam("goal_to_wall_y_dist", goal_to_wall_y_dist)){
+		ROS_ERROR_STREAM("Couldn't read goal_to_wall_y_dist in auto node"); //defaults to 2.404
+		return 1;
+	}
 
 	// TODO - turn this into a loop
 	//        Once auto has run, wait at the end of the loop until a service call
