@@ -25,7 +25,14 @@ void Kinematics::limit(const Kinematics &other)
 {
 	maxAccel_          = std::min(maxAccel_, other.maxAccel_);
 	maxDecel_          = std::min(maxDecel_, other.maxDecel_);
-	maxVel_            = std::min(maxVel_, other.maxVel_);
+	if(other.maxVel_ > 0)
+	{
+		maxVel_            = std::min(maxVel_, other.maxVel_);
+	}
+	else
+	{
+		ROS_ERROR_STREAM("Tried to set maxVel to 0. Keeping at default.");
+	}
 	maxCentAccel_      = std::min(maxCentAccel_, other.maxCentAccel_);
 	pathLimitDistance_ = std::min(pathLimitDistance_, other.pathLimitDistance_);
 }

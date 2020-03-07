@@ -38,7 +38,7 @@ base_trajectory:
     max_linear_dec: 2.5
 
     # Robot wheel radius (meters)
-    wheel_radius: 0.3682
+    wheel_radius: 0.0381
   
     # max centrepital acceleration (meters/sec^2)
     max_cent_acc: 3.5

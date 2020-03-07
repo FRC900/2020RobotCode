@@ -47,11 +47,11 @@ double PathFollower::getYaw(const geometry_msgs::Quaternion q)
 	return yaw;
 }
 
-const double PathFollower::interpolate(double start_t, double end_t, double start_x, double end_x, double current_t)
+double PathFollower::interpolate(double start_t, double end_t, double start_x, double end_x, double current_t) const
 {
-	if(current_t < start_t)
+	if(current_t <= start_t)
 		return start_x;
-	else if(current_t > end_t)
+	else if(current_t >= end_t)
 		return end_x;
 	else
 		return start_x + (end_x - start_x) / (end_t - start_t) * (current_t - start_t);

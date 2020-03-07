@@ -6,6 +6,7 @@
 #pragma once
 
 #include "base_trajectory/Constraint.h"
+#include "ros/ros.h"
 
 class Kinematics
 {
