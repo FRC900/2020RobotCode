@@ -28,6 +28,7 @@ public:
   bool motion_update(double delta_x, double delta_y, double delta_rot);
   bool set_rotation(double rot);
   bool assign_weights_position(std::vector<Beacon> mBeacons, const Particle& offset);
+  bool assign_weights_bearing(std::vector<BearingBeacon> mBeacons, const Particle& offset);
   void resample();
   std::vector<Particle> get_particles() const;
 };

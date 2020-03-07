@@ -139,7 +139,7 @@ bool ParticleFilter::set_rotation(double rot) {
 }
 
 //assigns the reciprocal of the computed error of each particles assignment vector to the respective particle
-bool ParticleFilter::assign_weights_position(std::vector<Beacon > mBeacons, const Particle& offset) {
+bool ParticleFilter::assign_weights_position(std::vector<Beacon> mBeacons, const Particle& offset) {
   double test_sum = offset.x_ + offset.y_ + offset.rot_;
   for (Beacon b : mBeacons) {
     test_sum += b.x_ + b.y_;
@@ -157,4 +157,20 @@ bool ParticleFilter::assign_weights_position(std::vector<Beacon > mBeacons, cons
 
 std::vector<Particle> ParticleFilter::get_particles() const {
   return particles_;
+}
+
+bool ParticleFilter::assign_weights_bearing(std::vector<BearingBeacon> mBeacons, const Particle& offset) {
+  double test_sum = offset.x_ + offset.y_ + offset.rot_;
+  for (BearingBeacon b : mBeacons) {
+    test_sum += b.angle_;
+  }
+  if (std::isnan(test_sum) || std::isinf(test_sum)) {
+    return false;
+  }
+
+  for (Particle& p : particles_) {
+    p.weight_ = 1 / world_.total_angle(p, mBeacons, offset);
+  }
+  normalize();
+  return true;
 }

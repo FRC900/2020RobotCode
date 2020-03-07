@@ -9,6 +9,8 @@
 
 #include <ros/ros.h>
 
+#define _USE_MATH_DEFINES
+
 
 WorldModel::WorldModel(const std::vector<Beacon>& beacons,
                        double x_min, double x_max, double y_min, double y_max) :
@@ -43,9 +45,20 @@ void WorldModel::constrain_to_world(Particle& p) const {
 std::vector<double> WorldModel::distances(const Beacon& m,
                                           const std::vector<Beacon>& rel) const {
   std::vector<double> res;
-  res.reserve(beacons_.size());
   for (const Beacon& b : rel) {
     res.push_back(hypot(m.x_ - b.x_, m.y_ - b.y_));
+  }
+  return res;
+}
+
+std::vector<double> WorldModel::angle_distances(const BearingBeacon& m,
+                                                const std::vector<Beacon>& rel) const {
+  std::vector<double> res;
+  for (const Beacon& b : rel) {
+    BearingBeacon ba {atan2(b.y_, b.x_), b.type_};
+    double diff = abs(fmod(m.angle_, (2 * M_PI)) - fmod(ba.angle_, (2 * M_PI)));
+    if (diff > M_PI) diff -= 2 * M_PI;
+    res.push_back(diff);
   }
   return res;
 }
@@ -116,7 +129,7 @@ double WorldModel::total_angle(const Particle& p, const std::vector<BearingBeaco
   std::map<std::string, std::vector<BearingBeacon> > by_type;
   for (BearingBeacon b : m) {
     if (by_type.count(b.type_) == 0) {
-      by_type[b.type_] = std::vector<Beacon>();
+      by_type[b.type_] = std::vector<BearingBeacon>();
     }
     by_type[b.type_].push_back(b);
   }
@@ -124,8 +137,8 @@ double WorldModel::total_angle(const Particle& p, const std::vector<BearingBeaco
     std::vector<int> assignment;
     std::vector<std::vector<double> > dists;
     std::vector<Beacon> rel = of_type(particle_relative(p, offset), m_of_type.first);
-    for (const Beacon& b : m_of_type.second) {
-      dists.push_back(distances(b, rel));
+    for (const BearingBeacon& b : m_of_type.second) {
+      dists.push_back(angle_distances(b, rel));
     }
     solver_.Solve(dists, assignment);
     double res = 0;
