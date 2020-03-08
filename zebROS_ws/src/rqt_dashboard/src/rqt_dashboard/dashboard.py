@@ -24,8 +24,8 @@ class Dashboard(Plugin):
     msg_data = "default"
     def __init__(self, context):
         #Start client -rosbridge
-        client = roslibpy.Ros(host='localhost', port=5803)
-        client.run()
+        self.client = roslibpy.Ros(host='localhost', port=5803)
+        self.client.run()
         super(Dashboard, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName('Dashboard')
@@ -86,7 +86,7 @@ class Dashboard(Plugin):
         # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        listener1 = roslibpy.Topic(client, '/auto/auto_state', 'behavior_actions/AutoState')
+        listener1 = roslibpy.Topic(self.client, '/auto/auto_state', 'behavior_actions/AutoState')
         self.auto_state_sub = listener1.subscribe(self.autoStateCallback)
 
         # publish thread
@@ -101,7 +101,7 @@ class Dashboard(Plugin):
         self.four_balls = QPixmap(":/images/4_balls.png")
         self.five_balls = QPixmap(":/images/5_balls.png")
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
-        listener2 = roslibpy.Topic(client,'/num_powercells','std_msgs/UInt8')
+        listener2 = roslibpy.Topic(self.client,'/num_powercells','std_msgs/UInt8')
         self.n_balls_sub = listener2.subscribe(self.nBallsCallback)
         self.n_balls = -1 #don't know n balls at first 
 
@@ -164,12 +164,10 @@ class Dashboard(Plugin):
 
 
     def setImuAngle(self):
-        client = roslibpy.Ros(host='localhost',port = 5803)
-        client.run()
         angle = self._widget.imu_angle.value() # imu_angle is the text field (doublespinbox) that the user can edit to change the navx angle, defaulting to zero
         # call the service
         try:
-            service = roslibpy.Service(client,'/imu/set_imu_zero',ImuZeroAngle)
+            service = roslibpy.Service(self.client,'/imu/set_imu_zero',ImuZeroAngle)
            # rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
             #TODO remove print
             #Service Request-rosbridge
@@ -181,7 +179,6 @@ class Dashboard(Plugin):
 
         except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
             self.errorPopup("Imu Set Angle Error", e) 
-        client.close()
 
     def imuAngleChanged(self):
         # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
@@ -197,22 +194,30 @@ class Dashboard(Plugin):
 
     #Publisher -> fake Auto States
     def publish_thread(self):
-        client1 = roslibpy.Ros(host='localhost', port=5803)
-        client1.run()
-        
-        pub = roslibpy.Topic(client1, '/auto/auto_mode', 'behavior_actions/AutoMode',queue_length=10)
+        #pub = roslibpy.Topic(self.client, '/chatter', 'std_msgs/String')
+        #pub.advertise()
+
+        #pass
+        #client1 = roslibpy.Ros(host='localhost', port=5803)
+        #client1.run()
+        pub = roslibpy.Topic(self.client, '/auto/auto_mode', 'behavior_actions/AutoMode')
         r = rospy.Rate(10) # 10hz
         pub.advertise()
-        while client1.is_connected:
-            h = std_msgs.msg.Header()
+        while self.client.is_connected: 
+            h = std_msgs.msg.Header()           
             h.stamp = rospy.Time.now()
-            pub.publish(roslibpy.Message({'header':h,'auto_mode':self.auto_mode_button_group.checkedId()}))
+            print('buttonId:', self.auto_mode_button_group.checkedId())
+            print()
+            #print({'header':h, 'auto_mode':self.auto_mode_button_group.checkedId()})
+            pub.publish(roslibpy.Message(
+                {'header':h,'auto_mode':self.auto_mode_button_group.checkedId()}))
             r.sleep()
-        pub.unadvertise()
-        client1.terminate()
+        #pub.unadvertise()
+        #client1.terminate()
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here 
+        self.client.close()
         pass
 
     def save_settings(self, plugin_settings, instance_settings):
