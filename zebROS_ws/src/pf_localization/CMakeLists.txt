@@ -7,6 +7,7 @@ include("../cmake_modules/CMakeOpt.cmake")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  rospy
   roscpp
   message_filters
   message_generation
@@ -52,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    pf_pose.msg
+   pf_debug.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -162,10 +164,10 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+ install(PROGRAMS
+   scripts/pf_vis.py
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
