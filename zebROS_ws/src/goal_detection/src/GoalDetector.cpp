@@ -72,10 +72,23 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth, const
 			if(objtype == POWER_PORT_2020){
 
 				Point2f tm(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y);
+				Point2f m(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y + (power_port_info[i].rect.height / 2));
 
-				if(pointPolygonTest(goal_contours[i], tm, false) == 1){
-					#ifdef VERBOSE_BOILER
-						cout << "Top middle point of power port is not empty" << endl;
+				if(pointPolygonTest(goal_contours[i], tm, false) != -1 ){ // 1:inside, -1:outside, 0:edge
+					#ifdef VERBOSE_DEEP
+						cout << "Top middle point of power port is not empty, dropping contour" << endl;
+					#endif
+					continue;
+				}
+			}
+
+			if(objtype == LOADING_BAY_2020){
+
+				Point2f m(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y + (power_port_info[i].rect.height / 2));
+
+				if(pointPolygonTest(goal_contours[i], m, false) != -1 ){ // 1:inside, -1:outside, 0:edge
+					#ifdef VERBOSE_DEEP
+						cout << "Middle point of loading bay is not empty, dropping contour" << endl;
 					#endif
 					continue;
 				}
