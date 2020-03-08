@@ -34,6 +34,8 @@
 #include "behavior_actions/PathAction.h"
 #include "behavior_actions/ShooterAction.h"
 
+#include "behavior_actions/ShooterOffset.h"
+
 #include "dynamic_reconfigure_wrapper/dynamic_reconfigure_wrapper.h"
 #include "teleop_joystick_control/TeleopJoystickCompConfig.h"
 #include "teleop_joystick_control/TeleopJoystickCompDiagnosticsConfig.h"
@@ -66,6 +68,8 @@ ros::Publisher orient_strafing_state_pub;
 
 ros::Publisher green_led_pub;
 
+ros::Publisher shooter_offset_pub;
+
 teleop_joystick_control::TeleopJoystickCompConfig config;
 teleop_joystick_control::TeleopJoystickCompDiagnosticsConfig diagnostics_config;
 
@@ -88,6 +92,8 @@ controllers_2020_msgs::IntakeArmSrv intake_arm_controller_cmd;
 controllers_2020_msgs::IntakeRollerSrv intake_roller_controller_cmd;
 controllers_2020_msgs::ShooterSrv shooter_controller_cmd;
 controllers_2020_msgs::TurretSrv turret_controller_cmd;
+
+behavior_actions::ShooterOffset shooter_offset;
 
 std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::AlignToShootAction>> align_shooter_ac;
 std::shared_ptr<actionlib::SimpleActionClient<behavior_actions::EjectAction>> eject_ac;
@@ -118,6 +124,11 @@ void preemptActionlibServers(void)
 	intake_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 	path_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 	shooter_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
+}
+
+void publishShooterOffset(void)
+{
+	shooter_offset_pub.publish(shooter_offset);
 }
 
 bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
@@ -229,7 +240,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 				ROS_WARN_STREAM("Calling climber controller to release brake!");
 
 				//Set percent out
-				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out_up;
+				climber_controller_cmd.request.winch_percent_out = config.climber_percent_out_up;
 				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 				climber_controller_client.call(climber_controller_cmd);
 			}
@@ -269,7 +280,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 				ROS_WARN_STREAM("Calling climber controller to release brake!");
 
 				//Set percent out
-				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out_down;
+				climber_controller_cmd.request.winch_percent_out = config.climber_percent_out_down;
 				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 				climber_controller_client.call(climber_controller_cmd);
 			}
@@ -395,48 +406,100 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 		//Stop shooting (preempt)
 	}
 
+	static bool zeroing_turret_offset = false;
+
 	if(button_box.leftGreenPress)
 	{
-		//Fine tune shooter left
 	}
 	if(button_box.leftGreenButton)
 	{
+		if(!zeroing_turret_offset)
+		{
+			if(button_box.rightGreenButton)
+			{
+				//Zero turret offset
+				zeroing_turret_offset = true;
+				shooter_offset.turret_offset = 0.0;
+				ROS_INFO_STREAM("Shooter turret offset = " << shooter_offset.turret_offset);
+			}
+			else
+			{
+				//Fine tune shooter left
+				shooter_offset.turret_offset += config.shooter_turret_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
+				ROS_INFO_STREAM("Shooter turret offset = " << shooter_offset.turret_offset);
+			}
+		}
 	}
 	if(button_box.leftGreenRelease)
 	{
+		if(!button_box.rightGreenButton)
+			zeroing_turret_offset = false;
 	}
 
 	if(button_box.rightGreenPress)
 	{
-		//Fine tune shooter right
 	}
 	if(button_box.rightGreenButton)
 	{
+		if(!zeroing_turret_offset && !button_box.leftGreenButton)
+		{
+			//Fine tune shooter right
+			shooter_offset.turret_offset -= config.shooter_turret_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
+			ROS_INFO_STREAM("Shooter turret offset = " << shooter_offset.turret_offset);
+		}
 	}
 	if(button_box.rightGreenRelease)
 	{
+		if(!button_box.leftGreenButton)
+			zeroing_turret_offset = false;
 	}
+
+	static bool zeroing_speed_offset = false;
 
 	if(button_box.topGreenPress)
 	{
-		//Fine tune shooter faster
 	}
 	if(button_box.topGreenButton)
 	{
+		if(!zeroing_speed_offset)
+		{
+			if(button_box.bottomGreenButton)
+			{
+				//Zero speed offset
+				zeroing_speed_offset = true;
+				shooter_offset.speed_offset = 0.0;
+				ROS_INFO_STREAM("Shooter speed offset = " << shooter_offset.speed_offset);
+			}
+			else
+			{
+				//Fine tune shooter faster
+				shooter_offset.speed_offset += config.shooter_speed_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
+				ROS_INFO_STREAM("Shooter speed offset = " << shooter_offset.speed_offset);
+			}
+		}
 	}
 	if(button_box.topGreenRelease)
 	{
+		if(!button_box.bottomGreenButton)
+			zeroing_speed_offset = false;
 	}
 
 	if(button_box.bottomGreenPress)
 	{
-		//Fine tune shooter slower
 	}
 	if(button_box.bottomGreenButton)
 	{
+		if(!zeroing_speed_offset && !button_box.rightGreenButton)
+		{
+			//Fine tune shooter slower
+			shooter_offset.speed_offset += config.shooter_speed_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
+			ROS_INFO_STREAM("Shooter speed offset = " << shooter_offset.speed_offset);
+		}
 	}
 	if(button_box.bottomGreenRelease)
 	{
+		if(!button_box.topGreenButton)
+			zeroing_speed_offset = false;
 	}
 
 	if(button_box.bottomSwitchUpPress)
@@ -695,7 +758,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 						ROS_WARN_STREAM("Calling climber controller to release brake!");
 
 						//Set percent out
-						climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out_up;
+						climber_controller_cmd.request.winch_percent_out = config.climber_percent_out_up;
 						ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 						climber_controller_client.call(climber_controller_cmd);
 					}
@@ -733,7 +796,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 						ROS_WARN_STREAM("Calling climber controller to release brake!");
 
 						//Set percent out
-						climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out_down;
+						climber_controller_cmd.request.winch_percent_out = config.climber_percent_out_down;
 						ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 						climber_controller_client.call(climber_controller_cmd);
 					}
@@ -1013,7 +1076,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			if(joystick_states_array[0].directionUpPress)
 			{
 				//Set percent out
-				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out_up;
+				climber_controller_cmd.request.winch_percent_out = config.climber_percent_out_up;
 				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 				climber_controller_client.call(climber_controller_cmd);
 			}
@@ -1032,7 +1095,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			if(joystick_states_array[0].directionDownPress)
 			{
 				//Set percent out
-				climber_controller_cmd.request.winch_percent_out = diagnostics_config.climber_percent_out_down;
+				climber_controller_cmd.request.winch_percent_out = config.climber_percent_out_down;
 				ROS_WARN_STREAM("Calling climber controller with winch_percent_out = " << climber_controller_cmd.request.winch_percent_out);
 				climber_controller_client.call(climber_controller_cmd);
 			}
@@ -1144,15 +1207,27 @@ int main(int argc, char **argv)
 	{
 		ROS_ERROR("Could not read climber_time_lock in teleop_joystick_comp");
 	}
-
-	if(!n_diagnostics_params.getParam("climber_percent_out_up", diagnostics_config.climber_percent_out_up))
+	if(!n_params.getParam("control_panel_increment", config.control_panel_increment))
+	{
+		ROS_ERROR("Could not read control_panel_increment in teleop_joystick_comp");
+	}
+	if(!n_params.getParam("climber_percent_out_up", config.climber_percent_out_up))
 	{
 		ROS_ERROR("Could not read climber_percent_out_up in teleop_joystick_comp");
 	}
-	if(!n_diagnostics_params.getParam("climber_percent_out_down", diagnostics_config.climber_percent_out_down))
+	if(!n_params.getParam("climber_percent_out_down", config.climber_percent_out_down))
 	{
 		ROS_ERROR("Could not read climber_percent_out_down in teleop_joystick_comp");
 	}
+	if(!n_params.getParam("shooter_turret_offset_rate", config.shooter_turret_offset_rate))
+	{
+		ROS_ERROR("Could not read shooter_turret_offset_rate in teleop_joystick_comp");
+	}
+	if(!n_params.getParam("shooter_speed_offset_rate", config.shooter_speed_offset_rate))
+	{
+		ROS_ERROR("Could not read shooter_speed_offset_rate in teleop_joystick_comp");
+	}
+
 	if(!n_diagnostics_params.getParam("shooter_setpoint_rate", diagnostics_config.shooter_setpoint_rate))
 	{
 		ROS_ERROR("Could not read shooter_setpoint_rate in teleop_joystick_comp");
@@ -1172,10 +1247,6 @@ int main(int argc, char **argv)
 	if(!n_diagnostics_params.getParam("indexer_setpoint_rate", diagnostics_config.indexer_setpoint_rate))
 	{
 		ROS_ERROR("Could not read indexer_setpoint_rate in teleop_joystick_comp");
-	}
-	if(!n_diagnostics_params.getParam("control_panel_increment", diagnostics_config.control_panel_increment))
-	{
-		ROS_ERROR("Could not read control_panel_increment in teleop_joystick_comp");
 	}
 
 	orient_strafing_angle = config.climber_align_angle;
@@ -1202,6 +1273,10 @@ int main(int argc, char **argv)
 	//Initialize the turret command
 	turret_controller_cmd.request.set_point = 0.0;
 
+	//Initialize the shooter offset
+	shooter_offset.speed_offset = 0.0;
+	shooter_offset.turret_offset = 0.0;
+
 	teleop_cmd_vel = std::make_unique<TeleopCmdVel>(config);
 
 	imu_angle = M_PI / 2.;
@@ -1216,6 +1291,8 @@ int main(int argc, char **argv)
 	}
 
 	green_led_pub = n.advertise<std_msgs::Float64>("/frcrobot_rio/green_led_controller/command", 1);
+
+	shooter_offset_pub = n.advertise<behavior_actions::ShooterOffset>("teleop_shooter_offsets", 1);
 
 	orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("orient_strafing/pid_enable", 1);
 	orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("orient_strafing/setpoint", 1);
@@ -1266,6 +1343,15 @@ int main(int argc, char **argv)
 
 	ROS_WARN("joy_init");
 
-	ros::spin();
+	ros::Rate loop_rate = 100;
+
+	while(ros::ok())
+	{
+		publishShooterOffset();
+
+		loop_rate.sleep();
+		ros::spinOnce();
+	}
+
 	return 0;
 }
