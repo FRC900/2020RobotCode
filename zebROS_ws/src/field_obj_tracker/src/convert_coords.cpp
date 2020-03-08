@@ -26,10 +26,7 @@ cv::Point3f ConvertCoords::screen_to_world( const cv::Rect &bounding_rect, const
   ROS_INFO_STREAM("world_coord_unit:" << world_coord_unit);
   ROS_INFO_STREAM("distance:" << distance);
   ROS_INFO_STREAM("world_coord_scaled:" << world_coord_scaled);
-  ROS_INFO_STREAM("pos:" << pos);
-  ROS_INFO_STREAM("adj_world_coord_scaled:" << adj_world_coord_scaled);
-  ROS_INFO_STREAM("adj_distance:" << adj_world_coord_scaled - pos);
-  ROS_INFO_STREAM(debug_name << " : uv : " << uv << " gd_pos : " << pos << " model_pos : " << adj_world_coord_scaled << " difference " << adj_world_coord_scaled - pos);
+  ROS_INFO_STREAM(debug_name << " : uv : " << uv << " gd_pos : " << adj_world_coord_scaled);
 #endif
 
   return adj_world_coord_scaled;

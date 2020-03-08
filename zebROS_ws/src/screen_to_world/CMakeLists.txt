@@ -9,6 +9,8 @@ project(screen_to_world)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   field_obj
+  field_obj_tracker
+  goal_detection
   image_geometry
   message_generation
   message_filters
@@ -117,6 +119,9 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
+find_package(OpenCV REQUIRED)
+list(FILTER catkin_LIBRARIES EXCLUDE REGEX "opencv_freetype")
+list(FILTER OpenCV_LIBS EXCLUDE REGEX "opencv_freetype")
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
@@ -138,7 +143,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/screen_to_world.cpp ../../../common/Utilities.cpp ../../../common/objtype.cpp)
+add_executable(${PROJECT_NAME}_node src/screen_to_world.cpp ../goal_detection/src/Utilities.cpp ../../../common/hungarian.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

@@ -1,0 +1,3 @@
+pub_topic: "obj_detection_world"
+sub_topic: "/tf_object_detection/obj_detection_msg"
+camera_info_topic: "/c920/camera_info"
