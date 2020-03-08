@@ -1,5 +1,39 @@
+<?xml version="1.0"?>
 <launch>
   <arg name="input_type" default="bag" /> <!-- video, bag, or live_camera -->
+  <arg name="camera_model" default="zed2" />
+
+  <!--
+     ZED needs transforms for its cameras, but we've modified them
+         Launch the modified version here so that the ZED camera node
+         always has them available
+  -->
+  <group ns="robot_state">
+    <param name="robot_description" textfile="$(find controller_node)/urdf/2020_compbot.urdf" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+  </group>
+
+  <arg name="zed_node_name" default="zed_goal" />
+
+  <!-- Nodelet Manager -->
+  <arg name="nodelet_manager_name"  value="zed_nodelet_manager" />
+
+  <!-- launch zed nodelet -->
+  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" output="screen" />
+
+  <include file="$(find zed_wrapper)/launch/zed_camera_nodelet.launch" if="$(eval input_type == 'live_camera')">
+    <arg name="nodelet_manager_name" value="$(arg nodelet_manager_name)" />
+    <arg name="common_params_file"   value="$(find controller_node)/config/zed/common.yaml" />
+    <arg name="camera_params_file"   value="$(find controller_node)/config/zed/$(arg camera_model).yaml" />
+    <arg name="node_name"            value="$(arg zed_node_name)" />
+    <arg name="publish_urdf"         value="false" />
+    <arg name="camera_model"         value="$(arg camera_model" />
+  </include>
+
+  <!-- launch video publisher -->
+  <node pkg="tf_object_detection" name="pub_video" type="pub_video.py" output="screen" if="$(eval input_type == 'video')">
+    <rosparam command="load" file="$(find tf_object_detection)/config/pub_video_config.yaml" />
+  </node>
 
   <group ns="tf_object_detection">
     <rosparam command="load" file="$(find tf_object_detection)/config/tf_default_config.yaml" />
@@ -9,8 +43,4 @@
     <node pkg="screen_to_world" name="screen_to_world_node" type="screen_to_world_node" output="screen">
     </node>
   </group>
-
-  <node pkg="tf_object_detection" name="pub_video" type="pub_video.py" output="screen" if="$(eval input_type == 'video')">
-    <rosparam command="load" file="$(find tf_object_detection)/config/pub_video_config.yaml" />
-  </node>
 </launch>
