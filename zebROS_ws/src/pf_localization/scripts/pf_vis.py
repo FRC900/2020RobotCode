@@ -1,64 +1,93 @@
+#!/usr/bin/env python
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from animated_data_loader import AnimatedDataLoader
 import math
 
 import rospy
-from pf_localization import pf_debug, pf_pose
+from pf_localization.msg import pf_debug, pf_pose
 
-sub_topic = "/pf_localization/pf_debug"
-
-
-with open(sys.argv[1]) as f:
-    data = AnimatedDataLoader(f.read());
+particles_topic = "/pf_localization/pf_debug"
+pf_pose_topic = "/pf_localization/pf_pose"
 
 x_data = []
 y_data = []
 rot_data = []
-beacon_x = [i[0] for i in data.beacons]
-beacon_y = [i[1] for i in data.beacons]
 predicted_x = []
 predicted_y = []
-actual_x = []
-actual_y = []
 error = []
 
 fig, axes = plt.subplots(nrows=1, ncols=1)
 ax = axes
-ax.plot(beacon_x, beacon_y, 'ko')
 pln, = ax.plot([], [], 'r.')
-aln, = ax.plot([], [], 'g.')
 ln, = ax.plot([], [], 'b.')
 
-def set_data(iter):
-    global x_data, y_data, rot_data, predicted_x, predicted_y, actual_x, actual_y
+def update_particles(particle_msg):
+    global x_data, y_data, rot_data, actual_x, actual_y
+
     x_data = []
     y_data = []
     rot_data = []
-    for i in data.states[iter][0]:
-        x_data.append(i[0])
-        y_data.append(i[1])
-        rot_data.append(i[2])
-    predicted_x.append(data.states[iter][1][0])
-    predicted_y.append(data.states[iter][1][1])
-    actual_x.append(data.states[iter][-1][0])
-    actual_y.append(data.states[iter][-1][1])
-    error.append(math.hypot(predicted_x[-1] - actual_x[-1], predicted_y[-1] - actual_y[-1]))
-
-def update(frame):
-    if frame == 0:
-        init()
-    set_data(frame)
+    for p in particle_msg.particles:
+        x_data.append(p.x)
+        y_data.append(p.y)
+        rot_data.append(p.rot)
     pln.set_data(predicted_x, predicted_y)
-    aln.set_data(actual_x, actual_y)
     ln.set_data(x_data, y_data)
-    plt.show()
+
+def update_pose(pose_msg):
+    global predicted_x, predicted_y
+
+    predicted_x.append(pose_msg.x)
+    predicted_y.append(pose_msg.y)
+    pln.set_data(predicted_x, predicted_y)
 
 def main():
-    ax.set_xlim(data.field[0], data.field[1])
-    ax.set_ylim(data.field[2], data.field[3])
-    set_data(0)
+    global ax
 
-    sub = rospy.Subscriber(sub_topic, pf_debug, update)
+    rospy.init_node('pf_vis_node', anonymous = True)
+    rospy.loginfo("pf visualization node initialized")
+
+    beacons = []
+    beacon_x = []
+    beacon_y = []
+    field_dims = []
+
+    if rospy.has_param('beacons'):
+        beacons = rospy.get_param('beacons')
+    else:
+        rospy.logerr("vis: failed to load beacons")
+        return -1
+
+    if rospy.has_param('field_dims/x_min'):
+        field_dims.append(rospy.get_param('field_dims/x_min'))
+    if rospy.has_param('field_dims/x_max'):
+        field_dims.append(rospy.get_param('field_dims/x_max'))
+    if rospy.has_param('field_dims/y_min'):
+        field_dims.append(rospy.get_param('field_dims/y_min'))
+    if rospy.has_param('field_dims/y_max'):
+        field_dims.append(rospy.get_param('field_dims/y_max'))
+
+    rospy.loginfo("assigned field dimensions")
+
+    ax.set_xlim(field_dims[0], field_dims[1])
+    ax.set_ylim(field_dims[2], field_dims[3])
+
+    for b in beacons:
+        beacon_x.append(b[0])
+        beacon_y.append(b[1])
+    ax.plot(beacon_x, beacon_y, 'ko')
+
+    sub = rospy.Subscriber(particles_topic, pf_debug, update_particles)
+    sub = rospy.Subscriber(pf_pose_topic, pf_pose, update_pose)
+
+    plt.show()
+
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+
+if __name__ == '__main__':
+    main()
