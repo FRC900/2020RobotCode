@@ -45,7 +45,7 @@
 std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 
 bool diagnostics_mode = false;
-bool green_led_on = true;
+bool green_led_on = false;
 bool can_climb = false;
 
 double orient_strafing_angle;
@@ -988,7 +988,7 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 				green_led_on = !green_led_on;
 				std_msgs::Float64 green_led_position;
-				green_led_position.data = green_led_on ? 0.0 : 1.0;
+				green_led_position.data = green_led_on ? 1.0 : 0.0;
 
 				ROS_WARN_STREAM("Calling green LED controller with green_led_on = " << std::to_string(green_led_on));
 				green_led_pub.publish(green_led_position);
