@@ -35,6 +35,7 @@ def update_particles(particle_msg):
         rot_data.append(p.rot)
     pln.set_data(predicted_x, predicted_y)
     ln.set_data(x_data, y_data)
+    plt.draw()
 
 def update_pose(pose_msg):
     global predicted_x, predicted_y
@@ -42,6 +43,7 @@ def update_pose(pose_msg):
     predicted_x.append(pose_msg.x)
     predicted_y.append(pose_msg.y)
     pln.set_data(predicted_x, predicted_y)
+    plt.draw()
 
 def main():
     global ax
