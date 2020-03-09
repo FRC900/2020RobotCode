@@ -45,7 +45,7 @@
 std::unique_ptr<TeleopCmdVel> teleop_cmd_vel;
 
 bool diagnostics_mode = false;
-bool green_led_on = false;
+bool green_led_on = true;
 bool can_climb = false;
 
 double orient_strafing_angle;
@@ -129,6 +129,14 @@ void preemptActionlibServers(void)
 void publishShooterOffset(void)
 {
 	shooter_offset_pub.publish(shooter_offset);
+}
+
+void callGreenLEDController(void)
+{
+	std_msgs::Float64 green_led_position;
+	green_led_position.data = green_led_on ? 1.0 : 0.0;
+
+	green_led_pub.publish(green_led_position);
 }
 
 bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
@@ -515,6 +523,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 
 	if(button_box.bottomSwitchUpPress)
 	{
+		ROS_WARN_STREAM("Setting shootet_mode = high");
 	}
 	if(button_box.bottomSwitchUpButton)
 	{
@@ -526,10 +535,12 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.bottomSwitchUpRelease)
 	{
+		ROS_WARN_STREAM("Setting shootet_mode = automatic");
 	}
 
 	if(button_box.bottomSwitchDownPress)
 	{
+		ROS_WARN_STREAM("Setting shootet_mode = low");
 	}
 	if(button_box.bottomSwitchDownButton)
 	{
@@ -537,6 +548,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.bottomSwitchDownRelease)
 	{
+		ROS_WARN_STREAM("Setting shootet_mode = automatic");
 	}
 
 	last_header_stamp = button_box.header.stamp;
@@ -987,11 +999,8 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			if(joystick_states_array[0].buttonXPress)
 			{
 				green_led_on = !green_led_on;
-				std_msgs::Float64 green_led_position;
-				green_led_position.data = green_led_on ? 1.0 : 0.0;
 
 				ROS_WARN_STREAM("Calling green LED controller with green_led_on = " << std::to_string(green_led_on));
-				green_led_pub.publish(green_led_position);
 			}
 			if(joystick_states_array[0].buttonXButton)
 			{
@@ -1366,6 +1375,7 @@ int main(int argc, char **argv)
 
 	while(ros::ok())
 	{
+		callGreenLEDController();
 		publishShooterOffset();
 
 		loop_rate.sleep();
