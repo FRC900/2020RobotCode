@@ -62,7 +62,7 @@ class Dashboard(Plugin):
         self._widget.auto_wall_dist.valueChanged.connect(self.autoWallDistChanged)
         
         self._widget.ball_reset_button.clicked.connect(self.resetBallCount)
-        self.widget.ball_reset_count.valueChanged.connect(self.resetBallChanged)
+        self._widget.ball_reset_count.valueChanged.connect(self.resetBallChanged)
         
         # Add buttons for auto modes
         v_layout = self._widget.auto_mode_v_layout #vertical layout storing the buttons
@@ -257,12 +257,12 @@ class Dashboard(Plugin):
     def autoWallDistChanged(self):
         self._widget.auto_wall_dist_button.setStyleSheet("background-color:#ff0000;")
     
-    def resetBallCount:
+    def resetBallCount(self):
         new_ball_count = self._widget.ball_reset_count.value()
 
         self._widget.ball_reset_button.setStyleSheet("background-color:#5eff00;")
 
-    def resetBallChanged:
+    def resetBallChanged(self):
         self._widget.ball_reset_button.setStyleSheet("background-color:#ff0000;")
 
 
