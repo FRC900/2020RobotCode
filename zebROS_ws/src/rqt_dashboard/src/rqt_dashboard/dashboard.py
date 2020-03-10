@@ -258,9 +258,22 @@ class Dashboard(Plugin):
         self._widget.auto_wall_dist_button.setStyleSheet("background-color:#ff0000;")
     
     def resetBallCount(self):
-        new_ball_count = self._widget.ball_reset_count.value()
+        print("manually reset ball count")
+        #self.lock.acquire()
+        count = self._widget.ball_reset_count.value() 
+        
+        # call the service
+        try:
+            rospy.wait_for_service("/reset_ball", 1) #timeout in sec, TODO maybe put in config file?
+            caller = rospy.ServiceProxy("/reset_ball", Empty)
+            caller(count)
+            # change button to green color to indicate that the service call went through
+            self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
 
-        self._widget.ball_reset_button.setStyleSheet("background-color:#5eff00;")
+        except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
+            self.errorPopup("Reset ball count Error", e)
+        #self.lock.release()
+        print("finished resetting ball count")
 
     def resetBallChanged(self):
         self._widget.ball_reset_button.setStyleSheet("background-color:#ff0000;")
