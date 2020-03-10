@@ -83,8 +83,8 @@ void goalCallback(const field_obj::Detection::ConstPtr& msg){
   if (measurement.size() > 0){
     bool success = pf->assign_weights_position(measurement, Particle(tx, ty, r));
     pf->resample();
+    last_measurement = ros::Time::now();
   }
-  last_measurement = ros::Time::now();
   #ifdef EXTREME_VERBOSE
   ROS_INFO("goalCallback called");
   #endif
