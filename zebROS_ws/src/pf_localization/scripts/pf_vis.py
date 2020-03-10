@@ -9,7 +9,7 @@ import rospy
 from pf_localization.msg import pf_debug, pf_pose
 
 particles_topic = "/pf_localization/pf_debug"
-pf_pose_topic = "/pf_localization/pf_pose"
+pf_pose_topic = "/pf_localization/predicted_pose"
 
 x_data = []
 y_data = []
@@ -81,8 +81,8 @@ def main():
         beacon_y.append(b[1])
     ax.plot(beacon_x, beacon_y, 'ko')
 
-    sub = rospy.Subscriber(particles_topic, pf_debug, update_particles)
-    sub = rospy.Subscriber(pf_pose_topic, pf_pose, update_pose)
+    sub_particles = rospy.Subscriber(particles_topic, pf_debug, update_particles)
+    sub_pose = rospy.Subscriber(pf_pose_topic, pf_pose, update_pose)
 
     plt.show()
 
