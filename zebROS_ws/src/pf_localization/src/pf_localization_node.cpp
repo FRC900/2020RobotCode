@@ -82,7 +82,6 @@ void goalCallback(const field_obj::Detection::ConstPtr& msg){
   }
   if (measurement.size() > 0){
     bool success = pf->assign_weights_position(measurement, Particle(tx, ty, r));
-    ROS_INFO_STREAM(success);
     pf->resample();
   }
   last_measurement = ros::Time::now();
@@ -113,7 +112,6 @@ void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
 }
 
 int main(int argc, char **argv) {
-  ROS_INFO("pf main");
   ros::init(argc, argv, "pf_localization_node");
   ros::NodeHandle nh_;
   last_time = ros::Time::now();
