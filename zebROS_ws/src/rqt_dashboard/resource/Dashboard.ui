@@ -276,7 +276,10 @@
         <widget class="QPushButton" name="ball_reset_button">
          <property name="focusPolicy">
           <enum>Qt::StrongFocus</enum>
-         </property>
+	  	</property>
+		<property name = "styleSheet">
+			<string notr="true">background-color:#ff0000</string>
+		</property>
          <property name="text">
           <string>Reset</string>
          </property>

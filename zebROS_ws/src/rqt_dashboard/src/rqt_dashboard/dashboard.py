@@ -14,6 +14,7 @@ import resource_rc
 
 from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
+from behavior_actions.srv import resetBallSrv
 import std_msgs.msg
 
 from python_qt_binding import QtCore
@@ -241,7 +242,8 @@ class Dashboard(Plugin):
     def imuAngleChanged(self):
         #self.lock.acquire()
         # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
-        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
+        self._widget.ball_reset_button.:w
+        setStyleSheet("background-color:#ff0000;")
         #self.lock.release()
 
 
@@ -260,13 +262,13 @@ class Dashboard(Plugin):
     def resetBallCount(self):
         print("manually reset ball count")
         #self.lock.acquire()
-        count = self._widget.ball_reset_count.value() 
+        nballs = self._widget.ball_reset_count.value() 
         
         # call the service
         try:
             rospy.wait_for_service("/reset_ball", 1) #timeout in sec, TODO maybe put in config file?
-            caller = rospy.ServiceProxy("/reset_ball", Empty)
-            caller(count)
+            caller = rospy.ServiceProxy("/behavior_actions/resetBallSrv", resetBallSrv)
+            caller(nballs)
             # change button to green color to indicate that the service call went through
             self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
 
@@ -303,7 +305,7 @@ class Dashboard(Plugin):
     def shutdown_plugin(self):
         self.auto_state_sub.unregister()
         self.n_balls_sub.unregister()
-        self.shooter_in_range_sub.unregister()
+        self.shooter_in_range_sub.unregister()
         self.turret_in_range_sub.unregister()
 
     def save_settings(self, plugin_settings, instance_settings):
