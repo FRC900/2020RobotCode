@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="vis" default="true" />
+  <arg name="vis" default="false" />
 
   <group ns="pf_localization">
     <rosparam command="load" file="$(find pf_localization)/config/test_params.yaml" />
@@ -12,7 +12,7 @@
   </group>
 
   <include file="$(find controller_node)/launch/tape_detection.launch">
-    <arg name="live_camera" default="true" />
+    <arg name="live_camera" default="false" />
   </include>
 
 </launch>
