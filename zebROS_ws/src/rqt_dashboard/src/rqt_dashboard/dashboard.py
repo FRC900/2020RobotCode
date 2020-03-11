@@ -203,14 +203,13 @@ class Dashboard(Plugin):
         pub = roslibpy.Topic(self.client, '/auto/auto_mode', 'behavior_actions/AutoMode')
         r = rospy.Rate(10) # 10hz
         pub.advertise()
-        while self.client.is_connected: 
-            h = std_msgs.msg.Header()           
-            h.stamp = rospy.Time.now()
-            print('buttonId:', self.auto_mode_button_group.checkedId())
-            print()
-            #print({'header':h, 'auto_mode':self.auto_mode_button_group.checkedId()})
+        while self.client.is_connected:
+
             pub.publish(roslibpy.Message(
-                {'header':h,'auto_mode':self.auto_mode_button_group.checkedId()}))
+                {
+                    'auto_mode': self.auto_mode_button_group.checkedId()
+                }
+            ))
             r.sleep()
         #pub.unadvertise()
         #client1.terminate()
