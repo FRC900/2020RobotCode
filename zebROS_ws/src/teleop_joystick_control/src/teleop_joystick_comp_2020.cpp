@@ -126,19 +126,6 @@ void preemptActionlibServers(void)
 	shooter_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 }
 
-void publishShooterOffset(void)
-{
-	shooter_offset_pub.publish(shooter_offset);
-}
-
-void callGreenLEDController(void)
-{
-	std_msgs::Float64 green_led_position;
-	green_led_position.data = green_led_on ? 1.0 : 0.0;
-
-	green_led_pub.publish(green_led_position);
-}
-
 bool orientCallback(teleop_joystick_control::RobotOrient::Request& req,
 		teleop_joystick_control::RobotOrient::Response&/* res*/)
 {
@@ -213,7 +200,6 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.leftRedRelease)
 	{
-		eject_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 	}
 
 	if(button_box.rightRedPress)
@@ -231,7 +217,6 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 	}
 	if(button_box.rightRedRelease)
 	{
-		eject_ac->cancelGoalsAtAndBeforeTime(ros::Time::now());
 	}
 
 	if(button_box.leftSwitchUpPress)
@@ -440,12 +425,14 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 				zeroing_turret_offset = true;
 				shooter_offset.turret_offset = 0.0;
 				//ROS_INFO_STREAM("Shooter turret offset = " << shooter_offset.turret_offset);
+				shooter_offset_pub.publish(shooter_offset);
 			}
 			else
 			{
 				//Fine tune shooter left
 				shooter_offset.turret_offset += config.shooter_turret_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
 				//ROS_INFO_STREAM("Shooter turret offset = " << shooter_offset.turret_offset);
+				shooter_offset_pub.publish(shooter_offset);
 			}
 		}
 	}
@@ -465,6 +452,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			//Fine tune shooter right
 			shooter_offset.turret_offset -= config.shooter_turret_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
 			//ROS_INFO_STREAM("Shooter turret offset = " << shooter_offset.turret_offset);
+			shooter_offset_pub.publish(shooter_offset);
 		}
 	}
 	if(button_box.rightGreenRelease)
@@ -488,12 +476,14 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 				zeroing_speed_offset = true;
 				shooter_offset.speed_offset = 0.0;
 				//ROS_INFO_STREAM("Shooter speed offset = " << shooter_offset.speed_offset);
+				shooter_offset_pub.publish(shooter_offset);
 			}
 			else
 			{
 				//Fine tune shooter faster
 				shooter_offset.speed_offset += config.shooter_speed_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
 				//ROS_INFO_STREAM("Shooter speed offset = " << shooter_offset.speed_offset);
+				shooter_offset_pub.publish(shooter_offset);
 			}
 		}
 	}
@@ -513,6 +503,7 @@ void buttonBoxCallback(const ros::MessageEvent<frc_msgs::ButtonBoxState const>& 
 			//Fine tune shooter slower
 			shooter_offset.speed_offset -= config.shooter_speed_offset_rate*(button_box.header.stamp - last_header_stamp).toSec();
 			//ROS_INFO_STREAM("Shooter speed offset = " << shooter_offset.speed_offset);
+			shooter_offset_pub.publish(shooter_offset);
 		}
 	}
 	if(button_box.bottomGreenRelease)
@@ -1000,6 +991,11 @@ void evaluateCommands(const ros::MessageEvent<frc_msgs::JoystickState const>& ev
 			{
 				green_led_on = !green_led_on;
 
+				std_msgs::Float64 green_led_position;
+				green_led_position.data = green_led_on ? 1.0 : 0.0;
+
+				green_led_pub.publish(green_led_position);
+
 				ROS_WARN_STREAM("Calling green LED controller with green_led_on = " << std::to_string(green_led_on));
 			}
 			if(joystick_states_array[0].buttonXButton)
@@ -1318,9 +1314,13 @@ int main(int argc, char **argv)
 		ROS_ERROR("Wait (15 sec) timed out, for Brake Service in teleop_joystick_comp.cpp");
 	}
 
-	green_led_pub = n.advertise<std_msgs::Float64>("/frcrobot_rio/green_led_controller/command", 1);
+	green_led_pub = n.advertise<std_msgs::Float64>("/frcrobot_rio/green_led_controller/command", 1, true);
+	std_msgs::Float64 green_led_position;
+	green_led_position.data = green_led_on ? 1.0 : 0.0;
+	green_led_pub.publish(green_led_position);
 
-	shooter_offset_pub = n.advertise<behavior_actions::ShooterOffset>("teleop_shooter_offsets", 1);
+	shooter_offset_pub = n.advertise<behavior_actions::ShooterOffset>("teleop_shooter_offsets", 1, true);
+	shooter_offset_pub.publish(shooter_offset);
 
 	orient_strafing_enable_pub = n.advertise<std_msgs::Bool>("orient_strafing/pid_enable", 1);
 	orient_strafing_setpoint_pub = n.advertise<std_msgs::Float64>("orient_strafing/setpoint", 1);
@@ -1371,16 +1371,6 @@ int main(int argc, char **argv)
 
 	ROS_WARN("joy_init");
 
-	ros::Rate loop_rate = 100;
-
-	while(ros::ok())
-	{
-		callGreenLEDController();
-		publishShooterOffset();
-
-		loop_rate.sleep();
-		ros::spinOnce();
-	}
-
+	ros::spin();
 	return 0;
 }
