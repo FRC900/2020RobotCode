@@ -11,6 +11,8 @@
     </node>
   </group>
 
-  <include file="$(find controller_node)/launch/tape_detection.launch"></include>
+  <include file="$(find controller_node)/launch/tape_detection.launch">
+    <arg name="live_camera" default="true" />
+  </include>
 
 </launch>
