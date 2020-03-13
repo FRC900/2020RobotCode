@@ -253,8 +253,8 @@ class AlignToShootAction
 					ROS_WARN("Align to shoot server failed to do ZED->turret transform - %s", ex.what());
 					return false;
 				}
-				ROS_INFO_STREAM("original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
-				ROS_INFO_STREAM("transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
+				ROS_INFO_STREAM("align server - original goal_pos: (" << goal_pos_.x << ", " << goal_pos_.y << ", " << goal_pos_.z << ")");
+				ROS_INFO_STREAM("align server - transformed goal_pos: (" << transformed_goal_pos.point.x << ", " << transformed_goal_pos.point.y << ", " << transformed_goal_pos.point.z << ")");
 
 				const double align_angle = -atan2(transformed_goal_pos.point.y, transformed_goal_pos.point.x);
 				ROS_WARN_STREAM("Align server - Align angle (radians): " << align_angle);
@@ -367,10 +367,9 @@ class AlignToShootAction
 				}
 			}
 
+			//wait for the turret to finish
 			const double start_turret_time = ros::Time::now().toSec();
-			bool turret_timed_out = false; //This determines if this service call timed out, not if the entire server timed out
-			//if necessary, run a loop to wait for the controller to finish
-			while (!preempted_ && !timed_out_ && !turret_timed_out && ros::ok())
+			while (!preempted_ && !timed_out_ && ros::ok())
 			{
 				//check preempted_
 				if (as_.isPreemptRequested() || !ros::ok())
@@ -390,11 +389,11 @@ class AlignToShootAction
 				{
 					ROS_ERROR_STREAM(action_name_ << ": timed out while calling turret controller");
 					timed_out_ = true;
-					r.sleep();
 				}
 				else if ((ros::Time::now().toSec() - start_turret_time > turn_turret_timeout_))
 				{
-					ROS_WARN_STREAM(action_name_ << ": turret controller timed out; running again");
+					ROS_WARN_STREAM(action_name_ << ": turret controller step timed out");
+					timed_out_ = true;
 				}
 				//otherwise, pause then loop again
 				else
