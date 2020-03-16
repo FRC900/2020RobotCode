@@ -191,6 +191,8 @@ TalonHWCommand::TalonHWCommand(void) :
 	status_frame_periods_[Status_13_Base_PIDF0] = status_13_base_pidf0_default;
 	status_frame_periods_[Status_14_Turn_PIDF1] = status_14_turn_pidf1_default;
 	status_frame_periods_[Status_15_FirmwareApiStatus] = status_15_firmwareapistatus_default;
+	status_frame_periods_[hardware_interface::Status_17_Targets1] = hardware_interface::status_17_targets1_default;
+	status_frame_periods_[hardware_interface::Status_Brushless_Current] = hardware_interface::status_brushless_current_default;
 
 	status_frame_periods_changed_[Status_1_General] = true;
 	status_frame_periods_changed_[Status_2_Feedback0] = true;
@@ -205,6 +207,8 @@ TalonHWCommand::TalonHWCommand(void) :
 	status_frame_periods_changed_[Status_12_Feedback1] = true;
 	status_frame_periods_changed_[Status_14_Turn_PIDF1] = true;
 	status_frame_periods_changed_[Status_15_FirmwareApiStatus] = true;
+	status_frame_periods_changed_[Status_17_Targets1] = true;
+	status_frame_periods_changed_[Status_Brushless_Current] = true;
 
 	control_frame_periods_[Control_3_General] = control_3_general_default;
 	control_frame_periods_[Control_4_Advanced] = control_4_advanced_default;

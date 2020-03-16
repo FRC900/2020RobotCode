@@ -3284,6 +3284,9 @@ bool FRCRobotHWInterface::convertRemoteSensorSource(
 		case hardware_interface::RemoteSensorSource_GadgeteerPigeon_Roll:
 			output_rss = ctre::phoenix::motorcontrol::RemoteSensorSource::RemoteSensorSource_GadgeteerPigeon_Roll;
 			break;
+		case hardware_interface::RemoteSensorSource_CANCoder:
+			output_rss = ctre::phoenix::motorcontrol::RemoteSensorSource::RemoteSensorSource_CANCoder;
+			break;
 
 		default:
 			ROS_WARN("Unknown remote sensor source seen in HW interface");
@@ -3443,6 +3446,12 @@ bool FRCRobotHWInterface::convertStatusFrame(const hardware_interface::StatusFra
 			break;
 		case hardware_interface::Status_15_FirmwareApiStatus:
 			output = ctre::phoenix::motorcontrol::Status_15_FirmareApiStatus;
+			break;
+		case hardware_interface::Status_17_Targets1:
+			output = ctre::phoenix::motorcontrol::Status_17_Targets1;
+			break;
+		case hardware_interface::Status_Brushless_Current:
+			output = ctre::phoenix::motorcontrol::Status_Brushless_Current;
 			break;
 		default:
 			ROS_ERROR("Invalid input in convertStatusFrame");
