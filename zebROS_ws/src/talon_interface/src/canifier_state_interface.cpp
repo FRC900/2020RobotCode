@@ -8,8 +8,8 @@ namespace canifier
 		: can_id_(can_id)
 		, quadrature_position_{0}
 		, quadrature_velocity_{0}
-		, velocity_measurement_period_{CANifierVelocityMeasPeriod::Period_1Ms}
-		, velocity_measurement_window_{0}
+		, velocity_measurement_period_{CANifierVelocityMeasPeriod::Period_100Ms}
+		, velocity_measurement_window_{64}
 		, clear_position_on_limit_f_{false}
 		, clear_position_on_limit_r_{false}
 		, clear_position_on_quad_idx_{false}
@@ -121,20 +121,20 @@ namespace canifier
 		return general_pin_input_[pin];
 	}
 
-	void CANifierHWState::setQuadraturePosition(int position)
+	void CANifierHWState::setQuadraturePosition(double position)
 	{
 		quadrature_position_ = position;
 	}
-	int CANifierHWState::getQuadraturePosition(void) const
+	double CANifierHWState::getQuadraturePosition(void) const
 	{
 		return quadrature_position_;
 	}
 
-	void CANifierHWState::setQuadratureVelocity(int velocity)
+	void CANifierHWState::setQuadratureVelocity(double velocity)
 	{
 		quadrature_velocity_ = velocity;
 	}
-	int CANifierHWState::getQuadratureVelocity(void) const
+	double CANifierHWState::getQuadratureVelocity(void) const
 	{
 		return quadrature_velocity_;
 	}

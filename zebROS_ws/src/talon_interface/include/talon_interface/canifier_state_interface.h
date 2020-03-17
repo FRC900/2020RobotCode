@@ -125,10 +125,10 @@ class CANifierHWState
 		void   setGeneralPinInput(GeneralPin pin, bool value);
 		bool   getGeneralPinInput(GeneralPin pin) const;
 
-		void   setQuadraturePosition(int position);
-		int    getQuadraturePosition(void) const;
-		void   setQuadratureVelocity(int velocity);
-		int    getQuadratureVelocity(void) const;
+		void   setQuadraturePosition(double position);
+		double getQuadraturePosition(void) const;
+		void   setQuadratureVelocity(double velocity);
+		double getQuadratureVelocity(void) const;
 
 		void   setVelocityMeasurementPeriod(CANifierVelocityMeasPeriod period);
 		CANifierVelocityMeasPeriod getVelocityMeasurementPeriod(void) const;
@@ -178,8 +178,8 @@ class CANifierHWState
 		std::array<bool,   GeneralPin::GeneralPin_LAST>                   general_pin_output_;
 		std::array<bool,   GeneralPin::GeneralPin_LAST>                   general_pin_output_enable_;
 		std::array<bool,   GeneralPin::GeneralPin_LAST>                   general_pin_input_;
-		int                                                               quadrature_position_;
-		int                                                               quadrature_velocity_;
+		double                                                            quadrature_position_;
+		double                                                            quadrature_velocity_;
 		CANifierVelocityMeasPeriod                                        velocity_measurement_period_;
 		int                                                               velocity_measurement_window_;
 		bool                                                              clear_position_on_limit_f_;

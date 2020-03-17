@@ -15,7 +15,7 @@ class CANifierHWCommand
 		void   setLEDOutput(LEDChannel led_channel, double percentOutput);
 		double getLEDOutput(LEDChannel led_channel) const;
 		bool   ledOutputChanged(LEDChannel led_channel, double &percentOutput);
-		void   resetLedOutput(LEDChannel led_channel);
+		void   resetLEDOutput(LEDChannel led_channel);
 
 		void   setGeneralPinOutput(GeneralPin pin, bool value);
 		bool   getGeneralPinOutput(GeneralPin pin) const;
@@ -24,9 +24,9 @@ class CANifierHWCommand
 		bool   generalPinOutputChanged(GeneralPin pin, bool &value, bool &output_enable);
 		void   resetGeneralPinOutput(GeneralPin pin);
 
-		void   setQuadraturePosition(int position);
-		int    getQuadraturePosition(void) const;
-		bool   quadraturePositionChanged(int &position);
+		void   setQuadraturePosition(double position);
+		double getQuadraturePosition(void) const;
+		bool   quadraturePositionChanged(double &position);
 		void   resetQuadraturePosition(void);
 
 		void   setVelocityMeasurementPeriod(CANifierVelocityMeasPeriod period);
@@ -34,9 +34,9 @@ class CANifierHWCommand
 		bool   velocityMeasurementPeriodChanged(CANifierVelocityMeasPeriod &period);
 		void   resetVelocityMeasurementPeriod(void);
 
-		void   setVelocityMeasurementWindow(int period);
+		void   setVelocityMeasurementWindow(int window);
 		int    getVelocityMeasurementWindow(void) const;
-		bool   velocityMeasurementWindowChanged(int &period);
+		bool   velocityMeasurementWindowChanged(int &window);
 		void   resetVelocityMeasurementWindow(void);
 
 		void   setClearPositionOnLimitF(bool value);
@@ -90,7 +90,7 @@ class CANifierHWCommand
 		std::array<bool,   GeneralPin::GeneralPin_LAST>                   general_pin_output_;
 		std::array<bool,   GeneralPin::GeneralPin_LAST>                   general_pin_output_enable_;
 		std::array<bool,   GeneralPin::GeneralPin_LAST>                   general_pin_changed_;
-		int                                                               quadrature_position_;
+		double                                                            quadrature_position_;
 		bool                                                              quadrature_position_changed_;
 		CANifierVelocityMeasPeriod                                        velocity_measurement_period_;
 		bool                                                              velocity_measurement_period_changed_;

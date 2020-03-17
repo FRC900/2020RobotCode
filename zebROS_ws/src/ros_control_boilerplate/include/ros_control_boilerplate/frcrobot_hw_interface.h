@@ -208,6 +208,14 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 				ctre::phoenix::CANifier::GeneralPin &output) const;
 		bool convertCANifierPWMChannel(hardware_interface::canifier::PWMChannel input,
 				ctre::phoenix::CANifier::PWMChannel &output) const;
+		bool convertCANifierLEDChannel(hardware_interface::canifier::LEDChannel input,
+				ctre::phoenix::CANifier::LEDChannel &output) const;
+		bool convertCANifierVelocityMeasurementPeriod(hardware_interface::canifier::CANifierVelocityMeasPeriod input,
+				ctre::phoenix::CANifierVelocityMeasPeriod &output) const;
+		bool convertCANifierStatusFrame(hardware_interface::canifier::CANifierStatusFrame input,
+				ctre::phoenix::CANifierStatusFrame &output) const;
+		bool convertCANifierControlFrame(hardware_interface::canifier::CANifierControlFrame input,
+				ctre::phoenix::CANifierControlFrame &output) const;
 
 		bool convertAS726xIndLedCurrentLimit(const hardware_interface::as726x::IndLedCurrentLimits input,
 				as726x::ind_led_current_limits &output) const;

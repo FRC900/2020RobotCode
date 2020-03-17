@@ -1546,7 +1546,7 @@ void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /
 	}
 
 	read_tracer_.start_unique("can talons");
-	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
+	for (size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
 	{
 		if (can_ctre_mc_local_hardwares_[joint_id])
 		{
@@ -1594,7 +1594,7 @@ void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /
 	}
 
 	read_tracer_.start_unique("canifier");
-	for (std::size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
+	for (size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
 	{
 		if (canifier_local_hardwares_[joint_id])
 		{
@@ -1998,7 +1998,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 	}
 #endif
 
-	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
+	for (size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
 	{
 		if (!can_ctre_mc_local_hardwares_[joint_id])
 			continue;
@@ -2924,6 +2924,271 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 	}
 
 	last_robot_enabled = match_data_.isEnabled();
+
+	for (std::size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
+	{
+		if (!canifier_local_hardwares_[joint_id])
+			continue;
+
+		// Save some typing by making references to commonly
+		// used variables
+		auto &canifier = canifiers_[joint_id];
+		auto &cs = canifier_state_[joint_id];
+		auto &cc = canifier_command_[joint_id];
+
+		if (canifier->HasResetOccurred())
+		{
+			for (size_t i = hardware_interface::canifier::LEDChannel::LEDChannelFirst + 1; i < hardware_interface::canifier::LEDChannel::LEDChannelLast; i++)
+				cc.resetLEDOutput(static_cast<hardware_interface::canifier::LEDChannel>(i));
+			for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
+				cc.resetGeneralPinOutput(static_cast<hardware_interface::canifier::GeneralPin>(i));
+			cc.resetQuadraturePosition();
+			cc.resetVelocityMeasurementPeriod();
+			cc.resetVelocityMeasurementWindow();
+			cc.resetClearPositionOnLimitF();
+			cc.resetClearPositionOnLimitR();
+			cc.resetClearPositionOnQuadIdx();
+			for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+			{
+				const auto pwm_channel = static_cast<hardware_interface::canifier::PWMChannel>(i);
+				cc.resetPWMOutput(pwm_channel);
+				cc.resetPWMOutputEnable(pwm_channel);
+			}
+			for (size_t i = hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_First + 1; i < hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Last; i++)
+				cc.resetStatusFramePeriod(static_cast<hardware_interface::canifier::CANifierStatusFrame>(i));
+			for (size_t i = hardware_interface::canifier::CANifierControlFrame::CANifier_Control_First + 1; i < hardware_interface::canifier::CANifierControlFrame::CANifier_Control_Last; i++)
+				cc.resetControlFramePeriod(static_cast<hardware_interface::canifier::CANifierControlFrame>(i));
+		}
+
+		for (size_t i = hardware_interface::canifier::LEDChannel::LEDChannelFirst + 1; i < hardware_interface::canifier::LEDChannel::LEDChannelLast; i++)
+		{
+			const auto led_channel = static_cast<hardware_interface::canifier::LEDChannel>(i);
+			double percent_output;
+			ctre::phoenix::CANifier::LEDChannel ctre_led_channel;
+			if (cc.ledOutputChanged(led_channel, percent_output) &&
+				convertCANifierLEDChannel(led_channel, ctre_led_channel))
+			{
+				if (safeTalonCall(canifier->SetLEDOutput(percent_output, ctre_led_channel), "canifier.SetLEDOutput"))
+				{
+					cs.setLEDOutput(led_channel, percent_output);
+					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+							<< " : Set LED channel " << i << " to " << percent_output);
+				}
+				else
+				{
+					cc.resetLEDOutput(led_channel);
+				}
+			}
+		}
+		for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
+		{
+			const auto general_pin = static_cast<hardware_interface::canifier::GeneralPin>(i);
+			bool value;
+			bool output_enable;
+			ctre::phoenix::CANifier::GeneralPin ctre_general_pin;
+			if (cc.generalPinOutputChanged(general_pin, value, output_enable) &&
+					convertCANifierGeneralPin(general_pin, ctre_general_pin))
+			{
+				if (safeTalonCall(canifier->SetGeneralOutput(ctre_general_pin, value, output_enable), "canifier->SetGeneralOutput"))
+				{
+					cs.setGeneralPinOutput(general_pin, value);
+					cs.setGeneralPinOutputEnable(general_pin, output_enable);
+					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+							<< " : Set General Pin " << i <<
+							" to enable=" << output_enable << " value=" << value);
+				}
+				else
+				{
+					cc.resetGeneralPinOutput(general_pin);
+				}
+			}
+		}
+
+		// Don't bother with all the changed/reset code here, just copy
+		// from command to state each time through the write call
+		cs.setEncoderTicksPerRotation(cc.getEncoderTicksPerRotation());
+		cs.setConversionFactor(cc.getConversionFactor());
+		double position;
+		if (cc.quadraturePositionChanged(position))
+		{
+			const double radians_scale = getConversionFactor(cs.getEncoderTicksPerRotation(), hardware_interface::FeedbackDevice_QuadEncoder, hardware_interface::TalonMode_Position) * cs.getConversionFactor();
+			if (safeTalonCall(canifier->SetQuadraturePosition(position / radians_scale), "canifier->SetQuadraturePosition"))
+			{
+				// Don't set state encoder position, let it be read at the next read() call
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set Quadrature Position to " << position);
+			}
+			else
+			{
+				cc.resetQuadraturePosition();
+			}
+		}
+
+		hardware_interface::canifier::CANifierVelocityMeasPeriod period;
+		ctre::phoenix::CANifierVelocityMeasPeriod                ctre_period;
+		if (cc.velocityMeasurementPeriodChanged(period) &&
+			convertCANifierVelocityMeasurementPeriod(period, ctre_period))
+		{
+			if (safeTalonCall(canifier->ConfigVelocityMeasurementPeriod(ctre_period), "canifier->ConfigVelocityMeasurementPeriod"))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set velocity measurement Period to " << period);
+				cs.setVelocityMeasurementPeriod(period);
+			}
+			else
+			{
+				cc.resetVelocityMeasurementPeriod();
+			}
+		}
+
+		int window;
+		if (cc.velocityMeasurementWindowChanged(window))
+		{
+			if (safeTalonCall(canifier->ConfigVelocityMeasurementWindow(window), "canifier->ConfigVelocityMeasurementWindow"))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set velocity measurement window to " << window);
+				cs.setVelocityMeasurementWindow(window);
+			}
+			else
+			{
+				cc.resetVelocityMeasurementWindow();
+			}
+		}
+
+		bool clear_position_on_limit_f;
+		if (cc.clearPositionOnLimitFChanged(clear_position_on_limit_f))
+		{
+			if (safeTalonCall(canifier->ConfigClearPositionOnLimitF(clear_position_on_limit_f), "canifier->ConfigClearPositionOnLimitF"))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set clear position on limit F to " << clear_position_on_limit_f);
+				cs.setClearPositionOnLimitF(clear_position_on_limit_f);
+			}
+			else
+			{
+				cc.resetClearPositionOnLimitF();
+			}
+		}
+
+		bool clear_position_on_limit_r;
+		if (cc.clearPositionOnLimitRChanged(clear_position_on_limit_r))
+		{
+			if (safeTalonCall(canifier->ConfigClearPositionOnLimitR(clear_position_on_limit_r), "canifier->ConfigClearPositionOnLimitR"))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set clear position on limit R to " << clear_position_on_limit_r);
+				cs.setClearPositionOnLimitR(clear_position_on_limit_r);
+			}
+			else
+			{
+				cc.resetClearPositionOnLimitR();
+			}
+		}
+
+		bool clear_position_on_quad_idx;
+		if (cc.clearPositionOnQuadIdxChanged(clear_position_on_quad_idx))
+		{
+			if (safeTalonCall(canifier->ConfigClearPositionOnQuadIdx(clear_position_on_quad_idx), "canifier->ConfigClearPositionOnQuadIdx"))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set clear position on quad idx to " << clear_position_on_quad_idx);
+				cs.setClearPositionOnQuadIdx(clear_position_on_quad_idx);
+			}
+			else
+			{
+				cc.resetClearPositionOnQuadIdx();
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+		{
+			const auto pwm_channel = static_cast<hardware_interface::canifier::PWMChannel>(i);
+			ctre::phoenix::CANifier::PWMChannel ctre_pwm_channel;
+			bool output_enable;
+			if (cc.pwmOutputEnableChanged(pwm_channel, output_enable) &&
+				convertCANifierPWMChannel(pwm_channel, ctre_pwm_channel))
+			{
+				if (safeTalonCall(canifier->EnablePWMOutput(ctre_pwm_channel, output_enable), "canifier->EnablePWMOutput"))
+				{
+					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+							<< " : Set pwm channel " << pwm_channel << " output enable to " << static_cast<int>(output_enable));
+					cs.setPWMOutputEnable(pwm_channel, output_enable);
+				}
+				else
+				{
+					cc.resetPWMOutputEnable(pwm_channel);
+				}
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+		{
+			const auto pwm_channel = static_cast<hardware_interface::canifier::PWMChannel>(i);
+			ctre::phoenix::CANifier::PWMChannel ctre_pwm_channel;
+			double output;
+			if (cc.pwmOutputChanged(pwm_channel, output) &&
+				convertCANifierPWMChannel(pwm_channel, ctre_pwm_channel))
+			{
+				if (safeTalonCall(canifier->SetPWMOutput(ctre_pwm_channel, output), "canifier->SetPWMOutput"))
+				{
+					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+							<< " : Set pwm channel " << pwm_channel << " output to " << output);
+					cs.setPWMOutput(pwm_channel, output);
+				}
+				else
+				{
+					cc.resetPWMOutput(pwm_channel);
+				}
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_First + 1; i < hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Last; i++)
+		{
+			const auto frame_id = static_cast<hardware_interface::canifier::CANifierStatusFrame>(i);
+			ctre::phoenix::CANifierStatusFrame ctre_frame_id;
+			int period;
+			if (cc.statusFramePeriodChanged(frame_id, period) &&
+				convertCANifierStatusFrame(frame_id, ctre_frame_id))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set frame_id " << i << " status period to " << period);
+			}
+			else
+			{
+				cc.resetStatusFramePeriod(frame_id);
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::CANifierControlFrame::CANifier_Control_First + 1; i < hardware_interface::canifier::CANifierControlFrame::CANifier_Control_Last; i++)
+		{
+			const auto frame_id = static_cast<hardware_interface::canifier::CANifierControlFrame>(i);
+			ctre::phoenix::CANifierControlFrame ctre_frame_id;
+			int period;
+			if (cc.controlFramePeriodChanged(frame_id, period) &&
+				convertCANifierControlFrame(frame_id, ctre_frame_id))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set frame_id " << i << " control period to " << period);
+			}
+			else
+			{
+				cc.resetControlFramePeriod(frame_id);
+			}
+		}
+
+		if (cc.clearStickyFaultsChanged())
+		{
+			if (safeTalonCall(canifier->ClearStickyFaults(), "canifier->ClearStickyFaults()"))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id] << " : cleared sticky faults");
+			}
+			else
+			{
+				cc.setClearStickyFaults();
+			}
+		}
+	}
 
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
 	{
@@ -3861,4 +4126,110 @@ bool FRCRobotHWInterface::convertCANifierPWMChannel(hardware_interface::canifier
 	}
 	return true;
 }
+
+bool FRCRobotHWInterface::convertCANifierLEDChannel(hardware_interface::canifier::LEDChannel input,
+		ctre::phoenix::CANifier::LEDChannel &output) const
+{
+	switch (input)
+	{
+		case hardware_interface::canifier::LEDChannel::LEDChannelA:
+			output = ctre::phoenix::CANifier::LEDChannel::LEDChannelA;
+			break;
+		case hardware_interface::canifier::LEDChannel::LEDChannelB:
+			output = ctre::phoenix::CANifier::LEDChannel::LEDChannelB;
+			break;
+		case hardware_interface::canifier::LEDChannel::LEDChannelC:
+			output = ctre::phoenix::CANifier::LEDChannel::LEDChannelC;
+			break;
+		default:
+			ROS_ERROR("Invalid input in convertCANifierLEDChannel");
+			return false;
+	}
+	return true;
+}
+
+bool FRCRobotHWInterface::convertCANifierVelocityMeasurementPeriod(hardware_interface::canifier::CANifierVelocityMeasPeriod input,
+		ctre::phoenix::CANifierVelocityMeasPeriod &output) const
+{
+	switch (input)
+	{
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_1Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_1Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_2Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_2Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_5Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_5Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_10Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_10Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_20Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_20Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_25Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_25Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_50Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_50Ms;
+			break;
+		case hardware_interface::canifier::CANifierVelocityMeasPeriod::Period_100Ms:
+			output = ctre::phoenix::CANifierVelocityMeasPeriod::Period_100Ms;
+			break;
+		default:
+			ROS_ERROR("Invalid input in convertCANifierVelocityMeasurementPeriod");
+			return false;
+	}
+	return true;
+}
+
+bool FRCRobotHWInterface::convertCANifierStatusFrame(hardware_interface::canifier::CANifierStatusFrame input,
+		ctre::phoenix::CANifierStatusFrame &output) const
+{
+	switch (input)
+	{
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_1_General:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_1_General;
+			break;
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_2_General:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_2_General;
+			break;
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_3_PwmInputs0:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_3_PwmInputs0;
+			break;
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_4_PwmInputs1:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_4_PwmInputs1;
+			break;
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_5_PwmInputs2:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_5_PwmInputs2;
+			break;
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_6_PwmInputs3:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_6_PwmInputs3;
+			break;
+		case hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_8_Misc:
+			output = ctre::phoenix::CANifierStatusFrame::CANifierStatusFrame_Status_8_Misc;
+			break;
+		default:
+			ROS_ERROR("Invalid input in convertCANifierStatusFrame");
+			return false;
+	}
+	return true;
+}
+bool FRCRobotHWInterface::convertCANifierControlFrame(hardware_interface::canifier::CANifierControlFrame input,
+		ctre::phoenix::CANifierControlFrame &output) const
+{
+	switch (input)
+	{
+		case hardware_interface::canifier::CANifierControlFrame::CANifier_Control_1_General:
+			output = ctre::phoenix::CANifierControlFrame::CANifier_Control_1_General;
+		case hardware_interface::canifier::CANifierControlFrame::CANifier_Control_2_PwmOutput:
+			output = ctre::phoenix::CANifierControlFrame::CANifier_Control_2_PwmOutput;
+		default:
+			ROS_ERROR("Invalid input in convertCANifierControlFrame");
+			return false;
+	}
+	return true;
+}
+
 } // namespace

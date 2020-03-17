@@ -8,9 +8,9 @@ namespace canifier
 	CANifierHWCommand::CANifierHWCommand(void)
 		: quadrature_position_{0}
 		, quadrature_position_changed_{false}
-		, velocity_measurement_period_{CANifierVelocityMeasPeriod::Period_1Ms}
+		, velocity_measurement_period_{CANifierVelocityMeasPeriod::Period_100Ms}
 		, velocity_measurement_period_changed_{false}
-		, velocity_measurement_window_{0}
+		, velocity_measurement_window_{64}
 		, velocity_measurement_window_changed_{false}
 		, clear_position_on_limit_f_{false}
 		, clear_position_on_limit_f_changed_{false}
@@ -96,7 +96,7 @@ namespace canifier
 		percentOutput = led_output_[led_channel];
 		return ret;
 	}
-	void CANifierHWCommand::resetLedOutput(LEDChannel led_channel)
+	void CANifierHWCommand::resetLEDOutput(LEDChannel led_channel)
 	{
 		if ((led_channel <= LEDChannel::LEDChannelFirst) || (led_channel >= LEDChannel::LEDChannelLast))
 		{
@@ -172,7 +172,7 @@ namespace canifier
 		}
 		general_pin_changed_[pin] = true;
 	}
-	void CANifierHWCommand::setQuadraturePosition(int position)
+	void CANifierHWCommand::setQuadraturePosition(double position)
 	{
 		if (quadrature_position_ != position)
 		{
@@ -180,11 +180,11 @@ namespace canifier
 			quadrature_position_changed_ = true;
 		}
 	}
-	int CANifierHWCommand::getQuadraturePosition(void) const
+	double CANifierHWCommand::getQuadraturePosition(void) const
 	{
 		return quadrature_position_;
 	}
-	bool CANifierHWCommand::quadraturePositionChanged(int &position)
+	bool CANifierHWCommand::quadraturePositionChanged(double &position)
 	{
 		auto ret = quadrature_position_changed_;
 		quadrature_position_changed_ = false;
