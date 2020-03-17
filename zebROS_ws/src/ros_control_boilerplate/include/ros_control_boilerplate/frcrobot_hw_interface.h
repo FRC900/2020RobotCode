@@ -39,22 +39,17 @@
 
 #pragma once
 
-#include <atomic>
 #include <thread>
 
-#include <ros_control_boilerplate/frc_robot_interface.h>
-#include <ros_control_boilerplate/tracer.h>
 #include <realtime_tools/realtime_publisher.h>
 
-#include <frc_interfaces/robot_controller_interface.h>
-#include "ros_control_boilerplate/AutoMode.h"
-#include "frc_msgs/MatchSpecificData.h"
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/Joy.h>
 
 #include <ctre/phoenix/motorcontrol/can/TalonFX.h>
 #include <ctre/phoenix/motorcontrol/can/TalonSRX.h>
 #include <ctre/phoenix/motorcontrol/can/VictorSPX.h>
+#include <ctre/phoenix/CANifier.h>
 #include "WPILibVersion.h"
 #include <frc/AnalogInput.h>
 #include <frc/DriverStation.h>
@@ -71,8 +66,13 @@
 #include <hal/FRCUsageReporting.h>
 
 #include <AHRS.h>
-#include "ros_control_boilerplate/AS726x.h"
 
+#include "frc_interfaces/robot_controller_interface.h"
+#include "frc_msgs/MatchSpecificData.h"
+
+#include "ros_control_boilerplate/AS726x.h"
+#include "ros_control_boilerplate/frc_robot_interface.h"
+#include "ros_control_boilerplate/tracer.h"
 
 namespace frcrobot_control
 {
@@ -164,45 +164,50 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 
 	private:
 		/* Get conversion factor for position, velocity, and closed-loop stuff */
-		double getConversionFactor(int encoder_ticks_per_rotation, hardware_interface::FeedbackDevice encoder_feedback, hardware_interface::TalonMode talon_mode);
+		double getConversionFactor(int encoder_ticks_per_rotation, hardware_interface::FeedbackDevice encoder_feedback, hardware_interface::TalonMode talon_mode) const;
 
 		bool convertControlMode(const hardware_interface::TalonMode input_mode,
-								ctre::phoenix::motorcontrol::ControlMode &output_mode);
+								ctre::phoenix::motorcontrol::ControlMode &output_mode) const;
 		bool convertDemand1Type( const hardware_interface::DemandType input,
-				ctre::phoenix::motorcontrol::DemandType &output);
+				ctre::phoenix::motorcontrol::DemandType &output) const;
 		bool convertNeutralMode(const hardware_interface::NeutralMode input_mode,
-								ctre::phoenix::motorcontrol::NeutralMode &output_mode);
+								ctre::phoenix::motorcontrol::NeutralMode &output_mode) const;
 		bool convertFeedbackDevice(
 			const hardware_interface::FeedbackDevice input_fd,
-			ctre::phoenix::motorcontrol::FeedbackDevice &output_fd);
+			ctre::phoenix::motorcontrol::FeedbackDevice &output_fd) const;
 		bool convertRemoteFeedbackDevice(
 			const hardware_interface::RemoteFeedbackDevice input_fd,
-			ctre::phoenix::motorcontrol::RemoteFeedbackDevice &output_fd);
+			ctre::phoenix::motorcontrol::RemoteFeedbackDevice &output_fd) const;
 		bool convertRemoteSensorSource(
 				const hardware_interface::RemoteSensorSource input_rss,
-				ctre::phoenix::motorcontrol::RemoteSensorSource &output_rss);
+				ctre::phoenix::motorcontrol::RemoteSensorSource &output_rss) const;
 		bool convertLimitSwitchSource(
 			const hardware_interface::LimitSwitchSource input_ls,
-			ctre::phoenix::motorcontrol::LimitSwitchSource &output_ls);
+			ctre::phoenix::motorcontrol::LimitSwitchSource &output_ls) const;
 		bool convertRemoteLimitSwitchSource(
 			const hardware_interface::RemoteLimitSwitchSource input_ls,
-			ctre::phoenix::motorcontrol::RemoteLimitSwitchSource &output_ls);
+			ctre::phoenix::motorcontrol::RemoteLimitSwitchSource &output_ls) const;
 		bool convertLimitSwitchNormal(
 			const hardware_interface::LimitSwitchNormal input_ls,
-			ctre::phoenix::motorcontrol::LimitSwitchNormal &output_ls);
+			ctre::phoenix::motorcontrol::LimitSwitchNormal &output_ls) const;
 		bool convertVelocityMeasurementPeriod(
 			const hardware_interface::VelocityMeasurementPeriod input_v_m_p,
-			ctre::phoenix::motorcontrol::VelocityMeasPeriod &output_v_m_period);
+			ctre::phoenix::motorcontrol::VelocityMeasPeriod &output_v_m_period) const;
 		bool convertStatusFrame(const hardware_interface::StatusFrame input,
-			ctre::phoenix::motorcontrol::StatusFrameEnhanced &output);
+			ctre::phoenix::motorcontrol::StatusFrameEnhanced &output) const;
 		bool convertControlFrame(const hardware_interface::ControlFrame input,
-			ctre::phoenix::motorcontrol::ControlFrame &output);
+			ctre::phoenix::motorcontrol::ControlFrame &output) const;
 		bool convertMotorCommutation(const hardware_interface::MotorCommutation input,
-			ctre::phoenix::motorcontrol::MotorCommutation &output);
+			ctre::phoenix::motorcontrol::MotorCommutation &output) const;
 		bool convertAbsoluteSensorRange(const hardware_interface::AbsoluteSensorRange input,
-			ctre::phoenix::sensors::AbsoluteSensorRange &output);
+			ctre::phoenix::sensors::AbsoluteSensorRange &output) const;
 		bool convertSensorInitializationStrategy(const hardware_interface::SensorInitializationStrategy input,
-			ctre::phoenix::sensors::SensorInitializationStrategy &output);
+			ctre::phoenix::sensors::SensorInitializationStrategy &output) const;
+
+		bool convertCANifierGeneralPin(const hardware_interface::canifier::GeneralPin input,
+				ctre::phoenix::CANifier::GeneralPin &output) const;
+		bool convertCANifierPWMChannel(hardware_interface::canifier::PWMChannel input,
+				ctre::phoenix::CANifier::PWMChannel &output) const;
 
 		bool convertAS726xIndLedCurrentLimit(const hardware_interface::as726x::IndLedCurrentLimits input,
 				as726x::ind_led_current_limits &output) const;
@@ -237,6 +242,12 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		std::vector<std::shared_ptr<hardware_interface::TalonHWState>> ctre_mc_read_thread_states_;
 		std::vector<std::thread> ctre_mc_read_threads_;
 		void ctre_mc_read_thread(std::shared_ptr<ctre::phoenix::motorcontrol::IMotorController> ctre_mc, std::shared_ptr<hardware_interface::TalonHWState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
+
+		std::vector<std::shared_ptr<ctre::phoenix::CANifier>> canifiers_;
+		std::vector<std::shared_ptr<std::mutex>> canifier_read_state_mutexes_;
+		std::vector<std::shared_ptr<hardware_interface::canifier::CANifierHWState>> canifier_read_thread_states_;
+		std::vector<std::thread> canifier_read_threads_;
+		void canifier_read_thread(std::shared_ptr<ctre::phoenix::CANifier> canifier, std::shared_ptr<hardware_interface::canifier::CANifierHWState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
 
 		std::vector<std::shared_ptr<frc::NidecBrushless>> nidec_brushlesses_;
 		std::vector<std::shared_ptr<frc::DigitalInput>> digital_inputs_;

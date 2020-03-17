@@ -638,6 +638,7 @@ class TalonHWState
 typedef StateHandle<const TalonHWState> TalonStateHandle;
 typedef StateHandle<TalonHWState> TalonWritableStateHandle;
 class TalonStateInterface : public HardwareResourceManager<TalonStateHandle> {};
+class RemoteTalonStateInterface : public HardwareResourceManager<TalonWritableStateHandle, ClaimResources> {};
 
 }
 

@@ -69,12 +69,9 @@
 
 #include <cmath>
 #include <iostream>
-#include <math.h>
-#include <thread>
 
 #include <tf2/LinearMath/Matrix3x3.h>
 #include "ros_control_boilerplate/frcrobot_hw_interface.h"
-#include "ros_control_boilerplate/tracer.h"
 
 //HAL / wpilib includes
 #include <HALInitializer.h>
@@ -279,6 +276,31 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 		}
 	}
 
+	for (size_t i = 0; i < num_canifiers_; i++)
+	{
+		ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
+							  "Loading joint " << i << "=" << canifier_names_[i] <<
+							  (canifier_local_updates_[i] ? " local" : " remote") << " update, " <<
+							  (canifier_local_hardwares_[i] ? "local" : "remote") << " hardware" <<
+							  " at CAN id " << canifier_can_ids_[i]);
+
+		if (canifier_local_hardwares_[i])
+		{
+			canifiers_.push_back(std::make_shared<ctre::phoenix::CANifier>(canifier_can_ids_[i]));
+			canifier_read_state_mutexes_.push_back(std::make_shared<std::mutex>());
+			canifier_read_thread_states_.push_back(std::make_shared<hardware_interface::canifier::CANifierHWState>(canifier_can_ids_[i]));
+			canifier_read_threads_.push_back(std::thread(&FRCRobotHWInterface::canifier_read_thread, this,
+										    canifiers_[i], canifier_read_thread_states_[i],
+										    canifier_read_state_mutexes_[i],
+										    std::make_unique<Tracer>("canifier_read_" + canifier_names_[i] + " " + root_nh.getNamespace())));
+		}
+		else
+		{
+			canifiers_.push_back(nullptr);
+			canifier_read_state_mutexes_.push_back(nullptr);
+			canifier_read_thread_states_.push_back(nullptr);
+		}
+	}
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
 	{
 		ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
@@ -931,6 +953,110 @@ void FRCRobotHWInterface::ctre_mc_read_thread(std::shared_ptr<ctre::phoenix::mot
 			}
 
 			state->setFirmwareVersion(firmware_version);
+		}
+		tracer->stop();
+		ROS_INFO_STREAM_THROTTLE(60, tracer->report());
+		rate.sleep();
+	}
+}
+
+// Each canifier gets their own read thread. The thread loops at a fixed rate
+// reading all state from that canifier. The state is copied to a shared buffer
+// at the end of each iteration of the loop.
+// The code tries to only read status when we expect there to be new
+// data given the update rate of various CAN messages.
+void FRCRobotHWInterface::canifier_read_thread(std::shared_ptr<ctre::phoenix::CANifier> canifier,
+											std::shared_ptr<hardware_interface::canifier::CANifierHWState> state,
+											std::shared_ptr<std::mutex> mutex,
+											std::unique_ptr<Tracer> tracer)
+{
+#ifdef __linux__
+	pthread_setname_np(pthread_self(), "canifier_read");
+#endif
+	ros::Duration(2).sleep(); // Sleep for a few seconds to let CAN start up
+	ros::Rate rate(100); // TODO : configure me from a file or
+						 // be smart enough to run at the rate of the fastest status update?
+
+	while(ros::ok())
+	{
+		tracer->start("canifier read main_loop");
+
+		int encoder_ticks_per_rotation;
+		double conversion_factor;
+
+		// Update local status with relevant global config
+		// values set by write(). This way, items configured
+		// by controllers will be reflected in the state here
+		// used when reading from talons.
+		// Realistically they won't change much (except maybe mode)
+		// but unless it causes performance problems reading them
+		// each time through the loop is easier than waiting until
+		// they've been correctly set by write() before using them
+		// here.
+		// Note that this isn't a complete list - only the values
+		// used by the read thread are copied over.  Update
+		// as needed when more are read
+#if 0
+		{
+			std::lock_guard<std::mutex> l(*mutex);
+			encoder_ticks_per_rotation = state->getEncoderTicksPerRotation();
+			conversion_factor = state->getConversionFactor();
+		}
+#endif
+
+		std::array<bool, hardware_interface::canifier::GeneralPin::GeneralPin_LAST> general_pins;
+		for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
+		{
+			ctre::phoenix::CANifier::GeneralPin ctre_general_pin;
+			if (convertCANifierGeneralPin(static_cast<hardware_interface::canifier::GeneralPin>(i), ctre_general_pin))
+				general_pins[i] = canifier->GetGeneralInput(ctre_general_pin);
+		}
+
+		const int quadrature_position = canifier->GetQuadraturePosition();
+		const int quadrature_velocity = canifier->GetQuadratureVelocity();
+		const double bus_voltage      = canifier->GetBusVoltage();
+
+		std::array<std::array<double, 2>, hardware_interface::canifier::PWMChannel::PWMChannelLast> pwm_inputs;
+		for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+		{
+			ctre::phoenix::CANifier::PWMChannel ctre_pwm_channel;
+			if (convertCANifierPWMChannel(static_cast<hardware_interface::canifier::PWMChannel>(i), ctre_pwm_channel))
+				canifier->GetPWMInput(ctre_pwm_channel, &pwm_inputs[i][0]);
+		}
+
+		ctre::phoenix::CANifierFaults ctre_faults;
+		canifier->GetFaults(ctre_faults);
+		const unsigned faults = ctre_faults.ToBitfield();
+		ctre::phoenix::CANifierStickyFaults ctre_sticky_faults;
+		canifier->GetStickyFaults(ctre_sticky_faults);
+		const unsigned sticky_faults = ctre_sticky_faults.ToBitfield();
+
+		// Actually update the CANifierHWState shared between
+		// this thread and read()
+		// Do this all at once so the code minimizes the amount
+		// of time with mutex locked
+		{
+			// Lock the state entry to make sure writes
+			// are atomic - reads won't grab data in
+			// the middle of a write
+			std::lock_guard<std::mutex> l(*mutex);
+
+			for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
+			{
+				state->setGeneralPinInput(static_cast<hardware_interface::canifier::GeneralPin>(i), general_pins[i]);
+			}
+
+			state->setQuadraturePosition(quadrature_position);
+			state->setQuadratureVelocity(quadrature_velocity);
+			state->setBusVoltage(bus_voltage);
+
+			for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+			{
+				state->setPWMInput(static_cast<hardware_interface::canifier::PWMChannel>(i), pwm_inputs[i]);
+			}
+
+			state->setFaults(faults);
+			state->setStickyFaults(sticky_faults);
 		}
 		tracer->stop();
 		ROS_INFO_STREAM_THROTTLE(60, tracer->report());
@@ -1597,10 +1723,10 @@ void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /
 
 double FRCRobotHWInterface::getConversionFactor(int encoder_ticks_per_rotation,
 		hardware_interface::FeedbackDevice encoder_feedback,
-		hardware_interface::TalonMode talon_mode)
+		hardware_interface::TalonMode talon_mode) const
 {
 	if((talon_mode == hardware_interface::TalonMode_Position) ||
-			(talon_mode == hardware_interface::TalonMode_MotionMagic)) // TODO - maybe motion profile as well?
+	   (talon_mode == hardware_interface::TalonMode_MotionMagic)) // TODO - maybe motion profile as well?
 	{
 		switch (encoder_feedback)
 		{
@@ -1611,8 +1737,8 @@ double FRCRobotHWInterface::getConversionFactor(int encoder_ticks_per_rotation,
 				return 2. * M_PI / encoder_ticks_per_rotation;
 			case hardware_interface::FeedbackDevice_Analog:
 				return 2. * M_PI / 1024.;
-                        case hardware_interface::FeedbackDevice_IntegratedSensor:
-                                return 2 * M_PI / 2048.;
+			case hardware_interface::FeedbackDevice_IntegratedSensor:
+				return 2. * M_PI / 2048.;
 			case hardware_interface::FeedbackDevice_Tachometer:
 			case hardware_interface::FeedbackDevice_SensorSum:
 			case hardware_interface::FeedbackDevice_SensorDifference:
@@ -1636,9 +1762,9 @@ double FRCRobotHWInterface::getConversionFactor(int encoder_ticks_per_rotation,
 			case hardware_interface::FeedbackDevice_PulseWidthEncodedPosition:
 				return 2. * M_PI / encoder_ticks_per_rotation / .1;
 			case hardware_interface::FeedbackDevice_Analog:
-				return 2. * M_PI / 1024 / .1;
-                        case hardware_interface::FeedbackDevice_IntegratedSensor:
-                                return 2 * M_PI / 2048. / .1;
+				return 2. * M_PI / 1024. / .1;
+			case hardware_interface::FeedbackDevice_IntegratedSensor:
+				return 2. * M_PI / 2048. / .1;
 			case hardware_interface::FeedbackDevice_Tachometer:
 			case hardware_interface::FeedbackDevice_SensorSum:
 			case hardware_interface::FeedbackDevice_SensorDifference:
@@ -3075,7 +3201,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 // an unknown mode is hit.
 bool FRCRobotHWInterface::convertControlMode(
 		const hardware_interface::TalonMode input_mode,
-		ctre::phoenix::motorcontrol::ControlMode &output_mode)
+		ctre::phoenix::motorcontrol::ControlMode &output_mode) const
 {
 	switch (input_mode)
 	{
@@ -3116,7 +3242,7 @@ bool FRCRobotHWInterface::convertControlMode(
 
 bool FRCRobotHWInterface::convertDemand1Type(
 		const hardware_interface::DemandType input,
-		ctre::phoenix::motorcontrol::DemandType &output)
+		ctre::phoenix::motorcontrol::DemandType &output) const
 {
 	switch(input)
 	{
@@ -3139,7 +3265,7 @@ bool FRCRobotHWInterface::convertDemand1Type(
 
 bool FRCRobotHWInterface::convertNeutralMode(
 		const hardware_interface::NeutralMode input_mode,
-		ctre::phoenix::motorcontrol::NeutralMode &output_mode)
+		ctre::phoenix::motorcontrol::NeutralMode &output_mode) const
 {
 	switch (input_mode)
 	{
@@ -3163,7 +3289,7 @@ bool FRCRobotHWInterface::convertNeutralMode(
 
 bool FRCRobotHWInterface::convertFeedbackDevice(
 		const hardware_interface::FeedbackDevice input_fd,
-		ctre::phoenix::motorcontrol::FeedbackDevice &output_fd)
+		ctre::phoenix::motorcontrol::FeedbackDevice &output_fd) const
 {
 	switch (input_fd)
 	{
@@ -3209,7 +3335,7 @@ bool FRCRobotHWInterface::convertFeedbackDevice(
 
 bool FRCRobotHWInterface::convertRemoteFeedbackDevice(
 		const hardware_interface::RemoteFeedbackDevice input_fd,
-		ctre::phoenix::motorcontrol::RemoteFeedbackDevice &output_fd)
+		ctre::phoenix::motorcontrol::RemoteFeedbackDevice &output_fd) const
 {
 	switch (input_fd)
 	{
@@ -3241,7 +3367,7 @@ bool FRCRobotHWInterface::convertRemoteFeedbackDevice(
 
 bool FRCRobotHWInterface::convertRemoteSensorSource(
 		const hardware_interface::RemoteSensorSource input_rss,
-		ctre::phoenix::motorcontrol::RemoteSensorSource &output_rss)
+		ctre::phoenix::motorcontrol::RemoteSensorSource &output_rss) const
 {
 	switch (input_rss)
 	{
@@ -3298,7 +3424,7 @@ bool FRCRobotHWInterface::convertRemoteSensorSource(
 
 bool FRCRobotHWInterface::convertLimitSwitchSource(
 		const hardware_interface::LimitSwitchSource input_ls,
-		ctre::phoenix::motorcontrol::LimitSwitchSource &output_ls)
+		ctre::phoenix::motorcontrol::LimitSwitchSource &output_ls) const
 {
 	switch (input_ls)
 	{
@@ -3323,7 +3449,7 @@ bool FRCRobotHWInterface::convertLimitSwitchSource(
 
 bool FRCRobotHWInterface::convertRemoteLimitSwitchSource(
 		const hardware_interface::RemoteLimitSwitchSource input_ls,
-		ctre::phoenix::motorcontrol::RemoteLimitSwitchSource &output_ls)
+		ctre::phoenix::motorcontrol::RemoteLimitSwitchSource &output_ls) const
 {
 	switch (input_ls)
 	{
@@ -3345,7 +3471,7 @@ bool FRCRobotHWInterface::convertRemoteLimitSwitchSource(
 
 bool FRCRobotHWInterface::convertLimitSwitchNormal(
 		const hardware_interface::LimitSwitchNormal input_ls,
-		ctre::phoenix::motorcontrol::LimitSwitchNormal &output_ls)
+		ctre::phoenix::motorcontrol::LimitSwitchNormal &output_ls) const
 {
 	switch (input_ls)
 	{
@@ -3366,7 +3492,8 @@ bool FRCRobotHWInterface::convertLimitSwitchNormal(
 
 }
 
-bool FRCRobotHWInterface::convertVelocityMeasurementPeriod(const hardware_interface::VelocityMeasurementPeriod input_v_m_p, ctre::phoenix::motorcontrol::VelocityMeasPeriod &output_v_m_period)
+bool FRCRobotHWInterface::convertVelocityMeasurementPeriod(const hardware_interface::VelocityMeasurementPeriod input_v_m_p,
+		ctre::phoenix::motorcontrol::VelocityMeasPeriod &output_v_m_period) const
 {
 	switch(input_v_m_p)
 	{
@@ -3401,7 +3528,8 @@ bool FRCRobotHWInterface::convertVelocityMeasurementPeriod(const hardware_interf
 	return true;
 }
 
-bool FRCRobotHWInterface::convertStatusFrame(const hardware_interface::StatusFrame input, ctre::phoenix::motorcontrol::StatusFrameEnhanced &output)
+bool FRCRobotHWInterface::convertStatusFrame(const hardware_interface::StatusFrame input,
+		ctre::phoenix::motorcontrol::StatusFrameEnhanced &output) const
 {
 	switch (input)
 	{
@@ -3460,7 +3588,8 @@ bool FRCRobotHWInterface::convertStatusFrame(const hardware_interface::StatusFra
 	return true;
 }
 
-bool FRCRobotHWInterface::convertControlFrame(const hardware_interface::ControlFrame input, ctre::phoenix::motorcontrol::ControlFrame &output)
+bool FRCRobotHWInterface::convertControlFrame(const hardware_interface::ControlFrame input,
+		ctre::phoenix::motorcontrol::ControlFrame &output) const
 {
 	switch (input)
 	{
@@ -3579,7 +3708,7 @@ bool FRCRobotHWInterface::convertAS726xChannelGain(const hardware_interface::as7
 }
 
 bool FRCRobotHWInterface::convertMotorCommutation(const hardware_interface::MotorCommutation input,
-		ctre::phoenix::motorcontrol::MotorCommutation &output)
+		ctre::phoenix::motorcontrol::MotorCommutation &output) const
 {
 	switch (input)
 	{
@@ -3594,7 +3723,7 @@ bool FRCRobotHWInterface::convertMotorCommutation(const hardware_interface::Moto
 }
 
 bool FRCRobotHWInterface::convertAbsoluteSensorRange(const hardware_interface::AbsoluteSensorRange input,
-		ctre::phoenix::sensors::AbsoluteSensorRange &output)
+		ctre::phoenix::sensors::AbsoluteSensorRange &output) const
 {
 	switch (input)
 	{
@@ -3612,7 +3741,7 @@ bool FRCRobotHWInterface::convertAbsoluteSensorRange(const hardware_interface::A
 }
 
 bool FRCRobotHWInterface::convertSensorInitializationStrategy(const hardware_interface::SensorInitializationStrategy input,
-		ctre::phoenix::sensors::SensorInitializationStrategy &output)
+		ctre::phoenix::sensors::SensorInitializationStrategy &output) const
 {
 	switch (input)
 	{
@@ -3629,4 +3758,72 @@ bool FRCRobotHWInterface::convertSensorInitializationStrategy(const hardware_int
 	return true;
 }
 
+
+bool FRCRobotHWInterface::convertCANifierGeneralPin(const hardware_interface::canifier::GeneralPin input,
+		ctre::phoenix::CANifier::GeneralPin &output) const
+{
+	switch (input)
+	{
+		case hardware_interface::canifier::GeneralPin::QUAD_IDX:
+			output = ctre::phoenix::CANifier::GeneralPin::QUAD_IDX;
+			break;
+		case hardware_interface::canifier::GeneralPin::QUAD_B:
+			output = ctre::phoenix::CANifier::GeneralPin::QUAD_B;
+			break;
+		case hardware_interface::canifier::GeneralPin::QUAD_A:
+			output = ctre::phoenix::CANifier::GeneralPin::QUAD_A;
+			break;
+		case hardware_interface::canifier::GeneralPin::LIMR:
+			output = ctre::phoenix::CANifier::GeneralPin::LIMR;
+			break;
+		case hardware_interface::canifier::GeneralPin::LIMF:
+			output = ctre::phoenix::CANifier::GeneralPin::LIMF;
+			break;
+		case hardware_interface::canifier::GeneralPin::SDA:
+			output = ctre::phoenix::CANifier::GeneralPin::SDA;
+			break;
+		case hardware_interface::canifier::GeneralPin::SCL:
+			output = ctre::phoenix::CANifier::GeneralPin::SCL;
+			break;
+		case hardware_interface::canifier::GeneralPin::SPI_CS:
+			output = ctre::phoenix::CANifier::GeneralPin::SPI_CS;
+			break;
+		case hardware_interface::canifier::GeneralPin::SPI_MISO_PWM2P:
+			output = ctre::phoenix::CANifier::GeneralPin::SPI_MISO_PWM2P;
+			break;
+		case hardware_interface::canifier::GeneralPin::SPI_MOSI_PWM1P:
+			output = ctre::phoenix::CANifier::GeneralPin::SPI_MOSI_PWM1P;
+			break;
+		case hardware_interface::canifier::GeneralPin::SPI_CLK_PWM0P:
+			output = ctre::phoenix::CANifier::GeneralPin::SPI_CLK_PWM0P;
+			break;
+		default:
+			ROS_ERROR("Invalid input in convertCANifierGeneralPin");
+			return false;
+	}
+	return true;
+}
+bool FRCRobotHWInterface::convertCANifierPWMChannel(hardware_interface::canifier::PWMChannel input,
+		ctre::phoenix::CANifier::PWMChannel &output) const
+{
+	switch (input)
+	{
+		case hardware_interface::canifier::PWMChannel::PWMChannel0:
+			output = ctre::phoenix::CANifier::PWMChannel::PWMChannel0;
+			break;
+		case hardware_interface::canifier::PWMChannel::PWMChannel1:
+			output = ctre::phoenix::CANifier::PWMChannel::PWMChannel1;
+			break;
+		case hardware_interface::canifier::PWMChannel::PWMChannel2:
+			output = ctre::phoenix::CANifier::PWMChannel::PWMChannel2;
+			break;
+		case hardware_interface::canifier::PWMChannel::PWMChannel3:
+			output = ctre::phoenix::CANifier::PWMChannel::PWMChannel3;
+			break;
+		default:
+			ROS_ERROR("Invalid input in convertCANifierPWMChannel");
+			return false;
+	}
+	return true;
+}
 } // namespace
