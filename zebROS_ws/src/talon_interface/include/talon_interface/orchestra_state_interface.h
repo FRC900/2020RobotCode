@@ -8,14 +8,14 @@ namespace hardware_interface
 class OrchestraState
 {
 	public:
-		OrchestraState();
+		OrchestraState(int orchestra_id);
 		~OrchestraState();
 
                 void setChirpFilePath(std::string chirp_file_path);
                 std::string getChirpFilePath() const;
 
-                void setInstruments(std::vector<TalonStateHandle> instruments);
-                std::vector<TalonStateHandle> getInstruments() const;
+                void setInstruments(std::vector<std::string> instruments);
+                std::vector<std::string> getInstruments() const;
 
                 void setIsPaused(bool is_paused);
                 bool getIsPaused() const;
@@ -23,11 +23,16 @@ class OrchestraState
                 void setIsPlaying(bool is_playing);
                 bool getIsPlaying() const;
 
+                void setIsStopped(bool is_stopped);
+                bool getIsStopped() const;
+
 	private:
-		std::vector<TalonStateHandle> instruments_;
+                int orchestra_id_;
+		std_vector<std::string> instruments_;
                 std::string chirp_file_path_;
                 bool is_playing_;
                 bool is_paused_;
+                bool is_stopped_;
 };
 
 // Glue code to let this be registered in the list of

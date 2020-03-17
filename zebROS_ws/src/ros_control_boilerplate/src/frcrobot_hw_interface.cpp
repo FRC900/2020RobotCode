@@ -693,6 +693,17 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 		}
 	}
 
+	for (size_t i = 0; i < num_talon_orchestras_; i++)
+	{
+		ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
+							  "Loading joint " << i << "=" << talon_orchestra_names_[i]);
+
+		if (digital_output_local_hardwares_[i])
+			talon_orchestras_.push_back(std::make_shared<frc::Orchestra>());
+		else
+			talon_orchestras_.push_back(nullptr);
+	}
+
 	const double t_now = ros::Time::now().toSec();
 
 	t_prev_robot_iteration_ = t_now;
@@ -3856,6 +3867,81 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			}
 		}
 	}
+
+        for(size_t i = 0; i < num_talon_orchestras_; i++)
+        {
+            auto &oc = orchestra_command_[i];
+            auto &os = orchestra_state_[i];
+            bool play;
+            bool pause;
+            bool stop;
+            std::string music_file_path;
+            std::vector<int> instruments;
+            bool clear_instruments;
+            if(oc.playChanged())
+            {
+                talon_orchestras_[i]->Play();
+                os.setIsPlaying(true);
+                os.setIsPaused(false);
+                os.setIsStopped(false);
+                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " playing");
+            }
+            if(oc.pauseChanged())
+            {
+                talon_orchestras_[i]->Pause();
+                os.setIsPlaying(false);
+                os.setIsPaused(true);
+                os.setIsStopped(false);
+                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " pausing");
+            }
+            if(oc.stopChanged())
+            {
+                talon_orchestras_[i]->Stop();
+                os.setIsPlaying(false);
+                os.setIsPaused(false);
+                os.setIsStopped(true);
+                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
+            }
+            if(oc.loadMusicChanged(music_file_path))
+            {
+                talon_orchestras_[i]->LoadMusic(music_file_path);
+                os.setChirpFilePath(music_file_path);
+                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " loaded music at " << music_file_path);
+            }
+            if(oc.instrumentsChanged(std::vector<std::string> instruments))
+            {
+                talon_orchestras_[i]->ClearInstruments();
+                for(size_t j = 0; j < instruments.size(); j++)
+                {
+                    size_t can_index = std::numeric_limit<size_t>;
+                    for(size_t k = 0; k < can_ctre_mc_names_.size(); k++)
+                    {
+                        if(can_ctre_mc_names_[k] = instruments[j])
+                        {
+                            can_index = k;
+                            break;
+                        }
+                    }
+                    if(can_index == std::numeric_limit<size_t>)
+                    {
+                        ROS_ERROR_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it does not exist");
+                        continue;
+                    }
+                    if(can_ctre_mc_is_talon_fx_[can_index])
+                    {
+                        talon_orchestras_[i]->AddInstrument(std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonFX>(ctre_mcs_[instruments[j]]));
+                        ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " added Falcon " << "falcon_name");
+                    }
+                    else
+                        ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it is not a TalonFX");
+                }
+                os.setInstruments(instruments); //TODO do this correctly
+            }
+            if(oc.clearInstrumentsChanged(clear_instruments))
+            {
+                talon_orchestras_[i]->ClearInstruments();
+            }
+        }
 
 	// TODO : what to do about this?
 	for (size_t i = 0; i < num_dummy_joints_; i++)
