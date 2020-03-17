@@ -162,9 +162,15 @@ class CANifierHWState
 		int    getControlFramePeriod(CANifierControlFrame frame_id) const;
 
 		void     setFaults(unsigned faults);
-		unsigned getFaults(void) const;
+		unsigned int getFaults(void) const;
 		void     setStickyFaults(unsigned faults);
-		unsigned getStickyFaults(void) const;
+		unsigned int getStickyFaults(void) const;
+
+		void   setEncoderTicksPerRotation(unsigned int encoder_ticks_per_rotation);
+		unsigned int getEncoderTicksPerRotation(void) const;
+
+		void   setConversionFactor(double conversion_factor);
+		double getConversionFactor(void) const;
 
 	private:
 		int                                                               can_id_;
@@ -187,6 +193,8 @@ class CANifierHWState
 		std::array<int,    CANifierControlFrame::CANifier_Control_Last>   control_frame_period_;
 		unsigned int                                                      faults_;
 		unsigned int                                                      sticky_faults_;
+		unsigned int                                                      encoder_ticks_per_rotation_;
+		double                                                            conversion_factor_;
 
 }; // class CANifierHWCommand
 

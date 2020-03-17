@@ -75,8 +75,14 @@ class CANifierHWCommand
 		void   resetControlFramePeriod(CANifierControlFrame frame_id);
 
 		void   setClearStickyFaults(void);
-		bool   getClearStickyFaults(void);
+		bool   getClearStickyFaults(void) const;
 		bool   clearStickyFaultsChanged(void);
+
+		void   setEncoderTicksPerRotation(unsigned int encoder_ticks_per_rotation);
+		unsigned int getEncoderTicksPerRotation(void) const;
+
+		void   setConversionFactor(double conversion_factor);
+		double getConversionFactor(void) const;
 
 	private:
 		std::array<double, LEDChannel::LEDChannelLast>                    led_output_;
@@ -105,6 +111,8 @@ class CANifierHWCommand
 		std::array<int,    CANifierControlFrame::CANifier_Control_Last>   control_frame_period_;
 		std::array<bool,   CANifierControlFrame::CANifier_Control_Last>   control_frame_period_changed_;
 		bool                                                              clear_sticky_faults_;
+		unsigned int                                                      encoder_ticks_per_rotation_;
+		double                                                            conversion_factor_;
 }; // class CANifierHWCommand
 
 typedef CommandHandle<CANifierHWCommand, CANifierHWState, CANifierStateHandle> CANifierCommandHandle;

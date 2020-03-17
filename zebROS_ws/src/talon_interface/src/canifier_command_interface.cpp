@@ -19,6 +19,8 @@ namespace canifier
 		, clear_position_on_quad_idx_{false}
 		, clear_position_on_quad_idx_changed_{false}
 		, clear_sticky_faults_{false}
+		, encoder_ticks_per_rotation_{4096}
+		, conversion_factor_{1.0}
 	{
 		// Disable pwm output by defalt
 		for (auto &lo : led_output_)
@@ -504,7 +506,7 @@ namespace canifier
 	{
 		clear_sticky_faults_ = true;
 	}
-	bool CANifierHWCommand::getClearStickyFaults(void)
+	bool CANifierHWCommand::getClearStickyFaults(void) const
 	{
 		return clear_sticky_faults_;
 	}
@@ -513,6 +515,24 @@ namespace canifier
 		auto ret = clear_sticky_faults_;
 		clear_sticky_faults_ = false;
 		return ret;
+	}
+
+	void CANifierHWCommand::setEncoderTicksPerRotation(unsigned int encoder_ticks_per_rotation)
+	{
+		encoder_ticks_per_rotation_ = encoder_ticks_per_rotation;
+	}
+	unsigned int CANifierHWCommand::getEncoderTicksPerRotation(void) const
+	{
+		return encoder_ticks_per_rotation_;
+	}
+
+	void CANifierHWCommand::setConversionFactor(double conversion_factor)
+	{
+		conversion_factor_ = conversion_factor;
+	}
+	double CANifierHWCommand::getConversionFactor(void) const
+	{
+		return conversion_factor_;
 	}
 } // namespace canifier
 } // namespace hardware_interface

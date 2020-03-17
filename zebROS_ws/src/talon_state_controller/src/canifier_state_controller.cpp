@@ -29,9 +29,6 @@
  * Original joint_state_controller Author: Wim Meeussen
  */
 
-#include <algorithm>
-#include <cstddef>
-
 #include <pluginlib/class_list_macros.h>
 #include "talon_state_controller/canifier_state_controller.h"
 
@@ -137,6 +134,8 @@ bool CANifierStateController::init(hardware_interface::canifier::CANifierStateIn
 		m.control_2_pwmoutput_period.push_back(0);
 		m.faults.push_back(0);
 		m.sticky_faults.push_back(0);
+		m.encoder_ticks_per_rotation.push_back(0);
+		m.conversion_factor.push_back(0);
 
 		canifier_state_.push_back(hw->getHandle(joint_names[i]));
 	}
@@ -274,6 +273,8 @@ void CANifierStateController::update(const ros::Time &time, const ros::Duration 
 				m.control_2_pwmoutput_period[i] = cs->getControlFramePeriod(hardware_interface::canifier::CANifier_Control_2_PwmOutput);
 				m.faults[i] = cs->getFaults();
 				m.sticky_faults[i] = cs->getStickyFaults();
+				m.encoder_ticks_per_rotation[i] = cs->getEncoderTicksPerRotation();
+				m.conversion_factor[i] = cs->getConversionFactor();
 			}
 			realtime_pub_->unlockAndPublish();
 		}

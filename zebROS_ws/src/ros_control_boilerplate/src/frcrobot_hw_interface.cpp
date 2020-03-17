@@ -996,13 +996,11 @@ void FRCRobotHWInterface::canifier_read_thread(std::shared_ptr<ctre::phoenix::CA
 		// Note that this isn't a complete list - only the values
 		// used by the read thread are copied over.  Update
 		// as needed when more are read
-#if 0
 		{
 			std::lock_guard<std::mutex> l(*mutex);
 			encoder_ticks_per_rotation = state->getEncoderTicksPerRotation();
 			conversion_factor = state->getConversionFactor();
 		}
-#endif
 
 		std::array<bool, hardware_interface::canifier::GeneralPin::GeneralPin_LAST> general_pins;
 		for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
@@ -1012,8 +1010,12 @@ void FRCRobotHWInterface::canifier_read_thread(std::shared_ptr<ctre::phoenix::CA
 				general_pins[i] = canifier->GetGeneralInput(ctre_general_pin);
 		}
 
-		const int quadrature_position = canifier->GetQuadraturePosition();
-		const int quadrature_velocity = canifier->GetQuadratureVelocity();
+		// Use FeedbackDevice_QuadEncoder to force getConversionFactor to use the encoder_ticks_per_rotation
+		// variable to calculate these values
+		const double radians_scale = getConversionFactor(encoder_ticks_per_rotation, hardware_interface::FeedbackDevice_QuadEncoder, hardware_interface::TalonMode_Position) * conversion_factor;
+		const double radians_per_second_scale = getConversionFactor(encoder_ticks_per_rotation, hardware_interface::FeedbackDevice_QuadEncoder, hardware_interface::TalonMode_Velocity) * conversion_factor;
+		const int quadrature_position = canifier->GetQuadraturePosition() * radians_scale;
+		const int quadrature_velocity = canifier->GetQuadratureVelocity() * radians_per_second_scale;
 		const double bus_voltage      = canifier->GetBusVoltage();
 
 		std::array<std::array<double, 2>, hardware_interface::canifier::PWMChannel::PWMChannelLast> pwm_inputs;
@@ -1588,6 +1590,39 @@ void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /
 			ts.setReverseSoftlimitHit(trts->getReverseSoftlimitHit());
 			ts.setStickyFaults(trts->getStickyFaults());
 			ts.setFirmwareVersion(trts->getFirmwareVersion());
+		}
+	}
+
+	read_tracer_.start_unique("canifier");
+	for (std::size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
+	{
+		if (canifier_local_hardwares_[joint_id])
+		{
+			std::lock_guard<std::mutex> l(*canifier_read_state_mutexes_[joint_id]);
+			auto &cs   = canifier_state_[joint_id];
+			auto &crts = canifier_read_thread_states_[joint_id];
+
+			// These are used to convert position and velocity units - make sure the
+			// read thread's local copy of state is kept up to date
+			crts->setEncoderTicksPerRotation(cs.getEncoderTicksPerRotation());
+			crts->setConversionFactor(cs.getConversionFactor());
+
+			for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
+			{
+				const auto pin = static_cast<hardware_interface::canifier::GeneralPin>(i);
+				cs.setGeneralPinInput(pin, crts->getGeneralPinInput(pin));
+			}
+			cs.setQuadraturePosition(crts->getQuadraturePosition());
+			cs.setQuadratureVelocity(crts->getQuadratureVelocity());
+			cs.setBusVoltage(crts->getBusVoltage());
+
+			for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+			{
+				const auto pwm_channel = static_cast<hardware_interface::canifier::PWMChannel>(i);
+				cs.setPWMInput(pwm_channel, crts->getPWMInput(pwm_channel));
+			}
+			cs.setFaults(crts->getFaults());
+			cs.setStickyFaults(crts->getStickyFaults());
 		}
 	}
 

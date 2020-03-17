@@ -73,3 +73,5 @@ int8[]    control_1_general_period
 int8[]    control_2_pwmoutput_period
 int16[]   faults
 int16[]   sticky_faults
+int32[]   encoder_ticks_per_rotation
+float64[] conversion_factor

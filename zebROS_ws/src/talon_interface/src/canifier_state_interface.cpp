@@ -16,6 +16,8 @@ namespace canifier
 		, bus_voltage_{0.0}
 		, faults_{0}
 		, sticky_faults_{0}
+		, encoder_ticks_per_rotation_{4096}
+		, conversion_factor_{1.0}
 	{
 		for (auto &lo : led_output_)
 			lo = 0;
@@ -291,21 +293,40 @@ namespace canifier
 		return control_frame_period_[frame_id];
 	}
 
-	void CANifierHWState::setFaults(unsigned faults)
+	void CANifierHWState::setFaults(unsigned int faults)
 	{
 		faults_ = faults;
 	}
-	unsigned CANifierHWState::getFaults(void) const
+	unsigned int CANifierHWState::getFaults(void) const
 	{
 		return faults_;
 	}
-	void CANifierHWState::setStickyFaults(unsigned sticky_faults)
+	void CANifierHWState::setStickyFaults(unsigned int sticky_faults)
 	{
 		sticky_faults_ = sticky_faults;
 	}
-	unsigned CANifierHWState::getStickyFaults(void) const
+	unsigned int CANifierHWState::getStickyFaults(void) const
 	{
 		return sticky_faults_;
 	}
+
+	void CANifierHWState::setEncoderTicksPerRotation(unsigned int encoder_ticks_per_rotation)
+	{
+		encoder_ticks_per_rotation_ = encoder_ticks_per_rotation;
+	}
+	unsigned int CANifierHWState::getEncoderTicksPerRotation(void) const
+	{
+		return encoder_ticks_per_rotation_;
+	}
+
+	void CANifierHWState::setConversionFactor(double conversion_factor)
+	{
+		conversion_factor_ = conversion_factor;
+	}
+	double CANifierHWState::getConversionFactor(void) const
+	{
+		return conversion_factor_;
+	}
+
 } // namespace canifier
 } // namespace hardware_interface
