@@ -47,6 +47,10 @@ namespace canifier
 		control_frame_period_[CANifier_Control_1_General] = canifier_control_1_general_default;
 		control_frame_period_[CANifier_Control_2_PwmOutput] = canifier_control_2_pwmoutput_default;
 	}
+	int CANifierHWState::getCANId(void) const
+	{
+		return can_id_;
+	}
 	void CANifierHWState::setLEDOutput(LEDChannel led_channel, double percentOutput)
 	{
 		if ((led_channel <= LEDChannel::LEDChannelFirst) || (led_channel >= LEDChannel::LEDChannelLast))

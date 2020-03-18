@@ -46,10 +46,10 @@ bool[]    clear_position_on_limit_f
 bool[]    clear_position_on_limit_r
 bool[]    clear_position_on_quad_idx
 float64[] bus_voltage
-float64[] pwm_output_enable_0
-float64[] pwm_output_enable_1
-float64[] pwm_output_enable_2
-float64[] pwm_output_enable_3
+bool[]    pwm_output_enable_0
+bool[]    pwm_output_enable_1
+bool[]    pwm_output_enable_2
+bool[]    pwm_output_enable_3
 float64[] pwm_output_0
 float64[] pwm_output_1
 float64[] pwm_output_2

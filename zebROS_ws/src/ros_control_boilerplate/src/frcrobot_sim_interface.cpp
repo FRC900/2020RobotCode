@@ -737,6 +737,145 @@ void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration&
 		tc.unlock();
 	}
 	last_robot_enabled = robot_enabled;
+	for (std::size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
+	{
+		if (!canifier_local_hardwares_[joint_id])
+			continue;
+
+		// Save some typing by making references to commonly
+		// used variables
+		auto &cs = canifier_state_[joint_id];
+		auto &cc = canifier_command_[joint_id];
+
+		for (size_t i = hardware_interface::canifier::LEDChannel::LEDChannelFirst + 1; i < hardware_interface::canifier::LEDChannel::LEDChannelLast; i++)
+		{
+			const auto led_channel = static_cast<hardware_interface::canifier::LEDChannel>(i);
+			double percent_output;
+			if (cc.ledOutputChanged(led_channel, percent_output))
+			{
+				cs.setLEDOutput(led_channel, percent_output);
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set LED channel " << i << " to " << percent_output);
+			}
+		}
+		for (size_t i = hardware_interface::canifier::GeneralPin::GeneralPin_FIRST + 1; i < hardware_interface::canifier::GeneralPin::GeneralPin_LAST; i++)
+		{
+			const auto general_pin = static_cast<hardware_interface::canifier::GeneralPin>(i);
+			bool value;
+			bool output_enable;
+			if (cc.generalPinOutputChanged(general_pin, value, output_enable))
+			{
+				cs.setGeneralPinOutput(general_pin, value);
+				cs.setGeneralPinOutputEnable(general_pin, output_enable);
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set General Pin " << i <<
+						" to enable=" << output_enable << " value=" << value);
+			}
+		}
+
+		// Don't bother with all the changed/reset code here, just copy
+		// from command to state each time through the write call
+		cs.setEncoderTicksPerRotation(cc.getEncoderTicksPerRotation());
+		cs.setConversionFactor(cc.getConversionFactor());
+		double position;
+		if (cc.quadraturePositionChanged(position))
+		{
+			// Don't set state encoder position, let it be read at the next read() call
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+					<< " : Set Quadrature Position to " << position);
+		}
+
+		hardware_interface::canifier::CANifierVelocityMeasPeriod period;
+		if (cc.velocityMeasurementPeriodChanged(period))
+		{
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+					<< " : Set velocity measurement Period to " << period);
+			cs.setVelocityMeasurementPeriod(period);
+		}
+
+		int window;
+		if (cc.velocityMeasurementWindowChanged(window))
+		{
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+					<< " : Set velocity measurement window to " << window);
+			cs.setVelocityMeasurementWindow(window);
+		}
+
+		bool clear_position_on_limit_f;
+		if (cc.clearPositionOnLimitFChanged(clear_position_on_limit_f))
+		{
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+					<< " : Set clear position on limit F to " << clear_position_on_limit_f);
+			cs.setClearPositionOnLimitF(clear_position_on_limit_f);
+		}
+
+		bool clear_position_on_limit_r;
+		if (cc.clearPositionOnLimitRChanged(clear_position_on_limit_r))
+		{
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+					<< " : Set clear position on limit R to " << clear_position_on_limit_r);
+			cs.setClearPositionOnLimitR(clear_position_on_limit_r);
+		}
+
+		bool clear_position_on_quad_idx;
+		if (cc.clearPositionOnQuadIdxChanged(clear_position_on_quad_idx))
+		{
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+					<< " : Set clear position on quad idx to " << clear_position_on_quad_idx);
+			cs.setClearPositionOnQuadIdx(clear_position_on_quad_idx);
+		}
+
+		for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+		{
+			const auto pwm_channel = static_cast<hardware_interface::canifier::PWMChannel>(i);
+			bool output_enable;
+			if (cc.pwmOutputEnableChanged(pwm_channel, output_enable))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set pwm channel " << pwm_channel << " output enable to " << static_cast<int>(output_enable));
+				cs.setPWMOutputEnable(pwm_channel, output_enable);
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::PWMChannel::PWMChannelFirst + 1; i < hardware_interface::canifier::PWMChannel::PWMChannelLast; i++)
+		{
+			const auto pwm_channel = static_cast<hardware_interface::canifier::PWMChannel>(i);
+			double output;
+			if (cc.pwmOutputChanged(pwm_channel, output))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set pwm channel " << pwm_channel << " output to " << output);
+				cs.setPWMOutput(pwm_channel, output);
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_First + 1; i < hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Last; i++)
+		{
+			const auto frame_id = static_cast<hardware_interface::canifier::CANifierStatusFrame>(i);
+			int period;
+			if (cc.statusFramePeriodChanged(frame_id, period))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set frame_id " << i << " status period to " << period);
+			}
+		}
+
+		for (size_t i = hardware_interface::canifier::CANifierControlFrame::CANifier_Control_First + 1; i < hardware_interface::canifier::CANifierControlFrame::CANifier_Control_Last; i++)
+		{
+			const auto frame_id = static_cast<hardware_interface::canifier::CANifierControlFrame>(i);
+			int period;
+			if (cc.controlFramePeriodChanged(frame_id, period))
+			{
+				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+						<< " : Set frame_id " << i << " control period to " << period);
+			}
+		}
+
+		if (cc.clearStickyFaultsChanged())
+		{
+			ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id] << " : cleared sticky faults");
+		}
+	}
 
 	for (std::size_t joint_id = 0; joint_id < num_nidec_brushlesses_; ++joint_id)
 	{

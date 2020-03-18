@@ -1,6 +1,5 @@
 #include "talon_interface/canifier_command_interface.h"
 
-
 namespace hardware_interface
 {
 namespace canifier
@@ -72,7 +71,6 @@ namespace canifier
 		{
 			led_output_[led_channel] = percentOutput;
 			led_output_changed_[led_channel] = true;
-
 		}
 	}
 	double CANifierHWCommand::getLEDOutput(LEDChannel led_channel) const

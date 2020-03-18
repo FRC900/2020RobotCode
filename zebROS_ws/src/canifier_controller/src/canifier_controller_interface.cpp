@@ -69,13 +69,13 @@ CANifierCIParams::CANifierCIParams(ros::NodeHandle n)
 	readIntoScalar(n, "clear_position_on_quad_idx_" ,clear_position_on_quad_idx_);
 
 	readIntoArray(n, "pwm_channel0_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel0, pwm_output_enable_);
-	readIntoArray(n, "pwm_channel0_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel1, pwm_output_enable_);
-	readIntoArray(n, "pwm_channel0_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel2, pwm_output_enable_);
-	readIntoArray(n, "pwm_channel0_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel3, pwm_output_enable_);
+	readIntoArray(n, "pwm_channel1_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel1, pwm_output_enable_);
+	readIntoArray(n, "pwm_channel2_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel2, pwm_output_enable_);
+	readIntoArray(n, "pwm_channel3_output_enable", hardware_interface::canifier::PWMChannel::PWMChannel3, pwm_output_enable_);
 	readIntoArray(n, "pwm_channel0_output", hardware_interface::canifier::PWMChannel::PWMChannel0, pwm_output_);
-	readIntoArray(n, "pwm_channel0_output", hardware_interface::canifier::PWMChannel::PWMChannel1, pwm_output_);
-	readIntoArray(n, "pwm_channel0_output", hardware_interface::canifier::PWMChannel::PWMChannel2, pwm_output_);
-	readIntoArray(n, "pwm_channel0_output", hardware_interface::canifier::PWMChannel::PWMChannel3, pwm_output_);
+	readIntoArray(n, "pwm_channel1_output", hardware_interface::canifier::PWMChannel::PWMChannel1, pwm_output_);
+	readIntoArray(n, "pwm_channel2_output", hardware_interface::canifier::PWMChannel::PWMChannel2, pwm_output_);
+	readIntoArray(n, "pwm_channel3_output", hardware_interface::canifier::PWMChannel::PWMChannel3, pwm_output_);
 
 	readIntoArray(n, "status_1_general_period", hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_1_General, status_frame_period_);
 	readIntoArray(n, "status_2_general_period", hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_2_General, status_frame_period_);
@@ -123,13 +123,13 @@ CANifierCIParams::CANifierCIParams(ros::NodeHandle n)
 	ddr_.registerVariable<bool>("clear_position_on_quad_idx_", getClearPositionOnQuadIdx(), boost::bind(&CANifierCIParams::setClearPositionOnQuadIdx, this, _1, false), "Clear position when quad encoder index hit");
 
 	ddr_.registerVariable<bool>("pwm_channel0_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel0), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel0, _1, false), "PWM Channel 0 output enable");
-	ddr_.registerVariable<bool>("pwm_channel0_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel1), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel1, _1, false), "PWM Channel 1 output enable");
-	ddr_.registerVariable<bool>("pwm_channel0_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel2), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel2, _1, false), "PWM Channel 2 output enable");
-	ddr_.registerVariable<bool>("pwm_channel0_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel3), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel3, _1, false), "PWM Channel 3 output enable");
+	ddr_.registerVariable<bool>("pwm_channel1_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel1), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel1, _1, false), "PWM Channel 1 output enable");
+	ddr_.registerVariable<bool>("pwm_channel2_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel2), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel2, _1, false), "PWM Channel 2 output enable");
+	ddr_.registerVariable<bool>("pwm_channel3_output_enable", getPWMOutputEnable(hardware_interface::canifier::PWMChannel::PWMChannel3), boost::bind(&CANifierCIParams::setPWMOutputEnable, this, hardware_interface::canifier::PWMChannel::PWMChannel3, _1, false), "PWM Channel 3 output enable");
 	ddr_.registerVariable<bool>("pwm_channel0_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel0), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel0, _1, false), "PWM Channel 0 output ", 0.0, 1.0);
-	ddr_.registerVariable<bool>("pwm_channel0_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel1), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel1, _1, false), "PWM Channel 1 output ", 0.0, 1.0);
-	ddr_.registerVariable<bool>("pwm_channel0_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel2), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel2, _1, false), "PWM Channel 2 output ", 0.0, 1.0);
-	ddr_.registerVariable<bool>("pwm_channel0_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel3), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel3, _1, false), "PWM Channel 3 output ", 0.0, 1.0);
+	ddr_.registerVariable<bool>("pwm_channel1_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel1), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel1, _1, false), "PWM Channel 1 output ", 0.0, 1.0);
+	ddr_.registerVariable<bool>("pwm_channel2_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel2), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel2, _1, false), "PWM Channel 2 output ", 0.0, 1.0);
+	ddr_.registerVariable<bool>("pwm_channel3_output", getPWMOutput(hardware_interface::canifier::PWMChannel::PWMChannel3), boost::bind(&CANifierCIParams::setPWMOutput, this, hardware_interface::canifier::PWMChannel::PWMChannel3, _1, false), "PWM Channel 3 output ", 0.0, 1.0);
 
 	ddr_.registerVariable<int>("status_1_general_period", getStatusFramePeriod(hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_1_General), boost::bind(&CANifierCIParams::setStatusFramePeriod, this, hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_1_General, _1, false), "Status 1 general frame period", 0, 255);
 	ddr_.registerVariable<int>("status_2_general_period", getStatusFramePeriod(hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_2_General), boost::bind(&CANifierCIParams::setStatusFramePeriod, this, hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Status_2_General, _1, false), "Status 2 general frame period", 0, 255);
@@ -151,9 +151,10 @@ void CANifierCIParams::setLEDOutput(hardware_interface::canifier::LEDChannel ind
 	if ((index <= hardware_interface::canifier::LEDChannel::LEDChannelFirst) ||
 	    (index >= hardware_interface::canifier::LEDChannel::LEDChannelLast) )
 		return;
-	if (update_dynamic && (led_output_[index] != value))
+	const bool update_published_info = update_dynamic && (led_output_[index] != value);
+	led_output_[index] = value;
+	if (update_published_info)
 	{
-		led_output_[index] = value;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -162,9 +163,10 @@ void CANifierCIParams::setGeneralPinOutputEnable(hardware_interface::canifier::G
 	if ((index <= hardware_interface::canifier::GeneralPin::GeneralPin_FIRST) ||
 		(index >= hardware_interface::canifier::GeneralPin::GeneralPin_LAST))
 		return;
-	if (update_dynamic && (general_pin_output_enable_[index] != value))
+	const bool update_published_info = update_dynamic && (general_pin_output_enable_[index] != value);
+	general_pin_output_enable_[index] = value;
+	if (update_published_info)
 	{
-		general_pin_output_enable_[index] = value;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -174,9 +176,10 @@ void CANifierCIParams::setGeneralPinOutput(hardware_interface::canifier::General
 	if ((index <= hardware_interface::canifier::GeneralPin::GeneralPin_FIRST) ||
 		(index >= hardware_interface::canifier::GeneralPin::GeneralPin_LAST))
 		return;
-	if (update_dynamic && (general_pin_output_[index] != value))
+	const bool update_published_info = update_dynamic && (general_pin_output_[index] != value);
+	general_pin_output_[index] = value;
+	if (update_published_info)
 	{
-		general_pin_output_[index] = value;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -188,42 +191,47 @@ void CANifierCIParams::setVelocityMeasurementPeriod(int period, bool update_dyna
 		ROS_ERROR_STREAM("Internal error in " << __PRETTY_FUNCTION__ << " : period out of bounds");
 		return;
 	}
-	if (update_dynamic && (velocity_measurement_period_ != static_cast<hardware_interface::canifier::CANifierVelocityMeasPeriod>(period)))
+	const bool update_published_info = update_dynamic && (velocity_measurement_period_ != static_cast<hardware_interface::canifier::CANifierVelocityMeasPeriod>(period));
+	velocity_measurement_period_ = static_cast<hardware_interface::canifier::CANifierVelocityMeasPeriod>(period);
+	if (update_published_info)
 	{
-		velocity_measurement_period_ = static_cast<hardware_interface::canifier::CANifierVelocityMeasPeriod>(period);
 		ddr_.updatePublishedInformation();
 	}
 }
 
 void CANifierCIParams::setVelocityMeasurementWindow(int window, bool update_dynamic)
 {
-	if (update_dynamic && (velocity_measurement_window_ != window))
+	const bool update_published_info = update_dynamic && (velocity_measurement_window_ != window);
+	velocity_measurement_window_ = window;
+	if (update_published_info)
 	{
-		velocity_measurement_window_ = window;
 		ddr_.updatePublishedInformation();
 	}
 }
 void CANifierCIParams::setClearPositionOnLimitF(bool value, bool update_dynamic)
 {
-	if (update_dynamic && (clear_position_on_limit_f_ != value))
+	const bool update_published_info = update_dynamic && (clear_position_on_limit_f_ != value);
+	clear_position_on_limit_f_ = value;
+	if (update_published_info)
 	{
-		clear_position_on_limit_f_ = value;
 		ddr_.updatePublishedInformation();
 	}
 }
 void CANifierCIParams::setClearPositionOnLimitR(bool value, bool update_dynamic)
 {
-	if (update_dynamic && (clear_position_on_limit_r_ != value))
+	const bool update_published_info = update_dynamic && (clear_position_on_limit_r_ != value);
+	clear_position_on_limit_r_ = value;
+	if (update_published_info)
 	{
-		clear_position_on_limit_r_ = value;
 		ddr_.updatePublishedInformation();
 	}
 }
 void CANifierCIParams::setClearPositionOnQuadIdx(bool value, bool update_dynamic)
 {
-	if (update_dynamic && (clear_position_on_quad_idx_ != value))
+	const bool update_published_info = update_dynamic && (clear_position_on_quad_idx_ != value);
+	clear_position_on_quad_idx_ = value;
+	if (update_published_info)
 	{
-		clear_position_on_quad_idx_ = value;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -235,9 +243,10 @@ void CANifierCIParams::setPWMOutputEnable(hardware_interface::canifier::PWMChann
 		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : index out of bounds");
 		return;
 	}
-	if (update_dynamic && (pwm_output_enable_[index] != value))
+	const bool update_published_info = update_dynamic && (pwm_output_enable_[index] != value);
+	pwm_output_enable_[index] = value;
+	if (update_published_info)
 	{
-		pwm_output_enable_[index] = value;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -249,9 +258,10 @@ void CANifierCIParams::setPWMOutput(hardware_interface::canifier::PWMChannel ind
 		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : index out of bounds");
 		return;
 	}
-	if (update_dynamic && (pwm_output_[index] != value))
+	const bool update_published_info = update_dynamic && (pwm_output_[index] != value);
+	pwm_output_[index] = value;
+	if (update_published_info)
 	{
-		pwm_output_[index] = value;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -263,9 +273,10 @@ void CANifierCIParams::setStatusFramePeriod(hardware_interface::canifier::CANifi
 		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : frame_id out of bounds");
 		return;
 	}
-	if (update_dynamic && (status_frame_period_[frame_id] != period))
+	const bool update_published_info = update_dynamic && (status_frame_period_[frame_id] != period);
+	status_frame_period_[frame_id] = period;
+	if (update_published_info)
 	{
-		status_frame_period_[frame_id] = period;
 		ddr_.updatePublishedInformation();
 	}
 
@@ -278,9 +289,10 @@ void CANifierCIParams::setControlFramePeriod(hardware_interface::canifier::CANif
 		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : frame_id out of bounds");
 		return;
 	}
-	if (update_dynamic && (control_frame_period_[frame_id] != period))
+	const bool update_published_info = update_dynamic && (control_frame_period_[frame_id] != period);
+	control_frame_period_[frame_id] = period;
+	if (update_published_info)
 	{
-		control_frame_period_[frame_id] = period;
 		ddr_.updatePublishedInformation();
 	}
 }
@@ -289,44 +301,53 @@ double CANifierCIParams::getLEDOutput(hardware_interface::canifier::LEDChannel i
 {
 	if ((index <= hardware_interface::canifier::LEDChannel::LEDChannelFirst) ||
 	    (index >= hardware_interface::canifier::LEDChannel::LEDChannelLast) )
+	{
+		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : index out of bounds");
 		return -std::numeric_limits<double>::max();
+	}
 	return led_output_[index];
 }
-bool   CANifierCIParams::getGeneralPinOutputEnable(hardware_interface::canifier::GeneralPin index) const
+bool CANifierCIParams::getGeneralPinOutputEnable(hardware_interface::canifier::GeneralPin index) const
 {
 	if ((index <= hardware_interface::canifier::GeneralPin::GeneralPin_FIRST) ||
 		(index >= hardware_interface::canifier::GeneralPin::GeneralPin_LAST))
+	{
+		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : index out of bounds");
 		return false;
+	}
 	return general_pin_output_enable_[index];
 }
-bool   CANifierCIParams::getGeneralPinOutput(hardware_interface::canifier::GeneralPin index) const
+bool CANifierCIParams::getGeneralPinOutput(hardware_interface::canifier::GeneralPin index) const
 {
 	if ((index <= hardware_interface::canifier::GeneralPin::GeneralPin_FIRST) ||
 		(index >= hardware_interface::canifier::GeneralPin::GeneralPin_LAST))
+	{
+		ROS_ERROR_STREAM("Error in " << __PRETTY_FUNCTION__ << " : index out of bounds");
 		return false;
+	}
 	return general_pin_output_[index];
 }
 hardware_interface::canifier::CANifierVelocityMeasPeriod CANifierCIParams::getVelocityMeasurementPeriod(void) const
 {
 	return velocity_measurement_period_;
 }
-int    CANifierCIParams::getVelocityMeasurementWindow(void) const
+int CANifierCIParams::getVelocityMeasurementWindow(void) const
 {
 	return velocity_measurement_window_;
 }
-bool   CANifierCIParams::getClearPositionOnLimitF(void) const
+bool CANifierCIParams::getClearPositionOnLimitF(void) const
 {
 	return clear_position_on_limit_f_;
 }
-bool   CANifierCIParams::getClearPositionOnLimitR(void) const
+bool CANifierCIParams::getClearPositionOnLimitR(void) const
 {
 	return clear_position_on_limit_r_;
 }
-bool   CANifierCIParams::getClearPositionOnQuadIdx(void) const
+bool CANifierCIParams::getClearPositionOnQuadIdx(void) const
 {
 	return clear_position_on_quad_idx_;
 }
-bool   CANifierCIParams::getPWMOutputEnable(hardware_interface::canifier::PWMChannel index) const
+bool CANifierCIParams::getPWMOutputEnable(hardware_interface::canifier::PWMChannel index) const
 {
 	if ((index <= hardware_interface::canifier::PWMChannel::PWMChannelFirst) ||
 		(index >= hardware_interface::canifier::PWMChannel::PWMChannelLast))
@@ -346,7 +367,7 @@ double CANifierCIParams::getPWMOutput(hardware_interface::canifier::PWMChannel i
 	}
 	return pwm_output_[index];
 }
-int    CANifierCIParams::getStatusFramePeriod(hardware_interface::canifier::CANifierStatusFrame frame_id) const
+int CANifierCIParams::getStatusFramePeriod(hardware_interface::canifier::CANifierStatusFrame frame_id) const
 {
 	if ((frame_id <= hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_First) ||
 	    (frame_id >= hardware_interface::canifier::CANifierStatusFrame::CANifierStatusFrame_Last))
@@ -356,7 +377,7 @@ int    CANifierCIParams::getStatusFramePeriod(hardware_interface::canifier::CANi
 	}
 	return status_frame_period_[frame_id];
 }
-int    CANifierCIParams::getControlFramePeriod(hardware_interface::canifier::CANifierControlFrame frame_id) const
+int CANifierCIParams::getControlFramePeriod(hardware_interface::canifier::CANifierControlFrame frame_id) const
 {
 	if ((frame_id <= hardware_interface::canifier::CANifierControlFrame::CANifier_Control_First) ||
 		(frame_id >= hardware_interface::canifier::CANifierControlFrame::CANifier_Control_Last))
