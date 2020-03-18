@@ -11,48 +11,46 @@ class OrchestraCommand
 		OrchestraCommand();
 		~OrchestraCommand();
 
-                void pause(bool paused);
+                void pause();
                 bool getPause() const;
                 bool pauseChanged();
                 void resetPause();
                 
-                void play(bool playing);
+                void play();
                 bool getPlay() const;
                 bool playChanged();
                 void resetPlay();
 
-                void stop(bool stop);
+                void stop();
                 bool getStop() const;
                 bool stopChanged();
                 void resetStop(bool &stop);
 
                 void loadMusic(std::string file_path);
-                bool getLoadMusic() const;
-                bool loadMusicChanged(std::string file_path);
-                void resetLoadMusic();
+                bool getMusic() const;
+                bool musicChanged(std::string &file_path);
+                void resetMusic();
 
                 void addInstruments(std::vector<std::string> instruments);
-                bool getAddInstruments() const;
+                bool getInstruments() const;
                 bool instrumentsChanged(std::vector<std::string> &instruments);
-                void resetAddInstruments();
+                void resetInstruments();
 
-                void setClearInstruments(bool clear_instruments);
+                void clearInstruments();
                 bool getClearInstruments() const;
-                bool clearInstrumentsChanged(bool &clear_instruments);
+                bool clearInstrumentsChanged();
                 void resetClearInstruments();
 
 	private:
-		std::vector<std::string> instruments_;
-
                 bool pause_changed_;
                 bool play_changed_;
                 bool stop_changed_;
 
-                bool load_music_;
+                std::string file_path_;
                 bool load_music_changed_;
-                bool add_instruments_;
+		std::vector<std::string> instruments_;
                 bool add_instruments_changed_;
-                bool clear_instruments_;
+                bool instruments_cleared_;
                 bool clear_instruments_changed_;
 };
 
