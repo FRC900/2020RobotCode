@@ -88,14 +88,14 @@ enum CANifierStatusFrame
 	CANifierStatusFrame_Last
 };
 
-// TODO : fix me
-constexpr int canifierstatusframe_status_1_general_default = 0;
-constexpr int canifierstatusframe_status_2_general_default = 0;
-constexpr int canifierstatusframe_status_3_pwminputs0_default = 0;
-constexpr int canifierstatusframe_status_4_pwminputs1_default = 0;
-constexpr int canifierstatusframe_status_5_pwminputs2_default = 0;
-constexpr int canifierstatusframe_status_6_pwminputs3_default = 0;
-constexpr int canifierstatusframe_status_8_misc_default = 0;
+// TODO : Guessing on 8_misc
+constexpr int canifierstatusframe_status_1_general_default = 100;
+constexpr int canifierstatusframe_status_2_general_default = 10;
+constexpr int canifierstatusframe_status_3_pwminputs0_default = 100;
+constexpr int canifierstatusframe_status_4_pwminputs1_default = 100;
+constexpr int canifierstatusframe_status_5_pwminputs2_default = 100;
+constexpr int canifierstatusframe_status_6_pwminputs3_default = 100;
+constexpr int canifierstatusframe_status_8_misc_default = 100;
 
 enum CANifierControlFrame {
 	CANifier_Control_First = -1,
