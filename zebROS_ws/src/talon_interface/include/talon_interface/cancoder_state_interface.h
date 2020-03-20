@@ -2,10 +2,13 @@
 
 #include <string>
 #include <hardware_interface/internal/hardware_resource_manager.h>
-#include <state_handle/state_handle.h>
+#include "state_handle/state_handle.h"
 
 namespace hardware_interface
 {
+namespace cancoder
+{
+
 enum SensorVelocityMeasPeriod
 {
 	Sensor_Period_1Ms = 1,
@@ -71,202 +74,71 @@ enum MagnetFieldStrength
 class CANCoderHWState
 {
 	public:
-		CANCoderHWState(int device_number)
-			: device_number_(device_number)
-			, position_(0)
-			, velocity_(0)
-			, absolute_position_(0)
-			, velocity_meas_period_(Sensor_Period_100Ms)
-			, velocity_meas_window_(64)
-			, absolute_sensor_range_(Unsigned_0_to_360)
-			, magnet_offset_(0) // NOTE : degrees
-			, initialization_strategy_(BootToZero)
-			, feedback_coefficient_(0.087890625)
-			, unit_string_("deg")
-			, time_base_(PerSecond)
-			, bus_voltage_(0)
-			, magnet_field_strength_(Invalid_Unknown)
-			, direction_(false)
-			, sensor_data_status_frame_period_(-1)
-			, vbat_and_faults_status_frame_period_(-1)
-			, firmware_version_(-1)
-	{
-	}
+		CANCoderHWState(int device_number);
+		int getDeviceNumber(void) const;
 
-		int getDeviceNumber(void) const
-		{
-			return device_number_;
-		}
+		double getPosition(void) const;
+		void setPosition(double position);
 
-		double getPosition(void) const
-		{
-			return position_;
-		}
-		void setPosition(double position)
-		{
-			position_ = position;
-		}
+		double getVelocity(void) const;
+		void setVelocity(double velocity);
 
-		double getVelocity(void) const
-		{
-			return velocity_;
-		}
-		void setVelocity(double velocity)
-		{
-			velocity_ = velocity;
-		}
+		double getAbsolutePosition(void) const;
+		void setAbsolutePosition(double absolute_position);
 
-		double getAbsolutePosition(void) const
-		{
-			return absolute_position_;
-		}
-		void setAbsolutePosition(double absolute_position)
-		{
-			absolute_position_ = absolute_position;
-		}
+		SensorVelocityMeasPeriod getVelocityMeasPeriod(void) const;
+		void setVelocityMeasPeriod(SensorVelocityMeasPeriod velocity_meas_period);
 
-		SensorVelocityMeasPeriod getVelocityMeasPeriod(void) const
-		{
-			return velocity_meas_period_;
-		}
-		void setVelocityMeasPeriod(SensorVelocityMeasPeriod velocity_meas_period)
-		{
-			velocity_meas_period_ = velocity_meas_period;
-		}
+		int getVelocityMeasWindow(void) const;
+		void setVelocityMeasWindow(int velocity_meas_window);
 
-		int getVelocityMeasWindow(void) const
-		{
-			return velocity_meas_window_;
-		}
-		void setVelocityMeasWindow(int velocity_meas_window)
-		{
-			velocity_meas_window_ = velocity_meas_window;
-		}
+		AbsoluteSensorRange getAbsoluteSensorRange(void) const;
+		void setAbsoluteSensorRange(AbsoluteSensorRange absolute_sensor_range);
 
-		AbsoluteSensorRange getAbsoluteSensorRange(void) const
-		{
-			return absolute_sensor_range_;
-		}
-		void setAbsoluteSensorRange(AbsoluteSensorRange absolute_sensor_range)
-		{
-			absolute_sensor_range_ = absolute_sensor_range;
-		}
+		double getMagnetOffset(void) const;
+		void setMagnetOffset(double magnet_offset);
 
-		double getMagnetOffset(void) const
-		{
-			return magnet_offset_;
-		}
-		void setMagnetOffset(double magnet_offset)
-		{
-			magnet_offset_ = magnet_offset;
-		}
+		SensorInitializationStrategy getInitializationStrategy(void) const;
+		void setInitializationStrategy(SensorInitializationStrategy initialization_strategy);
 
-		SensorInitializationStrategy getInitializationStrategy(void) const
-		{
-			return initialization_strategy_;
-		}
-		void setInitializationStrategy(SensorInitializationStrategy initialization_strategy)
-		{
-			initialization_strategy_ = initialization_strategy;
-		}
+		double getFeedbackCoefficient(void) const;
+		void setFeedbackCoefficient(double feedback_coefficient);
 
-		double getFeedbackCoefficient(void) const
-		{
-			return feedback_coefficient_;
-		}
-		void setFeedbackCoefficient(double feedback_coefficient)
-		{
-			feedback_coefficient_ = feedback_coefficient;
-		}
+		std::string getUnitString(void) const;
+		void setUnitString(const std::string &unit_string);
 
-		std::string getUnitString(void) const
-		{
-			return unit_string_;
-		}
-		void setUnitString(const std::string &unit_string)
-		{
-			unit_string_ = unit_string;
-		}
+		SensorTimeBase getTimeBase(void) const;
+		void setTimeBase(SensorTimeBase time_base);
 
-		SensorTimeBase getTimeBase(void) const
-		{
-			return time_base_;
-		}
-		void setTimeBase(SensorTimeBase time_base)
-		{
-			time_base_ = time_base;
-		}
+		double getBusVoltage(void) const;
+		void setBusVoltage(double bus_voltage);
 
-		double getBusVoltage(void) const
-		{
-			return bus_voltage_;
-		}
-		void setBusVoltage(double bus_voltage)
-		{
-			bus_voltage_ = bus_voltage;
-		}
+		MagnetFieldStrength getMagnetFieldStrength(void) const;
+		void setMagnetFieldStrength(MagnetFieldStrength magnet_field_strength);
 
-		MagnetFieldStrength getMagnetFieldStrength(void) const
-		{
-			return magnet_field_strength_;
-		}
-		void setMagnetFieldStrength(MagnetFieldStrength magnet_field_strength)
-		{
-			magnet_field_strength_ = magnet_field_strength;
-		}
+		bool getDirection(void) const;
+		void setDirection(bool direction);
 
-		bool getDirection(void) const
-		{
-			return direction_;
-		}
-		void setDirection(bool direction)
-		{
-			direction_ = direction;
-		}
+		double getLastTimestamp(void) const;
+		void setLastTimestamp(double last_timestamp);
 
-		int getSensorDataStatusFramePeriod(void) const
-		{
-			return sensor_data_status_frame_period_;
-		}
-		void setSensorDataStatusFramePeriod(int sensor_data_status_frame_period)
-		{
-			sensor_data_status_frame_period_ = sensor_data_status_frame_period;
-		}
+		int getSensorDataStatusFramePeriod(void) const;
+		void setSensorDataStatusFramePeriod(int sensor_data_status_frame_period);
 
-		int getVbatAndFaultsStatusFramePeriod(void) const
-		{
-			return vbat_and_faults_status_frame_period_;
-		}
-		void setVbatAndFaultsStatusFramePeriod(int vbat_and_faults_status_frame_period)
-		{
-			vbat_and_faults_status_frame_period_ = vbat_and_faults_status_frame_period;
-		}
+		int getVbatAndFaultsStatusFramePeriod(void) const;
+		void setVbatAndFaultsStatusFramePeriod(int vbat_and_faults_status_frame_period);
 
-		int getFirmwareVersion(void) const
-		{
-			return firmware_version_;
-		}
-		void setFirmwareVersion(int firmware_version)
-		{
-			firmware_version_ = firmware_version;
-		}
+		int getFirmwareVersion(void) const;
+		void setFirmwareVersion(int firmware_version);
 
-		int getFaults(void) const
-		{
-			return faults_;
-		}
-		void setFaults(int faults)
-		{
-			faults_ = faults;
-		}
-		int getStickyFaults(void) const
-		{
-			return sticky_faults_;
-		}
-		void setStickyFaults(int sticky_faults)
-		{
-			sticky_faults_ = sticky_faults;
-		}
+		int getFaults(void) const;
+		void setFaults(int faults);
+
+		int getStickyFaults(void) const;
+		void setStickyFaults(int sticky_faults);
+
+		void   setConversionFactor(double conversion_factor);
+		double getConversionFactor(void) const;
 
 	private :
 		int                          device_number_;
@@ -284,11 +156,13 @@ class CANCoderHWState
 		double                       bus_voltage_;
 		MagnetFieldStrength          magnet_field_strength_;
 		bool                         direction_;
+		double                       last_timestamp_;
 		int                          sensor_data_status_frame_period_;
 		int                          vbat_and_faults_status_frame_period_;
 		int                          firmware_version_;
 		int                          faults_;
 		int                          sticky_faults_;
+		double                       conversion_factor_;
 };
 // Glue code to let this be registered in the list of
 // hardware resources on the robot.  Since state is
@@ -296,5 +170,7 @@ class CANCoderHWState
 typedef StateHandle<const CANCoderHWState> CANCoderStateHandle;
 typedef StateHandle<CANCoderHWState>       CANCoderWritableStateHandle;
 class CANCoderStateInterface : public HardwareResourceManager<CANCoderStateHandle> {};
+class RemoteCANCoderStateInterface : public HardwareResourceManager<CANCoderWritableStateHandle> {};
 
-} // namespace
+} // namespace cancoder
+} // namespace hardware_interface

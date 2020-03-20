@@ -157,7 +157,6 @@ TalonHWCommand::TalonHWCommand(void) :
 	aux_pid_polarity_changed_(true),
 
 	conversion_factor_(1.0),
-	conversion_factor_changed_(true),
 
 	motor_commutation_(hardware_interface::MotorCommutation::Trapezoidal),
 	motor_commutation_changed_(true),
@@ -1836,23 +1835,11 @@ bool TalonHWCommand::clearStickyFaultsChanged(void)
 
 void TalonHWCommand::setConversionFactor(double conversion_factor)
 {
-	if (fabs(conversion_factor - conversion_factor_) > double_value_epsilon)
-	{
-		conversion_factor_ = conversion_factor;
-		conversion_factor_changed_ = true;
-	}
+	conversion_factor_ = conversion_factor;
 }
 double TalonHWCommand::getConversionFactor(void) const
 {
 	return conversion_factor_;
-}
-bool TalonHWCommand::conversionFactorChanged(double &conversion_factor)
-{
-	conversion_factor = conversion_factor_;
-	if (!conversion_factor_changed_)
-		return false;
-	conversion_factor_changed_ = false;
-	return true;
 }
 
 //TalonFX only

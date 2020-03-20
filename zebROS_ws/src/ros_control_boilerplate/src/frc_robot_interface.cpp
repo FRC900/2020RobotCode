@@ -175,13 +175,13 @@ FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_mode
 
 			const bool has_can_id = joint_params.hasMember("can_id");
 			if (!local_hardware && has_can_id)
-				throw std::runtime_error("A CANfier can_id was specified with local_hardware == false for joint " + joint_name);
+				throw std::runtime_error("A CANifier can_id was specified with local_hardware == false for joint " + joint_name);
 
 			int can_id = 0;
 			if (local_hardware)
 			{
 				if (!has_can_id)
-					throw std::runtime_error("A CANfier can_id was not specified");
+					throw std::runtime_error("A CANifier can_id was not specified");
 				XmlRpc::XmlRpcValue &xml_can_id = joint_params["can_id"];
 				if (!xml_can_id.valid() ||
 						xml_can_id.getType() != XmlRpc::XmlRpcValue::TypeInt)
@@ -195,6 +195,33 @@ FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_mode
 			canifier_can_ids_.push_back(can_id);
 			canifier_local_updates_.push_back(local_update);
 			canifier_local_hardwares_.push_back(local_hardware);
+		}
+		else if (joint_type == "cancoder")
+		{
+			readJointLocalParams(joint_params, local, saw_local_keyword, local_update, local_hardware);
+
+			const bool has_can_id = joint_params.hasMember("can_id");
+			if (!local_hardware && has_can_id)
+				throw std::runtime_error("A CANCoder can_id was specified with local_hardware == false for joint " + joint_name);
+
+			int can_id = 0;
+			if (local_hardware)
+			{
+				if (!has_can_id)
+					throw std::runtime_error("A CANCoder can_id was not specified");
+				XmlRpc::XmlRpcValue &xml_can_id = joint_params["can_id"];
+				if (!xml_can_id.valid() ||
+						xml_can_id.getType() != XmlRpc::XmlRpcValue::TypeInt)
+					throw std::runtime_error("An invalid joint can_id was specified (expecting an int) for joint " + joint_name);
+				can_id = xml_can_id;
+				auto it = std::find(cancoder_can_ids_.cbegin(), cancoder_can_ids_.cend(), can_id);
+				if (it != cancoder_can_ids_.cend())
+					throw std::runtime_error("A duplicate can_id was specified for joint " + joint_name);
+			}
+			cancoder_names_.push_back(joint_name);
+			cancoder_can_ids_.push_back(can_id);
+			cancoder_local_updates_.push_back(local_update);
+			cancoder_local_hardwares_.push_back(local_hardware);
 		}
 		else if (joint_type == "nidec_brushless")
 		{
@@ -816,6 +843,35 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 		}
 	}
 
+	num_cancoders_ = cancoder_names_.size();
+	// Create vectors of the correct size for
+	// cancoder HW state and commands
+	cancoder_command_.resize(num_cancoders_);
+
+	for (size_t i = 0; i < num_cancoders_; i++)
+	{
+		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering CANCoder Interface for " << cancoder_names_[i] << " at hw ID " << cancoder_can_ids_[i]);
+		cancoder_state_.push_back(hardware_interface::cancoder::CANCoderHWState(cancoder_can_ids_[i]));
+	}
+	for (size_t i = 0; i < num_cancoders_; i++)
+	{
+		// Create state interface for the given CANCoder
+		// and point it to the data stored in the
+		// corresponding cancoder_state array entry
+		hardware_interface::cancoder::CANCoderStateHandle csh(cancoder_names_[i], &cancoder_state_[i]);
+		cancoder_state_interface_.registerHandle(csh);
+
+		// Do the same for a command interface for
+		// the same CANCoder
+		hardware_interface::cancoder::CANCoderCommandHandle cch(csh, &cancoder_command_[i]);
+		cancoder_command_interface_.registerHandle(cch);
+		if (!cancoder_local_updates_[i])
+		{
+			hardware_interface::cancoder::CANCoderWritableStateHandle cwsh(cancoder_names_[i], &cancoder_state_[i]); /// writing directly to state?
+			cancoder_remote_state_interface_.registerHandle(cwsh);
+		}
+	}
+
 	// Set vectors to correct size to hold data
 	// for each of the brushless motors we're trying
 	// to control
@@ -1176,6 +1232,8 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 	registerInterface(&talon_command_interface_);
 	registerInterface(&canifier_state_interface_);
 	registerInterface(&canifier_command_interface_);
+	registerInterface(&cancoder_state_interface_);
+	registerInterface(&cancoder_command_interface_);
 	registerInterface(&joint_state_interface_);
 	registerInterface(&joint_command_interface_);
 	registerInterface(&joint_position_interface_);
@@ -1191,6 +1249,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 
 	registerInterface(&talon_remote_state_interface_);
 	registerInterface(&canifier_remote_state_interface_);
+	registerInterface(&cancoder_remote_state_interface_);
 	registerInterface(&joint_remote_interface_); // list of Joints defined as remote
 	registerInterface(&pdp_remote_state_interface_);
 	registerInterface(&pcm_remote_state_interface_);

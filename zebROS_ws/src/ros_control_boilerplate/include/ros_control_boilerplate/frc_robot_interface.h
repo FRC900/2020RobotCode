@@ -53,6 +53,7 @@
 #include "frc_interfaces/match_data_interface.h"
 #include "frc_interfaces/remote_joint_interface.h"
 #include "frc_interfaces/robot_controller_interface.h"
+#include "talon_interface/cancoder_command_interface.h"
 #include "talon_interface/canifier_command_interface.h"
 #include "talon_interface/talon_command_interface.h"
 
@@ -163,6 +164,8 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::RemoteTalonStateInterface          talon_remote_state_interface_;
 		hardware_interface::canifier::CANifierStateInterface   canifier_state_interface_;
 		hardware_interface::canifier::RemoteCANifierStateInterface canifier_remote_state_interface_;
+		hardware_interface::cancoder::CANCoderStateInterface   cancoder_state_interface_;
+		hardware_interface::cancoder::RemoteCANCoderStateInterface cancoder_remote_state_interface_;
 		hardware_interface::PDPStateInterface	               pdp_state_interface_;
 		hardware_interface::RemotePDPStateInterface	           pdp_remote_state_interface_;
 		hardware_interface::PCMStateInterface	               pcm_state_interface_;
@@ -179,6 +182,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::RemoteJointInterface           joint_remote_interface_;
 		hardware_interface::TalonCommandInterface          talon_command_interface_;
 		hardware_interface::canifier::CANifierCommandInterface canifier_command_interface_;
+		hardware_interface::cancoder::CANCoderCommandInterface cancoder_command_interface_;
 		hardware_interface::as726x::AS726xCommandInterface as726x_command_interface_;
 		hardware_interface::ImuSensorInterface             imu_interface_;
 		hardware_interface::RemoteImuSensorInterface       imu_remote_interface_;
@@ -210,6 +214,12 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<bool>        canifier_local_updates_;
 		std::vector<bool>        canifier_local_hardwares_;
 		std::size_t              num_canifiers_;
+
+		std::vector<std::string> cancoder_names_;
+		std::vector<int>         cancoder_can_ids_;
+		std::vector<bool>        cancoder_local_updates_;
+		std::vector<bool>        cancoder_local_hardwares_;
+		std::size_t              num_cancoders_;
 
 		std::vector<std::string> nidec_brushless_names_;
 		std::vector<int>         nidec_brushless_pwm_channels_;
@@ -315,6 +325,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		// resources
 		std::vector<hardware_interface::TalonHWState> talon_state_;
 		std::vector<hardware_interface::canifier::CANifierHWState> canifier_state_;
+		std::vector<hardware_interface::cancoder::CANCoderHWState> cancoder_state_;
 		std::vector<double> brushless_vel_;
 
 		std::vector<double> digital_input_state_;
@@ -345,6 +356,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		// written to the hardware
 		std::vector<hardware_interface::TalonHWCommand> talon_command_;
 		std::vector<hardware_interface::canifier::CANifierHWCommand> canifier_command_;
+		std::vector<hardware_interface::cancoder::CANCoderHWCommand> cancoder_command_;
 		std::vector<double> brushless_command_;
 		std::vector<double> digital_output_command_;
 		std::vector<double> pwm_command_;

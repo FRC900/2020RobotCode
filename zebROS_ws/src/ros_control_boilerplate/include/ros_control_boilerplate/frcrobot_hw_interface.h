@@ -217,6 +217,17 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		bool convertCANifierControlFrame(hardware_interface::canifier::CANifierControlFrame input,
 				ctre::phoenix::CANifierControlFrame &output) const;
 
+		bool convertCANCoderMagnetFieldStrength(ctre::phoenix::sensors::MagnetFieldStrength input,
+				hardware_interface::cancoder::MagnetFieldStrength &output) const;
+		bool convertCANCoderVelocityMeasPeriod(hardware_interface::cancoder::SensorVelocityMeasPeriod input,
+				ctre::phoenix::sensors::SensorVelocityMeasPeriod &output) const;
+		bool convertCANCoderAbsoluteSensorRange(hardware_interface::cancoder::AbsoluteSensorRange input,
+				ctre::phoenix::sensors::AbsoluteSensorRange &output) const;
+		bool convertCANCoderInitializationStrategy(hardware_interface::cancoder::SensorInitializationStrategy input,
+				ctre::phoenix::sensors::SensorInitializationStrategy &output) const;
+		bool convertCANCoderTimeBase(hardware_interface::cancoder::SensorTimeBase input,
+				ctre::phoenix::sensors::SensorTimeBase &output) const;
+
 		bool convertAS726xIndLedCurrentLimit(const hardware_interface::as726x::IndLedCurrentLimits input,
 				as726x::ind_led_current_limits &output) const;
 		bool convertAS726xDrvLedCurrentLimit(const hardware_interface::as726x::DrvLedCurrentLimits input,
@@ -256,6 +267,12 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		std::vector<std::shared_ptr<hardware_interface::canifier::CANifierHWState>> canifier_read_thread_states_;
 		std::vector<std::thread> canifier_read_threads_;
 		void canifier_read_thread(std::shared_ptr<ctre::phoenix::CANifier> canifier, std::shared_ptr<hardware_interface::canifier::CANifierHWState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
+
+		std::vector<std::shared_ptr<ctre::phoenix::sensors::CANCoder>> cancoders_;
+		std::vector<std::shared_ptr<std::mutex>> cancoder_read_state_mutexes_;
+		std::vector<std::shared_ptr<hardware_interface::cancoder::CANCoderHWState>> cancoder_read_thread_states_;
+		std::vector<std::thread> cancoder_read_threads_;
+		void cancoder_read_thread(std::shared_ptr<ctre::phoenix::sensors::CANCoder> cancoder, std::shared_ptr<hardware_interface::cancoder::CANCoderHWState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
 
 		std::vector<std::shared_ptr<frc::NidecBrushless>> nidec_brushlesses_;
 		std::vector<std::shared_ptr<frc::DigitalInput>> digital_inputs_;
