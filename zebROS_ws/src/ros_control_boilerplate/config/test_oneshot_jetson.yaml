@@ -11,6 +11,7 @@ hardware_interface:
        - {name: hood_extend_joint, type: solenoid, local_hardware: false, local_update: true}
        - {name: hood_retract_joint, type: solenoid, local_hardware: false, local_update: true}
        - {name: canifier, type: canifier, can_id: 1, local_hardware: true, local_update: true}
+       - {name: cancoder, type: cancoder, can_id: 1, local_hardware: true, local_update: true}
        - {name: robot_code_ready_jetson, local: true, type: ready}
        - {name: robot_code_ready_rio, local: false, type: ready} # Probably not really needed?
        
@@ -75,4 +76,11 @@ canifier_controller:
     joint_name: canifier
 canifier_state_controller:
     type:     canifier_state_controller/CANifierStateController
+    publish_rate: 100
+
+cancoder_controller:
+    type:      cancoder_controller/CANCoderController
+    joint_name: cancoder
+cancoder_state_controller:
+    type:     cancoder_state_controller/CANCoderStateController
     publish_rate: 100

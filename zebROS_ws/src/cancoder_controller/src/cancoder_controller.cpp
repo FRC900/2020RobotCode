@@ -10,7 +10,7 @@ bool CANCoderController::init(hardware_interface::cancoder::CANCoderCommandInter
 
 	if (!controller_nh.getParam("joint_name", joint_name))
 	{
-		ROS_ERROR_STREAM("as726x controller - could not read joint_name param");
+		ROS_ERROR_STREAM("cancoder controller - could not read joint_name param");
 		return false;
 	}
 	ROS_INFO("Got joint %s in CANCoder controller", joint_name.c_str());

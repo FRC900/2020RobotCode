@@ -29,12 +29,10 @@
  * Original joint_state_controller Author: Wim Meeussen
  */
 
-#include <pluginlib/class_list_macros.h>
 #include "talon_state_controller/cancoder_state_controller.h"
 
 namespace cancoder_state_controller
 {
-
 bool CANCoderStateController::init(hardware_interface::cancoder::CANCoderStateInterface *hw,
 								   ros::NodeHandle                                      &root_nh,
 								   ros::NodeHandle                                      &controller_nh)
@@ -82,8 +80,8 @@ bool CANCoderStateController::init(hardware_interface::cancoder::CANCoderStateIn
 		m.sensor_data_status_frame_period.push_back(0);
 		m.vbat_and_faults_status_frame_period.push_back(0);
 		m.firmware_version.push_back("");
-		m.faults.push_back(0);
-		m.sticky_faults.push_back(0);
+		m.faults.push_back("");
+		m.sticky_faults.push_back("");
 		m.conversion_factor.push_back(0);
 	}
 
@@ -259,4 +257,5 @@ void CANCoderStateController::stopping(const ros::Time & /*time*/)
 
 }
 
+#include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(cancoder_state_controller::CANCoderStateController, controller_interface::ControllerBase)

@@ -1,4 +1,5 @@
 Header    header
+string[]  name
 int8[]    device_number
 float64[] position
 float64[] velocity

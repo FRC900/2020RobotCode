@@ -10,7 +10,7 @@ bool CANifierController::init(hardware_interface::canifier::CANifierCommandInter
 
 	if (!controller_nh.getParam("joint_name", joint_name))
 	{
-		ROS_ERROR_STREAM("as726x controller - could not read joint_name param");
+		ROS_ERROR_STREAM("canifier controller - could not read joint_name param");
 		return false;
 	}
 	ROS_INFO("Got joint %s in CANifier controller", joint_name.c_str());

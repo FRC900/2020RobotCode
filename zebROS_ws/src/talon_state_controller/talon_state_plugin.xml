@@ -14,4 +14,9 @@
 			The CANifier state controller publishes the current CANifier State as a talon_state_msgs/CANifierConfig message. The CANifierState controller expects a CANifierStateInterface type of hardware interface.
 		</description>
 	</class>
+	<class name="cancoder_state_controller/CANCoderStateController" type="cancoder_state_controller::CANCoderStateController" base_class_type="controller_interface::ControllerBase">
+		<description>
+			The CANCoder state controller publishes the current CANCoder State as a talon_state_msgs/CANCoderConfig message. The CANCoderState controller expects a CANCoderStateInterface type of hardware interface.
+		</description>
+	</class>
 </library>
