@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <mutex>
 #include "ddynamic_reconfigure/ddynamic_reconfigure.h"
 #include "talon_interface/canifier_command_interface.h"
 
@@ -134,9 +135,10 @@ class CANifierControllerInterface
 	private:
 		CANifierCIParams                                    params_;
 		hardware_interface::canifier::CANifierCommandHandle handle_;
+		std::mutex                                          set_quadrature_position_mutex_;
 		bool                                                set_quadrature_position_;
 		double                                              new_quadrature_position_;
-		bool                                                clear_sticky_faults_;
+		std::atomic<bool>                                   clear_sticky_faults_;
 };
 
 } // namespace canifier_controller_interfac

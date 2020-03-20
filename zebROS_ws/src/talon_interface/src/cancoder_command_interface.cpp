@@ -29,6 +29,7 @@ CANCoderHWCommand::CANCoderHWCommand(void)
 	, sensor_data_status_frame_period_changed_{true}
 	, vbat_and_faults_status_frame_period_{100}
 	, vbat_and_faults_status_frame_period_changed_{true}
+	, clear_sticky_faults_{false}
 	, conversion_factor_{1.0}
 {
 }
@@ -316,6 +317,20 @@ bool CANCoderHWCommand::vbatAndFaultsStatusFramePeriodChanged(int &vbat_and_faul
 void CANCoderHWCommand::resetVBatAndFaultsStatusFramePeriod(void)
 {
 	vbat_and_faults_status_frame_period_changed_ = true;
+}
+void CANCoderHWCommand::setClearStickyFaults(void)
+{
+	clear_sticky_faults_ = true;
+}
+bool CANCoderHWCommand::getClearStickyFaults(void) const
+{
+	return clear_sticky_faults_;
+}
+bool CANCoderHWCommand::clearStickyFaultsChanged(void)
+{
+	auto ret = clear_sticky_faults_;
+	clear_sticky_faults_ = false;
+	return ret;
 }
 
 void CANCoderHWCommand::setConversionFactor(double conversion_factor)

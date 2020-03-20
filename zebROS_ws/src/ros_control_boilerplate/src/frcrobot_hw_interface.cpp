@@ -3529,6 +3529,17 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			}
 		}
 
+		if (cc.clearStickyFaultsChanged())
+		{
+			if (safeTalonCall(cancoder->ClearStickyFaults(), "cancoder->ClearStickyFaults"))
+			{
+				ROS_INFO_STREAM("CANcoder " << cancoder_names_[joint_id] << " : Sticky faults cleared");
+			}
+			else
+			{
+				cc.setClearStickyFaults();
+			}
+		}
 	}
 
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)

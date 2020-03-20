@@ -411,10 +411,14 @@ void CANifierControllerInterface::update(void)
 		handle_->setGeneralPinOutput(general_pin, params_.getGeneralPinOutput(general_pin));
 	}
 
-	if (set_quadrature_position_)
 	{
-		handle_->setQuadraturePosition(new_quadrature_position_);
-		set_quadrature_position_ = false;
+		std::unique_lock<std::mutex> l(set_quadrature_position_mutex_, std::try_to_lock);
+
+		if (l.owns_lock() && set_quadrature_position_)
+		{
+			handle_->setQuadraturePosition(new_quadrature_position_);
+			set_quadrature_position_ = false;
+		}
 	}
 
 	handle_->setVelocityMeasurementPeriod(params_.getVelocityMeasurementPeriod());
@@ -448,6 +452,7 @@ void CANifierControllerInterface::update(void)
 
 void CANifierControllerInterface::setQuadraturePosition(double new_quadrature_position)
 {
+	std::lock_guard<std::mutex> l(set_quadrature_position_mutex_);
 	set_quadrature_position_ = true;
 	new_quadrature_position_ = new_quadrature_position;
 }

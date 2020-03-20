@@ -74,6 +74,10 @@ class CANCoderHWCommand
 		bool vbatAndFaultsStatusFramePeriodChanged(int &vbat_and_faults_status_frame_period);
 		void resetVBatAndFaultsStatusFramePeriod(void);
 
+		void setClearStickyFaults(void);
+		bool getClearStickyFaults(void) const;
+		bool clearStickyFaultsChanged(void);
+
 		void   setConversionFactor(double conversion_factor);
 		double getConversionFactor(void) const;
 
@@ -101,6 +105,7 @@ class CANCoderHWCommand
 		bool                         sensor_data_status_frame_period_changed_;
 		int                          vbat_and_faults_status_frame_period_;
 		bool                         vbat_and_faults_status_frame_period_changed_;
+		bool                         clear_sticky_faults_;
 		double                       conversion_factor_;
 };
 

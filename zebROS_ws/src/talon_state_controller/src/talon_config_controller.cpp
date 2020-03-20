@@ -587,7 +587,7 @@ void TalonConfigController::update(const ros::Time &time, const ros::Duration & 
 						break;
 				}
 
-				int fw_ver = ts->getFirmwareVersion();
+				const int fw_ver = ts->getFirmwareVersion();
 
 				if (fw_ver >= 0)
 				{
