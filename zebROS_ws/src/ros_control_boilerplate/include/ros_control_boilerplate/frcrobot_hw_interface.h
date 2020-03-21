@@ -241,7 +241,7 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		void as726x_read_thread(std::shared_ptr<as726x::roboRIO_AS726x> as726x, std::shared_ptr<hardware_interface::as726x::AS726xState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
 		std::vector<std::thread> as726x_thread_;
 
-                std::vector<std::shared_ptr<frc::Orchestra>> talon_orchestras_;
+                std::vector<std::shared_ptr<ctre::phoenix::music::Orchestra>> talon_orchestras_;
 
 		std::unique_ptr<ROSIterativeRobot> robot_;
 

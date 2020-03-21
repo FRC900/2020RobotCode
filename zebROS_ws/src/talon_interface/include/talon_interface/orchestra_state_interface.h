@@ -28,7 +28,7 @@ class OrchestraState
 
 	private:
                 int orchestra_id_;
-		std_vector<std::string> instruments_;
+				std::vector<std::string> instruments_;
                 std::string chirp_file_path_;
                 bool is_playing_;
                 bool is_paused_;

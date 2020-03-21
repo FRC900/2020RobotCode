@@ -699,7 +699,7 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 							  "Loading joint " << i << "=" << talon_orchestra_names_[i]);
 
 		if (digital_output_local_hardwares_[i])
-			talon_orchestras_.push_back(std::make_shared<frc::Orchestra>());
+			talon_orchestras_.push_back(std::make_shared<ctre::phoenix::music::Orchestra>());
 		else
 			talon_orchestras_.push_back(nullptr);
 	}
@@ -3876,8 +3876,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             bool pause;
             bool stop;
             std::string music_file_path;
-            std::vector<int> instruments;
-            bool clear_instruments;
+            std::vector<std::string> instruments;
             if(oc.playChanged())
             {
                 talon_orchestras_[i]->Play();
@@ -3902,34 +3901,34 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
                 os.setIsStopped(true);
                 ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
             }
-            if(oc.loadMusicChanged(music_file_path))
+            if(oc.musicChanged(music_file_path))
             {
                 talon_orchestras_[i]->LoadMusic(music_file_path);
                 os.setChirpFilePath(music_file_path);
                 ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " loaded music at " << music_file_path);
             }
-            if(oc.instrumentsChanged(std::vector<std::string> instruments))
+            if(oc.instrumentsChanged(instruments))
             {
                 talon_orchestras_[i]->ClearInstruments();
                 for(size_t j = 0; j < instruments.size(); j++)
                 {
-                    size_t can_index = std::numeric_limit<size_t>;
+                    size_t can_index = std::numeric_limits<size_t>::max();
                     for(size_t k = 0; k < can_ctre_mc_names_.size(); k++)
                     {
-                        if(can_ctre_mc_names_[k] = instruments[j])
+                        if(can_ctre_mc_names_[k] == instruments[j])
                         {
                             can_index = k;
                             break;
                         }
                     }
-                    if(can_index == std::numeric_limit<size_t>)
+                    if(can_index == std::numeric_limits<size_t>::max())
                     {
                         ROS_ERROR_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it does not exist");
                         continue;
                     }
                     if(can_ctre_mc_is_talon_fx_[can_index])
                     {
-                        talon_orchestras_[i]->AddInstrument(std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonFX>(ctre_mcs_[instruments[j]]));
+                        talon_orchestras_[i]->AddInstrument(*(std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonFX>(ctre_mcs_[can_index])));
                         ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " added Falcon " << "falcon_name");
                     }
                     else
@@ -3937,7 +3936,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
                 }
                 os.setInstruments(instruments); //TODO do this correctly
             }
-            if(oc.clearInstrumentsChanged(clear_instruments))
+            if(oc.clearInstrumentsChanged())
             {
                 talon_orchestras_[i]->ClearInstruments();
             }

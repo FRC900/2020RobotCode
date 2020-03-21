@@ -1,7 +1,7 @@
 #pragma once
 
-#include <hardware_interface/internal/hardware_resource_manager.h>
-#include <state_handle/state_handle.h>
+#include <talon_interface/orchestra_state_interface.h>
+#include "state_handle/command_handle.h"
 
 namespace hardware_interface
 {
@@ -24,20 +24,20 @@ class OrchestraCommand
                 void stop();
                 bool getStop() const;
                 bool stopChanged();
-                void resetStop(bool &stop);
+                void resetStop();
 
                 void loadMusic(std::string file_path);
-                bool getMusic() const;
+				std::string getMusic() const;
                 bool musicChanged(std::string &file_path);
                 void resetMusic();
 
                 void addInstruments(std::vector<std::string> instruments);
-                bool getInstruments() const;
+				std::vector<std::string> getInstruments() const;
                 bool instrumentsChanged(std::vector<std::string> &instruments);
                 void resetInstruments();
 
                 void clearInstruments();
-                bool getClearInstruments() const;
+                bool getInstrumentsCleared() const;
                 bool clearInstrumentsChanged();
                 void resetClearInstruments();
 
@@ -48,16 +48,16 @@ class OrchestraCommand
 
                 std::string file_path_;
                 bool load_music_changed_;
-		std::vector<std::string> instruments_;
-                bool add_instruments_changed_;
+				std::vector<std::string> instruments_;
+                bool instruments_changed_;
                 bool instruments_cleared_;
                 bool clear_instruments_changed_;
 };
 
-// Glue code to let this be registered in the list of
-// hardware resources on the robot.  Since state is
-// read-only, allow multiple controllers to register it.
-typedef CommandHandle<const OrchestraCommand> OrchestraCommandHandle;
-typedef CommandHandle<OrchestraCommand> OrchestraWritableCommandHandle;
-class OrchestraCommandInterface : public HardwareResourceManager<OrchestraCommandHandle> {};
+// Create a handle pointing to a type TalonHWCommand / TalonHWState pair
+typedef CommandHandle<OrchestraCommand, OrchestraState, OrchestraStateHandle> OrchestraCommandHandle;
+
+// Use ClaimResources here since we only want 1 controller
+// to be able to access a given Orchestra at any particular time
+class OrchestraCommandInterface : public HardwareResourceManager<OrchestraCommandHandle, ClaimResources> {};
 }

@@ -16,7 +16,7 @@ OrchestraCommand::OrchestraCommand() :
         file_path_(""),
 	load_music_changed_(false),
         instruments_{},
-        add_instruments_changed_(false),
+        instruments_changed_(false),
         clear_instruments_changed_(true)
 {
 }
@@ -42,7 +42,7 @@ bool OrchestraCommand::pauseChanged()
     }
     return false;
 }
-void resetPause()
+void OrchestraCommand::resetPause()
 {
     pause_changed_ = true;
 }
@@ -64,7 +64,7 @@ bool OrchestraCommand::playChanged()
     }
     return false;
 }
-void resetPlay()
+void OrchestraCommand::resetPlay()
 {
     play_changed_ = true;
 }
@@ -86,7 +86,7 @@ bool OrchestraCommand::stopChanged()
     }
     return false;
 }
-void resetStop()
+void OrchestraCommand::resetStop()
 {
     stop_changed_ = true;
 }
@@ -100,7 +100,7 @@ std::string OrchestraCommand::getMusic() const
 {
     return file_path_;
 }
-OrchestraCommand::musicChanged(std::string &file_path)
+bool OrchestraCommand::musicChanged(std::string &file_path)
 {
     if(load_music_changed_)
     {
@@ -110,25 +110,25 @@ OrchestraCommand::musicChanged(std::string &file_path)
     }
     return false;
 }
-OrchestraCommand::resetMusic()
+void OrchestraCommand::resetMusic()
 {
     load_music_changed_ = true;
 }
 
-OrchestraCommand::addInstruments(std::vector<std::string> instruments)
+void OrchestraCommand::addInstruments(std::vector<std::string> instruments)
 {
-    add_instruments_changed_ = true;
+    instruments_changed_ = true;
     instruments_ = instruments;
 }
-OrchestraCommand::getInstruments() const
+std::vector<std::string> OrchestraCommand::getInstruments() const
 {
     return instruments_;
 }
 bool OrchestraCommand::instrumentsChanged(std::vector<std::string> &instruments)
 {
-    if(add_instruments_changed_)
+    if(instruments_changed_)
     {
-        add_instruments_changed_ = false;
+        instruments_changed_ = false;
         instruments = instruments_;
         return true;
     }
@@ -143,11 +143,11 @@ void OrchestraCommand::clearInstruments()
 {
     clear_instruments_changed_ = true;
 }
-bool getInstrumentsCleared()
+bool OrchestraCommand::getInstrumentsCleared() const
 {
     return true; // TODO Wht is this function supposed to do?
 }
-bool clearInstrumentsChanged()
+bool OrchestraCommand::clearInstrumentsChanged()
 {
     if(clear_instruments_changed_)
     {
@@ -156,7 +156,7 @@ bool clearInstrumentsChanged()
     }
     return false;
 }
-void resetClearInstruments()
+void OrchestraCommand::resetClearInstruments()
 {
     clear_instruments_changed_ = true;
 }

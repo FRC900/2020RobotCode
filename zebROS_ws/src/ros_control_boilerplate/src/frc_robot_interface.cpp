@@ -1239,7 +1239,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 		robot_controller_state_interface_.registerHandle(rcsh);
 	}
 
-        num_talon_orchestras = talon_orchestra_names_.size();
+        num_talon_orchestras_ = talon_orchestra_names_.size();
 
 	for (size_t i = 0; i < num_talon_orchestras_; i++)
 	{

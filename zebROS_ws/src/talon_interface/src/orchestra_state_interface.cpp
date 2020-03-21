@@ -1,4 +1,4 @@
-#include "talon_interface/orchestra_command_interface.h"
+#include "talon_interface/orchestra_state_interface.h"
 
 namespace hardware_interface
 {
@@ -9,9 +9,9 @@ namespace hardware_interface
 // That should put the talon in a known state
 // rather than relying on them being setup to
 // a certain state previously
-OrchestraState::OrchestraState(orchestra_id) :
+OrchestraState::OrchestraState(int orchestra_id) :
         orchestra_id_(orchestra_id),
-        instruments{},
+        instruments_{},
         chirp_file_path_(""),
         is_playing_(false),
         is_paused_(false),
@@ -23,50 +23,48 @@ OrchestraState::~OrchestraState()
 {
 }
 
-void setChirpFilePath(std::string chirp_file_path)
+void OrchestraState::setChirpFilePath(std::string chirp_file_path)
 {
     chirp_file_path_ = chirp_file_path;
 }
-std::string getChirpFilePath() const
+std::string OrchestraState::getChirpFilePath() const
 {
     return chirp_file_path_;
 }
 
-void setInstruments(std::vector<std::string> instruments)
+void OrchestraState::setInstruments(std::vector<std::string> instruments)
 {
     instruments_ = instruments;
 }
-std::vector<std::string> getInstruments() const
+std::vector<std::string> OrchestraState::getInstruments() const
 {
     return instruments_;
 }
 
-void setIsPaused(bool is_paused)
+void OrchestraState::setIsPaused(bool is_paused)
 {
     is_paused_ = is_paused;
 }
-bool getIsPaused() const
+bool OrchestraState::getIsPaused() const
 {
     return is_paused_;
 }
 
-void setIsPlaying(bool is_playing)
+void OrchestraState::setIsPlaying(bool is_playing)
 {
     is_playing_ = is_playing;
 }
-bool getIsPlaying() const
+bool OrchestraState::getIsPlaying() const
 {
     return is_playing_;
 }
 
-void setIsStopped(bool is_stopped)
+void OrchestraState::setIsStopped(bool is_stopped)
 {
     is_stopped_ = is_stopped;
 }
-bool getIsStopped() const
+bool OrchestraState::getIsStopped() const
 {
     return is_stopped_;
 }
-
-
 }

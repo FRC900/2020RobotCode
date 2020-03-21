@@ -56,6 +56,8 @@ hardware_interface:
        - {name: robot_code_ready_jetson, local: true, type: ready}
        - {name: robot_code_ready_rio, local: false, type: ready} # Probably not really needed?
 
+       - {name: babys_first_orchestra, id: 1}
+
 # Create controllers for each joint
 #
 # Entry is the name of the controller. It can be anything.  
