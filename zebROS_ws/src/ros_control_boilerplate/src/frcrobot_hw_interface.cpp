@@ -4579,8 +4579,10 @@ bool FRCRobotHWInterface::convertCANifierControlFrame(hardware_interface::canifi
 	{
 		case hardware_interface::canifier::CANifierControlFrame::CANifier_Control_1_General:
 			output = ctre::phoenix::CANifierControlFrame::CANifier_Control_1_General;
+			break;
 		case hardware_interface::canifier::CANifierControlFrame::CANifier_Control_2_PwmOutput:
 			output = ctre::phoenix::CANifierControlFrame::CANifier_Control_2_PwmOutput;
+			break;
 		default:
 			ROS_ERROR("Invalid input in convertCANifierControlFrame");
 			return false;

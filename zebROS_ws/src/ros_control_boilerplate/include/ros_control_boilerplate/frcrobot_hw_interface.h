@@ -89,8 +89,7 @@ class ROSIterativeRobot
 				ROS_ERROR("FATAL ERROR: HAL could not be initialized");
 				std::terminate();
 			}
-			std::FILE* file = nullptr;
-			file = std::fopen("/tmp/frc_versions/FRC_Lib_Version.ini", "w");
+			std::FILE* file = std::fopen("/tmp/frc_versions/FRC_Lib_Version.ini", "w");
 
 			if (file != nullptr) {
 				std::fputs("C++ ", file);
