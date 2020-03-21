@@ -185,6 +185,8 @@ bool TalonConfigController::init(hardware_interface::TalonStateInterface *hw,
 		m.status_13_base_pidf0_period.push_back(0);
 		m.status_14_turn_pidf1_period.push_back(0);
 		m.status_15_firmwareapistatus_period.push_back(0);
+		m.status_17_targets1_period.push_back(0);
+		m.status_brushless_current_period.push_back(0);
 		m.control_3_general_period.push_back(0);
 		m.control_4_advanced_period.push_back(0);
 		m.control_5_feedbackoutputoverride_period.push_back(0);
