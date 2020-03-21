@@ -172,6 +172,10 @@ FRCRobotHWInterface::~FRCRobotHWInterface()
 		pcm_thread_[i].join();
 	for (size_t i = 0; i < num_pdps_; i++)
 		pdp_thread_[i].join();
+	for (size_t i = 0; i < num_cancoders_; i++)
+		cancoder_read_threads_[i].join();
+	for (size_t i = 0; i < num_canifiers_; i++)
+		cancoder_read_threads_[i].join();
 }
 
 bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh)
@@ -3069,7 +3073,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 
 	last_robot_enabled = match_data_.isEnabled();
 
-	for (std::size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
+	for (size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
 	{
 		if (!canifier_local_hardwares_[joint_id])
 			continue;
@@ -3334,7 +3338,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 		}
 	}
 
-	for (std::size_t joint_id = 0; joint_id < num_cancoders_; ++joint_id)
+	for (size_t joint_id = 0; joint_id < num_cancoders_; ++joint_id)
 	{
 		if (!cancoder_local_hardwares_[joint_id])
 			continue;
