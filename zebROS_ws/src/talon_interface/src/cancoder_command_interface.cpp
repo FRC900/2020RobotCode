@@ -231,7 +231,7 @@ void CANCoderHWCommand::setTimeBase(SensorTimeBase time_base)
 	}
 }
 bool CANCoderHWCommand::feedbackCoefficientChanged(
-		double feedback_coefficient,
+		double &feedback_coefficient,
 		std::string &unit_string,
 		SensorTimeBase &time_base)
 {

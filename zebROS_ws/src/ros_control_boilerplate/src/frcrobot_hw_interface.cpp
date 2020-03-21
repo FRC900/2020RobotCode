@@ -172,6 +172,8 @@ FRCRobotHWInterface::~FRCRobotHWInterface()
 		pcm_thread_[i].join();
 	for (size_t i = 0; i < num_pdps_; i++)
 		pdp_thread_[i].join();
+	for (size_t i = 0; i < num_as726xs_; i++)
+		as726x_thread_[i].join();
 	for (size_t i = 0; i < num_cancoders_; i++)
 		cancoder_read_threads_[i].join();
 	for (size_t i = 0; i < num_canifiers_; i++)

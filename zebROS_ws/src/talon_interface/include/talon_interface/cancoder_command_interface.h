@@ -54,7 +54,7 @@ class CANCoderHWCommand
 		SensorTimeBase getTimeBase(void) const;
 		void setTimeBase(SensorTimeBase time_base);
 		bool feedbackCoefficientChanged(
-				double feedback_coefficient,
+				double &feedback_coefficient,
 				std::string &unit_string,
 				SensorTimeBase &time_base);
 		void resetFeedbackCoefficient(void);
