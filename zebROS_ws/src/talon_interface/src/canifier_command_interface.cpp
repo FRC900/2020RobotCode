@@ -53,7 +53,7 @@ namespace canifier
 		status_frame_period_[CANifierStatusFrame_Status_6_PwmInputs3] = canifierstatusframe_status_6_pwminputs3_default;
 		status_frame_period_[CANifierStatusFrame_Status_8_Misc] = canifierstatusframe_status_8_misc_default;
 		for (auto &sfpc : status_frame_period_changed_)
-			sfpc = false;
+			sfpc = true;
 
 		control_frame_period_[CANifier_Control_1_General] = canifier_control_1_general_default;
 		control_frame_period_[CANifier_Control_2_PwmOutput] = canifier_control_2_pwmoutput_default;
@@ -407,7 +407,7 @@ namespace canifier
 		if ((frame_id <= CANifierStatusFrame::CANifierStatusFrame_First) ||
 			(frame_id >= CANifierStatusFrame::CANifierStatusFrame_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return;
 		}
 		if (status_frame_period_[frame_id] != period)
@@ -421,7 +421,7 @@ namespace canifier
 		if ((frame_id <= CANifierStatusFrame::CANifierStatusFrame_First) ||
 			(frame_id >= CANifierStatusFrame::CANifierStatusFrame_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return 0;
 		}
 		return status_frame_period_[frame_id];
@@ -431,7 +431,7 @@ namespace canifier
 		if ((frame_id <= CANifierStatusFrame::CANifierStatusFrame_First) ||
 			(frame_id >= CANifierStatusFrame::CANifierStatusFrame_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return false;
 		}
 		auto ret = status_frame_period_changed_[frame_id];
@@ -444,7 +444,7 @@ namespace canifier
 		if ((frame_id <= CANifierStatusFrame::CANifierStatusFrame_First) ||
 			(frame_id >= CANifierStatusFrame::CANifierStatusFrame_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return;
 		}
 		status_frame_period_changed_[frame_id] = true;
@@ -455,7 +455,7 @@ namespace canifier
 		if ((frame_id <= CANifierControlFrame::CANifier_Control_First) ||
 			(frame_id >= CANifierControlFrame::CANifier_Control_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return;
 		}
 		if (control_frame_period_[frame_id] != period)
@@ -469,7 +469,7 @@ namespace canifier
 		if ((frame_id <= CANifierControlFrame::CANifier_Control_First) ||
 			(frame_id >= CANifierControlFrame::CANifier_Control_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return 0;
 		}
 		return control_frame_period_[frame_id];
@@ -479,7 +479,7 @@ namespace canifier
 		if ((frame_id <= CANifierControlFrame::CANifier_Control_First) ||
 			(frame_id >= CANifierControlFrame::CANifier_Control_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return false;
 		}
 		auto ret = control_frame_period_changed_[frame_id];
@@ -492,7 +492,7 @@ namespace canifier
 		if ((frame_id <= CANifierControlFrame::CANifier_Control_First) ||
 			(frame_id >= CANifierControlFrame::CANifier_Control_Last))
 		{
-			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : PWM frame_id out of range");
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : frame_id out of range");
 			return;
 		}
 		control_frame_period_changed_[frame_id] = true;

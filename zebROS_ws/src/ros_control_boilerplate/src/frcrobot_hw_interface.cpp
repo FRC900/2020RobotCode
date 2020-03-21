@@ -3118,7 +3118,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			if (cc.ledOutputChanged(led_channel, percent_output) &&
 				convertCANifierLEDChannel(led_channel, ctre_led_channel))
 			{
-				if (safeTalonCall(canifier->SetLEDOutput(percent_output, ctre_led_channel), "canifier.SetLEDOutput"))
+				if (safeTalonCall(canifier->SetLEDOutput(percent_output, ctre_led_channel), "canifier->SetLEDOutput"))
 				{
 					cs.setLEDOutput(led_channel, percent_output);
 					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
@@ -3301,12 +3301,16 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			if (cc.statusFramePeriodChanged(frame_id, period) &&
 				convertCANifierStatusFrame(frame_id, ctre_frame_id))
 			{
-				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
-						<< " : Set frame_id " << i << " status period to " << period);
-			}
-			else
-			{
-				cc.resetStatusFramePeriod(frame_id);
+				if (safeTalonCall(canifier->SetStatusFramePeriod(ctre_frame_id, period), "canifier->SetStatusFramePeriod"))
+				{
+					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+							<< " : Set frame_id " << i << " status period to " << period);
+					cs.setStatusFramePeriod(frame_id, period);
+				}
+				else
+				{
+					cc.resetStatusFramePeriod(frame_id);
+				}
 			}
 		}
 
@@ -3318,12 +3322,16 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			if (cc.controlFramePeriodChanged(frame_id, period) &&
 				convertCANifierControlFrame(frame_id, ctre_frame_id))
 			{
-				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
-						<< " : Set frame_id " << i << " control period to " << period);
-			}
-			else
-			{
-				cc.resetControlFramePeriod(frame_id);
+				if (safeTalonCall(canifier->SetControlFramePeriod(ctre_frame_id, period), "canifier->SetControlFramePeriod,"))
+				{
+					ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id]
+							<< " : Set frame_id " << i << " control period to " << period);
+					cs.setControlFramePeriod(frame_id, period);
+				}
+				else
+				{
+					cc.resetControlFramePeriod(frame_id);
+				}
 			}
 		}
 
@@ -3332,6 +3340,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			if (safeTalonCall(canifier->ClearStickyFaults(), "canifier->ClearStickyFaults()"))
 			{
 				ROS_INFO_STREAM("CANifier " << canifier_names_[joint_id] << " : cleared sticky faults");
+				// No corresponding status field
 			}
 			else
 			{
@@ -3384,6 +3393,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			{
 				ROS_INFO_STREAM("CANcoder " << cancoder_names_[joint_id]
 						<< " : Set position to absolute");
+				// Don't set state - it will be updated in next read() loop
 			}
 			else
 			{
