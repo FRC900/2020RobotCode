@@ -367,6 +367,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<double> pwm_command_;
 		std::vector<double> solenoid_command_;
 		std::vector<hardware_interface::JointCommandModes> solenoid_mode_;
+		std::vector<hardware_interface::JointCommandModes> prev_solenoid_mode_;
 		std::vector<double> double_solenoid_command_;
 		std::vector<double> rumble_command_;
 		std::vector<double> compressor_command_;

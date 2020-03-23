@@ -958,6 +958,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 	solenoid_pwm_state_.resize(num_solenoids_);
 	solenoid_command_.resize(num_solenoids_);
 	solenoid_mode_.resize(num_solenoids_);
+	prev_solenoid_mode_.resize(num_solenoids_);
 	for (size_t i = 0; i < num_solenoids_; i++)
 	{
 		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << solenoid_names_[i] << " at id " << solenoid_ids_[i]<< " at pcm " << solenoid_pcms_[i]);
@@ -966,6 +967,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 		solenoid_pwm_state_[i] = 0;
 		solenoid_command_[i] = 0;
 		solenoid_mode_[i] = hardware_interface::JointCommandModes::MODE_POSITION;
+		prev_solenoid_mode_[i] = hardware_interface::JointCommandModes::BEGIN;
 
 		hardware_interface::JointStateHandle ssh(solenoid_names_[i], &solenoid_state_[i], &solenoid_state_[i], &solenoid_pwm_state_[i]);
 		joint_state_interface_.registerHandle(ssh);

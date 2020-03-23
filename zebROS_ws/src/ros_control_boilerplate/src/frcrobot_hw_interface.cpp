@@ -3635,7 +3635,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 		if (solenoid_mode_[i] == hardware_interface::JointCommandModes::MODE_POSITION)
 		{
 			const bool setpoint = solenoid_command_[i] > 0;
-			if (solenoid_state_[i] != setpoint)
+			if ((solenoid_mode_[i] != prev_solenoid_mode_[i]) || (solenoid_state_[i] != setpoint))
 			{
 				int32_t status = 0;
 				if (solenoid_local_hardwares_[i])
@@ -3691,6 +3691,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 		}
 		else
 			ROS_ERROR_STREAM("Invalid solenoid_mode_[i] = " << static_cast<int>(solenoid_mode_[i]));
+		prev_solenoid_mode_[i] = solenoid_mode_[i];
 	}
 
 	for (size_t i = 0; i < num_double_solenoids_; i++)
