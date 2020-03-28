@@ -698,10 +698,7 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 		ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
 							  "Loading joint " << i << "=" << talon_orchestra_names_[i]);
 
-		if (digital_output_local_hardwares_[i])
-			talon_orchestras_.push_back(std::make_shared<ctre::phoenix::music::Orchestra>());
-		else
-			talon_orchestras_.push_back(nullptr);
+                talon_orchestras_.push_back(std::make_shared<ctre::phoenix::music::Orchestra>());
 	}
 
 	const double t_now = ros::Time::now().toSec();
@@ -1915,6 +1912,12 @@ void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /
 			as726x_state_[i].setCalibratedChannelData(as726x_read_thread_state_[i]->getCalibratedChannelData());
 		}
 	}
+        
+        for(size_t i = 0; i < num_talon_orchestras_; i++)
+        {
+            orchestra_state_[i].setIsPlaying(talon_orchestras_->IsPlaying());
+            orchestra_state_[i].setIsPaused(!talon_orchestras_->IsPlaying());
+        }
 
 	read_tracer_.stop();
 	ROS_INFO_STREAM_THROTTLE(60, read_tracer_.report());
@@ -2146,7 +2149,32 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 			break;
 		case ctre::phoenix::MotProfFirmThreshold2:
 			error_name = "MotProfFirmThreshold2";
-			break;
+                        break;
+
+                case ctre::phoenix::MusicFileNotFound:
+                        error_name = "MusicFileNotFound";
+                        break;
+                case ctre::phoenix::MusicFileWrongSize:
+                        error_name = "MusicFileWrongSize";
+                        break;
+                case ctre::phoenix::MusicFileTooNew:
+                        error_name = "MusicFileTooNew";
+                        break;
+                case ctre::phoenix::MusicFileInvalid:
+                        error_name = "MusicFileInvalid";
+                        break;
+                case ctre::phoenix::InvalidOrchestraAction:
+                        error_name = "InvalidOrchestraAction";
+                        break;
+                case ctre::phoenix::MusicFileTooOld:
+                        error_name = "MusicFileTooOld";
+                        break;
+                case ctre::phoenix::MusicInterrupted:
+                        error_name = "MusicInterrupted";
+                        break;
+                case ctre::phoenix::MusicNotSupported:
+                        error_name = "MusicNotSupported";
+                        break;
 
 		default:
 			{
@@ -3877,68 +3905,107 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             bool stop;
             std::string music_file_path;
             std::vector<std::string> instruments;
-            if(oc.playChanged())
+            if(oc.clearInstrumentsChanged())
             {
-                talon_orchestras_[i]->Play();
-                os.setIsPlaying(true);
-                os.setIsPaused(false);
-                os.setIsStopped(false);
-                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " playing");
-            }
-            if(oc.pauseChanged())
-            {
-                talon_orchestras_[i]->Pause();
-                os.setIsPlaying(false);
-                os.setIsPaused(true);
-                os.setIsStopped(false);
-                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " pausing");
-            }
-            if(oc.stopChanged())
-            {
-                talon_orchestras_[i]->Stop();
-                os.setIsPlaying(false);
-                os.setIsPaused(false);
-                os.setIsStopped(true);
-                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
-            }
-            if(oc.musicChanged(music_file_path))
-            {
-                talon_orchestras_[i]->LoadMusic(music_file_path);
-                os.setChirpFilePath(music_file_path);
-                ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " loaded music at " << music_file_path);
+                if(safeTalonCall(talon_orchestras_[i]->ClearInstruments()))
+                {
+                    ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " cleared instruments.");
+                }
+                else{
+                    ROS_ERROR_STREAM("Failed to clear instruments in orchestra.");
+                }
             }
             if(oc.instrumentsChanged(instruments))
             {
-                talon_orchestras_[i]->ClearInstruments();
-                for(size_t j = 0; j < instruments.size(); j++)
+                if(safeTalonCall(talon_orchestras_[i]->ClearInstruments(), "ClearInstruments"))
                 {
-                    size_t can_index = std::numeric_limits<size_t>::max();
-                    for(size_t k = 0; k < can_ctre_mc_names_.size(); k++)
+                    for(size_t j = 0; j < instruments.size(); j++)
                     {
-                        if(can_ctre_mc_names_[k] == instruments[j])
+                        size_t can_index = std::numeric_limits<size_t>::max();
+                        for(size_t k = 0; k < can_ctre_mc_names_.size(); k++)
                         {
-                            can_index = k;
-                            break;
+                            if(can_ctre_mc_names_[k] == instruments[j])
+                            {
+                                can_index = k;
+                                break;
+                            }
                         }
+                        if(can_index == std::numeric_limits<size_t>::max())
+                        {
+                            ROS_ERROR_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it does not exist");
+                        }
+                        else if(can_ctre_mc_is_talon_fx_[can_index])
+                        {
+                            if(safeTalonCall(talon_orchestras_[i]->AddInstrument(*(std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonFX>(ctre_mcs_[can_index]))), "AddInstrument"))
+                                ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " added Falcon " << "falcon_name");
+                            else{
+                                ROS_ERROR_STREAM("Failed to add instrument to orchestra");
+                                oc.resetInstruments();
+                            }
+                        }
+                        else
+                            ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it is not a TalonFX");
                     }
-                    if(can_index == std::numeric_limits<size_t>::max())
-                    {
-                        ROS_ERROR_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it does not exist");
-                        continue;
-                    }
-                    if(can_ctre_mc_is_talon_fx_[can_index])
-                    {
-                        talon_orchestras_[i]->AddInstrument(*(std::dynamic_pointer_cast<ctre::phoenix::motorcontrol::can::TalonFX>(ctre_mcs_[can_index])));
-                        ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " added Falcon " << "falcon_name");
-                    }
-                    else
-                        ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it is not a TalonFX");
+                    os.setInstruments(instruments); //TODO do this correctly
                 }
-                os.setInstruments(instruments); //TODO do this correctly
+                else{
+                    ROS_ERROR_STREAM("Failed to clear instruments in orchestra");
+                    oc.resetClearInstruments();
+                }
             }
-            if(oc.clearInstrumentsChanged())
+            if(oc.musicChanged(music_file_path))
             {
-                talon_orchestras_[i]->ClearInstruments();
+                if(safeTalonCall(talon_orchestras_[i]->LoadMusic(music_file_path)))
+                {
+                    os.setChirpFilePath(music_file_path);
+                    ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " loaded music at " << music_file_path);
+                }
+                else{
+                    ROS_ERROR_STREAM("Failed to load music into orchestra");
+                    oc.resetMusic();
+                }
+            }
+            if(oc.pauseChanged())
+            {
+                if(safeTalonCall(talon_orchestras_[i]->Pause(), "Pause"))
+                {
+                    os.setIsPlaying(false);
+                    os.setIsPaused(true);
+                    os.setIsStopped(false);
+                    ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " pausing");
+                }
+                else{
+                    ROS_ERROR_STREAM("Failed to pause orchestra");
+                    oc.pause();
+                }
+            }
+            if(oc.playChanged())
+            {
+                if(safeTalonCall(talon_orchestras_[i]->Play(), "Play"))
+                {
+                    os.setIsPlaying(true);
+                    os.setIsPaused(false);
+                    os.setIsStopped(false);
+                    ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " playing");
+                }
+                else{
+                    ROS_ERROR_STREAM("Failed to play orchestra");
+                    oc.play();
+                }
+            }
+            if(oc.stopChanged())
+            {
+                if(safeTalonCall(talon_orchestras_[i]->Stop(), "Stop"))
+                {
+                    os.setIsPlaying(false);
+                    os.setIsPaused(false);
+                    os.setIsStopped(true);
+                    ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
+                }
+                else{
+                    ROS_ERROR_STREAM("Failed to stop orchestra");
+                    oc.stop();
+                }
             }
         }
 
