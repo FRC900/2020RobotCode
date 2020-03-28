@@ -32,18 +32,19 @@ bool OrchestraController::init(hardware_interface::OrchestraCommandInterface *hw
 
 void OrchestraController::starting(const ros::Time &time)
 {
-    //read in the default instruments from an orcehstra config file
-	state_changed_.writeFromNonRT(false);
-	instruments_changed_.writeFromNonRT(false);
-	music_file_path_changed_.writeFromNonRT(false);
+    //TODO read in the default instruments from an orcehstra config file
+	state_.writeFromNonRT(2);
+	instruments_.writeFromNonRT({});
+	music_file_path_changed_.writeFromNonRT("");
+
+	previous_state_ = 2;
 }
 
 void OrchestraController::update(const ros::Time &time, const ros::Duration &)
 {
-	ROS_INFO_STREAM("RUNNING UPDATE IN ORCHESTRA CONTROLLER");
-	if(*(state_changed_.readFromRT()))
+	int state = *(state_.readFromRT());
+	if(state != previous_state_)
 	{
-		int state = *(state_.readFromRT());
 		ROS_INFO_STREAM("Changed state in OrchestraController");
 		//TODO make enum
 		switch(state)
@@ -64,23 +65,14 @@ void OrchestraController::update(const ros::Time &time, const ros::Duration &)
 				ROS_ERROR_STREAM("Orchestra state must be 0, 1, or 2");
 				break;
 		}
-		state_changed_.writeFromNonRT(false);
+		previous_state_ = state;
 	}
-	if(*(instruments_changed_.readFromRT()))
-	{
-		ROS_INFO_STREAM("Changing instrumnets in OrchestraController");
-		std::vector<std::string> instruments = *(instruments_.readFromRT());
-		orchestra_command_handle_->clearInstruments();
-		orchestra_command_handle_->addInstruments(instruments);
-		instruments_changed_.writeFromNonRT(false);
-	}
-	if(*(music_file_path_changed_.readFromRT()))
-	{
-		ROS_INFO_STREAM("Changing the music file path in OrchestraController");
-		std::string music_file_path = *(music_file_path_.readFromRT());
-		orchestra_command_handle_->loadMusic(music_file_path);
-		music_file_path_changed_.writeFromNonRT(false);
-	}
+
+	std::vector<std::string> instruments = *(instruments_.readFromRT());
+	orchestra_command_handle_->addInstruments(instruments);
+
+	std::string music_file_path = *(music_file_path_.readFromRT());
+	orchestra_command_handle_->loadMusic(music_file_path);
 }
 
 void OrchestraController::stopping(const ros::Time & )
@@ -92,7 +84,6 @@ bool OrchestraController::loadMusicService(talon_controller_msgs::LoadMusicSrv::
 	if(isRunning())
 	{
 		music_file_path_.writeFromNonRT(req.music_path);
-		music_file_path_changed_.writeFromNonRT(true);
 		res.success = true;
 		return true;
 	}
@@ -137,7 +128,6 @@ bool OrchestraController::reloadInstrumentsService(talon_controller_msgs::LoadIn
 	if(isRunning())
 	{
 		instruments_.writeFromNonRT(req.instruments);
-		instruments_changed_.writeFromNonRT(true);
 		res.success = true;
 		return true;
 	}

@@ -81,8 +81,11 @@ bool OrchestraCommand::stopChanged()
 
 void OrchestraCommand::loadMusic(const std::string &file_path)
 {
-    file_path_ = file_path;
-    load_music_changed_ = true;
+	if(file_path_ != file_path)
+	{
+		file_path_ = file_path;
+		load_music_changed_ = true;
+	}
 }
 std::string OrchestraCommand::getMusic() const
 {
@@ -105,8 +108,11 @@ void OrchestraCommand::resetMusic()
 
 void OrchestraCommand::addInstruments(const std::vector<std::string> &instruments)
 {
-    instruments_changed_ = true;
-    instruments_ = instruments;
+	if(instruments_ != instruments)
+	{
+		instruments_changed_ = true;
+		instruments_ = instruments;
+	}
 }
 std::vector<std::string> OrchestraCommand::getInstruments() const
 {

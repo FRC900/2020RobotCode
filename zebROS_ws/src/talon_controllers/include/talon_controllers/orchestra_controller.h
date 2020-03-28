@@ -42,6 +42,7 @@ namespace orchestra_controller
 			realtime_tools::RealtimeBuffer<bool> instruments_changed_;
 			realtime_tools::RealtimeBuffer<int> state_;
 			realtime_tools::RealtimeBuffer<bool> state_changed_;
+			int previous_state_;
 
 			ros::ServiceServer load_music_server_;
 			ros::ServiceServer set_state_server_;
