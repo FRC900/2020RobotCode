@@ -4,20 +4,19 @@ namespace hardware_interface
 {
 
 // Set up default values
-// Set most of the changed_ vars to true
-// to force a write of these values to the Talon
-// That should put the talon in a known state
-// rather than relying on them being setup to
-// a certain state previously
+// We don't want to set any of the 
+// changed_ values to true, because if you
+// call orchestra commands without music
+// loaded then it's an invalid action
 OrchestraCommand::OrchestraCommand() :
-	pause_changed_(true),
-	play_changed_(true),
-	stop_changed_(true),
-        file_path_(""),
+	pause_changed_(false),
+	play_changed_(false),
+	stop_changed_(false),
+	file_path_(""),
 	load_music_changed_(false),
-        instruments_{},
-        instruments_changed_(false),
-        clear_instruments_changed_(true)
+	instruments_{},
+	instruments_changed_(false),
+	clear_instruments_changed_(false)
 {
 }
 
