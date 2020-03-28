@@ -1239,7 +1239,8 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 		robot_controller_state_interface_.registerHandle(rcsh);
 	}
 
-        num_talon_orchestras_ = talon_orchestra_names_.size();
+	num_talon_orchestras_ = talon_orchestra_names_.size();
+	orchestra_command_.resize(num_talon_orchestras_);
 
 	for (size_t i = 0; i < num_talon_orchestras_; i++)
 	{
@@ -1250,7 +1251,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 	}
 	for (size_t i = 0; i < num_talon_orchestras_; i++)
 	{
-		// Create state interface for the given orchestra 
+		// Create state interface for the given orchestra
 		// and point it to the data stored in the
 		// corresponding orchestra_state array entry
 		hardware_interface::OrchestraStateHandle osh(talon_orchestra_names_[i], &orchestra_state_[i]);

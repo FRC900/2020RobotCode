@@ -42,10 +42,6 @@ bool OrchestraCommand::pauseChanged()
     }
     return false;
 }
-void OrchestraCommand::resetPause()
-{
-    pause_changed_ = true;
-}
 
 void OrchestraCommand::play()
 {
@@ -63,10 +59,6 @@ bool OrchestraCommand::playChanged()
         return true;
     }
     return false;
-}
-void OrchestraCommand::resetPlay()
-{
-    play_changed_ = true;
 }
 
 void OrchestraCommand::stop()
@@ -86,12 +78,8 @@ bool OrchestraCommand::stopChanged()
     }
     return false;
 }
-void OrchestraCommand::resetStop()
-{
-    stop_changed_ = true;
-}
 
-void OrchestraCommand::loadMusic(std::string file_path)
+void OrchestraCommand::loadMusic(const std::string &file_path)
 {
     file_path_ = file_path;
     load_music_changed_ = true;
@@ -102,10 +90,10 @@ std::string OrchestraCommand::getMusic() const
 }
 bool OrchestraCommand::musicChanged(std::string &file_path)
 {
+	file_path = file_path_;
     if(load_music_changed_)
     {
         load_music_changed_ = false;
-        file_path = file_path_;
         return true;
     }
     return false;
@@ -115,7 +103,7 @@ void OrchestraCommand::resetMusic()
     load_music_changed_ = true;
 }
 
-void OrchestraCommand::addInstruments(std::vector<std::string> instruments)
+void OrchestraCommand::addInstruments(const std::vector<std::string> &instruments)
 {
     instruments_changed_ = true;
     instruments_ = instruments;
@@ -126,10 +114,10 @@ std::vector<std::string> OrchestraCommand::getInstruments() const
 }
 bool OrchestraCommand::instrumentsChanged(std::vector<std::string> &instruments)
 {
+	instruments = instruments_;
     if(instruments_changed_)
     {
         instruments_changed_ = false;
-        instruments = instruments_;
         return true;
     }
     return false;

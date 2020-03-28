@@ -1915,8 +1915,14 @@ void FRCRobotHWInterface::read(const ros::Time& /*time*/, const ros::Duration& /
         
         for(size_t i = 0; i < num_talon_orchestras_; i++)
         {
-            orchestra_state_[i].setIsPlaying(talon_orchestras_->IsPlaying());
-            orchestra_state_[i].setIsPaused(!talon_orchestras_->IsPlaying());
+			if(talon_orchestras_[i]->IsPlaying())
+			{
+				orchestra_state_[i].setPlaying();
+			}
+			else
+			{
+				orchestra_state_[i].setStopped();
+			}
         }
 
 	read_tracer_.stop();
@@ -3900,14 +3906,11 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
         {
             auto &oc = orchestra_command_[i];
             auto &os = orchestra_state_[i];
-            bool play;
-            bool pause;
-            bool stop;
             std::string music_file_path;
             std::vector<std::string> instruments;
             if(oc.clearInstrumentsChanged())
             {
-                if(safeTalonCall(talon_orchestras_[i]->ClearInstruments()))
+                if(safeTalonCall(talon_orchestras_[i]->ClearInstruments(), "ClearInstruments"))
                 {
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " cleared instruments.");
                 }
@@ -3946,7 +3949,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
                         else
                             ROS_INFO_STREAM("Talon Orchestra " <<  talon_orchestra_names_[i] << " failed to add " << instruments[j] << " because it is not a TalonFX");
                     }
-                    os.setInstruments(instruments); //TODO do this correctly
+                    os.setInstruments(instruments);
                 }
                 else{
                     ROS_ERROR_STREAM("Failed to clear instruments in orchestra");
@@ -3955,7 +3958,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             }
             if(oc.musicChanged(music_file_path))
             {
-                if(safeTalonCall(talon_orchestras_[i]->LoadMusic(music_file_path)))
+                if(safeTalonCall(talon_orchestras_[i]->LoadMusic(music_file_path), "LoadMusic"))
                 {
                     os.setChirpFilePath(music_file_path);
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " loaded music at " << music_file_path);
@@ -3969,9 +3972,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             {
                 if(safeTalonCall(talon_orchestras_[i]->Pause(), "Pause"))
                 {
-                    os.setIsPlaying(false);
-                    os.setIsPaused(true);
-                    os.setIsStopped(false);
+                    os.setPaused();
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " pausing");
                 }
                 else{
@@ -3983,9 +3984,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             {
                 if(safeTalonCall(talon_orchestras_[i]->Play(), "Play"))
                 {
-                    os.setIsPlaying(true);
-                    os.setIsPaused(false);
-                    os.setIsStopped(false);
+                    os.setPlaying();
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " playing");
                 }
                 else{
@@ -3997,9 +3996,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             {
                 if(safeTalonCall(talon_orchestras_[i]->Stop(), "Stop"))
                 {
-                    os.setIsPlaying(false);
-                    os.setIsPaused(false);
-                    os.setIsStopped(true);
+                    os.setStopped();
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
                 }
                 else{

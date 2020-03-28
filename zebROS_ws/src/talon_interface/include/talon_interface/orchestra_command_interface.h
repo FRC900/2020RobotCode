@@ -14,24 +14,21 @@ class OrchestraCommand
                 void pause();
                 bool getPause() const;
                 bool pauseChanged();
-                void resetPause();
                 
                 void play();
                 bool getPlay() const;
                 bool playChanged();
-                void resetPlay();
 
                 void stop();
                 bool getStop() const;
                 bool stopChanged();
-                void resetStop();
 
-                void loadMusic(std::string file_path);
+                void loadMusic(const std::string &file_path);
 				std::string getMusic() const;
                 bool musicChanged(std::string &file_path);
                 void resetMusic();
 
-                void addInstruments(std::vector<std::string> instruments);
+                void addInstruments(const std::vector<std::string> &instruments);
 				std::vector<std::string> getInstruments() const;
                 bool instrumentsChanged(std::vector<std::string> &instruments);
                 void resetInstruments();

@@ -11,19 +11,19 @@ class OrchestraState
 		OrchestraState(int orchestra_id);
 		~OrchestraState();
 
-                void setChirpFilePath(std::string chirp_file_path);
+                void setChirpFilePath(const std::string &chirp_file_path);
                 std::string getChirpFilePath() const;
 
-                void setInstruments(std::vector<std::string> instruments);
+                void setInstruments(const std::vector<std::string> &instruments);
                 std::vector<std::string> getInstruments() const;
 
-                void setIsPaused(bool is_paused);
+                void setPaused();
                 bool getIsPaused() const;
                 
-                void setIsPlaying(bool is_playing);
+                void setPlaying();
                 bool getIsPlaying() const;
 
-                void setIsStopped(bool is_stopped);
+                void setStopped();
                 bool getIsStopped() const;
 
 	private:
@@ -32,7 +32,6 @@ class OrchestraState
                 std::string chirp_file_path_;
                 bool is_playing_;
                 bool is_paused_;
-                bool is_stopped_;
 };
 
 // Glue code to let this be registered in the list of
