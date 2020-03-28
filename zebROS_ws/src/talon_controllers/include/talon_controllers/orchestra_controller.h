@@ -20,10 +20,10 @@ namespace orchestra_controller
 
 			virtual bool init(hardware_interface::OrchestraCommandInterface *hw,
 					ros::NodeHandle						&root_nh,
-					ros::NodeHandle						&controller_nh);
-			virtual void starting(const ros::Time &time);
-			virtual void update(const ros::Time &time, const ros::Duration & );
-			virtual void stopping(const ros::Time &time);
+					ros::NodeHandle						&controller_nh) override;
+			virtual void starting(const ros::Time &time) override;
+			virtual void update(const ros::Time &time, const ros::Duration & ) override;
+			virtual void stopping(const ros::Time &time) override;
 
 			bool loadMusicService(talon_controller_msgs::LoadMusicSrv::Request &req,
 					talon_controller_msgs::LoadMusicSrv::Response &res);
