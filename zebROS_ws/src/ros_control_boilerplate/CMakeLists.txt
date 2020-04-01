@@ -378,6 +378,25 @@ add_dependencies(frcrobot_hw_main
   ${catkin_EXPORTED_TARGETS}
 )
 
+add_executable(ctre_test src/ctre_test.cpp)
+target_link_libraries(ctre_test 
+	#${CTRE_LIB_DIR}/libCTRE_Phoenix.a
+	#${CTRE_LIB_DIR}/libCTRE_PhoenixCCI.a
+	${CTRE_LIB_DIR}/libCTRE_PhoenixPlatform_socketcan.a
+	${CTRE_LIB_DIR}/libCTRE_PhoenixDiagnostics.a
+	${CTRE_LIB_DIR}/libCTRE_PhoenixCanutils.a
+	${CTRE_LIB_DIR}/libCTRE_PhoenixCore.a
+	)
+
+find_package(Threads REQUIRED)
+if(THREADS_HAVE_PTHREAD_ARG)
+  target_compile_options(ctre_test PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(ctre_test "${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
+
 add_executable(q_to_rpy src/q_to_rpy.cpp)
 target_link_libraries(q_to_rpy
 	${catkin_LIBRARIES}
