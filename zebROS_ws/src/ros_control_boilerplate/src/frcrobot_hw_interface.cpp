@@ -343,7 +343,7 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 		if (spark_max_local_hardwares_[i])
 		{
 			rev::CANSparkMaxLowLevel::MotorType rev_motor_type;
-			convertRevMotorType(spark_max_motor_types_[i], rev_motor_type);
+			rev_convert_.motorType(spark_max_motor_types_[i], rev_motor_type);
 			can_spark_maxs_.push_back(std::make_shared<rev::CANSparkMax>(spark_max_can_ids_[i], rev_motor_type));
 			can_spark_max_pid_controllers_.push_back(std::make_shared<rev::CANPIDController>(can_spark_maxs_[i]->GetPIDController()));
 
@@ -1270,9 +1270,9 @@ void FRCRobotHWInterface::spark_max_read_thread(std::shared_ptr<rev::CANSparkMax
 		unsigned int encoder_ticks_per_rotation;
 		{
 			std::lock_guard<std::mutex> l(*mutex);
-			convertRevLimitSwitchPolarity(state->getForwardLimitSwitchPolarity(), forward_limit_switch_polarity);
-			convertRevLimitSwitchPolarity(state->getReverseLimitSwitchPolarity(), reverse_limit_switch_polarity);
-			convertRevEncoderType(state->getEncoderType(), encoder_type);
+			rev_convert_.limitSwitchPolarity(state->getForwardLimitSwitchPolarity(), forward_limit_switch_polarity);
+			rev_convert_.limitSwitchPolarity(state->getReverseLimitSwitchPolarity(), reverse_limit_switch_polarity);
+			rev_convert_.encoderType(state->getEncoderType(), encoder_type);
 			encoder_ticks_per_rotation = state->getEncoderTicksPerRotation();
 		}
 
@@ -2907,17 +2907,10 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 		ctre::phoenix::motorcontrol::LimitSwitchNormal ctre_remote_reverse_normal;
 		if (tc.remoteLimitSwitchesSourceChanged(internal_remote_forward_source, internal_remote_forward_normal, remote_forward_id,
 											    internal_remote_reverse_source, internal_remote_reverse_normal, remote_reverse_id) &&
-<<<<<<< HEAD
-			talon_convert_.remoteLimitSwitchSource(internal_remote_forward_source, talon_remote_forward_source) &&
-			talon_convert_.limitSwitchNormal(internal_remote_forward_normal, talon_remote_forward_normal) &&
-			talon_convert_.remoteLimitSwitchSource(internal_remote_reverse_source, talon_remote_reverse_source) &&
-			talon_convert_.limitSwitchNormal(internal_remote_reverse_normal, talon_remote_reverse_normal) )
-=======
-				convertRemoteLimitSwitchSource(internal_remote_forward_source, ctre_remote_forward_source) &&
-				convertLimitSwitchNormal(internal_remote_forward_normal, ctre_remote_forward_normal) &&
-				convertRemoteLimitSwitchSource(internal_remote_reverse_source, ctre_remote_reverse_source) &&
-				convertLimitSwitchNormal(internal_remote_reverse_normal, ctre_remote_reverse_normal) )
->>>>>>> Start of spark max interface / controller
+			talon_convert_.remoteLimitSwitchSource(internal_remote_forward_source, ctre_remote_forward_source) &&
+			talon_convert_.limitSwitchNormal(internal_remote_forward_normal, ctre_remote_forward_normal) &&
+			talon_convert_.remoteLimitSwitchSource(internal_remote_reverse_source, ctre_remote_reverse_source) &&
+			talon_convert_.limitSwitchNormal(internal_remote_reverse_normal, ctre_remote_reverse_normal) )
 		{
 			bool rc = true;
 			rc &= safeTalonCall(victor->ConfigForwardLimitSwitchSource(ctre_remote_forward_source, ctre_remote_forward_normal, remote_forward_id, timeoutMs),"ConfigForwardLimitSwitchSource(Remote)");
@@ -3406,8 +3399,8 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 				const bool reference_changed = smc.changedPIDFReference(slot, pidf_reference_value, pidf_reference_ctrl, pidf_arb_feed_forward, pidf_arb_feed_forward_units);
 				if ((slot_changed || reference_changed))
 				{
-					if (convertRevControlType(pidf_reference_ctrl, rev_reference_ctrl) &&
-						convertRevArbFFUnits(pidf_arb_feed_forward_units, rev_arb_feed_forward_units) &&
+					if (rev_convert_.controlType(pidf_reference_ctrl, rev_reference_ctrl) &&
+						rev_convert_.arbFFUnits(pidf_arb_feed_forward_units, rev_arb_feed_forward_units) &&
 						safeSparkMaxCall(pid_controller->SetReference(pidf_reference_value, rev_reference_ctrl, slot, pidf_arb_feed_forward, rev_arb_feed_forward_units), "SetReference"))
 					{
 						ROS_INFO_STREAM("Updated Spark Max" << joint_id << "=" << spark_max_names_[joint_id] << " PIDF slot " << slot << " refrence");
@@ -3431,7 +3424,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			rev::CANDigitalInput::LimitSwitchPolarity rev_limit_switch_polarity;
 			if (smc.changedForwardLimitSwitch(limit_switch_polarity, limit_switch_enabled))
 			{
-				if (convertRevLimitSwitchPolarity(limit_switch_polarity, rev_limit_switch_polarity) &&
+				if (rev_convert_.limitSwitchPolarity(limit_switch_polarity, rev_limit_switch_polarity) &&
 					safeSparkMaxCall(spark_max->GetForwardLimitSwitch(rev_limit_switch_polarity).EnableLimitSwitch(limit_switch_enabled),
 						"GetForwardLimitSwitch"))
 				{
@@ -3446,7 +3439,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			}
 			if (smc.changedReverseLimitSwitch(limit_switch_polarity, limit_switch_enabled))
 			{
-				if (convertRevLimitSwitchPolarity(limit_switch_polarity, rev_limit_switch_polarity) &&
+				if (rev_convert_.limitSwitchPolarity(limit_switch_polarity, rev_limit_switch_polarity) &&
 					safeSparkMaxCall(spark_max->GetReverseLimitSwitch(rev_limit_switch_polarity).EnableLimitSwitch(limit_switch_enabled) ,
 						"GetReverseLimitSwitch"))
 				{
@@ -3512,8 +3505,8 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			rev::CANSparkMax::IdleMode   rev_idle_mode;
 			if (smc.changedIdleMode(idle_mode))
 			{
-				if (convertRevIdleMode(idle_mode, rev_idle_mode) &&
-						safeSparkMaxCall(spark_max->SetIdleMode(rev_idle_mode), "SetIdleMode"))
+				if (rev_convert_.idleMode(idle_mode, rev_idle_mode) &&
+					safeSparkMaxCall(spark_max->SetIdleMode(rev_idle_mode), "SetIdleMode"))
 				{
 					ROS_INFO_STREAM("Updated Spark Max" << joint_id << "=" << spark_max_names_[joint_id] << " idle mode");
 					sms.setIdleMode(idle_mode);
@@ -3582,8 +3575,8 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			bool follower_invert;
 			if (smc.changedFollower(follower_type, follower_id, follower_invert))
 			{
-				if (convertRevExternalFollower(follower_type, rev_follower_type) &&
-						safeSparkMaxCall(spark_max->Follow(rev_follower_type, follower_id, follower_invert), "Follow"))
+				if (rev_convert_.externalFollower(follower_type, rev_follower_type) &&
+					safeSparkMaxCall(spark_max->Follow(rev_follower_type, follower_id, follower_invert), "Follow"))
 				{
 					ROS_INFO_STREAM("Updated Spark Max" << joint_id << "=" << spark_max_names_[joint_id] << " follow");
 					sms.setFollowerType(follower_type);
@@ -4427,159 +4420,6 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			}
 		}
 	}
-}
-
-bool FRCRobotHWInterface::convertRevMotorType(const hardware_interface::MotorType input,
-		rev::CANSparkMaxLowLevel::MotorType &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::kBrushed:
-			output = rev::CANSparkMaxLowLevel::MotorType::kBrushed;
-			break;
-		case hardware_interface::kBrushless:
-			output = rev::CANSparkMaxLowLevel::MotorType::kBrushless;
-			break;
-		default:
-			ROS_ERROR("Invalid input in convertRevMotorType");
-			return false;
-	}
-	return true;
-}
-bool FRCRobotHWInterface::convertRevLimitSwitchPolarity(const hardware_interface::LimitSwitchPolarity input,
-		rev::CANDigitalInput::LimitSwitchPolarity &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::kNormallyOpen:
-			output = rev::CANDigitalInput::LimitSwitchPolarity::kNormallyOpen;
-			break;
-		case hardware_interface::kNormallyClosed:
-			output = rev::CANDigitalInput::LimitSwitchPolarity::kNormallyClosed;
-			break;
-		default:
-			ROS_ERROR("Invalid input in convertRevLimitSwitchPolarity");
-			return false;
-	}
-	return true;
-}
-
-bool FRCRobotHWInterface::convertRevEncoderType(const hardware_interface::SensorType input,
-		rev::CANEncoder::EncoderType &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::kNoSensor:
-			output = rev::CANEncoder::EncoderType::kNoSensor;
-			break;
-		case hardware_interface::kHallSensor:
-			output = rev::CANEncoder::EncoderType::kHallSensor;
-			break;
-		case hardware_interface::kQuadrature:
-			output = rev::CANEncoder::EncoderType::kQuadrature;
-			break;
-		case hardware_interface::kSensorless:
-			output = rev::CANEncoder::EncoderType::kSensorless;
-			break;
-		default:
-			ROS_ERROR("Invalid input in convertRevEncoderType");
-			return false;
-	}
-	return true;
-}
-
-bool FRCRobotHWInterface::convertRevControlType(const hardware_interface::ControlType input,
-		rev::ControlType &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::kDutyCycle:
-			output = rev::kDutyCycle;
-			break;
-		case hardware_interface::kVelocity:
-			output = rev::kVelocity;
-			break;
-		case hardware_interface::kVoltage:
-			output = rev::kVoltage;
-			break;
-		case hardware_interface::kPosition:
-			output = rev::kPosition;
-			break;
-		case hardware_interface::kSmartMotion:
-			output = rev::kSmartMotion;
-			break;
-		case hardware_interface::kCurrent:
-			output = rev::kCurrent;
-			break;
-		case hardware_interface::kSmartVelocity:
-			output = rev::kSmartVelocity;
-			break;
-
-		default:
-			ROS_ERROR("Invalid input in convertRevControlType");
-			return false;
-	}
-	return true;
-}
-
-bool FRCRobotHWInterface::convertRevArbFFUnits(const hardware_interface::ArbFFUnits input,
-		rev::CANPIDController::ArbFFUnits &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::ArbFFUnits::kVoltage:
-			output = rev::CANPIDController::ArbFFUnits::kVoltage;
-			break;
-		case hardware_interface::ArbFFUnits::kPercentOut:
-			output = rev::CANPIDController::ArbFFUnits::kPercentOut;
-			break;
-
-		default:
-			ROS_ERROR("Invalid input in convertRevControlType");
-			return false;
-	}
-	return true;
-}
-
-bool FRCRobotHWInterface::convertRevIdleMode(const hardware_interface::IdleMode input,
-		rev::CANSparkMax::IdleMode &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::IdleMode::kCoast:
-			output = rev::CANSparkMax::IdleMode::kCoast;
-			break;
-		case hardware_interface::IdleMode::kBrake:
-			output = rev::CANSparkMax::IdleMode::kBrake;
-			break;
-
-		default:
-			ROS_ERROR("Invalid input in convertRevIdleMode");
-			return false;
-	}
-	return true;
-}
-
-bool FRCRobotHWInterface::convertRevExternalFollower(const hardware_interface::ExternalFollower input,
-		rev::CANSparkMax::ExternalFollower &output) const
-{
-	switch (input)
-	{
-		case hardware_interface::ExternalFollower::kFollowerDisabled:
-			output = rev::CANSparkMax::kFollowerDisabled;
-			break;
-		case hardware_interface::ExternalFollower::kFollowerSparkMax:
-			output = rev::CANSparkMax::kFollowerSparkMax;
-			break;
-		case hardware_interface::ExternalFollower::kFollowerPhoenix:
-			output = rev::CANSparkMax::kFollowerPhoenix;
-			break;
-
-		default:
-			ROS_ERROR("Invalid input in convertRevExternalFollower");
-			return false;
-	}
-	return true;
 }
 
 } // namespace

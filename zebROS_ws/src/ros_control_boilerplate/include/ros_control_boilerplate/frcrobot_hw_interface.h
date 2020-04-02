@@ -76,6 +76,7 @@
 #include "ros_control_boilerplate/cancoder_convert.h"
 #include "ros_control_boilerplate/canifier_convert.h"
 #include "ros_control_boilerplate/frc_robot_interface.h"
+#include "ros_control_boilerplate/rev_convert.h"
 #include "ros_control_boilerplate/talon_convert.h"
 #include "ros_control_boilerplate/tracer.h"
 
@@ -170,21 +171,6 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		/* Get conversion factor for position, velocity, and closed-loop stuff */
 		double getConversionFactor(int encoder_ticks_per_rotation, hardware_interface::FeedbackDevice encoder_feedback, hardware_interface::TalonMode talon_mode) const;
 
-		bool convertRevMotorType(const hardware_interface::MotorType input,
-				rev::CANSparkMaxLowLevel::MotorType &output) const;
-		bool convertRevLimitSwitchPolarity(const hardware_interface::LimitSwitchPolarity input,
-				rev::CANDigitalInput::LimitSwitchPolarity &output) const;
-		bool convertRevEncoderType(const hardware_interface::SensorType input,
-				rev::CANEncoder::EncoderType &output) const;
-		bool convertRevControlType(const hardware_interface::ControlType input,
-				rev::ControlType &output) const;
-		bool convertRevArbFFUnits(const hardware_interface::ArbFFUnits input,
-				rev::CANPIDController::ArbFFUnits &output) const;
-		bool convertRevIdleMode(const hardware_interface::IdleMode input,
-				rev::CANSparkMax::IdleMode &output) const;
-		bool convertRevExternalFollower(const hardware_interface::ExternalFollower input,
-				rev::CANSparkMax::ExternalFollower &output) const;
-
 		bool safeTalonCall(ctre::phoenix::ErrorCode error_code,
 				const std::string &talon_method_name) const;
 		bool safeSparkMaxCall(rev::CANError can_error,
@@ -270,6 +256,7 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		as726x_convert::AS726xConvert as726x_convert_;
 		cancoder_convert::CANCoderConvert cancoder_convert_;
 		canifier_convert::CANifierConvert canifier_convert_;
+		rev_convert::RevConvert rev_convert_;
 		talon_convert::TalonConvert talon_convert_;
 };  // class
 

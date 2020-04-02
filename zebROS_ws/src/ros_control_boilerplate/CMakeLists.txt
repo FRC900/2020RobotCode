@@ -116,6 +116,7 @@ set (FRCROBOT_HW_MAIN_SRCS
 	src/canifier_convert.cpp
 	src/frcrobot_hw_main.cpp
 	src/frcrobot_hw_interface.cpp
+	src/rev_convert.cpp
 	src/talon_convert.cpp
 )
 
@@ -245,6 +246,7 @@ if (0)
 			src/as726x_convert.cpp
 			src/cancoder_convert.cpp
 			src/canifier_convert.cpp
+			src/rev_convert.cpp
 			src/talon_convert.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
