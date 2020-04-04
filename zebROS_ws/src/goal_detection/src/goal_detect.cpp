@@ -70,13 +70,13 @@ namespace goal_detection
 				if (!no_depth)
 				{
 					ROS_INFO("starting goal detection using ZED");
-					frame_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed_goal/left/image_rect_color", sub_rate);
-					depth_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed_goal/depth/depth_registered", sub_rate);
+					frame_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed/zed_goal/left/image_rect_color", sub_rate);
+					depth_sub_ = std::make_unique<image_transport::SubscriberFilter>(it, "/zed/zed_goal/depth/depth_registered", sub_rate);
 					// ApproximateTime takes a queue size as its constructor argument, hence SyncPolicy(xxx)
 					rgbd_sync_ = std::make_unique<message_filters::Synchronizer<RGBDSyncPolicy>>(RGBDSyncPolicy(10), *frame_sub_, *depth_sub_);
 					rgbd_sync_->registerCallback(boost::bind(&GoalDetect::callback, this, _1, _2));
 
-					camera_info_sub_ = nh_.subscribe("/zed_goal/left/camera_info", sub_rate, &GoalDetect::camera_info_callback, this);
+					camera_info_sub_ = nh_.subscribe("/zed/zed_goal/left/camera_info", sub_rate, &GoalDetect::camera_info_callback, this);
 				}
 				else
 				{
