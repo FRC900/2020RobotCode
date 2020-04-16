@@ -49,7 +49,9 @@ bool intersection(Point2f o1, Point2f p1, Point2f o2, Point2f p2, Point2f &r)
 
 void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth, const ObjectNum objtype, const image_geometry::PinholeCameraModel &model) {
 	clear();
-	const vector<vector<Point>> goal_contours = getContours(image);
+	Mat thresh;
+	const vector<vector<Point>> goal_contours = getContours(image, thresh);
+	imshow("thresh", thresh);
 	if (goal_contours.size() == 0)
 		return;
 	const vector<DepthInfo> goal_depths = getDepths(depth, goal_contours, objtype, model);
@@ -71,12 +73,31 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth, const
 
 			if(objtype == POWER_PORT_2020){
 
-				Point2f tm(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y);
-				Point2f m(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y + (power_port_info[i].rect.height / 2));
+				Rect bm_roi(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 3), power_port_info[i].rect.tl().y + (power_port_info[i].rect.height / 2), (power_port_info[i].rect.width / 3), (power_port_info[i].rect.height / 2));
+				Rect tm_roi(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 3), power_port_info[i].rect.tl().y, (power_port_info[i].rect.width / 3), (power_port_info[i].rect.height / 2));
 
-				if(pointPolygonTest(goal_contours[i], tm, false) != -1 ){ // 1:inside, -1:outside, 0:edge
+				Mat tm = thresh(tm_roi);
+				Mat bm = thresh(bm_roi);
+
+				#ifdef VERBOSE_DEEP
+					cout << "top middle non-zero: " << countNonZero(tm) << endl;
+					cout << "top middle area: " << (tm.rows * tm.cols) << endl;
+					cout << "bottom middle non-zero: " << countNonZero(bm) << endl;
+					cout << "bottom middle area: " << (bm.rows * bm.cols) << endl;
+				#endif
+
+				//check if the top middle of the power port does not have reflective bit
+				if((double)countNonZero(tm) / (tm.rows * tm.cols) > 0.1){
 					#ifdef VERBOSE_DEEP
-						cout << "Top middle point of power port is not empty, dropping contour" << endl;
+						cout << "Top middle region of power port is not empty, dropping contour" << endl;
+					#endif
+					continue;
+				}
+
+				//check if the bottom middle of the power port has reflective bit
+				if((double)countNonZero(bm) / (bm.rows * bm.cols) < 0.4){
+					#ifdef VERBOSE_DEEP
+						cout << "Bottom middle region of power port is empty, dropping contour" << endl;
 					#endif
 					continue;
 				}
@@ -86,9 +107,10 @@ void GoalDetector::findTargets(const cv::Mat& image, const cv::Mat& depth, const
 
 				Point2f m(power_port_info[i].rect.tl().x + (power_port_info[i].rect.width / 2), power_port_info[i].rect.tl().y + (power_port_info[i].rect.height / 2));
 
+				//check if center of loading bay does not have reflective bit
 				if(pointPolygonTest(goal_contours[i], m, false) != -1 ){ // 1:inside, -1:outside, 0:edge
 					#ifdef VERBOSE_DEEP
-						cout << "Middle point of loading bay is not empty, dropping contour" << endl;
+						cout << "Middle point of loading bay is not empty, dropping contour, got: " << pointPolygonTest(goal_contours[i], m, false) << endl;
 					#endif
 					continue;
 				}
@@ -198,6 +220,29 @@ const vector< vector < Point > > GoalDetector::getContours(const Mat& image) {
 	vector<Vec4i> hierarchy;
 	findContours(threshold_image.clone(), return_contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
+	return return_contours;
+}
+
+const vector< vector < Point > > GoalDetector::getContours(const Mat& image, Mat& threshImage) {
+	// Look for parts the the image which are within the
+	// expected bright green color range
+	static Mat threshold_image;
+	vector < vector < Point > > return_contours;
+	if (!generateThresholdAddSubtract(image, threshold_image))
+	{
+		_isValid = false;
+		//_pastRects.push_back(SmartRect(Rect()));
+		return return_contours;
+	}
+
+	// find contours in the thresholded image - these will be blobs
+	// of green to check later on to see how well they match the
+	// expected shape of the goal
+	// Note : findContours modifies the input mat
+	vector<Vec4i> hierarchy;
+	findContours(threshold_image.clone(), return_contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+
+	threshImage = threshold_image.clone();
 	return return_contours;
 }
 
@@ -350,9 +395,6 @@ const vector<GoalInfo> GoalDetector::getInfo(const cv::Size &frame_size,
 		cout << "br: " << br << endl;
 		cout << "com: " << goal_actual.com() << endl;
 		cout << "com_expected / actual: " << com_percent_expected << " " << com_percent_actual << endl;
-		//cout << "Angle: " << minAreaRect(contours[i]).angle << endl;
-		//cout << "lineStart: " << start_line << endl;
-		//cout << "lineEnd: " << end_line << endl;
 		cout << "-------------------------------------------" << endl;
 #endif
 
@@ -416,29 +458,11 @@ bool GoalDetector::generateThresholdAddSubtract(const Mat& imageIn, Mat& imageOu
 #endif
 	if (otsuThreshold < _otsu_threshold)
 		return false;
-    return countNonZero(imageOut) != 0;
+  return countNonZero(imageOut) != 0;
 }
 
 #if 0
 float GoalDetector::distanceUsingFixedHeight(const Rect &/*rect*/, const Point &center, float expected_delta_height) const {
-	/*
-	cout << "Center: " << center << endl;
-	float percent_image = ((float)center.y - (float)_frame_size.height/2.0)  / (float)_frame_size.height;
-	cout << "Percent Image: " << percent_image << endl;
-	cout << "FOV Size: " << _fov_size << endl;
-	float size_fov = (percent_image * 1.3714590199999497) + (((float)_camera_angle/10.0) * (M_PI/180.0));
-	cout << "Size FOV: " << size_fov << endl;
-	cout << "Depth: " << expected_delta_height / (2.0 * tanf(size_fov/2.0)) << endl;
-	return expected_delta_height / (2.0 * tanf(size_fov / 2.0));*/
-
-	/*float focal_length_px = 0.5 * _frame_size.height / tanf(_fov_size.y / 2.0);
-	cout << "Focal Length: " << focal_length_px << endl;
-	float distance_centerline = (expected_delta_height * focal_length_px) / ((float)center.y - (float)_frame_size.height/2);
-	cout << "Distance to centerline: " << distance_centerline << endl;
-	float distance_ground = cos((_camera_angle/10.0) * (M_PI/180.0)) * distance_centerline;
-	cout << "Distance to ground: " << distance_ground << endl;
-	return distance_ground; */
-
 	//float focal_length_px = 750.0;
 	const float focal_length_px = (_frame_size.height / 2.0) / tanf(_fov_size.y / 2.0);
 	const float to_center = _frame_size.height / 2.0 - (float)center.y;
@@ -451,7 +475,6 @@ vector< GoalFound > GoalDetector::return_found(void) const
 {
 	return _return_found;
 }
-
 
 
 bool GoalDetector::Valid(void) const

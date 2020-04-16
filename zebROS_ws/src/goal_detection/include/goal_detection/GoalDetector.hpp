@@ -57,6 +57,7 @@ class GoalDetector
 		//If your objectypes have the same width it's safe to run
 		//getContours and computeConfidences with different types
 		void findTargets(const cv::Mat& image, const cv::Mat& depth, const ObjectNum objtype, const image_geometry::PinholeCameraModel &model);
+		const std::vector< std::vector< cv::Point > > getContours(const cv::Mat& image, cv::Mat& threshImage);
 		const std::vector< std::vector< cv::Point > > getContours(const cv::Mat& image);
 
 		bool Valid(void) const;
