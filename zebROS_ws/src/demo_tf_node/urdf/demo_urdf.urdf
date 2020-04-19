@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<robot name="demo_robot">
+    <link name="base_link"/>
+
+    <link name="output"/>
+    <joint name="output_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="output"/>
+        <origin xyz="1 1 1" rpy="0 0 0" />
+    </joint>
+</robot>
