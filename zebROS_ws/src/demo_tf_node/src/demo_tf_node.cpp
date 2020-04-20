@@ -28,7 +28,7 @@ class DemoTransformClass
             geometry_msgs::TransformStamped input_to_output_transform;
             geometry_msgs::PointStamped transformed_msg;
             try {
-                input_to_output_transform = tf_buffer_.lookupTransform("input", "output", ros::Time::now());
+                input_to_output_transform = tf_buffer_.lookupTransform("output", "input", ros::Time::now());
                 tf2::doTransform(msg, transformed_msg, input_to_output_transform);
 
 				pub_.publish(transformed_msg);
