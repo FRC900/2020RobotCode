@@ -1,16 +1,6 @@
-define laser ranger
-(
-  sensor
-  (
-    range_max 7.5
-    fov 360.0
-    samples 360
-  )
-  # generic model properties
-  color "black"
-  size [ 0.06 0.15 0.03 ]
-)
 
+# A camera used for tensorflow object detection
+# TODO - these values are all guesses
 define normal_camera fiducial
 (
 	range_min 0.0

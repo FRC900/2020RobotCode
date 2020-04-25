@@ -27,13 +27,16 @@ void drawRotatedRectangle(cv::Mat& image, const cv::Point &centerPoint, const cv
 int main(void)
 {
 
+	// In inches
 	constexpr double field_width  = 52. * 12. + 5. + 1./4.;
 	constexpr double field_height = 26. * 12. + 11. + 1./4.;
 
+	// In pixels
 	constexpr int width  = 1200;
 	constexpr int height = width / (field_width / field_height);
 	constexpr double border = width * .05;
 
+	// Inches
 	constexpr double ds_wall_slope_height = 69.5;
 	constexpr double ds_wall_slope_width = (field_width - 557.84) / 2.;
 
@@ -41,6 +44,9 @@ int main(void)
 	constexpr double trench_to_side_wall = 53.5;
 	constexpr double trench_width = 2;
 	constexpr double trench_length = 30;
+
+
+	// Create mat large enough to hold field plus a border
 	cv::Mat image(cv::Size(width + 2 * border, height + 2 * border), CV_8UC1, cv::Scalar(255));
 	std::cout << image.size() << " " << image.depth() << " " << image.channels() << std::endl;
 
@@ -65,6 +71,7 @@ int main(void)
 			{
 				image.at<uchar>(row, col) = 0;
 			}
+			// Angled DS wall
 			if (ypos_in_inches < ds_wall_slope_height)
 			{
 				const double near_x_intercept = ds_wall_slope_width - ypos_in_inches * (ds_wall_slope_width / ds_wall_slope_height);
@@ -74,6 +81,7 @@ int main(void)
 					image.at<uchar>(row, col) = 0;
 				}
 			}
+			// Angled DS wall
 			if ((field_height - ypos_in_inches) < ds_wall_slope_height)
 			{
 				const double near_x_intercept = ds_wall_slope_width - (field_height - ypos_in_inches) * (ds_wall_slope_width / ds_wall_slope_height);
@@ -83,6 +91,8 @@ int main(void)
 					image.at<uchar>(row, col) = 0;
 				}
 			}
+
+			// Trench
 			if ((xpos_in_inches > trench_to_ds_wall) && (xpos_in_inches < (trench_to_ds_wall + trench_length)) &&
 			    (ypos_in_inches > trench_to_side_wall) && (ypos_in_inches < (trench_to_side_wall + trench_width)))
 			{
@@ -98,6 +108,8 @@ int main(void)
 			//std::cout << xpos_in_inches << ", " << ypos_in_inches << std::endl;
 		}
 	}
+
+	// Draw pillars as rotated rects
 	const double pillar_dx = 4.629 / inches_per_pixel;
 	const double pillar_dy = 11.150 / inches_per_pixel;
 	const double pillar_hypot = hypot(pillar_dy, pillar_dy);
@@ -136,6 +148,7 @@ int main(void)
 			atan2(pillar_dy, pillar_dx) * 180. / M_PI,
 			cv::Scalar(0,0,0));
 
+	// Calculations for various inputs to stage and map_server
 	double meter_per_pixel = (field_width * .0254) / width;
 	std::cout << "meters per pixel = " << meter_per_pixel << std::endl;
 	std::cout << "width x height " << meter_per_pixel * image.cols << " " << meter_per_pixel * image.rows << std::endl;

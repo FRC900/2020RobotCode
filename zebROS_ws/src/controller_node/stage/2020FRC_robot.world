@@ -1,15 +1,19 @@
+# Top-level world file for stage simulation
 include "robots/2020FRC_robot.inc"
 
+# Object detection model - used as a base for each target
+# we can detect using tensorflow object detection
+# TODO - maybe also retro targets?
 define objdet_target model
 (
  size [ 0.15 0.15 0.20 ]
  gui_move 0
  gui_nose 0
- color "green"
  gripper_return -1
  laser_return -1
 )
 
+# Model for the basic floorplan - walls, and field obstacles
 define floorplan model
 (
   # sombre, sensible, artistic
@@ -38,6 +42,10 @@ window
   scale 60
 )
 
+# Load the 2020 FRC map into the floorplan
+# Size determines how pixels map to meters
+# Pose fixes the center of the field
+# See the output from 2020RobotCode/field_map for these values
 floorplan
 (
   name "2020FRC_field"
