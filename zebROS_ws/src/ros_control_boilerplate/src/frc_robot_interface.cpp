@@ -2143,80 +2143,84 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 
 		}
 
-		read_tracer_.start_unique("match data");
 		int32_t status = 0;
-		//check if sufficient time has passed since last read
-		if(ros::Time::now().toSec() - t_prev_match_data_read_ > (1./match_data_read_hz_))
+		read_tracer_.start_unique("match data");
+		if (match_data_mutex_.try_lock())
 		{
-			t_prev_match_data_read_ += 1./match_data_read_hz_;
+			//check if sufficient time has passed since last read
+			if(ros::Time::now().toSec() - t_prev_match_data_read_ > (1./match_data_read_hz_))
+			{
+				t_prev_match_data_read_ += 1./match_data_read_hz_;
 
-			status = 0;
-			match_data_.setMatchTimeRemaining(HAL_GetMatchTime(&status));
-			match_data_.setGetMatchTimeStatus(std::to_string(status) + ": " + HAL_GetErrorMessage(status));
-			HAL_MatchInfo info;
-			HAL_GetMatchInfo(&info);
+				status = 0;
+				match_data_.setMatchTimeRemaining(HAL_GetMatchTime(&status));
+				match_data_.setGetMatchTimeStatus(std::to_string(status) + ": " + HAL_GetErrorMessage(status));
+				HAL_MatchInfo info;
+				HAL_GetMatchInfo(&info);
 
-			match_data_.setGameSpecificData(std::string(reinterpret_cast<char*>(info.gameSpecificMessage),
-						info.gameSpecificMessageSize));
-			match_data_.setEventName(info.eventName);
+				match_data_.setGameSpecificData(std::vector<uint8_t>(info.gameSpecificMessage, info.gameSpecificMessage + info.gameSpecificMessageSize));
+				match_data_.setEventName(info.eventName);
 
-			status = 0;
-			auto allianceStationID = HAL_GetAllianceStation(&status);
-			match_data_.setGetAllianceStationStatus(std::to_string(status) + ": " + HAL_GetErrorMessage(status));
-			DriverStation::Alliance color;
-			switch (allianceStationID) {
-				case HAL_AllianceStationID_kRed1:
-				case HAL_AllianceStationID_kRed2:
-				case HAL_AllianceStationID_kRed3:
-					color = DriverStation::kRed;
-					break;
-				case HAL_AllianceStationID_kBlue1:
-				case HAL_AllianceStationID_kBlue2:
-				case HAL_AllianceStationID_kBlue3:
-					color = DriverStation::kBlue;
-					break;
-				default:
-					color = DriverStation::kInvalid;
+				status = 0;
+				auto allianceStationID = HAL_GetAllianceStation(&status);
+				match_data_.setGetAllianceStationStatus(std::to_string(status) + ": " + HAL_GetErrorMessage(status));
+				DriverStation::Alliance color;
+				switch (allianceStationID) {
+					case HAL_AllianceStationID_kRed1:
+					case HAL_AllianceStationID_kRed2:
+					case HAL_AllianceStationID_kRed3:
+						color = DriverStation::kRed;
+						break;
+					case HAL_AllianceStationID_kBlue1:
+					case HAL_AllianceStationID_kBlue2:
+					case HAL_AllianceStationID_kBlue3:
+						color = DriverStation::kBlue;
+						break;
+					default:
+						color = DriverStation::kInvalid;
+				}
+				match_data_.setAllianceColor(color);
+
+				match_data_.setMatchType(static_cast<DriverStation::MatchType>(info.matchType));
+
+				int station_location;
+				switch (allianceStationID) {
+					case HAL_AllianceStationID_kRed1:
+					case HAL_AllianceStationID_kBlue1:
+						station_location = 1;
+						break;
+					case HAL_AllianceStationID_kRed2:
+					case HAL_AllianceStationID_kBlue2:
+						station_location = 2;
+						break;
+					case HAL_AllianceStationID_kRed3:
+					case HAL_AllianceStationID_kBlue3:
+						station_location = 3;
+						break;
+					default:
+						station_location = 0;
+				}
+				match_data_.setDriverStationLocation(station_location);
+
+				match_data_.setMatchNumber(info.matchNumber);
+				match_data_.setReplayNumber(info.replayNumber);
+				status = 0;
+				match_data_.setBatteryVoltage(HAL_GetVinVoltage(&status));
+				match_data_.setGetVinVoltageStatus(std::to_string(status) + ": " + HAL_GetErrorMessage(status));
 			}
-			match_data_.setAllianceColor(color);
-
-			match_data_.setMatchType(static_cast<DriverStation::MatchType>(info.matchType));
-
-			int station_location;
-			switch (allianceStationID) {
-				case HAL_AllianceStationID_kRed1:
-				case HAL_AllianceStationID_kBlue1:
-					station_location = 1;
-					break;
-				case HAL_AllianceStationID_kRed2:
-				case HAL_AllianceStationID_kBlue2:
-					station_location = 2;
-					break;
-				case HAL_AllianceStationID_kRed3:
-				case HAL_AllianceStationID_kBlue3:
-					station_location = 3;
-					break;
-				default:
-					station_location = 0;
-			}
-			match_data_.setDriverStationLocation(station_location);
-
-			match_data_.setMatchNumber(info.matchNumber);
-			match_data_.setReplayNumber(info.replayNumber);
-			status = 0;
-			match_data_.setBatteryVoltage(HAL_GetVinVoltage(&status));
-			match_data_.setGetVinVoltageStatus(std::to_string(status) + ": " + HAL_GetErrorMessage(status));
+			//read control word match data at full speed - contains enable info, and reads should be v fast
+			HAL_ControlWord controlWord;
+			HAL_GetControlWord(&controlWord);
+			match_data_.setEnabled(controlWord.enabled && controlWord.dsAttached);
+			match_data_.setDisabled(!(controlWord.enabled && controlWord.dsAttached));
+			match_data_.setAutonomous(controlWord.autonomous);
+			match_data_.setOperatorControl(!(controlWord.autonomous || controlWord.test));
+			match_data_.setTest(controlWord.test);
+			match_data_.setDSAttached(controlWord.dsAttached);
+			match_data_.setFMSAttached(controlWord.fmsAttached);
+			match_data_.setEStopped(controlWord.eStop);
 		}
-		//read control word match data at full speed - contains enable info, and reads should be v fast
-		HAL_ControlWord controlWord;
-		HAL_GetControlWord(&controlWord);
-		match_data_.setEnabled(controlWord.enabled && controlWord.dsAttached);
-		match_data_.setDisabled(!(controlWord.enabled && controlWord.dsAttached));
-		match_data_.setAutonomous(controlWord.autonomous);
-		match_data_.setOperatorControl(!(controlWord.autonomous || controlWord.test));
-		match_data_.setTest(controlWord.test);
-		match_data_.setDSAttached(controlWord.dsAttached);
-		match_data_.setFMSAttached(controlWord.fmsAttached);
+		match_data_mutex_.unlock();
 
 		read_tracer_.start_unique("robot controller data");
 		//check if sufficient time has passed since last read

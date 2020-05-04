@@ -44,6 +44,8 @@ For a more detailed simulation example, see sim_hw_interface.cpp
 
 #include <ros_control_boilerplate/set_limit_switch.h>
 
+#include <simulation/DriverStationSim.h>
+
 namespace frcrobot_control
 {
 
@@ -58,22 +60,59 @@ FRCRobotSimInterface::~FRCRobotSimInterface()
 
 void FRCRobotSimInterface::match_data_callback(const frc_msgs::MatchSpecificData &match_data) {
 	std::lock_guard<std::mutex> l(match_data_mutex_);
-	match_data_.setMatchTimeRemaining(match_data.matchTimeRemaining);
-	match_data_.setGameSpecificData(match_data.gameSpecificData);
-	match_data_.setEventName(match_data.eventName);
-	match_data_.setAllianceColor(match_data.allianceColor);
-	match_data_.setMatchType(match_data.matchType);
-	match_data_.setDriverStationLocation(match_data.driverStationLocation);
-	match_data_.setMatchNumber(match_data.matchNumber);
-	match_data_.setReplayNumber(match_data.replayNumber);
-	match_data_.setEnabled(match_data.Enabled);
-	match_data_.setDisabled(match_data.Disabled);
-	match_data_.setAutonomous(match_data.Autonomous);
-	match_data_.setDSAttached(match_data.DSAttached);
-	match_data_.setFMSAttached(match_data.FMSAttached);
-	match_data_.setOperatorControl(match_data.OperatorControl);
-	match_data_.setTest(match_data.Test);
-	match_data_.setBatteryVoltage(match_data.BatteryVoltage);
+	HALSIM_SetDriverStationMatchTime(match_data.matchTimeRemaining);
+	HAL_AllianceStationID alliance_station_id = HAL_AllianceStationID_kRed1;
+	if (match_data.allianceColor == DriverStation::kRed)
+	{
+		if (match_data.driverStationLocation == 1)
+		{
+			alliance_station_id = HAL_AllianceStationID_kRed1;
+		}
+		else if (match_data.driverStationLocation == 2)
+		{
+			alliance_station_id = HAL_AllianceStationID_kRed2;
+		}
+		else if (match_data.driverStationLocation == 3)
+		{
+			alliance_station_id = HAL_AllianceStationID_kRed3;
+		}
+	}
+	else if (match_data.allianceColor == DriverStation::kBlue)
+	{
+		if (match_data.driverStationLocation == 1)
+		{
+			alliance_station_id = HAL_AllianceStationID_kBlue1;
+		}
+		else if (match_data.driverStationLocation == 2)
+		{
+			alliance_station_id = HAL_AllianceStationID_kBlue2;
+		}
+		else if (match_data.driverStationLocation == 3)
+		{
+			alliance_station_id = HAL_AllianceStationID_kBlue3;
+		}
+	}
+	HALSIM_SetDriverStationAllianceStationId(alliance_station_id);
+	HALSIM_SetDriverStationEnabled(match_data.Enabled);
+	HALSIM_SetDriverStationAutonomous(match_data.Autonomous);
+	HALSIM_SetDriverStationDsAttached(match_data.DSAttached);
+	HALSIM_SetDriverStationFmsAttached(match_data.FMSAttached);
+	HALSIM_SetDriverStationTest(match_data.Test);
+	HALSIM_SetDriverStationEStop(match_data.EStopped);
+	// TODO - HALSIM_SetDriverStationBatteryVoltage(match_data.BatteryVoltage);
+
+	HAL_MatchInfo hal_match_info;
+	strncpy(hal_match_info.eventName, match_data.eventName.c_str(), sizeof(hal_match_info.eventName));
+	hal_match_info.matchType = static_cast<HAL_MatchType>(match_data.matchType);
+	hal_match_info.matchNumber = match_data.matchNumber;
+	hal_match_info.replayNumber = match_data.replayNumber;
+	for (size_t i = 0; i < std::min(match_data.gameSpecificData.size(), sizeof(hal_match_info.gameSpecificMessage)); i++)
+	{
+		hal_match_info.gameSpecificMessage[i] = match_data.gameSpecificData[i];
+	}
+
+	hal_match_info.gameSpecificMessageSize = match_data.gameSpecificData.size();
+	HALSIM_SetMatchInfo(&hal_match_info);
 }
 
 bool FRCRobotSimInterface::setlimit(ros_control_boilerplate::set_limit_switch::Request &req,ros_control_boilerplate::set_limit_switch::Response &/*res*/)
@@ -228,8 +267,11 @@ void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration&
 	// Is match data reporting the robot enabled now?
 	bool robot_enabled = false;
 	{
-		std::lock_guard<std::mutex> l(match_data_mutex_);
-		robot_enabled = match_data_.isEnabled();
+		std::unique_lock<std::mutex> l(match_data_mutex_, std::try_to_lock);
+		if (l.owns_lock())
+			robot_enabled = match_data_.isEnabled();
+		else
+			robot_enabled = last_robot_enabled;
 	}
 
 	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)

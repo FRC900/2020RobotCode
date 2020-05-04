@@ -82,7 +82,6 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 
 //Includes below are from frcrobot_hw_interface
-#include <atomic>
 #include <thread>
 
 #include <ros_control_boilerplate/tracer.h>
@@ -466,7 +465,8 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<hardware_interface::PCMState> pcm_state_;
 		hardware_interface::RobotControllerState robot_controller_state_;
 		hardware_interface::MatchHWState match_data_;
-                std::vector<hardware_interface::OrchestraState> orchestra_state_;
+	    std::vector<hardware_interface::OrchestraState> orchestra_state_;
+		std::mutex match_data_mutex_;
 
 		// Each entry in the vector is an array. That array holds
 		// the data returned from one particular imu

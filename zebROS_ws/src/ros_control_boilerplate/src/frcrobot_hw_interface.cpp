@@ -163,18 +163,6 @@ FRCRobotHWInterface::~FRCRobotHWInterface()
 		}
 	}
 
-	for (size_t i = 0; i < num_solenoids_; i++)
-		HAL_FreeSolenoidPort(solenoids_[i]);
-	for (size_t i = 0; i < num_double_solenoids_; i++)
-	{
-		HAL_FreeSolenoidPort(double_solenoids_[i].forward_);
-		HAL_FreeSolenoidPort(double_solenoids_[i].reverse_);
-	}
-
-	for (size_t i = 0; i < num_compressors_; i++)
-		pcm_thread_[i].join();
-	for (size_t i = 0; i < num_pdps_; i++)
-		pdp_thread_[i].join();
 	for (size_t i = 0; i < num_as726xs_; i++)
 		as726x_thread_[i].join();
 	for (size_t i = 0; i < num_cancoders_; i++)
@@ -1503,6 +1491,15 @@ void FRCRobotHWInterface::write(const ros::Time& time, const ros::Duration& peri
 	FRCRobotInterface::write(time, period);
 	// Was the robot enabled last time write was run?
 	static bool last_robot_enabled = false;
+	bool robot_enabled = false;
+	{
+		std::unique_lock<std::mutex> l(match_data_mutex_, std::try_to_lock);
+		if (l.owns_lock())
+			robot_enabled = match_data_.isEnabled();
+		else
+			robot_enabled = last_robot_enabled;
+	}
+
 
 #if 0
 	if (!run_hal_robot_ && num_can_ctre_mcs_)
@@ -2351,7 +2348,7 @@ void FRCRobotHWInterface::write(const ros::Time& time, const ros::Duration& peri
 		}
 
 		// Set new motor setpoint if either the mode or the setpoint has been changed
-		if (match_data_.isEnabled())
+		if (robot_enabled)
 		{
 			double command;
 			hardware_interface::TalonMode in_mode;
@@ -2436,8 +2433,7 @@ void FRCRobotHWInterface::write(const ros::Time& time, const ros::Duration& peri
 		}
 		talon_command_[joint_id].unlock();
 	}
-
-	last_robot_enabled = match_data_.isEnabled();
+	last_robot_enabled = robot_enabled;
 
 	for (size_t joint_id = 0; joint_id < num_canifiers_; ++joint_id)
 	{

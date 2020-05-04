@@ -43,7 +43,6 @@
 #include <frc_msgs/MatchSpecificData.h>
 
 #include <ros_control_boilerplate/set_limit_switch.h>
-
 #include <ros_control_boilerplate/LineBreakSensors.h>
 
 
@@ -75,7 +74,6 @@ class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
         void match_data_callback(const frc_msgs::MatchSpecificData &match_data);
 		bool evaluateDigitalInput(ros_control_boilerplate::LineBreakSensors::Request &req, ros_control_boilerplate::LineBreakSensors::Response &res);
 
-		std::mutex match_data_mutex_;
 		ros::ServiceServer linebreak_sensor_srv_;
 		ros::ServiceServer limit_switch_srv_;
 };  // class
