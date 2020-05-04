@@ -901,6 +901,22 @@ FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_mode
 	can_interface_ = rpnh.param<std::string>("can_interface", "can0");
 }
 
+FRCRobotInterface::~FRCRobotInterface()
+{
+	for (size_t i = 0; i < num_solenoids_; i++)
+		HAL_FreeSolenoidPort(solenoids_[i]);
+	for (size_t i = 0; i < num_double_solenoids_; i++)
+	{
+		HAL_FreeSolenoidPort(double_solenoids_[i].forward_);
+		HAL_FreeSolenoidPort(double_solenoids_[i].reverse_);
+	}
+
+	for (size_t i = 0; i < num_compressors_; i++)
+		pcm_thread_[i].join();
+	for (size_t i = 0; i < num_pdps_; i++)
+		pdp_thread_[i].join();
+}
+
 bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh)
 {
 	num_can_ctre_mcs_ = can_ctre_mc_names_.size();

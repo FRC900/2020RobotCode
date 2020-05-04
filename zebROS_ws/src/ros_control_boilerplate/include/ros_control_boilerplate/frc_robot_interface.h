@@ -205,12 +205,13 @@ class DoubleSolenoidHandle
 	public:
 		DoubleSolenoidHandle(HAL_SolenoidHandle forward, HAL_SolenoidHandle reverse)
 			: forward_(forward)
-		    , reverse_(reverse)
-	{
-	}
+			  , reverse_(reverse)
+		{
+		}
 		HAL_SolenoidHandle forward_;
 		HAL_SolenoidHandle reverse_;
 };
+
 /// \brief Hardware interface for a robot
 class FRCRobotInterface : public hardware_interface::RobotHW
 {
@@ -222,9 +223,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		 * \param urdf - optional pointer to a parsed robot model
 		 */
 		FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_model = NULL);
-
-		/** \brief Destructor */
-		virtual ~FRCRobotInterface() {}
+		~FRCRobotInterface();
 
 		/** \brief Initialize the hardware interface */
 		virtual bool init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh) override;
