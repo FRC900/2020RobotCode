@@ -151,6 +151,7 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 							  " at CAN id " << cancoder_can_ids_[i]);
 	}
 
+	// TODO - merge me into frc robot interface, add a sim setting, etc.
 	for (size_t i = 0; i < num_as726xs_; i++)
 	{
 		ROS_INFO_STREAM_NAMED("frcrobot_hw_interface",
@@ -175,10 +176,6 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 							  "Loading joint " << i << "=" << talon_orchestra_names_[i]);
 	}
 
-	limit_switch_srv_ = root_nh.advertiseService("set_limit_switch",&FRCRobotSimInterface::setlimit,this);
-    match_data_sub_ = root_nh.subscribe("/frcrobot_rio/match_data_in", 1, &FRCRobotSimInterface::match_data_callback, this);
-
-	linebreak_sensor_srv_ = root_nh.advertiseService("linebreak_service_set",&FRCRobotSimInterface::evaluateDigitalInput, this);
 	ROS_INFO_NAMED("frcrobot_sim_interface", "FRCRobotSimInterface Ready.");
 	return true;
 }
@@ -193,23 +190,6 @@ void FRCRobotSimInterface::read(const ros::Time& /*time*/, const ros::Duration& 
 	{
 		// Set using evaluateDigitalInput callback
 		// TODO - make make threadsafe using a command buffer, if needed
-	}
-
-    // Simulated state is updated in write, so just
-	// display it here for debugging
-	// printState();
-
-	// This is only used to test the stuff in hw_interface?
-	if (!robot_code_ready_)
-	{
-		// Code is ready when all robot_ready_signals are set to non-zero values
-		if (std::all_of(robot_ready_signals_.cbegin(),
-						robot_ready_signals_.cend(),
-						[](double d) { return d != 0.0;} ))
-		{
-			ROS_WARN("ROBOT CODE READY!");
-			robot_code_ready_ = true;
-		}
 	}
 }
 
@@ -242,11 +222,6 @@ bool FRCRobotSimInterface::evaluateDigitalInput(ros_control_boilerplate::LineBre
 
 void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration& period)
 {
-#if 0
-	ROS_INFO_STREAM_THROTTLE(1,
-			std::endl << std::string(__FILE__) << ":" << __LINE__ <<
-			std::endl << "Command" << std::endl << printCommandHelper());
-#endif
 	// Was the robot enabled last time write was run?
 	static bool last_robot_enabled = false;
 
@@ -918,107 +893,6 @@ void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration&
 		}
 	}
 
-
-	for (std::size_t joint_id = 0; joint_id < num_nidec_brushlesses_; ++joint_id)
-	{
-		// Assume instant acceleration for now
-		const double vel = brushless_command_[joint_id];
-		brushless_vel_[joint_id] = vel;
-	}
-	for (size_t i = 0; i < num_digital_outputs_; i++)
-	{
-		bool converted_command = (digital_output_command_[i] > 0) ^ (digital_output_inverts_[i] && digital_output_local_updates_[i]);
-		if (converted_command != digital_output_state_[i])
-		{
-			digital_output_state_[i] = converted_command;
-			ROS_INFO_STREAM("DIO " << digital_output_names_[i] <<
-					" at channel " <<  digital_output_dio_channels_[i] <<
-					" set to " << converted_command);
-		}
-	}
-	for (size_t i = 0; i < num_pwms_; i++)
-	{
-		const int setpoint = pwm_command_[i] * ((pwm_inverts_[i] & pwm_local_updates_[i]) ? -1 : 1);
-		if (pwm_state_[i] != setpoint)
-		{
-			pwm_state_[i] = setpoint;
-			ROS_INFO_STREAM("PWM " << pwm_names_[i] <<
-					" at channel " <<  pwm_pwm_channels_[i] <<
-					" set to " << pwm_state_[i]);
-		}
-	}
-
-	for (size_t i = 0; i < num_solenoids_; i++)
-	{
-		// MODE_POSITION is standard on/off setting
-		if (solenoid_mode_[i] == hardware_interface::JointCommandModes::MODE_POSITION)
-		{
-			const bool setpoint = solenoid_command_[i] > 0;
-			if ((solenoid_mode_[i] != prev_solenoid_mode_[i]) || (solenoid_state_[i] != setpoint))
-			{
-				solenoid_state_[i] = setpoint;
-				ROS_INFO_STREAM("Solenoid " << solenoid_names_[i] <<
-						" at id " << solenoid_ids_[i] <<
-						" / pcm " << solenoid_pcms_[i] <<
-						" = " << static_cast<int>(setpoint));
-			}
-		}
-		else if (solenoid_mode_[i] == hardware_interface::JointCommandModes::MODE_EFFORT)
-		{
-			if (solenoid_command_[i] > 0)
-			{
-				ROS_INFO_STREAM("Solenoid one shot " << solenoid_names_[i] <<
-						" at id " << solenoid_ids_[i] <<
-						" / pcm " << solenoid_pcms_[i] <<
-						" = " << solenoid_command_[i]);
-				solenoid_pwm_state_[i] = solenoid_command_[i];
-				solenoid_command_[i] = 0;
-			}
-		}
-		else
-			ROS_ERROR_STREAM("Invalid solenoid_mode_[i] = " << static_cast<int>(solenoid_mode_[i]));
-		prev_solenoid_mode_[i] = solenoid_mode_[i];
-	}
-
-
-	for (size_t i = 0; i < num_double_solenoids_; i++)
-	{
-		// TODO - maybe check for < 0, 0, >0 and map to forward/reverse?
-		const double command = double_solenoid_command_[i];
-		double setpoint;
-		if (command >= 1.)
-			setpoint = 1.;
-		else if (command <= -1.)
-			setpoint = -1.;
-		else
-			setpoint = 0.;
-
-		if (double_solenoid_state_[i] != setpoint)
-		{
-			double_solenoid_state_[i] = setpoint;
-			ROS_INFO_STREAM("Double solenoid " << double_solenoid_names_[i] <<
-					" at forward id " << double_solenoid_forward_ids_[i] <<
-					"/ reverse id " << double_solenoid_reverse_ids_[i] <<
-					" / pcm " << double_solenoid_pcms_[i] <<
-					" = " << setpoint);
-		}
-	}
-
-	for (size_t i = 0; i < num_rumbles_; i++)
-	{
-		if (rumble_state_[i] != rumble_command_[i])
-		{
-			const unsigned int rumbles = *((unsigned int*)(&rumble_command_[i]));
-			const unsigned int left_rumble  = (rumbles >> 16) & 0xFFFF;
-			const unsigned int right_rumble = (rumbles      ) & 0xFFFF;
-			rumble_state_[i] = rumble_command_[i];
-
-			ROS_INFO_STREAM("Joystick at port " << rumble_ports_[i] <<
-				" left rumble = " << std::dec << left_rumble << "(" << std::hex << left_rumble <<
-				") right rumble = " << std::dec << right_rumble << "(" << std::hex << right_rumble <<  ")" << std::dec);
-		}
-	}
-
 	for (size_t i = 0; i < num_as726xs_; i++)
 	{
 		auto &as = as726x_state_[i];
@@ -1132,7 +1006,6 @@ void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration&
 				ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
 		}
 	}
-
 
 	for (size_t i = 0; i < num_dummy_joints_; i++)
 	{

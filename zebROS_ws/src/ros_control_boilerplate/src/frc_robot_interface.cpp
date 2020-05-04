@@ -1007,7 +1007,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 	num_nidec_brushlesses_ = nidec_brushless_names_.size();
 	brushless_command_.resize(num_nidec_brushlesses_);
 	brushless_vel_.resize(num_nidec_brushlesses_);
-	//Stuff below is form frcrobot_hw_interface
+
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
 	{
 		ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface: Registering interface for : " << nidec_brushless_names_[i] << " at PWM channel " << nidec_brushless_pwm_channels_[i] << " / DIO channel " << nidec_brushless_dio_channels_[i]);
@@ -1429,6 +1429,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 
 	ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface Ready.");
 
+	//Stuff below is from frcrobot_hw_interface
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
 	{
 		ROS_INFO_STREAM_NAMED("frc_robot_interface",
@@ -2025,18 +2026,18 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 	{
 		read_tracer_.start_unique("OneIteration");
 		//check if sufficient time has passed since last read
-		if(ros::Time::now().toSec() - t_prev_robot_iteration_ > (1/robot_iteration_hz_))
+		if(ros::Time::now().toSec() - t_prev_robot_iteration_ > (1./robot_iteration_hz_))
 		{
 			robot_->OneIteration();
 
-			t_prev_robot_iteration_ += 1/robot_iteration_hz_;
+			t_prev_robot_iteration_ += 1./robot_iteration_hz_;
 		}
 
 		read_tracer_.start_unique("joysticks");
 		//check if sufficient time has passed since last read
-		if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1/joystick_read_hz_))
+		if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1./joystick_read_hz_))
 		{
-			t_prev_joystick_read_ += 1/joystick_read_hz_;
+			t_prev_joystick_read_ += 1./joystick_read_hz_;
 
 			auto time_now_t = ros::Time::now();
 			for (size_t i = 0; i < num_joysticks_; i++)
@@ -2129,9 +2130,9 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 		read_tracer_.start_unique("match data");
 		int32_t status = 0;
 		//check if sufficient time has passed since last read
-		if(ros::Time::now().toSec() - t_prev_match_data_read_ > (1/match_data_read_hz_))
+		if(ros::Time::now().toSec() - t_prev_match_data_read_ > (1./match_data_read_hz_))
 		{
-			t_prev_match_data_read_ += 1/match_data_read_hz_;
+			t_prev_match_data_read_ += 1./match_data_read_hz_;
 
 			status = 0;
 			match_data_.setMatchTimeRemaining(HAL_GetMatchTime(&status));
@@ -2434,37 +2435,16 @@ void FRCRobotInterface::write(const ros::Time& time, const ros::Duration& period
 	}
 #endif
 
-#if 0
-		if (mc_enhanced)
-		{
-			ROS_ERROR_STREAM_THROTTLE(5.0, "mc_enhanced OK for id " << joint_id);
-		}
-		else
-		{
-			ROS_ERROR_STREAM_THROTTLE(5.0, "mc_enhanced NOT OK for id " << joint_id);
-		}
-		if (talon)
-		{
-			ROS_ERROR_STREAM_THROTTLE(5.0, "talon OK for id " << joint_id);
-		}
-		else
-		{
-			ROS_ERROR_STREAM_THROTTLE(5.0, "talon NOT OK for id " << joint_id);
-		}
-		if (victor)
-		{
-			ROS_ERROR_STREAM_THROTTLE(5.0, "victor OK for id " << joint_id);
-		}
-		else
-		{
-			ROS_ERROR_STREAM_THROTTLE(5.0, "victor NOT OK for id " << joint_id);
-		}
-#endif
-
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
 	{
 		if (nidec_brushless_local_hardwares_[i])
+		{
 			nidec_brushlesses_[i]->Set(brushless_command_[i]);
+			ROS_INFO_STREAM("Write NIDEC brushless " << nidec_brushless_names_[i] <<
+					" at PWM channel " << nidec_brushless_pwm_channels_[i] <<
+					" / DIO channel " << nidec_brushless_dio_channels_[i] <<
+					" = " << brushless_command_[i]);
+		}
 	}
 
 	for (size_t i = 0; i < num_digital_outputs_; i++)
@@ -2577,7 +2557,7 @@ void FRCRobotInterface::write(const ros::Time& time, const ros::Duration& period
 		}
 	}
 
-	for (size_t i = 0; i< num_compressors_; i++)
+	for (size_t i = 0; i < num_compressors_; i++)
 	{
 		if (compressor_command_[i] != compressor_state_[i])
 		{
