@@ -43,17 +43,17 @@ sudo rm -rf /home/ubuntu/.cache /home/ubuntu/.ccache
 
 # Add Individual Packages here
 # You can install a specific ROS package (replace underscores with dashes of the package name):
-# sudo apt-get install ros-melodic-PACKAGE
+# sudo apt-get install ros-noetic-PACKAGE
 # e.g.
-# sudo apt-get install ros-melodic-navigation
+# sudo apt-get install ros-noetic-navigation
 #
 # To find available packages:
-# apt-cache search ros-melodic
+# apt-cache search ros-noetic
 # 
 # Keep each package on a separate line to aid in git merging
 # Try to keep them in alphabetic order to make it easier to find duplicates
 sudo apt install -y \
-	ros-melodic-ros-base \
+	ros-noetic-ros-base \
 	liblua5.3-dev \
 	libsuitesparse-dev \
 	ninja-build \
@@ -62,55 +62,55 @@ sudo apt install -y \
 	python-rosdep \
 	python-rosinstall \
 	python-wstool \
-	ros-melodic-ar-track-alvar \
-	ros-melodic-controller-manager \
-	ros-melodic-control-msgs \
-	ros-melodic-cv-bridge \
-	ros-melodic-ecl-geometry \
-	ros-melodic-grid-map-core \
-	ros-melodic-grid-map-cv \
-	ros-melodic-grid-map-ros \
-	ros-melodic-hardware-interface \
-	ros-melodic-imu-filter-madgwick \
-	ros-melodic-joint-limits-interface \
-	ros-melodic-joint-state-publisher \
-	ros-melodic-joystick-drivers \
-	ros-melodic-map-server \
-	ros-melodic-marker-msgs \
-	ros-melodic*mux* \
-	ros-melodic-navigation \
-	ros-melodic-pcl-conversions \
-	ros-melodic-pid \
-	ros-melodic-robot-localization \
-	ros-melodic-robot-state-publisher \
-	ros-melodic-rosbridge-suite \
-	ros-melodic-roslint \
-	ros-melodic-rosparam-shortcuts \
-	ros-melodic-rqt \
-	ros-melodic-rqt-common-plugins \
-	ros-melodic-rqt-controller-manager \
-	ros-melodic-rtabmap-ros \
-	ros-melodic-rviz \
-	ros-melodic-rviz-imu-plugin \
-	ros-melodic-serial \
-	ros-melodic-teb-local-planner \
-	ros-melodic-tf \
-	ros-melodic-tf2-ros \
-	ros-melodic-tf2-tools \
-	ros-melodic-transmission-interface \
-	ros-melodic-usb-cam \
-	ros-melodic-xacro \
+	ros-noetic-ar-track-alvar \
+	ros-noetic-controller-manager \
+	ros-noetic-control-msgs \
+	ros-noetic-cv-bridge \
+	ros-noetic-ecl-geometry \
+	ros-noetic-grid-map-core \
+	ros-noetic-grid-map-cv \
+	ros-noetic-grid-map-ros \
+	ros-noetic-hardware-interface \
+	ros-noetic-imu-filter-madgwick \
+	ros-noetic-joint-limits-interface \
+	ros-noetic-joint-state-publisher \
+	ros-noetic-joystick-drivers \
+	ros-noetic-map-server \
+	ros-noetic-marker-msgs \
+	ros-noetic*mux* \
+	ros-noetic-navigation \
+	ros-noetic-pcl-conversions \
+	ros-noetic-pid \
+	ros-noetic-robot-localization \
+	ros-noetic-robot-state-publisher \
+	ros-noetic-rosbridge-suite \
+	ros-noetic-roslint \
+	ros-noetic-rosparam-shortcuts \
+	ros-noetic-rqt \
+	ros-noetic-rqt-common-plugins \
+	ros-noetic-rqt-controller-manager \
+	ros-noetic-rtabmap-ros \
+	ros-noetic-rviz \
+	ros-noetic-rviz-imu-plugin \
+	ros-noetic-serial \
+	ros-noetic-teb-local-planner \
+	ros-noetic-tf \
+	ros-noetic-tf2-ros \
+	ros-noetic-tf2-tools \
+	ros-noetic-transmission-interface \
+	ros-noetic-usb-cam \
+	ros-noetic-xacro \
 	terminator 
 
 # Install gazebo sim - commented out because we don't
 # want/need it taking up space on the Jetson
 #curl -sSL http://get.gazebosim.org | sh
 # sudo apt install -y \
-#	ros-melodic-gazebo-ros-control \
-#	ros-melodic-gazebo-ros-pkgs \
+#	ros-noetic-gazebo-ros-control \
+#	ros-noetic-gazebo-ros-pkgs \
 
-# Not for melodic - ros-melodic-hector-slam ros-melodic-hector-slam-launch ros-melodic-gmapping 
-# handled by wstool for now ros-melodic-teraranger-* 
+# Not for noetic - ros-noetic-hector-slam ros-noetic-hector-slam-launch ros-noetic-gmapping 
+# handled by wstool for now ros-noetic-teraranger-* 
 
 # Initialize rosdep
 # ssl certificates can get messed up on TX1 for some reason
@@ -141,7 +141,7 @@ cd ~/2020RobotCode/zebROS_ws/src
 
 # Boilerplate control code
 #wstool merge https://raw.githubusercontent.com/FRC900/steered_wheel_base_controller/master/steered_wheel_base_controller.rosinstall
-#wstool merge https://raw.githubusercontent.com/FRC900/ros_control_boilerplate/melodic-devel/ros_control_boilerplate.rosinstall
+#wstool merge https://raw.githubusercontent.com/FRC900/ros_control_boilerplate/noetic-devel/ros_control_boilerplate.rosinstall
 
 # LIDAR driver
 #wstool merge https://raw.githubusercontent.com/FRC900/rplidar_ros/master/rplidar.rosinstall
@@ -153,9 +153,9 @@ wstool update -j 4
 # The command 'sudo rosdep init' will print an error if you have already
 # executed it since installing ROS. This error can be ignored.
 rosdep update
-rosdep install --from-paths . --ignore-src --rosdistro=melodic -y
+rosdep install --from-paths . --ignore-src --rosdistro=noetic -y
 
-#source /opt/ros/melodic/setup.bash
+#source /opt/ros/noetic/setup.bash
 
 #cd ~/2020RobotCode/zebROS_ws
 #catkin_make

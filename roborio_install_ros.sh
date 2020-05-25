@@ -72,7 +72,7 @@ ssh -p 22 admin@$1 'rm ~/roscore_roborio.tar.bz2'
 
 # Try to simulate what the cross-build environment looks like 
 # This will prevent weird bugs where sourcing install_isolated/setup.bash
-#   will overwrite the settings from /opt/ros/melodic/setup.bash leading
+#   will overwrite the settings from /opt/ros/noetic/setup.bash leading
 #   to errors finding basic ROS tools
 ssh -p 22 admin@$1 'mkdir -p /home/ubuntu/wpilib/2020/roborio'
 ssh -p 22 admin@$1 'ln -s / /home/ubuntu/wpilib/2020/roborio/arm-frc2020-linux-gnueabi'
@@ -82,7 +82,7 @@ ssh -p 22 admin@$1 'ln -s /usr/include /include'
 # Create workspace. Do a build in the empty workspace to set
 # up various scripts for later use. TODO : See if this is needed?
 ssh -p 22 admin@$1 'mkdir -p 2020RobotCode/zebROS_ws/src'
-ssh -p 22 admin@$1 'source /opt/ros/melodic/setup.bash && cd 2020RobotCode/zebROS_ws && catkin_make_isolated --install'
+ssh -p 22 admin@$1 'source /opt/ros/noetic/setup.bash && cd 2020RobotCode/zebROS_ws && catkin_make_isolated --install'
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
 ##################-----------------------------#################

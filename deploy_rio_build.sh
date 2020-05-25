@@ -22,6 +22,7 @@ else
 		--exclude '*~' --exclude '*.sw[op]' \
 		--exclude '*.stl' --exclude '*.dae' \
 		--exclude 'pixy2/documents' --exclude '*.a' \
+		--exclude '*.pb'
 		$ROS_CODE_LOCATION/install_isolated/ \
 		$ROBORIO_ADDR:$RIO_INSTALL_LOCATION 
 	if [ $? -ne 0 ] ; then
