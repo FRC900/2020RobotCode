@@ -180,6 +180,10 @@ FRCRobotHWInterface::~FRCRobotHWInterface()
 		cancoder_read_threads_[i].join();
 	for (size_t i = 0; i < num_canifiers_; i++)
 		canifier_read_threads_[i].join();
+
+	// Hack to get error reporting thread to exit
+	if (!run_hal_robot_)
+		HAL_SendError(false, -900, false, "", "", "", false);
 }
 
 bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh)
@@ -210,8 +214,11 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 		hal::init::InitializePDP();
 		hal::init::InitializeSolenoid();
 
-		ctre::phoenix::platform::can::SetCANInterface(can_interface_.c_str());
-
+		const auto rc = ctre::phoenix::platform::can::SetCANInterface(can_interface_.c_str());
+		if (rc != 0)
+		{
+			HAL_SendError(true, -1, false, "SetCANInterface failed - likely CAN adapter failure", "", "", true);
+		}
 	}
 
 	can_error_count_ = 0;
@@ -724,8 +731,8 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 	pthread_setname_np(pthread_self(), "hwi_main_loop");
 #endif
 
-	ROS_INFO_NAMED("frcrobot_hw_interface", "FRCRobotHWInterface Ready.");
-	HAL_SendError(false, 0, false, "FRCRobotHWInterface Ready", "", "", true);
+	ROS_INFO_STREAM(robot_hw_nh.getNamespace() << " : FRCRobotHWInterface Ready.");
+	HAL_SendError(true, 0, false, std::string(robot_hw_nh.getNamespace() + " : FRCRobotHWInterface Ready").c_str(), "", "", true);
 	return true;
 }
 
@@ -1969,7 +1976,7 @@ double FRCRobotHWInterface::getConversionFactor(int encoder_ticks_per_rotation,
 
 bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, const std::string &talon_method_name)
 {
-	//ROS_INFO_STREAM("safeTalonCall(" << talon_method_name << ")");
+	//ROS_INFO_STREAM("safeTalonCall(" << talon_method_name << ") = " << error_code);
 	std::string error_name;
 	static bool error_sent = false;
 	switch (error_code)
@@ -2142,7 +2149,7 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 	}
 	ROS_ERROR_STREAM("Error calling " << talon_method_name << " : " << error_name);
 	can_error_count_++;
-	if ((can_error_count_> 3000) && !error_sent)
+	if ((can_error_count_> 1000) && !error_sent)
 	{
 		HAL_SendError(true, -1, false, "safeTalonCall - too many CAN bus errors!", "", "", true);
 		error_sent = true;
@@ -3877,6 +3884,13 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
 			}
 		}
 	}
+}
+
+bool FRCRobotHWInterface::DSErrorCallback(ros_control_boilerplate::DSError::Request &req, ros_control_boilerplate::DSError::Response &res)
+{
+	ROS_ERROR_STREAM("HWI received DSErrorCallback " << req.details.c_str());
+	HAL_SendError(true, req.error_code, false, req.details.c_str(), "", "", true);
+	return true;
 }
 
 } // namespace
