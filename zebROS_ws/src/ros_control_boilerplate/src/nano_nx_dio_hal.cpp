@@ -97,7 +97,7 @@ class NxGPIOPins
 		{
 			for (const auto &p: JETSON_NX_PIN_DEFS)
 			{
-				nxGPIOPinMap_[p.boardPin_] = p;
+				nxGPIOPinMap_.emplace(p.boardPin_, p);
 			}
 		}
 		bool allocateDigitalIO(uint8_t pinNum, bool input)
@@ -407,3 +407,96 @@ int64_t HAL_GetFilterPeriod(int32_t filterIndex, int32_t* status)
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+// From wpilib HAL.cpp
+/*----------------------------------------------------------------------------*/
+/* Copyright (c) 2016-2020 FIRST. All Rights Reserved.                        */
+/* Open Source Software - may be modified and shared by FRC teams. The code   */
+/* must be accompanied by the FIRST BSD license file in the root directory of */
+/* the project.                                                               */
+/*----------------------------------------------------------------------------*/
+
+HAL_PortHandle HAL_GetPort(int32_t channel) {
+  // Dont allow a number that wouldn't fit in a uint8_t
+  if (channel < 0 || channel >= 255) return HAL_kInvalidHandle;
+  return hal::createPortHandle(channel, 1);
+}
+
+int32_t HAL_GetNumAccumulators(void) { return 0; }
+int32_t HAL_GetNumAnalogTriggers(void) { return 0; }
+int32_t HAL_GetNumAnalogInputs(void) { return 0; }
+int32_t HAL_GetNumAnalogOutputs(void) { return 0; }
+int32_t HAL_GetNumCounters(void) { return 0; }
+int32_t HAL_GetNumDigitalHeaders(void) { return 1; }
+int32_t HAL_GetNumPWMHeaders(void) { return 1; }
+int32_t HAL_GetNumDigitalChannels(void) { return 40; }
+int32_t HAL_GetNumPWMChannels(void) { return 0; }
+int32_t HAL_GetNumDigitalPWMOutputs(void) { return 2; }
+int32_t HAL_GetNumEncoders(void) { return 0; }
+int32_t HAL_GetNumInterrupts(void) { return 0; }
+int32_t HAL_GetNumRelayChannels(void) { return 0; }
+int32_t HAL_GetNumRelayHeaders(void) { return 0; }
+int32_t HAL_GetNumPCMModules(void) { return 0; }
+int32_t HAL_GetNumSolenoidChannels(void) { return 0; }
+int32_t HAL_GetNumPDPModules(void) { return 0; }
+int32_t HAL_GetNumPDPChannels(void) { return 0; }
+int32_t HAL_GetNumDutyCycles(void) { return 0; }
+int32_t HAL_GetNumAddressableLEDs(void) { return 0; }
+
+HAL_Bool HAL_CheckAnalogOutputChannel(int32_t channel) {
+	return false; // Nope
+}
+HAL_Bool HAL_CheckAnalogInputChannel(int32_t channel) {
+	return false; // Nope
+}
+HAL_Bool HAL_CheckPWMChannel(int32_t channel) {
+	return (channel > 0) && (channel < HAL_GetNumPWMChannels());
+}
+
+HAL_Bool HAL_CheckRelayChannel(int32_t channel) {
+	return false; // Nope
+}
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#include <ros/ros.h>
+#include <frc/DriverStation.h>
+double frc::DriverStation::GetMatchTime(void) const
+{
+	ROS_ERROR("Called DriverStation::GetMatchTime() on unsupported platform");
+	return std::numeric_limits<double>::max();
+}
+
+#include <wpi/SmallString.h>
+#include <hal/DriverStation.h>
+void frc::DriverStation::ReportError(bool isError, int32_t code,
+                                const wpi::Twine& error,
+                                const wpi::Twine& location,
+                                const wpi::Twine& stack) {
+  wpi::SmallString<128> errorTemp;
+  wpi::SmallString<128> locationTemp;
+  wpi::SmallString<128> stackTemp;
+  HAL_SendError(isError, code, 0,
+                error.toNullTerminatedStringRef(errorTemp).data(),
+                location.toNullTerminatedStringRef(locationTemp).data(),
+                stack.toNullTerminatedStringRef(stackTemp).data(), 1);
+}
+
+
+#include <frc/Timer.h>
+namespace frc {
+double GetTime()
+{
+	using std::chrono::duration;
+	using std::chrono::duration_cast;
+	using std::chrono::system_clock;
+	return duration_cast<duration<double>>(system_clock::now().time_since_epoch()).count();
+}
+}
+
