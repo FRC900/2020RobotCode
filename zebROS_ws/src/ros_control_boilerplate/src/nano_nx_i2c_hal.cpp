@@ -97,7 +97,7 @@ int32_t HAL_TransactionI2C(HAL_I2CPort port, int32_t deviceAddress,
 	rdwr.nmsgs = 2;
 
 	std::scoped_lock lock(*(i2CMutex[portNum]));
-	return ioctl(i2CHandle, I2C_RDWR, &rdwr);
+	return ioctl(i2CHandle[portNum], I2C_RDWR, &rdwr);
 }
 
 int32_t HAL_WriteI2C(HAL_I2CPort port, int32_t deviceAddress,
@@ -121,7 +121,7 @@ int32_t HAL_WriteI2C(HAL_I2CPort port, int32_t deviceAddress,
 	rdwr.nmsgs = 1;
 
 	std::scoped_lock lock(*(i2CMutex[portNum]));
-	return ioctl(i2CHandle, I2C_RDWR, &rdwr);
+	return ioctl(i2CHandle[portNum], I2C_RDWR, &rdwr);
 }
 
 int32_t HAL_ReadI2C(HAL_I2CPort port, int32_t deviceAddress, uint8_t *buffer,
@@ -145,7 +145,7 @@ int32_t HAL_ReadI2C(HAL_I2CPort port, int32_t deviceAddress, uint8_t *buffer,
 	rdwr.nmsgs = 1;
 
 	std::scoped_lock lock(*(i2CMutex[portNum]));
-	return ioctl(i2CHandle, I2C_RDWR, &rdwr);
+	return ioctl(i2CHandle[portNum], I2C_RDWR, &rdwr);
 }
 
 void HAL_CloseI2C(HAL_I2CPort port)

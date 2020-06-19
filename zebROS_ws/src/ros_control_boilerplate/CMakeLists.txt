@@ -225,11 +225,13 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	if ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") # Jetson TX1/TX2/Xaver AGX/Xavier NX
 		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
 			src/nano_nx_dio_hal.cpp
+			src/nano_nx_i2c_hal.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/I2C.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
@@ -257,6 +259,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	else() # anything we don't want to support GPIO access on - x86, older Jetson, etc
 		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
 			src/dummy_wpilib_hw_x86.cpp
+			src/dummy_wpilib_i2c.cpp
 			)
 	endif()
 
@@ -270,6 +273,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			src/frcrobot_phoenixsim_main.cpp
 			src/frcrobot_hw_interface.cpp
 			src/dummy_wpilib_common.cpp
+			src/dummy_wpilib_i2c.cpp
 			src/dummy_wpilib_phoenixsim.cpp
 			src/as726x_convert.cpp
 			src/cancoder_convert.cpp
