@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <ros/ros.h>
+
 #include "hal/DIO.h"
 #include "hal/Types.h"
 #include "DigitalInternal.h"
@@ -30,24 +32,25 @@ class NxGPIOPin
 {
 	public:
 		NxGPIOPin(
-				uint8_t     linuxPin,
-				std::string sysfsDir,
-				uint8_t     boardPin,
-				uint8_t     bcmPin,
-				std::string pinNameCVM,
-				std::string pinNameTegraSOC,
-				std::string pwmSysfsDir,
-				uint8_t     pwmID)
-	: linuxPin_(linuxPin)
-	, sysfsDir_(sysfsDir)
-	, boardPin_(boardPin)
-	, bcmPin_(bcmPin)
-	, pinNameCVM_(pinNameCVM)
-	, pinNameTegraSOC_(pinNameTegraSOC)
-	, pwmSysfsDir_(pwmSysfsDir)
-	, pwmID_(pwmID)
-	, inUse_(0)
-    , isInput_(false)
+				uint8_t            linuxPin,
+				std::string        sysfsDir,
+				uint8_t            boardPin,
+				uint8_t            bcmPin,
+				const std::string &pinNameCVM,
+				const std::string &pinNameTegraSOC,
+				const std::string &pwmSysfsDir,
+				uint8_t            pwmID)
+	: linuxPin_{linuxPin}
+	, sysfsDir_{sysfsDir}
+	, boardPin_{boardPin}
+	, bcmPin_{bcmPin}
+	, pinNameCVM_{pinNameCVM}
+	, pinNameTegraSOC_{pinNameTegraSOC}
+	, pwmSysfsDir_{pwmSysfsDir}
+	, pwmID_{pwmID}
+	, inUse_{0}
+    , isInput_{false}
+	, isPWM_{false}
 	{
 	}
 
@@ -182,6 +185,7 @@ static struct gpiod_chip *gpiodChip = nullptr;
 HAL_DigitalHandle HAL_InitializeDIOPort(HAL_PortHandle portHandle,
                                         HAL_Bool input, int32_t* status)
 {
+	ROS_INFO_STREAM(__PRETTY_FUNCTION__ << " portHandle = " << portHandle << " input = " << static_cast<int>(input));
 	if (*status)
 		return HAL_kInvalidHandle;
 
@@ -192,6 +196,7 @@ HAL_DigitalHandle HAL_InitializeDIOPort(HAL_PortHandle portHandle,
 
 	if (!nxGPIOPins.allocateDigitalIO(portHandle, input))
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : allocateDigitalIO failed for port " << portHandle);
 		*status = HAL_HANDLE_ERROR;
 		return HAL_kInvalidHandle;
 	}
@@ -199,26 +204,55 @@ HAL_DigitalHandle HAL_InitializeDIOPort(HAL_PortHandle portHandle,
 	uint8_t offset;
 	if (!nxGPIOPins.getLinuxPin(portHandle, offset))
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : getLinuxPins failed for port " << portHandle);
 		*status = HAL_HANDLE_ERROR;
 		return HAL_kInvalidHandle;
 	}
+	ROS_INFO_STREAM(__PRETTY_FUNCTION__ << " : getLinuxPin returned offset = " << static_cast<int>(offset));
 	if (!gpiodChip)
 		gpiodChip = gpiod_chip_open_lookup("tegra-gpio");
 	if (!gpiodChip)
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : gpiod_chip_open_lookup(\"tegra-gpio\") failed");
 		*status = HAL_HANDLE_ERROR;
 		return HAL_kInvalidHandle;
 	}
+	// Grab and store line info - this lets the code access a particular
+	// pin connected to a particular device on the board
 	const auto line = gpiod_chip_get_line(gpiodChip, offset);
 	if (!line)
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : gpiod_chip_ge_line(gpiodChip, " << offset << ") failed (pin = " << portHandle << ") - wrong pin -> offset?");
 		*status = HAL_HANDLE_ERROR;
 		return HAL_kInvalidHandle;
 	}
+	ROS_INFO_STREAM(__PRETTY_FUNCTION__ << " : line = " << line << ", line_is_free = " << static_cast<int>(gpiod_line_is_free(line)) << " line_is_requested = " << static_cast<int>(gpiod_line_is_requested(line)));
 	gpiodLineMap[portHandle] = line;
+
+	// Set the line to either input or output. Since we don't ever
+	// change it it is fine to set once and leave it for the remainder
+	// of the lifetime of the code
+	errno = 0;
+	gpiod_line_release(line);
+	if (input)
+	{
+		if (gpiod_line_request_input(line, "") < 0)
+		{
+			ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << portHandle << " gpiod_line_request_input() failed, errno = " << errno);
+			*status = HAL_HANDLE_ERROR;
+			return HAL_kInvalidHandle;
+		}
+	}
+	else if (gpiod_line_request_output(line, "", 0) < 0)
+	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << portHandle << " : gpiod_line_request_output failed, errno = " << errno);
+		*status = HAL_HANDLE_ERROR;
+		return HAL_kInvalidHandle;
+	}
 
 	return portHandle;
 }
+
 
 HAL_Bool HAL_CheckDIOChannel(int32_t channel)
 {
@@ -246,34 +280,34 @@ void HAL_SetDIOSimDevice(HAL_DigitalHandle handle, HAL_SimDeviceHandle device)
 
 HAL_DigitalPWMHandle HAL_AllocateDigitalPWM(int32_t* status)
 {
-		*status = HAL_HANDLE_ERROR;
-		return HAL_kInvalidHandle;
+	*status = HAL_HANDLE_ERROR;
+	return HAL_kInvalidHandle;
 }
 
 
 void HAL_FreeDigitalPWM(HAL_DigitalPWMHandle pwmGenerator, int32_t* status)
 {
-		*status = HAL_HANDLE_ERROR;
+	*status = HAL_HANDLE_ERROR;
 }
 
 
 void HAL_SetDigitalPWMRate(double rate, int32_t* status)
 {
-		*status = HAL_HANDLE_ERROR;
+	*status = HAL_HANDLE_ERROR;
 }
 
 
 void HAL_SetDigitalPWMDutyCycle(HAL_DigitalPWMHandle pwmGenerator,
                                 double dutyCycle, int32_t* status)
 {
-		*status = HAL_HANDLE_ERROR;
+	*status = HAL_HANDLE_ERROR;
 }
 
 
 void HAL_SetDigitalPWMOutputChannel(HAL_DigitalPWMHandle pwmGenerator,
                                     int32_t channel, int32_t* status)
 {
-		*status = HAL_HANDLE_ERROR;
+	*status = HAL_HANDLE_ERROR;
 }
 
 
@@ -289,6 +323,7 @@ void HAL_SetDIO(HAL_DigitalHandle dioPortHandle, HAL_Bool value,
 	bool outputEnable;
 	if (!nxGPIOPins.getPinOutputEnable(dioPortHandle, outputEnable) || !outputEnable)
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " is not an output");
 		*status = HAL_HANDLE_ERROR;
 		return;
 	}
@@ -296,12 +331,17 @@ void HAL_SetDIO(HAL_DigitalHandle dioPortHandle, HAL_Bool value,
 	const auto gpiodLine = gpiodLineMap.find(dioPortHandle);
 	if (gpiodLine == gpiodLineMap.end())
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " is not in gpiodLineMap");
 		*status = HAL_HANDLE_ERROR;
 		return;
 	}
 
-	if (gpiod_line_request_output(gpiodLine->second, "", value) < 0)
+	// Actually change the value of the pin
+	errno = 0;
+	const auto rc = gpiod_line_set_value(gpiodLine->second, value);
+	if (rc < 0)
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " gpiod_line_set_value() failed : errno = " << errno);
 		*status = HAL_HANDLE_ERROR;
 	}
 }
@@ -326,6 +366,7 @@ HAL_Bool HAL_GetDIO(HAL_DigitalHandle dioPortHandle, int32_t* status)
 	bool outputEnable;
 	if (!nxGPIOPins.getPinOutputEnable(dioPortHandle, outputEnable) || outputEnable)
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " is not an input");
 		*status = HAL_HANDLE_ERROR;
 		return false;
 	}
@@ -333,11 +374,21 @@ HAL_Bool HAL_GetDIO(HAL_DigitalHandle dioPortHandle, int32_t* status)
 	const auto gpiodLine = gpiodLineMap.find(dioPortHandle);
 	if (gpiodLine == gpiodLineMap.end())
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " is not in gpiodLineMap");
 		*status = HAL_HANDLE_ERROR;
 		return false;
 	}
 
-	return gpiod_line_request_input(gpiodLine->second, "");
+	errno = 0;
+	const auto rc = gpiod_line_get_value(gpiodLine->second);
+	if (rc < 0)
+	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " gpiod_line_get_value() failed : errno = " << errno);
+		*status = HAL_HANDLE_ERROR;
+		return false;
+	}
+
+	return static_cast<bool>(rc);
 }
 
 
@@ -347,6 +398,7 @@ HAL_Bool HAL_GetDIODirection(HAL_DigitalHandle dioPortHandle, int32_t* status)
 	bool outputEnable;
 	if (!nxGPIOPins.getPinOutputEnable(dioPortHandle, outputEnable))
 	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " : failed to read from nxGPIOPins");
 		*status = HAL_HANDLE_ERROR;
 		return false;
 	}
@@ -465,7 +517,6 @@ HAL_Bool HAL_CheckRelayChannel(int32_t channel) {
 }  // extern "C"
 #endif
 
-#include <ros/ros.h>
 #include <frc/DriverStation.h>
 double frc::DriverStation::GetMatchTime(void) const
 {
