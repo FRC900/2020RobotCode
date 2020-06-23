@@ -28,10 +28,10 @@
 // The values are use to generate dictionaries that map the corresponding pin
 // mode numbers to the Linux GPIO pin number and GPIO chip directory
 
-class NxGPIOPin
+class GPIOPin
 {
 	public:
-		NxGPIOPin(
+		GPIOPin(
 				uint8_t            linuxPin,
 				std::string        sysfsDir,
 				uint8_t            boardPin,
@@ -67,7 +67,7 @@ class NxGPIOPin
 	bool        isPWM_;
 };
 
-static const std::vector<NxGPIOPin> JETSON_NX_PIN_DEFS = {
+static const std::vector<GPIOPin> JETSON_NX_PIN_DEFS = {
     {148, "/sys/devices/2200000.gpio", 7, 4, "GPIO09", "AUD_MCLK", "", 0},
     {140, "/sys/devices/2200000.gpio", 11, 17, "UART1_RTS", "UART1_RTS", "", 0},
     {157, "/sys/devices/2200000.gpio", 12, 18, "I2S0_SCLK", "DAP5_SCLK", "", 0},
@@ -92,15 +92,71 @@ static const std::vector<NxGPIOPin> JETSON_NX_PIN_DEFS = {
     {158, "/sys/devices/2200000.gpio", 40, 21, "I2S0_DOUT", "DAP5_DOUT", "", 0}
 };
 
-class NxGPIOPins
+static const std::vector<GPIOPin> JETSON_NANO_PIN_DEFS = {
+    {216, "/sys/devices/6000d000.gpio", 7, 4, "GPIO9", "AUD_MCLK", "", 0},
+    {50, "/sys/devices/6000d000.gpio", 11, 17, "UART1_RTS", "UART2_RTS", "", 0},
+    {79, "/sys/devices/6000d000.gpio", 12, 18, "I2S0_SCLK", "DAP4_SCLK", "", 0},
+    {14, "/sys/devices/6000d000.gpio", 13, 27, "SPI1_SCK", "SPI2_SCK", "", 0},
+    {194, "/sys/devices/6000d000.gpio", 15, 22, "GPIO12", "LCD_TE", "", 0},
+    {232, "/sys/devices/6000d000.gpio", 16, 23, "SPI1_CS1", "SPI2_CS1", "", 0},
+    {15, "/sys/devices/6000d000.gpio", 18, 24, "SPI1_CS0", "SPI2_CS0", "", 0},
+    {16, "/sys/devices/6000d000.gpio", 19, 10, "SPI0_MOSI", "SPI1_MOSI", "", 0},
+    {17, "/sys/devices/6000d000.gpio", 21, 9, "SPI0_MISO", "SPI1_MISO", "", 0},
+    {13, "/sys/devices/6000d000.gpio", 22, 25, "SPI1_MISO", "SPI2_MISO", "", 0},
+    {18, "/sys/devices/6000d000.gpio", 23, 11, "SPI0_SCK", "SPI1_SCK", "", 0},
+    {19, "/sys/devices/6000d000.gpio", 24, 8, "SPI0_CS0", "SPI1_CS0", "", 0},
+    {20, "/sys/devices/6000d000.gpio", 26, 7, "SPI0_CS1", "SPI1_CS1", "", 0},
+    {149, "/sys/devices/6000d000.gpio", 29, 5, "GPIO01", "CAM_AF_EN", "", 0},
+    {200, "/sys/devices/6000d000.gpio", 31, 6, "GPIO11", "GPIO_PZ0", "", 0},
+    // Older versions of L4T have a DT bug which instantiates a bogus device
+    // which prevents this library from using this PWM channel.
+    {168, "/sys/devices/6000d000.gpio", 32, 12, "GPIO07", "LCD_BL_PW", "/sys/devices/7000a000.pwm", 0},
+    {38, "/sys/devices/6000d000.gpio", 33, 13, "GPIO13", "GPIO_PE6", "/sys/devices/7000a000.pwm", 2},
+    {76, "/sys/devices/6000d000.gpio", 35, 19, "I2S0_FS", "DAP4_FS", "", 0},
+    {51, "/sys/devices/6000d000.gpio", 36, 16, "UART1_CTS", "UART2_CTS", "", 0},
+    {12, "/sys/devices/6000d000.gpio", 37, 26, "SPI1_MOSI", "SPI2_MOSI", "", 0},
+    {77, "/sys/devices/6000d000.gpio", 38, 20, "I2S0_DIN", "DAP4_DIN", "", 0},
+    {78, "/sys/devices/6000d000.gpio", 40, 21, "I2S0_DOUT", "DAP4_DOUT", "", 0}
+};
+
+static const std::vector<GPIOPin> JETSON_XAVIER_PIN_DEFS = {
+    {134, "/sys/devices/2200000.gpio", 7, 4, "MCLK05", "SOC_GPIO42", "", 0},
+    {140, "/sys/devices/2200000.gpio", 11, 17, "UART1_RTS", "UART1_RTS", "", 0},
+    {63, "/sys/devices/2200000.gpio", 12, 18, "I2S2_CLK", "DAP2_SCLK", "", 0},
+    {136, "/sys/devices/2200000.gpio", 13, 27, "PWM01", "SOC_GPIO44", "/sys/devices/32f0000.pwm", 0},
+    // Older versions of L4T don"t enable this PWM controller in DT, so this PWM
+    // channel may not be available.
+    {105, "/sys/devices/2200000.gpio", 15, 22, "GPIO27", "SOC_GPIO54", "/sys/devices/3280000.pwm", 0},
+    {8, "/sys/devices/c2f0000.gpio", 16, 23, "GPIO8", "CAN1_STB", "", 0},
+    {56, "/sys/devices/2200000.gpio", 18, 24, "GPIO35", "SOC_GPIO12", "/sys/devices/32c0000.pwm", 0},
+    {205, "/sys/devices/2200000.gpio", 19, 10, "SPI1_MOSI", "SPI1_MOSI", "", 0},
+    {204, "/sys/devices/2200000.gpio", 21, 9, "SPI1_MISO", "SPI1_MISO", "", 0},
+    {129, "/sys/devices/2200000.gpio", 22, 25, "GPIO17", "SOC_GPIO21", "", 0},
+    {203, "/sys/devices/2200000.gpio", 23, 11, "SPI1_CLK", "SPI1_SCK", "", 0},
+    {206, "/sys/devices/2200000.gpio", 24, 8, "SPI1_CS0_N", "SPI1_CS0_N", "", 0},
+    {207, "/sys/devices/2200000.gpio", 26, 7, "SPI1_CS1_N", "SPI1_CS1_N", "", 0},
+    {3, "/sys/devices/c2f0000.gpio", 29, 5, "CAN0_DIN", "CAN0_DIN", "", 0},
+    {2, "/sys/devices/c2f0000.gpio", 31, 6, "CAN0_DOUT", "CAN0_DOUT", "", 0},
+    {9, "/sys/devices/c2f0000.gpio", 32, 12, "GPIO9", "CAN1_EN", "", 0},
+    {0, "/sys/devices/c2f0000.gpio", 33, 13, "CAN1_DOUT", "CAN1_DOUT", "", 0},
+    {66, "/sys/devices/2200000.gpio", 35, 19, "I2S2_FS", "DAP2_FS", "", 0},
+    // Input-only {due to base board}
+    {141, "/sys/devices/2200000.gpio", 36, 16, "UART1_CTS", "UART1_CTS", "", 0},
+    {1, "/sys/devices/c2f0000.gpio", 37, 26, "CAN1_DIN", "CAN1_DIN", "", 0},
+    {65, "/sys/devices/2200000.gpio", 38, 20, "I2S2_DIN", "DAP2_DIN", "", 0},
+    {64, "/sys/devices/2200000.gpio", 40, 21, "I2S2_DOUT", "DAP2_DOUT", "", 0}
+};
+
+class GPIOPins
 {
-	using PinHandle = std::map<uint8_t, NxGPIOPin>::iterator;
+	using PinHandle = std::map<uint8_t, GPIOPin>::iterator;
 	public :
-		NxGPIOPins(void)
+		// TODO - make the GPIO pin array depend on what's read from compat file
+		GPIOPins(void)
 		{
 			for (const auto &p: JETSON_NX_PIN_DEFS)
 			{
-				nxGPIOPinMap_.emplace(p.boardPin_, p);
+				gpioPinMap_.emplace(p.boardPin_, p);
 			}
 		}
 		bool allocateDigitalIO(uint8_t pinNum, bool input)
@@ -161,19 +217,19 @@ class NxGPIOPins
 		}
 		bool isValidChannel(uint8_t pinNum)
 		{
-			return nxGPIOPinMap_.find(pinNum) != nxGPIOPinMap_.end();
+			return gpioPinMap_.find(pinNum) != gpioPinMap_.end();
 		}
 	private:
 		bool getByPinNum(uint8_t pinNum, PinHandle &pin)
 		{
-			pin = nxGPIOPinMap_.find(pinNum);
-			if (pin == nxGPIOPinMap_.end())
+			pin = gpioPinMap_.find(pinNum);
+			if (pin == gpioPinMap_.end())
 				return false;
 			return true;
 		}
 		// Map from pin number to GPIO data
-		std::map<uint8_t, NxGPIOPin> nxGPIOPinMap_;
-} nxGPIOPins;
+		std::map<uint8_t, GPIOPin> gpioPinMap_;
+} gpioPins;
 
 
 #ifdef __cplusplus
@@ -194,7 +250,7 @@ HAL_DigitalHandle HAL_InitializeDIOPort(HAL_PortHandle portHandle,
 	//   - all should be OK, assuming they're not already allocated to
 	//     a different direction (i.e. can't reuse an out and an in
 
-	if (!nxGPIOPins.allocateDigitalIO(portHandle, input))
+	if (!gpioPins.allocateDigitalIO(portHandle, input))
 	{
 		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : allocateDigitalIO failed for port " << portHandle);
 		*status = HAL_HANDLE_ERROR;
@@ -202,7 +258,7 @@ HAL_DigitalHandle HAL_InitializeDIOPort(HAL_PortHandle portHandle,
 	}
 	// Create gpiod struct needed to access GPIO hardware
 	uint8_t offset;
-	if (!nxGPIOPins.getLinuxPin(portHandle, offset))
+	if (!gpioPins.getLinuxPin(portHandle, offset))
 	{
 		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : getLinuxPins failed for port " << portHandle);
 		*status = HAL_HANDLE_ERROR;
@@ -256,13 +312,13 @@ HAL_DigitalHandle HAL_InitializeDIOPort(HAL_PortHandle portHandle,
 
 HAL_Bool HAL_CheckDIOChannel(int32_t channel)
 {
-	return nxGPIOPins.isValidChannel(channel);
+	return gpioPins.isValidChannel(channel);
 }
 
 
 void HAL_FreeDIOPort(HAL_DigitalHandle dioPortHandle)
 {
-	if (nxGPIOPins.freeDigitalIO(dioPortHandle) == 0)
+	if (gpioPins.freeDigitalIO(dioPortHandle) == 0)
 	{
 		auto it = gpiodLineMap.find(dioPortHandle);
 		if (it != gpiodLineMap.end())
@@ -321,7 +377,7 @@ void HAL_SetDIO(HAL_DigitalHandle dioPortHandle, HAL_Bool value,
 
 	// Check pin is valid output
 	bool outputEnable;
-	if (!nxGPIOPins.getPinOutputEnable(dioPortHandle, outputEnable) || !outputEnable)
+	if (!gpioPins.getPinOutputEnable(dioPortHandle, outputEnable) || !outputEnable)
 	{
 		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " is not an output");
 		*status = HAL_HANDLE_ERROR;
@@ -364,7 +420,7 @@ HAL_Bool HAL_GetDIO(HAL_DigitalHandle dioPortHandle, int32_t* status)
 
 	// Check pin is valid output
 	bool outputEnable;
-	if (!nxGPIOPins.getPinOutputEnable(dioPortHandle, outputEnable) || outputEnable)
+	if (!gpioPins.getPinOutputEnable(dioPortHandle, outputEnable) || outputEnable)
 	{
 		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " is not an input");
 		*status = HAL_HANDLE_ERROR;
@@ -396,9 +452,9 @@ HAL_Bool HAL_GetDIODirection(HAL_DigitalHandle dioPortHandle, int32_t* status)
 {
 	// Check pin is valid output
 	bool outputEnable;
-	if (!nxGPIOPins.getPinOutputEnable(dioPortHandle, outputEnable))
+	if (!gpioPins.getPinOutputEnable(dioPortHandle, outputEnable))
 	{
-		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " : failed to read from nxGPIOPins");
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : dioPortHandle = " << dioPortHandle << " : failed to read from gpioPins");
 		*status = HAL_HANDLE_ERROR;
 		return false;
 	}

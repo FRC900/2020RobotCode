@@ -23,7 +23,7 @@
 using namespace hal;
 
 static std::vector<std::unique_ptr<std::mutex>> i2CMutex;
-static std::vector<size_t> i2COjbCount; // because everyone needs 2^64 i2c devices
+static std::vector<uint8_t> i2COjbCount; // because everyone needs 2^64 i2c devices
 static std::vector<int> i2CHandle;
 
 namespace hal
