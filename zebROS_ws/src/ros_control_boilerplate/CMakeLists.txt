@@ -192,6 +192,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS} 
 		src/dummy_wpilib_common.cpp
 		src/dummy_wpilib_hw.cpp
+		src/error_queue.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/Compressor.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/CANAPI.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/HALInitializer.cpp
@@ -234,6 +235,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			src/as726x_convert.cpp
 			src/cancoder_convert.cpp
 			src/canifier_convert.cpp
+			src/error_queue.cpp
 			src/talon_convert.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
