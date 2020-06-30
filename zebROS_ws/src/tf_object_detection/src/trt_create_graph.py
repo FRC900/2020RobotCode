@@ -6,26 +6,39 @@ desktop and especially for the Jetson.  The optimization process takes a bit
 of time, so it is possible to preprocess and save the output. 
 That's the goal of this script.
 
-Edit the SAVED_MODEL_DIR and CHECKPOINT_NUMBER variables below and run it.
+It will first look for frozen_inference_graph.pb, and if found,
+create a corresponding optimized TRT file.
+
+If the frozen graph is not found, it will try to create it using
+checkpoint files. This mode is not likely to be necessary since we don't
+put checkpoint files in the 2020RobotCode repo.  It is left over from
+the stand-alone script in the tensorflow workspace, but the purposes
+of this script and that one have diverged.
+
 '''
+# Dir where model.ckpt* files are being generated
+import sys
+import os.path
+SAVED_MODEL_DIR='/home/ubuntu/2020RobotCode/zebROS_ws/src/tf_object_detection/src'
+CHECKPOINT_NUMBER='118209'
+sys.path.append(os.path.join(SAVED_MODEL_DIR, 'modules'))
+sys.path.append(os.path.join(os.path.join(SAVED_MODEL_DIR, 'modules'), 'slim'))
+
 import tensorflow as tf
 import tensorflow.contrib.tensorrt as trt
 from object_detection.protos import pipeline_pb2
 from object_detection import exporter
 from google.protobuf import text_format
-import os.path
 import subprocess
 
 from graph_utils import force_nms_cpu as f_force_nms_cpu
 from graph_utils import replace_relu6 as f_replace_relu6
 from graph_utils import remove_assert as f_remove_assert
 
+from file_changed import file_changed
+
 # Output file name
 TRT_OUTPUT_GRAPH = 'trt_graph.pb'
-
-# Dir where model.ckpt* files are being generated
-SAVED_MODEL_DIR='/home/ubuntu/2020RobotCode/zebROS_ws/src/tf_object_detection/src'
-CHECKPOINT_NUMBER='118209'
 
 # Network config
 CONFIG_FILE=os.path.join(SAVED_MODEL_DIR, 'model/ssd_mobilenet_v2_coco.config')
@@ -117,17 +130,28 @@ def build_frozen_graph(frozen_graph_name, config, checkpoint,
     subprocess.call(['rm', '-rf', output_dir])
 
 
+# TODO - turn this into a function called from
+# the main ROS TRT object detection script at startup
+# It will look for the trt saved graph and if not found create it
 def main():
+    if not file_changed(os.path.join(SAVED_MODEL_DIR, FROZEN_GRAPH_NAME)):
+        print("Frozen graph not changed, not rebuilding")
+        return
+    
     # What model to run from - should be the directory name of an exported trained model
     # Change me to the directory checkpoint files are saved in
     frozen_graph_name = os.path.join(SAVED_MODEL_DIR, FROZEN_GRAPH_NAME)
     if not os.path.isfile(frozen_graph_name):
+        print("Frozen graph not found, building...")
         build_frozen_graph(
             config=CONFIG_FILE,
             checkpoint=os.path.join(SAVED_MODEL_DIR, MODEL_CHECKPOINT_PREFIX+CHECKPOINT_NUMBER),
             score_threshold=0.2,
             batch_size=1
         )
+    else:
+        print("Frozen graph found, not rebuilding...")
+
     # read frozen graph from file
     frozen_graph, input_names, output_names = load_frozen_graph(frozen_graph_name)
     trt_graph = trt.create_inference_graph(
