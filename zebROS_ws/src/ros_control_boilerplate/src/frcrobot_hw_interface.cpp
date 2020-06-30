@@ -731,7 +731,7 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 #endif
 
 	ROS_INFO_STREAM(robot_hw_nh.getNamespace() << " : FRCRobotHWInterface Ready.");
-	HAL_SendError(true, 0, false, std::string(robot_hw_nh.getNamespace() + " : FRCRobotHWInterface Ready").c_str(), "", "", true);
+	HAL_SendError(true, 0, false, std::string("(Not an error) " + robot_hw_nh.getNamespace() + " : FRCRobotHWInterface Ready").c_str(), "", "", true);
 	return true;
 }
 
