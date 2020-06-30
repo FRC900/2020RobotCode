@@ -18,6 +18,10 @@ ErrorQueue::ErrorQueue(void)
 
 void ErrorQueue::error_queue_thread_fn(void)
 {
+#ifdef __linux__
+	pthread_setname_np(pthread_self(), "error_queue");
+#endif
+
 	ros::NodeHandle nh;
 	auto ds_error_client_ = nh.serviceClient<ros_control_boilerplate::DSError>("/frcrobot_rio/ds_error_service");
 	if (!ds_error_client_.waitForExistence(ros::Duration(60)))
