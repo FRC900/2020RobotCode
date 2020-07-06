@@ -38,7 +38,9 @@ double delta_x = 0;
 double delta_y = 0;
 double rot = 0;
 double noise_delta_t = 0;  // if the time since the last measurement is greater than this, positional noise will not be applied
-std::vector<Beacon > measurement;
+// std::vector<Beacon > measurement;
+// test bearing only
+std::vector<BearingBeacon> measurement;
 ParticleFilter* pf = nullptr;
 
 double degToRad(double deg) {
@@ -76,18 +78,32 @@ void goalCallback(const field_obj::Detection::ConstPtr& msg){
   double tx = zed_to_baselink.transform.translation.x;
   double ty = zed_to_baselink.transform.translation.y;
 
+  // for(const field_obj::Object& p : msg->objects) {
+  //   Beacon m {p.location.x, p.location.y, p.id};
+  //   measurement.push_back(m);
+  // }
+  // if (measurement.size() > 0){
+  //   bool success = pf->assign_weights_position(measurement, Particle(tx, ty, r));
+  //   pf->resample();
+  //   last_measurement = ros::Time::now();
+  // }
+
+  // bearing only test
   for(const field_obj::Object& p : msg->objects) {
-    Beacon m {p.location.x, p.location.y, p.id};
+    BearingBeacon m {atan2(p.location.y, p.location.x), p.id};
     measurement.push_back(m);
   }
   if (measurement.size() > 0){
-    bool success = pf->assign_weights_position(measurement, Particle(tx, ty, r));
+    bool success = pf->assign_weights_bearing(measurement, Particle(tx, ty, r));
     pf->resample();
     last_measurement = ros::Time::now();
   }
+
   #ifdef EXTREME_VERBOSE
   ROS_INFO("goalCallback called");
   #endif
+
+
 }
 
 void cmdCallback(const geometry_msgs::TwistStamped::ConstPtr& msg){
