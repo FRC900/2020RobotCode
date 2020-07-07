@@ -226,6 +226,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
 			src/nano_nx_dio_hal.cpp
 			src/nano_nx_i2c_hal.cpp
+			src/nano_nx_spi_hal.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
