@@ -122,9 +122,6 @@ void HAL_CloseSPI(HAL_SPIPort port)
 		return;
 	}
 
-	int32_t status = 0;
-	HAL_FreeSPIAuto(port, &status);
-
 	close(handle);
 
 	HAL_SetSPIHandle(port, -1);
