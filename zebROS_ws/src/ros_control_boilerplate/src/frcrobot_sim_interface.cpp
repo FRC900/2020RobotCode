@@ -276,10 +276,6 @@ void FRCRobotSimInterface::read(const ros::Time& /*time*/, const ros::Duration& 
 		// Set using evaluateDigitalInput callback
 		// TODO - make make threadsafe using a command buffer, if needed
 	}
-	for(size_t i = 0; i < num_talon_orchestras_; i++)
-	{
-		orchestra_state_[i].setStopped();
-	}
 
     // Simulated state is updated in write, so just
 	// display it here for debugging
