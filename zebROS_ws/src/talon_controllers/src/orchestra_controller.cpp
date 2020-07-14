@@ -35,7 +35,7 @@ void OrchestraController::starting(const ros::Time &time)
     //TODO read in the default instruments from an orcehstra config file
 	state_.writeFromNonRT(2);
 	instruments_.writeFromNonRT({});
-	music_file_path_changed_.writeFromNonRT("");
+	music_file_path_.writeFromNonRT("");
 
 	previous_state_ = 2;
 }

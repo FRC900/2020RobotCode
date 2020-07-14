@@ -37,7 +37,6 @@ namespace orchestra_controller
 		private:
 			hardware_interface::OrchestraCommandHandle orchestra_command_handle_;
 			realtime_tools::RealtimeBuffer<std::string> music_file_path_;
-			realtime_tools::RealtimeBuffer<bool> music_file_path_changed_;
 			realtime_tools::RealtimeBuffer<std::vector<std::string>> instruments_;
 			realtime_tools::RealtimeBuffer<bool> instruments_changed_;
 			realtime_tools::RealtimeBuffer<int> state_;
