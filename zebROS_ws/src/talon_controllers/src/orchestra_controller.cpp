@@ -17,22 +17,21 @@ bool OrchestraController::init(hardware_interface::OrchestraCommandInterface *hw
 	else if (orchestra_names.size() < 1) {
 		ROS_ERROR_STREAM("Cannot initialize zero orchestras");
 		return false;
-        }
+	}
 	const std::string orchestra_name = orchestra_names[0];
 
-        orchestra_command_handle_ = hw->getHandle(orchestra_name);  // throws on failure
+	orchestra_command_handle_ = hw->getHandle(orchestra_name);  // throws on failure
 
-		ROS_ERROR_STREAM("LOADING ALL OF THE SERVERS IN ORCHESTRA CONTROLLER");
+	ROS_ERROR_STREAM("LOADING ALL OF THE SERVERS IN ORCHESTRA CONTROLLER");
 
-		load_music_server_ = controller_nh.advertiseService("load_music", &OrchestraController::loadMusicService, this);
-		set_state_server_ = controller_nh.advertiseService("set_state", &OrchestraController::setStateService, this);
-		load_instruments_server_ = controller_nh.advertiseService("load_instruments", &OrchestraController::reloadInstrumentsService, this);
-        return true;
+	load_music_server_ = controller_nh.advertiseService("load_music", &OrchestraController::loadMusicService, this);
+	set_state_server_ = controller_nh.advertiseService("set_state", &OrchestraController::setStateService, this);
+	load_instruments_server_ = controller_nh.advertiseService("load_instruments", &OrchestraController::reloadInstrumentsService, this);
+	return true;
 }
 
 void OrchestraController::starting(const ros::Time &time)
 {
-    //TODO read in the default instruments from an orcehstra config file
 	state_.writeFromNonRT(2);
 	instruments_.writeFromNonRT({});
 	music_file_path_.writeFromNonRT("");
@@ -102,7 +101,6 @@ bool OrchestraController::setStateService(talon_controller_msgs::SetOrchestraSta
 	{
 		if(req.state == 0 || req.state == 1 || req.state == 2)
 		{
-			state_changed_.writeFromNonRT(true);
 			state_.writeFromNonRT(req.state);
 			res.success = true;
 			return true;
@@ -110,7 +108,6 @@ bool OrchestraController::setStateService(talon_controller_msgs::SetOrchestraSta
 		else
 		{
 			ROS_ERROR_STREAM("State must be 0, 1, or 2");
-			state_changed_.writeFromNonRT(false);
 			res.success = false;
 			return false;
 		}

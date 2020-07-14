@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   realtime_tools
   roscpp
   talon_interface
-  urdf
   talon_controller_msgs
   pluginlib
   hardware_interface

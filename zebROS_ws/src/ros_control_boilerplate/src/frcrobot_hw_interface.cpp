@@ -2155,32 +2155,32 @@ bool FRCRobotHWInterface::safeTalonCall(ctre::phoenix::ErrorCode error_code, con
 			break;
 		case ctre::phoenix::MotProfFirmThreshold2:
 			error_name = "MotProfFirmThreshold2";
-                        break;
+			break;
 
-                case ctre::phoenix::MusicFileNotFound:
-                        error_name = "MusicFileNotFound";
-                        break;
-                case ctre::phoenix::MusicFileWrongSize:
-                        error_name = "MusicFileWrongSize";
-                        break;
-                case ctre::phoenix::MusicFileTooNew:
-                        error_name = "MusicFileTooNew";
-                        break;
-                case ctre::phoenix::MusicFileInvalid:
-                        error_name = "MusicFileInvalid";
-                        break;
-                case ctre::phoenix::InvalidOrchestraAction:
-                        error_name = "InvalidOrchestraAction";
-                        break;
-                case ctre::phoenix::MusicFileTooOld:
-                        error_name = "MusicFileTooOld";
-                        break;
-                case ctre::phoenix::MusicInterrupted:
-                        error_name = "MusicInterrupted";
-                        break;
-                case ctre::phoenix::MusicNotSupported:
-                        error_name = "MusicNotSupported";
-                        break;
+		case ctre::phoenix::MusicFileNotFound:
+			error_name = "MusicFileNotFound";
+			break;
+		case ctre::phoenix::MusicFileWrongSize:
+			error_name = "MusicFileWrongSize";
+			break;
+		case ctre::phoenix::MusicFileTooNew:
+			error_name = "MusicFileTooNew";
+			break;
+		case ctre::phoenix::MusicFileInvalid:
+			error_name = "MusicFileInvalid";
+			break;
+		case ctre::phoenix::InvalidOrchestraAction:
+			error_name = "InvalidOrchestraAction";
+			break;
+		case ctre::phoenix::MusicFileTooOld:
+			error_name = "MusicFileTooOld";
+			break;
+		case ctre::phoenix::MusicInterrupted:
+			error_name = "MusicInterrupted";
+			break;
+		case ctre::phoenix::MusicNotSupported:
+			error_name = "MusicNotSupported";
+			break;
 
 		default:
 			{

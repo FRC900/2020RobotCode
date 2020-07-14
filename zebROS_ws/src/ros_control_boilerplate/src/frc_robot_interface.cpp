@@ -761,22 +761,22 @@ FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_mode
 			as726x_local_updates_.push_back(local_update);
 			as726x_local_hardwares_.push_back(local_hardware);
 		}
-                else if (joint_type == "orchestra")
-                {
-                        talon_orchestra_names_.push_back(joint_name);
+		else if (joint_type == "orchestra")
+		{
+			talon_orchestra_names_.push_back(joint_name);
 
 			const bool has_id = joint_params.hasMember("id");
 			int orchestra_id = 0;
-                        if (!has_id)
-                            throw std::runtime_error("An orchestra id was not specified for joint " + joint_name);
-                        XmlRpc::XmlRpcValue &xml_orchestra_id = joint_params["id"];
-                        if (!xml_orchestra_id.valid() ||
-                                xml_orchestra_id.getType() != XmlRpc::XmlRpcValue::TypeInt)
-                            throw std::runtime_error("An invalid joint orchestra id was specified (expecting an int) for joint " + joint_name);
-                        orchestra_id = xml_orchestra_id;
+			if (!has_id)
+				throw std::runtime_error("An orchestra id was not specified for joint " + joint_name);
+			XmlRpc::XmlRpcValue &xml_orchestra_id = joint_params["id"];
+			if (!xml_orchestra_id.valid() ||
+					xml_orchestra_id.getType() != XmlRpc::XmlRpcValue::TypeInt)
+				throw std::runtime_error("An invalid joint orchestra id was specified (expecting an int) for joint " + joint_name);
+			orchestra_id = xml_orchestra_id;
 
-                        talon_orchestra_ids_.push_back(orchestra_id);
-                }
+			talon_orchestra_ids_.push_back(orchestra_id);
+		}
 		else
 		{
 			std::stringstream s;

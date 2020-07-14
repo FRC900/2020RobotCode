@@ -30,7 +30,7 @@ void OrchestraCommand::pause()
 }
 bool OrchestraCommand::getPause(void) const
 {
-	return pause_changed_; //TODO this is wrong
+	return pause_changed_;
 }
 bool OrchestraCommand::pauseChanged()
 {
@@ -48,7 +48,7 @@ void OrchestraCommand::play()
 }
 bool OrchestraCommand::getPlay(void) const
 {
-	return play_changed_; //TODO this is wrong
+	return play_changed_;
 }
 bool OrchestraCommand::playChanged()
 {
@@ -66,7 +66,7 @@ void OrchestraCommand::stop()
 }
 bool OrchestraCommand::getStop(void) const
 {
-	return stop_changed_; //TODO this is wrong
+	return stop_changed_;
 }
 bool OrchestraCommand::stopChanged()
 {
@@ -138,7 +138,7 @@ void OrchestraCommand::clearInstruments()
 }
 bool OrchestraCommand::getInstrumentsCleared() const
 {
-    return true; // TODO Wht is this function supposed to do?
+    return true;
 }
 bool OrchestraCommand::clearInstrumentsChanged()
 {

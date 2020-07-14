@@ -3,12 +3,6 @@
 namespace hardware_interface
 {
 
-// Set up default values
-// Set most of the changed_ vars to true
-// to force a write of these values to the Talon
-// That should put the talon in a known state
-// rather than relying on them being setup to
-// a certain state previously
 OrchestraState::OrchestraState(int orchestra_id) :
         orchestra_id_(orchestra_id),
         instruments_{},
