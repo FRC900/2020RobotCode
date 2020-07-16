@@ -3972,7 +3972,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             {
                 if(safeTalonCall(talon_orchestras_[i]->Pause(), "Pause"))
                 {
-                    os.setPaused();
+                    //os.setPaused();
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " pausing");
                 }
                 else{
@@ -3984,7 +3984,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             {
                 if(safeTalonCall(talon_orchestras_[i]->Play(), "Play"))
                 {
-                    os.setPlaying();
+                    //os.setPlaying();
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " playing");
                 }
                 else{
@@ -3996,7 +3996,7 @@ void FRCRobotHWInterface::write(const ros::Time& /*time*/, const ros::Duration& 
             {
                 if(safeTalonCall(talon_orchestras_[i]->Stop(), "Stop"))
                 {
-                    os.setStopped();
+                    //os.setStopped();
                     ROS_INFO_STREAM("Talon Orchestra " << talon_orchestra_names_[i] << " stopping");
                 }
                 else{
