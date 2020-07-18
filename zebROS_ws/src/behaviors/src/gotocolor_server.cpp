@@ -203,7 +203,7 @@ class GoToColorControlPanelAction {
 			if(!preempted_ && !timed_out_ && ros::ok())
 			{
 				controllers_2020_msgs::ClimberSrv climb_srv;
-				climb_srv.request.winch_set_point = 0;
+				climb_srv.request.winch_percent_out = 0;
 				climb_srv.request.climber_deploy = true;
 				climb_srv.request.climber_elevator_brake = true;
 				if(!climber_controller_client_.call(climb_srv))
@@ -300,7 +300,7 @@ class GoToColorControlPanelAction {
 
 			//Retract the climber
 			controllers_2020_msgs::ClimberSrv climb_srv;
-			climb_srv.request.winch_set_point = 0;	
+			climb_srv.request.winch_percent_out = 0;	
 			climb_srv.request.climber_deploy = false;
 			climb_srv.request.climber_elevator_brake = true;
 			if(!climber_controller_client_.call(climb_srv))

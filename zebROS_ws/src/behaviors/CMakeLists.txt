@@ -261,11 +261,6 @@ target_link_libraries(align_hatch_server
   ${catkin_LIBRARIES}
 )
 
-add_executable(shooter_actionlib_server src/shooter_actionlib_server.cpp)
-add_dependencies(shooter_actionlib_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
-target_link_libraries(shooter_actionlib_server
-  ${catkin_LIBRARIES}
-)
 add_executable(gotocolor_server src/gotocolor_server.cpp)
 add_dependencies(gotocolor_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(gotocolor_server
