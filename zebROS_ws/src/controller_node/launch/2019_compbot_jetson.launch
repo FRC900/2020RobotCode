@@ -123,7 +123,7 @@
 
 	<group ns="cmd_vel_mux">
 		<node name="twist_mux" pkg="twist_mux" type="twist_mux">
-			<rosparam file="$(find talon_swerve_drive_controller)/config/twist_mux.yaml" command="load" />
+			<rosparam command="load" file="$(find talon_swerve_drive_controller)/config/twist_mux.yaml"/>
 			<remap from="cmd_vel_out" to="/frcrobot_jetson/swerve_drive_controller/cmd_vel"/>
 		</node>
 	</group>
@@ -257,6 +257,8 @@
         -->
 
 	<include file="$(find realsense2_camera)/launch/rs_t265.launch" >
+		<!-- didn't seem to work, retest
+		-->
 		<arg name="camera" value="rs_t265" />
 	</include>
 
