@@ -192,7 +192,7 @@
 	</group>
         -->
 
-	<include file="$(find realsense2_camera)/launch/rs_t265.launch" >
+	<include file="$(find controller_node)/launch/rs_t265.launch" >
 		<!-- didn't seem to work, retest
 		-->
 		<arg name="camera" value="rs_t265" />
