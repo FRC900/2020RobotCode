@@ -97,7 +97,10 @@ namespace goal_detection
 				if (!camera_mutex_.try_lock())  // If the previous message is still being
 					return;                     // processed, drop this one
 				if (!camera_info_valid_)        // Nothing in here works without valid camera info
+				{
+					camera_mutex_.unlock();
 					return;
+				}
 				cv_bridge::CvImageConstPtr cvFrame = cv_bridge::toCvShare(frameMsg, sensor_msgs::image_encodings::BGR8);
 				cv_bridge::CvImageConstPtr cvDepth = cv_bridge::toCvShare(depthMsg, sensor_msgs::image_encodings::TYPE_32FC1);
 
@@ -117,10 +120,19 @@ namespace goal_detection
 				gd_.findTargets(cvFrame->image, cvDepth->image, LOADING_BAY_2020, model);
 				std::vector< GoalFound > gfd_loading_bay = gd_.return_found();
 
+#if 0
+				gd_.findTargets(cvFrame->image, cvDepth->image, TEST_TARGET_2020, model);
+				std::vector< GoalFound > gfd_test = gd_.return_found();
+#endif
+
+				std::vector< GoalFound > gfd_test;
+
 				std::vector< GoalFound > gfd;
-				gfd.reserve( gfd_power_port.size() + gfd_loading_bay.size() );
+				gfd.reserve( gfd_power_port.size() + gfd_loading_bay.size() + gfd_test.size() );
 				gfd.insert( gfd.end(), gfd_power_port.begin(), gfd_power_port.end() );
+#if 0
 				gfd.insert( gfd.end(), gfd_loading_bay.begin(), gfd_loading_bay.end() );
+#endif
 
 				field_obj::Detection gd_msg;
 
@@ -152,7 +164,7 @@ namespace goal_detection
 					const cv::Point3f world_coord_scaled = cc.screen_to_world(gfd[i].rect, dummy.id, gfd[i].distance);
 
 					dummy.location.x = world_coord_scaled.z;
-					dummy.location.y = world_coord_scaled.x;
+					dummy.location.y = -world_coord_scaled.x;
 					dummy.location.z = world_coord_scaled.y;
 					dummy.angle = atan2f(world_coord_scaled.x, world_coord_scaled.y) * 180. / M_PI;
 					gd_msg.objects.push_back(dummy);

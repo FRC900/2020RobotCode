@@ -42,7 +42,7 @@ namespace intake_controller
 
     void IntakeController::starting(const ros::Time &/*time*/) {
         //give command buffer(s) an initial value
-		arm_extend_cmd_buffer_.writeFromNonRT(false);
+		arm_extend_cmd_buffer_.writeFromNonRT(true);
 		percent_out_cmd_buffer_.writeFromNonRT(0.0);
 
 		forward_disabled_.writeFromNonRT(false);
@@ -53,18 +53,18 @@ namespace intake_controller
         const bool arm_extend_cmd = *(arm_extend_cmd_buffer_.readFromRT());
 		double arm_extend_double;
 		if(arm_extend_cmd == true){
-			arm_extend_double = 1.0;
+			arm_extend_double = 0.0;
 		}
 		else {
-			arm_extend_double = 0.0;
+			arm_extend_double = 1.0;
 		}
 
 		//if moving forwards was disabled by the indexer server, don't allow forward movement
 		double percent_out_cmd = *percent_out_cmd_buffer_.readFromRT();
-		if(*forward_disabled_.readFromRT() && percent_out_cmd > 0)
+		/*if(*forward_disabled_.readFromRT() && percent_out_cmd > 0)
 		{
 			percent_out_cmd = 0.0;
-		}
+		}*/
 
 		intake_joint_.setCommand(percent_out_cmd);
 		intake_arm_joint_.setCommand(arm_extend_double);

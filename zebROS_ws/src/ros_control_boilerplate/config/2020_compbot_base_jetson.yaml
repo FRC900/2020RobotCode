@@ -30,18 +30,13 @@ hardware_interface:
        - {name: shooter_joint, type: can_talon_srx, can_id: 32, local: true}
        - {name: shooter_hood_joint, type: solenoid, local_hardware: false, local_update: true}
 
-       - {name: climber_winch_joint, type: can_talon_srx, can_id: 0, local: true} #TODO fix can id
+       - {name: climber_winch_joint, type: can_talon_srx, can_id: 40, local: true} #TODO fix can id
        - {name: climber_deploy_joint, type: double_solenoid, local_hardware: false, local_update: true}
        - {name: climber_elevator_brake_joint, type: solenoid, local_hardware: false, local_update: true}
        
-       - {name: indexer_joint, type: can_talon_srx, can_id: 67, local: true} #TODO find actual can id
+       - {name: indexer_joint, type: can_talon_srx, can_id: 35, local: true} #TODO find actual can id
 
-       - {name: control_panel_joint, type: can_talon_srx, can_id: 34, local: true}
-       
-       - {name: elevator_master, type: can_talon_srx, can_id: 41, local: true}
-       - {name: elevator_follower1, type: can_talon_srx, can_id: 42, local: true}
-       - {name: elevator_follower2, type: can_talon_srx, can_id: 43, local: true}
-       - {name: elevator_follower3, type: can_talon_srx, can_id: 44, local: true}
+         # - {name: control_panel_joint, type: can_talon_srx, can_id: 34, local: true}
 
        - {name: fl_drive, type: can_talon_srx, can_id: 21, local: true}
        - {name: fl_angle, type: can_talon_srx, can_id: 11, local: true}
@@ -54,18 +49,9 @@ hardware_interface:
        - {name: pdp, type: pdp}
        - {name: compressor, type: compressor, pcm_id: 0}
 
-         # - {name: panel_intake_limit_switch_1, type: digital_input, local: false}
-         # - {name: panel_intake_limit_switch_2, type: digital_input, local: false}
-         # - {name: panel_intake_limit_switch_3, type: digital_input, local: false}
-         # - {name: panel_intake_limit_switch_4, type: digital_input, local: false}
-
        - {name: intake_linebreak, type: digital_input, local: false}
-       - {name: indexer_front_linebreak, type: digital_input, local: false}
        - {name: indexer_linebreak, type: digital_input, local: false}
        - {name: shooter_linebreak, type: digital_input, local: false}
-
-         # - {name: climber_linebreak_1, type: digital_input, local: false}
-         # - {name: climber_linebreak_2, type: digital_input, local: false}
 
        - {name: robot_code_ready_jetson, local: true, type: ready}
        - {name: robot_code_ready_rio, local: false, type: ready} # Probably not really needed?
@@ -120,10 +106,10 @@ shooter_controller:
     shooter:
         joint: shooter_joint
         type: talon_controllers/TalonVelocityCloseLoopController
-        feedback_type: CTRE_MagEncoder_Absolute
+        feedback_type: IntegratedSensor
         close_loop_values:
             - {p: 0.06, i: 0.000, d: 0.0, f: 0.047, i_zone: 0}
-        invert_output: true
+        invert_output: false 
         sensor_phase: false
         peak_output_forward: 1.0
         peak_output_reverse: -1.0
@@ -131,24 +117,19 @@ shooter_controller:
         nominal_output_reverse: 0.0
         voltage_compensation_enable: true
         dynamic_reconfigure: True
+        neutral_mode: Coast
 
 climber_controller:
     type:  climber_controller_2020/ClimberController
+    softlimit_offset_from_start: 30 #how much above the initial climber position to set the reverse soft limit 
+    initial_up_offset: 180
+    initial_up_percent_out: 0.3
     winch_joint: "winch"
     winch:
         joint: climber_winch_joint
-        type: talon_controllers/TalonMotionMagicCloseLoopController
-        feedback_type: CTRE_MagEncoder_Absolute
-        close_loop_values:
-            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
-        invert_output: true
-        sensor_phase: false
-        peak_output_forward: 1.0
-        peak_output_reverse: -1.0
-        nominal_output_forward: 0.0
-        nominal_output_reverse: 0.0
-        motion_cruise_velocity: 3
-        motion_acceleration: 5
+        type: talon_controllers/TalonPercentOutputController
+        feedback_type: IntegratedSensor
+        invert_output: false
         voltage_compensation_enable: True
         dynamic_reconfigure: True
 
@@ -160,8 +141,8 @@ indexer_controller:
         type: talon_controllers/TalonVelocityCloseLoopControllerInterface
         feedback_type: CTRE_MagEncoder_Absolute
         close_loop_values:
-            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0}
-        invert_output: true
+            - {p: 0.0, i: 0.000, d: 0.0, f: 5.0, i_zone: 0}
+        invert_output: true 
         sensor_phase: false
         peak_output_forward: 1.0
         peak_output_reverse: -1.0
@@ -173,37 +154,35 @@ indexer_controller:
         
 turret_controller:
     type: turret_controller/TurretController
-
     turret_joint: 'turret'
-
     turret_zero_timeout: 5.0
-    turret_zero_percent_output: 0.1
-    turret_zero_angle: 1.0472
+    turret_zero_percent_output: -0.4
+    turret_zero_angle: -0.3434
 
-    turret:
-        type: talon_controllers/TalonMotionMagicCloseLoopController
+    turret: #starts as a percent out controller then switches to motion magic after zeroing
         joint: turret_joint
         feedback_type: QuadEncoder
         close_loop_values:
-            - {p: 0.0, i: 0.000, d: 0.0, f: 0.0, i_zone: 0} #not tuned
-        invert_output: true
+            - {p: 2.8, i: 0.000, d: 0.0, f: 5.0, i_zone: 0} #tuned for the cart
+        invert_output: false
         sensor_phase: false
         peak_output_forward: 1.0
         peak_output_reverse: -1.0
-        nominal_output_forward: 0.0
-        nominal_output_reverse: 0.0
-        motion_cruise_velocity: 20
-        motion_acceleration: 100
+        nominal_output_forward: 0.1
+        nominal_output_reverse: -0.1
+        motion_cruise_velocity: 2.5
+        motion_acceleration: 5.0
         voltage_compensation: true
         dynamic_reconfigure: true
         limit_switch_local_forward_source: "FeedbackConnector"
         limit_switch_local_forward_normal: "NormallyOpen"
         limit_switch_local_reverse_source: "FeedbackConnector"
         limit_switch_local_reverse_normal: "NormallyOpen"
-        softlimit_forward_threshold: 1.0 #Placeholder value
+        softlimit_forward_threshold: 0.1
         softlimit_forward_enable: true
-        softlimit_reverse_threshold: -1.0 #Placeholder value
-        softlimit_reverse_enable: true 
+        softlimit_reverse_threshold: -0.35
+        softlimit_reverse_enable: true
+        conversion_factor: 1.74  # Range of turret motion = pi/2 radians = 0.907 motor units. 0.907 / (pi/2) = 0.577
 
 # This one creates the /talon_states topic necessary in ROS
 # It doesn't actually control anything, just takes the internal
@@ -235,22 +214,22 @@ pdp_state_controller:
    type:         pdp_state_controller/PDPStateController
    publish_rate: 20
    things_plugged_in_pdp_channel: 
-        ["thing1", #id 1
-         "thing2", #id 2
-         "thing3", #id 3
-         "thing4", #id 4 
-         "thing5", #id 5 
-         "thing6", #id 6 
-         "thing7", #id 7
-         "thing8", #id 8
-         "thing9", #id 9 
-         "thing10", #id 10
-         "thing11", #id 11 
-         "thing12", #id 12
-         "thing13", #id 13
-         "thing14", #id 14
-         "thing15", #id 15
-         "thing16" #id 16
+        ["", #id 1
+         "bl_drive", #id 2
+         "fl_drive", #id 3
+         "fl_angle", #id 4 
+         "intake_joint", #id 5 
+         "", #id 6 
+         "", #id 7
+         "", #id 8
+         "", #id 9 
+         "br_angle", #id 10
+         "fr_angle", #id 11 
+         "", #id 12
+         "climber_winch_joint", #id 13
+         "br_drive", #id 14
+         "fr_drive", #id 15
+         "" #id 16
         ]
 
 pcm_state_controller:
@@ -479,61 +458,3 @@ bl_drive_position_controller:
         
 
 
-elevator_master_percent_output_controller:
-    type: talon_controllers/TalonPercentOutputController
-    joint: elevator_master
-    feedback_type: CTRE_MagEncoder_Relative
-    sensor_phase: True
-    invert_output: False 
-    # TODO : bottom limit switch config
-    limit_switch_local_reverse_source: "FeedbackConnector"
-    limit_switch_local_reverse_normal: "NormallyOpen"
-    conversion_factor: 0.02959
-
-    # TODO : figure out what value this should be
-    # Only need one direction, to
-    # prevent the elevator from running off the top
-    softlimit_forward_threshold: 1.6675558772
-    softlimit_forward_enable: True
-    
-    
-elevator_master_velocity_controller:
-    type: talon_controllers/TalonVelocityCloseLoopController    
-    joint: elevator_master
-    feedback_type: CTRE_MagEncoder_Absolute
-    close_loop_values:
-        - {p: 0.0, i: 0.000, d: 00.0, f: 0.00, i_zone: 000}
-    invert_output: False
-    sensor_phase: True 
-    peak_output_forward: 1.0
-    peak_output_reverse: -1.0
-    conversion_factor: 0.02959
-    nominal_output_forward: 0.0
-    nominal_output_reverse: 0.0
-    motion_cruise_velocity: 00
-    motion_acceleration: 000
-    voltage_compensation_enable: true
-    dynamic_reconfigure: true
-    softlimit_forward_threshold: 1.6675558772
-    softlimit_forward_enable: True
-
-elevator_follower1_controller:
-    type: talon_controllers/TalonFollowerController
-    joint: elevator_follower1 
-    feedback_type: CTRE_MagEncoder_Absolute
-    invert_output: False
-    follow_joint: elevator_master
-
-elevator_follower2_controller:
-    type: talon_controllers/TalonFollowerController
-    joint: elevator_follower2 
-    feedback_type: CTRE_MagEncoder_Absolute
-    invert_output: True 
-    follow_joint: elevator_master
-
-elevator_follower3_controller:
-    type: talon_controllers/TalonFollowerController
-    joint: elevator_follower3
-    feedback_type: CTRE_MagEncoder_Absolute
-    invert_output: True
-    follow_joint: elevator_master

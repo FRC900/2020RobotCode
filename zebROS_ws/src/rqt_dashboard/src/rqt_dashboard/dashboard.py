@@ -1,34 +1,36 @@
 import os
 import rospy
 import rospkg
-import threading
+from threading import Lock, Thread
 
 import sys
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup
+from python_qt_binding.QtWidgets import QWidget, QGraphicsView, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, QLabel, QButtonGroup, QSpacerItem, QSizePolicy
 from python_qt_binding.QtCore import QCoreApplication
-from python_qt_binding.QtGui import QPixmap 
+from python_qt_binding.QtGui import QPixmap
 import resource_rc
 
 from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
+from behavior_actions.srv import resetBallSrv
 import std_msgs.msg
-import roslibpy
 
-
+from python_qt_binding import QtCore
 
 class Dashboard(Plugin):
+    autoStateSignal = QtCore.pyqtSignal(int)
+    nBallsSignal = QtCore.pyqtSignal(int)
+    shooterInRangeSignal = QtCore.pyqtSignal(bool)
+    turretInRangeSignal = QtCore.pyqtSignal(bool)
 
     msg_data = "default"
     def __init__(self, context):
-        #Start client -rosbridge
-        self.client = roslibpy.Ros(host='localhost', port=5803)
-        self.client.run()
         super(Dashboard, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName('Dashboard')
+
         # Process standalone plugin command-line arguments
         from argparse import ArgumentParser
         parser = ArgumentParser()
@@ -51,10 +53,17 @@ class Dashboard(Plugin):
         self._widget.setObjectName('DashboardUi')
 
 
+        #self.lock = Lock()
+
         # Set up signal-slot connections
         self._widget.set_imu_angle_button.clicked.connect(self.setImuAngle)
         self._widget.imu_angle.valueChanged.connect(self.imuAngleChanged)
-
+        
+        self._widget.auto_wall_dist_button.clicked.connect(self.setAutoWallDist)
+        self._widget.auto_wall_dist.valueChanged.connect(self.autoWallDistChanged)
+        
+        self._widget.ball_reset_button.clicked.connect(self.resetBallCount)
+        self._widget.ball_reset_count.valueChanged.connect(self.resetBallChanged)
         
         # Add buttons for auto modes
         v_layout = self._widget.auto_mode_v_layout #vertical layout storing the buttons
@@ -66,6 +75,7 @@ class Dashboard(Plugin):
                
                 new_auto_mode = QWidget()
                 new_h_layout = QHBoxLayout()
+                new_h_layout.setContentsMargins(0,0,0,0)
 
                 new_button = QRadioButton("Mode " + str(i))
                 new_button.setStyleSheet("font-weight: bold") 
@@ -73,7 +83,10 @@ class Dashboard(Plugin):
                 new_h_layout.addWidget( new_button )
                 
                 new_h_layout.addWidget( QLabel(", ".join(auto_sequence)) )
-                
+
+                hSpacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+                new_h_layout.addItem(hSpacer)
+
                 new_auto_mode.setLayout( new_h_layout )
                 v_layout.addWidget(new_auto_mode)
             else:
@@ -86,11 +99,9 @@ class Dashboard(Plugin):
         # auto state stuff
         self.autoState = 0
         self.displayAutoState() #display initial auto state
-        listener1 = roslibpy.Topic(self.client, '/auto/auto_state', 'behavior_actions/AutoState')
-        self.auto_state_sub = listener1.subscribe(self.autoStateCallback)
 
         # publish thread
-        publish_thread = threading.Thread(target=self.publish_thread) #args=(self,))
+        publish_thread = Thread(target=self.publish_thread) #args=(self,))
         publish_thread.start()
 
         # number balls display
@@ -101,9 +112,15 @@ class Dashboard(Plugin):
         self.four_balls = QPixmap(":/images/4_balls.png")
         self.five_balls = QPixmap(":/images/5_balls.png")
         self.more_than_five_balls = QPixmap(":/images/more_than_5_balls.png")
-        listener2 = roslibpy.Topic(self.client,'/num_powercells','std_msgs/UInt8')
-        self.n_balls_sub = listener2.subscribe(self.nBallsCallback)
+        
         self.n_balls = -1 #don't know n balls at first 
+
+        #in range stuff
+        self.shooter_in_range = False
+        self.turret_in_range = False
+        self.in_range_pixmap = QPixmap(":/images/GreenTarget.png")
+        self.not_in_range_pixmap = QPixmap(":/images/RedTarget.png")
+        self._widget.in_range_display.setPixmap(self.not_in_range_pixmap)
 
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
@@ -114,15 +131,31 @@ class Dashboard(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
-
+        
+        #initialize subscribers last, so that any callbacks they execute won't interfere with init
+        self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
+        self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
+        self.shooter_in_range_sub = rospy.Subscriber("/shooter/shooter_in_range", std_msgs.msg.Bool, self.shooterInRangeCallback)
+        self.turret_in_range_sub = rospy.Subscriber("/align_to_shoot/turret_in_range", std_msgs.msg.Bool, self.turretInRangeCallback)
+        
+        self.autoStateSignal.connect(self.autoStateSlot)
+        self.nBallsSignal.connect(self.nBallsSlot)
+        self.shooterInRangeSignal.connect(self.shooterInRangeSlot)
+        self.turretInRangeSignal.connect(self.turretInRangeSlot)
 
 
     def autoStateCallback(self, msg):
-        if(self.autoState != msg.id):
-	    self.autoState = msg.id
+        self.autoStateSignal.emit(int(msg.id));
+
+    def autoStateSlot(self, state):
+        #self.lock.acquire()
+        if(self.autoState != state):
+            self.autoState = state
             self.displayAutoState()
-    
+        #self.lock.release()
+
     def displayAutoState(self):
+        #self.lock.acquire()
         if self.autoState == 0:
             self._widget.auto_state_display.setText("Not ready")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
@@ -138,86 +171,142 @@ class Dashboard(Plugin):
 	elif self.autoState == 4:
 	    self._widget.auto_state_display.setText("Error")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
-
+        #self.lock.release()
 
     def nBallsCallback(self, msg):
-        if(self.n_balls != msg.data):
-            self.n_balls = msg.data
+        self.nBallsSignal.emit(int(msg.data))
+
+    def nBallsSlot(self, state):
+        if(self.n_balls != state):
+            self.n_balls = state
             display = self._widget.n_balls_display
             
-            if msg.data == 0:
+            if state == 0:
                 display.setPixmap(self.zero_balls)
-            elif msg.data == 1:
+            elif state == 1:
                 display.setPixmap(self.one_ball)
-            elif msg.data == 2:
+            elif state == 2:
                 display.setPixmap(self.two_balls)
-            elif msg.data == 3:
+            elif state == 3:
                 display.setPixmap(self.three_balls)
-            elif msg.data == 4:
+            elif state == 4:
                 display.setPixmap(self.four_balls)
-            elif msg.data == 5:
+            elif state == 5:
                 display.setPixmap(self.five_balls)
-            elif msg.data > 5:
+            elif state > 5:
                 display.setPixmap(self.more_than_five_balls)
             else:
                 display.setText("Couldn't read # balls")
+        #self.lock.release()
+
+    def shooterInRangeCallback(self, msg):
+        self.shooterInRangeSignal.emit(bool(msg.data))
+
+    def shooterInRangeSlot(self, in_range):
+        self.shooter_in_range = in_range #set here so that it's set synchronously with the other slots
+
+    def turretInRangeCallback(self, msg):
+        self.turretInRangeSignal.emit(bool(msg.data))
+        self.updateInRange()
+
+    def turretInRangeSlot(self, in_range):
+        self.turret_in_range = in_range #set here so that it's set synchronously with the other slots
+        self.updateInRange()
+
+    def updateInRange(self):
+        display = self._widget.in_range_display
+        if(self.shooter_in_range and self.turret_in_range):
+            display.setPixmap(self.in_range_pixmap)
+        else:
+            display.setPixmap(self.not_in_range_pixmap)
 
 
     def setImuAngle(self):
+        print("setting imu")
+        #self.lock.acquire()
         angle = self._widget.imu_angle.value() # imu_angle is the text field (doublespinbox) that the user can edit to change the navx angle, defaulting to zero
+        
         # call the service
         try:
-            service = roslibpy.Service(self.client,'/imu/set_imu_zero',ImuZeroAngle)
-           # rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
-            #TODO remove print
-            #Service Request-rosbridge
-            request = roslibpy.ServiceRequest()
-            result = service.call(request)
-            #result(angle)
+            rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
+            caller = rospy.ServiceProxy("/imu/set_imu_zero", ImuZeroAngle)
+            caller(angle)
             # change button to green color to indicate that the service call went through
             self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
 
         except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
-            self.errorPopup("Imu Set Angle Error", e) 
+            self.errorPopup("Imu Set Angle Error", e)
+        #self.lock.release()
+        print("finished setting imu")
 
     def imuAngleChanged(self):
+        #self.lock.acquire()
         # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
-        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
+        self._widget.set_imu_angle_button
+        setStyleSheet("background-color:#ff0000;")
+        #self.lock.release()
+
+
+    def setAutoWallDist(self):
+        print("setting auto wall distance")
+        #self.lock.acquire()
+        distance = self._widget.auto_wall_dist.value()
+        
+        self._widget.auto_wall_dist_button.setStyleSheet("background-color:#5eff00;")
+
+        print("finished setting auto wall distance")
+
+    def autoWallDistChanged(self):
+        self._widget.auto_wall_dist_button.setStyleSheet("background-color:#ff0000;")
+    
+    def resetBallCount(self):
+        print("manually reset ball count")
+        #self.lock.acquire()
+        nballs = self._widget.ball_reset_count.value() 
+        
+        # call the service
+        try:
+            rospy.wait_for_service("/reset_ball", 1) #timeout in sec, TODO maybe put in config file?
+            caller = rospy.ServiceProxy("/reset_ball", resetBallSrv)
+            caller(nballs)
+            # change button to green color to indicate that the service call went through
+            self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
+
+        except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
+            self.errorPopup("Reset ball count Error", e)
+        #self.lock.release()
+        print("finished resetting ball count")
+
+    def resetBallChanged(self):
+        self._widget.ball_reset_button.setStyleSheet("background-color:#ff0000;")
 
 
     def errorPopup(self, title, e):
-            msg_box = QMessageBox()
-            msg_box.setWindowTitle(title)
-            msg_box.setIcon(QMessageBox.Warning)
-            msg_box.setText("%s"%e)
-            msg_box.exec_()
+        #self.lock.acquire()
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(title)
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setText("%s"%e)
+        msg_box.exec_()
+        #self.lock.release()
 
     #Publisher -> fake Auto States
     def publish_thread(self):
-        #pub = roslibpy.Topic(self.client, '/chatter', 'std_msgs/String')
-        #pub.advertise()
-
-        #pass
-        #client1 = roslibpy.Ros(host='localhost', port=5803)
-        #client1.run()
-        pub = roslibpy.Topic(self.client, '/auto/auto_mode', 'behavior_actions/AutoMode')
+        #self.lock.acquire()
+        pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
         r = rospy.Rate(10) # 10hz
-        pub.advertise()
-        while self.client.is_connected:
-
-            pub.publish(roslibpy.Message(
-                {
-                    'auto_mode': self.auto_mode_button_group.checkedId()
-                }
-            ))
+        while not rospy.is_shutdown():
+            h = std_msgs.msg.Header()
+            h.stamp = rospy.Time.now()
+            pub.publish(h, self.auto_mode_button_group.checkedId(), self._widget.auto_wall_dist.value())
             r.sleep()
-        #pub.unadvertise()
-        #client1.terminate()
+        #self.lock.release()
 
     def shutdown_plugin(self):
-        # TODO unregister all publishers here 
-        self.client.close()
-        pass
+        self.auto_state_sub.unregister()
+        self.n_balls_sub.unregister()
+        self.shooter_in_range_sub.unregister()
+        self.turret_in_range_sub.unregister()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
@@ -235,4 +324,3 @@ class Dashboard(Plugin):
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
         pass
-

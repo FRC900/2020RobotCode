@@ -57,14 +57,17 @@ namespace turret_controller
 	void TurretController::starting(const ros::Time &/*time*/) {
 		turret_joint_.setSelectedSensorPosition(0.0); //resets the encoder position to 0
 
-		zeroed_ = false;
+		zeroed_ = true;
 		last_zeroed_  = false;
 		last_time_moving_ = ros::Time::now();
 		cmd_buffer_.writeFromNonRT(0.0);
+		turret_joint_.setForwardSoftLimitEnable(false);
+		turret_joint_.setReverseSoftLimitEnable(false);
 	}
 
 	void TurretController::update(const ros::Time &/*time*/, const ros::Duration &/*period*/) {
 		// If we hit the limit switch, (re)zero the position.
+		/*
 		if (turret_joint_.getReverseLimitSwitch())
 		{
 			ROS_INFO_THROTTLE(2, "TurretController : hit limit switch");
@@ -73,13 +76,15 @@ namespace turret_controller
 				zeroed_ = true;
 				last_zeroed_ = true;
 				turret_joint_.setSelectedSensorPosition(turret_zero_angle_);
+				turret_joint_.setForwardSoftLimitEnable(true);
+				turret_joint_.setReverseSoftLimitEnable(true);
 			}
 		}
 		else
 		{
 			last_zeroed_ = false;
 		}
-
+		*/
 
 		if (zeroed_) // run normally, seeking to various positions
 		{

@@ -8,6 +8,7 @@
 
 	<arg name="hw_or_sim" default="hw" />
 	<arg name="joy_or_key" default="joy" />
+	<arg name="button_box" default="true"/>
 	<arg name="static_map" default="True"/>
 	<arg name="record" default="false" />
 	<arg name="primary_imu" default="ADI" />
@@ -56,15 +57,23 @@
 
 	<group ns="teleop">
 		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
-		<node name="teleop_joystick_comp" pkg="teleop_joystick_control" type="teleop_joystick_comp" output="screen" />
+		<node name="teleop_joystick_comp_2020" pkg="teleop_joystick_control" type="teleop_joystick_comp_2020" output="screen" >
+			<remap from="navx_mxp" to="/frcrobot_rio/navx_mxp"/>
+		</node>
 
-		<group ns="translator0">
-			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen"/>
+		<group ns="translator1">
+			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen">
+				<remap from="/frcrobot_rio/joystick_states_raw" to="/frcrobot_rio/joystick_states_raw1"/>
+			</node>
+		</group>
+		
+		<group ns="button_box_translator" if="$(arg button_box)">
+			<node name="translate_button_box_data_node" pkg="teleop_joystick_control" type="translate_button_box_data_node" output="screen"/>
 		</group>
 
-		<group ns="translator1" if="$(eval arg('joy_or_key')=='two_joy')">
-			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen" >
-				<remap from="/frcrobot_rio/joystick_states_raw" to="/frcrobot_rio/joystick_states_raw1" />
+		<group ns="translator2" if="$(eval arg('joy_or_key')=='two_joy')">
+			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen">
+				<remap from="/frcrobot_rio/joystick_states_raw" to="/frcrobot_rio/joystick_states_raw2"/>
 			</node>
 		</group>
 	</group>
@@ -129,7 +138,7 @@
 	</include>
 
 	<include file="$(find controller_node)/launch/2019_compbot_jetson_hatch_orient.launch"/>
-    
+
 	<include file="$(find controller_node)/launch/tape_detection_c920.launch" />
         <!--
 	<group ns="align_cargo_rocketship">
@@ -175,7 +184,7 @@
 			<param name="enable_topic" value="align_pid/pid_enable" />
 			<param name="name" value="align_pid" />
 		</node>
-	</group> 
+	</group>
         -->
 
         <!--
@@ -188,7 +197,7 @@
 		<node name="align_server" pkg="behaviors" type="align_cargo_cargoship_server" output="screen" />
 
 		<node name="align_with_camera" pkg="behaviors" type="align_with_camera" output="screen" >
-			<param name="target_frame" value="cargo_outtake" /> 
+			<param name="target_frame" value="cargo_outtake" />
 		</node>
 		<node name="align_with_terabee_node" pkg="behaviors" type="align_with_terabee_node" output="screen"/>
 
@@ -246,7 +255,7 @@
 
 	</group>
         -->
-    
+
 	<include file="$(find realsense2_camera)/launch/rs_t265.launch" >
 		<!-- didn't seem to work, retest
 		-->
@@ -255,5 +264,7 @@
 
 	<include file="$(find controller_node)/launch/record_2019_compbot.launch" if="$(arg record)" />
 	<include file="$(find controller_node)/launch/record_2019_no_zed.launch" if="$(arg record)" />
+
+	<include file="$(find controller_node)/launch/pf_localization.launch"/>
 
 </launch>

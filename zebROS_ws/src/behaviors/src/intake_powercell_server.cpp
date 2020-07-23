@@ -33,7 +33,7 @@ class PowerCellIntakeAction {
 
 		//define variables that will be set true if the actionlib action is to be ended
 		//this will cause subsequent controller calls to be skipped
-		std::atomic<bool> preempted_ = false;
+		bool preempted_ = false;
 		bool timed_out_ = false;
 		double start_time_;
 
@@ -132,7 +132,7 @@ class PowerCellIntakeAction {
 				if(intake_linebreak_.triggered_)
 				{
 					//call indexer actionlib server to intake the ball
-					ac_indexer_.cancelGoalsAtAndBeforeTime(ros::Time::now()); //first make sure it isn't running (it might be from the earlier call to it)
+					//sending a new call to the indexer actionlib will cancel it if it is already running
 					behavior_actions::IndexerGoal indexer_goal;
 					indexer_goal.action = INTAKE_ONE_BALL;
 					ac_indexer_.sendGoal(indexer_goal);
@@ -152,16 +152,16 @@ class PowerCellIntakeAction {
 				}
 			}
 
-			//set ending state of controller: arm up and roller motors stopped
-			arm_srv.request.intake_arm_extend = false;
-			roller_srv.request.percent_out = 0;
+			//set ending state of controller: roller motors stopped
+			/*arm_srv.request.intake_arm_extend = false;
 			if(!preempted_)
 			{
 				if(!intake_arm_controller_client_.call(arm_srv))
 				{
 					ROS_ERROR("%s: powercell intake controller call to arm failed when setting final state", action_name_.c_str());
 				}
-			}
+			}*/
+			roller_srv.request.percent_out = 0;
 			if(!intake_roller_controller_client_.call(roller_srv))
 			{
 				ROS_ERROR("%s: powercell intake controller call to roller failed when setting final state", action_name_.c_str());
