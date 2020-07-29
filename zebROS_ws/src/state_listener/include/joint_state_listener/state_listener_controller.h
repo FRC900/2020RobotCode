@@ -27,20 +27,6 @@ namespace state_listener_controller
  * - \b command (sensor_msgs::JointState) : The joint state topic
  */
 
-// since not all joint names are guaranteed to be found in the
-// joint state message, keep track of which ones have using
-// this class. Only write values during update if valid end up
-// being true.
-template <class T>
-class ValueValid
-{
-	public:
-		ValueValid() : valid_(false) { }
-		ValueValid(const T &value) : value_(value), valid_(false) {}
-		T      value_;
-		bool   valid_;
-};
-
 class JointStateListenerController :
 	public controller_interface::Controller<hardware_interface::RemoteJointInterface>
 {
@@ -88,10 +74,10 @@ class JointStateListenerController :
 		{
 			// Take the most recent set of values read from the joint_states
 			// topic and write them to the local joints
-			std::vector<ValueValid<double>> vals = *command_buffer_.readFromRT();
+			std::vector<std::optional<double>> vals = *command_buffer_.readFromRT();
 			for (size_t i = 0; i < vals.size(); i++)
-				if (vals[i].valid_)
-					handles_[i].setCommand(vals[i].value_);
+				if (vals[i])
+					handles_[i].setCommand(*(vals[i]));
 		}
 
 	private:
@@ -100,22 +86,23 @@ class JointStateListenerController :
 		std::vector<hardware_interface::JointHandle> handles_;
 
 		// Real-time buffer holds the last command value read from the "command" topic.
-		realtime_tools::RealtimeBuffer<std::vector<ValueValid<double>>> command_buffer_;
+		realtime_tools::RealtimeBuffer<std::vector<std::optional<double>>> command_buffer_;
 
 		// Iterate through each desired joint state.  If it is found in
 		// the message, save the value here in the realtime buffer.
 		void commandCB(const sensor_msgs::JointStateConstPtr &msg)
 		{
-			std::vector<ValueValid<double>> ret;
-			ret.resize(joint_names_.size());
+			std::vector<std::optional<double>> ret;
 			for (size_t i = 0; i < joint_names_.size(); i++)
 			{
 				auto it = std::find(msg->name.cbegin(), msg->name.cend(), joint_names_[i]);
 				if (it != msg->name.cend())
 				{
-					const size_t loc = std::distance(msg->name.cbegin(), it);
-					ret[i].value_ = msg->position[loc];
-					ret[i].valid_ = true;
+					ret.push_back(msg->position[std::distance(msg->name.cbegin(), it)]);
+				}
+				else
+				{
+					ret.push_back(std::nullopt);
 				}
 			}
 			command_buffer_.writeFromNonRT(ret);
@@ -168,10 +155,10 @@ class JointModeListenerController :
 		{
 			// Take the most recent set of values read from the joint_modes
 			// topic and write them to the local joints
-			std::vector<ValueValid<int>> vals = *command_buffer_.readFromRT();
+			std::vector<std::optional<int>> vals = *command_buffer_.readFromRT();
 			for (size_t i = 0; i < vals.size(); i++)
-				if (vals[i].valid_)
-					handles_[i].setMode(static_cast<hardware_interface::JointCommandModes>(vals[i].value_));
+				if (vals[i])
+					handles_[i].setMode(static_cast<hardware_interface::JointCommandModes>(*(vals[i])));
 		}
 
 	private:
@@ -180,22 +167,23 @@ class JointModeListenerController :
 		std::vector<hardware_interface::JointModeHandle> handles_;
 
 		// Real-time buffer holds the last command value read from the "command" topic.
-		realtime_tools::RealtimeBuffer<std::vector<ValueValid<int>>> command_buffer_;
+		realtime_tools::RealtimeBuffer<std::vector<std::optional<int>>> command_buffer_;
 
 		// Iterate through each desired joint mode.  If it is found in
 		// the message, save the value here in the realtime buffer.
 		void commandCB(const frc_msgs::JointModeConstPtr &msg)
 		{
-			std::vector<ValueValid<int>> ret;
-			ret.resize(joint_names_.size());
+			std::vector<std::optional<int>> ret;
 			for (size_t i = 0; i < joint_names_.size(); i++)
 			{
 				auto it = std::find(msg->name.cbegin(), msg->name.cend(), joint_names_[i]);
 				if (it != msg->name.cend())
 				{
-					const size_t loc = std::distance(msg->name.cbegin(), it);
-					ret[i].value_ = msg->mode[loc];
-					ret[i].valid_ = true;
+					ret.push_back(msg->mode[std::distance(msg->name.cbegin(), it)]);
+				}
+				else
+				{
+					ret.push_back(std::nullopt);
 				}
 			}
 			command_buffer_.writeFromNonRT(ret);
