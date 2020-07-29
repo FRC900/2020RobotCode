@@ -138,11 +138,14 @@ class Dashboard(Plugin):
         auto_state_listener = roslibpy.Topic(self.client, '/auto/auto_state', 'behavior_actions/AutoState')
         self.auto_state_sub = auto_state_listener.subscribe(self.autoStateCallback)
 
-        listener2 = roslibpy.Topic(self.client,'/num_powercells','std_msgs/UInt8')
-        self.n_balls_sub = listener2.subscribe(self.nBallsCallback)
+        n_balls_listener = roslibpy.Topic(self.client,'/num_powercells','std_msgs/UInt8')
+        self.n_balls_sub = n_balls_listener.subscribe(self.nBallsCallback)
 
-        self.shooter_in_range_sub = rospy.Subscriber("/shooter/shooter_in_range", std_msgs.msg.Bool, self.shooterInRangeCallback)
-        self.turret_in_range_sub = rospy.Subscriber("/align_to_shoot/turret_in_range", std_msgs.msg.Bool, self.turretInRangeCallback)
+        shooter_in_range_listener = roslibpy.Topic(self.client, '/shooter/shooter_in_range', std_msgs.msg.Bool)
+        self.shooter_in_range_sub = shooter_in_range_listener.subscribe(self.shooterInRangeCallback)
+
+        turret_in_range_listener = roslibpy.Topic(self.client, '/align_to_shoot/turret_in_range', std_msgs.msg.Bool)
+        self.turret_in_range_sub = turret_in_range_listener.subscribe(self.turretInRangeCallback)
 
         self.autoStateSignal.connect(self.autoStateSlot)
         self.nBallsSignal.connect(self.nBallsSlot)
