@@ -317,6 +317,7 @@ class Dashboard(Plugin):
         self.auto_state_sub.unregister()
         self.n_balls_sub.unregister()
         self.shooter_in_range_sub.unregister()
+        self.turret_in_range_sub.unregister()
         self.client.close()
 
 
