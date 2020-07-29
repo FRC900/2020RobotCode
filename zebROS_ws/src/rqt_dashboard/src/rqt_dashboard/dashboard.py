@@ -16,6 +16,7 @@ from behavior_actions.msg import AutoState, AutoMode
 from imu_zero.srv import ImuZeroAngle
 from behavior_actions.srv import resetBallSrv
 import std_msgs.msg
+import roslibpy
 
 from python_qt_binding import QtCore
 
@@ -27,6 +28,9 @@ class Dashboard(Plugin):
 
     msg_data = "default"
     def __init__(self, context):
+        #Start client -rosbridge
+        self.client = roslibpy.Ros(host='localhost', port=5803)
+        self.client.run()
         super(Dashboard, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName('Dashboard')
@@ -52,8 +56,6 @@ class Dashboard(Plugin):
         # Give QObjects reasonable names
         self._widget.setObjectName('DashboardUi')
 
-
-        #self.lock = Lock()
 
         # Set up signal-slot connections
         self._widget.set_imu_angle_button.clicked.connect(self.setImuAngle)
@@ -131,13 +133,20 @@ class Dashboard(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
-        
+
         #initialize subscribers last, so that any callbacks they execute won't interfere with init
-        self.auto_state_sub = rospy.Subscriber("/auto/auto_state", AutoState, self.autoStateCallback)
-        self.n_balls_sub = rospy.Subscriber("/num_powercells", std_msgs.msg.UInt8, self.nBallsCallback)
-        self.shooter_in_range_sub = rospy.Subscriber("/shooter/shooter_in_range", std_msgs.msg.Bool, self.shooterInRangeCallback)
-        self.turret_in_range_sub = rospy.Subscriber("/align_to_shoot/turret_in_range", std_msgs.msg.Bool, self.turretInRangeCallback)
-        
+        auto_state_listener = roslibpy.Topic(self.client, '/auto/auto_state', 'behavior_actions/AutoState')
+        self.auto_state_sub = auto_state_listener.subscribe(self.autoStateCallback)
+
+        n_balls_listener = roslibpy.Topic(self.client,'/num_powercells','std_msgs/UInt8')
+        self.n_balls_sub = n_balls_listener.subscribe(self.nBallsCallback)
+
+        shooter_in_range_listener = roslibpy.Topic(self.client, '/shooter/shooter_in_range', std_msgs.msg.Bool)
+        self.shooter_in_range_sub = shooter_in_range_listener.subscribe(self.shooterInRangeCallback)
+
+        turret_in_range_listener = roslibpy.Topic(self.client, '/align_to_shoot/turret_in_range', std_msgs.msg.Bool)
+        self.turret_in_range_sub = turret_in_range_listener.subscribe(self.turretInRangeCallback)
+
         self.autoStateSignal.connect(self.autoStateSlot)
         self.nBallsSignal.connect(self.nBallsSlot)
         self.shooterInRangeSignal.connect(self.shooterInRangeSlot)
@@ -152,10 +161,8 @@ class Dashboard(Plugin):
         if(self.autoState != state):
             self.autoState = state
             self.displayAutoState()
-        #self.lock.release()
-
+    
     def displayAutoState(self):
-        #self.lock.acquire()
         if self.autoState == 0:
             self._widget.auto_state_display.setText("Not ready")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
@@ -171,7 +178,7 @@ class Dashboard(Plugin):
 	elif self.autoState == 4:
 	    self._widget.auto_state_display.setText("Error")
             self._widget.auto_state_display.setStyleSheet("background-color:#ff5555;")
-        #self.lock.release()
+
 
     def nBallsCallback(self, msg):
         self.nBallsSignal.emit(int(msg.data))
@@ -197,7 +204,6 @@ class Dashboard(Plugin):
                 display.setPixmap(self.more_than_five_balls)
             else:
                 display.setText("Couldn't read # balls")
-        #self.lock.release()
 
     def shooterInRangeCallback(self, msg):
         self.shooterInRangeSignal.emit(bool(msg.data))
@@ -228,9 +234,13 @@ class Dashboard(Plugin):
         
         # call the service
         try:
-            rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
-            caller = rospy.ServiceProxy("/imu/set_imu_zero", ImuZeroAngle)
-            caller(angle)
+            service = roslibpy.Service(self.client,'/imu/set_imu_zero',ImuZeroAngle)
+           # rospy.wait_for_service("/imu/set_imu_zero", 1) # timeout in sec, TODO maybe put in config file?
+            #TODO remove print
+            #Service Request-rosbridge
+            request = roslibpy.ServiceRequest()
+            result = service.call(request)
+            #result(angle)
             # change button to green color to indicate that the service call went through
             self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
 
@@ -270,7 +280,7 @@ class Dashboard(Plugin):
             caller = rospy.ServiceProxy("/reset_ball", resetBallSrv)
             caller(nballs)
             # change button to green color to indicate that the service call went through
-            self._widget.set_imu_angle_button.setStyleSheet("background-color:#5eff00;")
+        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
 
         except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
             self.errorPopup("Reset ball count Error", e)
@@ -282,31 +292,34 @@ class Dashboard(Plugin):
 
 
     def errorPopup(self, title, e):
-        #self.lock.acquire()
         msg_box = QMessageBox()
         msg_box.setWindowTitle(title)
         msg_box.setIcon(QMessageBox.Warning)
         msg_box.setText("%s"%e)
         msg_box.exec_()
-        #self.lock.release()
 
     #Publisher -> fake Auto States
     def publish_thread(self):
-        #self.lock.acquire()
-        pub = rospy.Publisher('/auto/auto_mode', AutoMode, queue_size=10)
+
+        pub = roslibpy.Topic(self.client, '/auto/auto_mode', 'behavior_actions/AutoMode')
         r = rospy.Rate(10) # 10hz
-        while not rospy.is_shutdown():
-            h = std_msgs.msg.Header()
-            h.stamp = rospy.Time.now()
-            pub.publish(h, self.auto_mode_button_group.checkedId(), self._widget.auto_wall_dist.value())
+        pub.advertise()
+        while self.client.is_connected:
+
+            pub.publish(roslibpy.Message(
+                {
+                    'auto_mode': self.auto_mode_button_group.checkedId()
+                }
+            ))
             r.sleep()
-        #self.lock.release()
 
     def shutdown_plugin(self):
         self.auto_state_sub.unregister()
         self.n_balls_sub.unregister()
         self.shooter_in_range_sub.unregister()
         self.turret_in_range_sub.unregister()
+        self.client.close()
+
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
@@ -324,3 +337,4 @@ class Dashboard(Plugin):
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
         pass
+
