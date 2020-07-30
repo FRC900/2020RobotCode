@@ -7,11 +7,12 @@ include ("../cmake_modules/CMakeOpt.cmake")
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   angles
+  base_trajectory_msgs
   cmake_modules
   ddynamic_reconfigure
   joint_trajectory_controller
-  nav_msgs
   message_generation
+  nav_msgs
   roscpp
   spline_util
   std_msgs
@@ -55,35 +56,6 @@ find_package(Gperftools REQUIRED)
 ##     and list every .msg/.srv/.action file to be processed
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
-
-## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Coefs.msg
-  Constraint.msg
-)
-
-## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   GenerateSpline.srv
-)
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs  # Or other packages containing msgs
-   nav_msgs
-   trajectory_msgs
-   base_trajectory
-)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -147,14 +119,6 @@ target_link_libraries(${PROJECT_NAME}_node
   ${GPERFTOOLS_LIBRARIES}
 )
 
-add_executable(driver_node src/driver.cpp)
-target_link_libraries(driver_node
-  ${catkin_LIBRARIES}
-)
-# Add cmake target dependencies of the executable
-# same as for the library above
-add_dependencies(driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 #############
 ## Install ##
 #############
@@ -170,7 +134,7 @@ add_dependencies(driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORT
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS ${PROJECT_NAME}_node driver_node
+install(TARGETS ${PROJECT_NAME}_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

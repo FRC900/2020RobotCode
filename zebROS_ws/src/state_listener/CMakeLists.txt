@@ -7,16 +7,12 @@ include("../cmake_modules/CMakeOpt.cmake")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  as726x_interface
-  as726x_msgs
   controller_interface
-  frc_interfaces
   frc_msgs
   hardware_interface
   realtime_tools
+  remote_joint_interface
   roscpp
-  talon_interface
-  talon_state_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,7 +106,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES state_listener
-  CATKIN_DEPENDS as726x_msgs frc_msgs talon_state_msgs
+  CATKIN_DEPENDS frc_msgs
 #  DEPENDS frc_msgs talon_state_msgs
 )
 

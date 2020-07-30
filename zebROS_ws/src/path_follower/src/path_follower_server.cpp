@@ -1,8 +1,8 @@
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
-#include <base_trajectory/GenerateSpline.h>
-#include <path_follower/PathAction.h>
-#include <path_follower/PathGoal.h>
+#include "base_trajectory_msgs/GenerateSpline.h"
+#include <path_follower_msgs/PathAction.h>
+#include <path_follower_msgs/PathGoal.h>
 #include <path_follower/axis_state.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Bool.h>
@@ -18,7 +18,7 @@ class PathAction
 {
 	protected:
 		ros::NodeHandle nh_;
-		actionlib::SimpleActionServer<path_follower::PathAction> as_;
+		actionlib::SimpleActionServer<path_follower_msgs::PathAction> as_;
 		std::string action_name_;
 
 		ros::ServiceClient spline_gen_cli_;
@@ -49,7 +49,8 @@ class PathAction
 				   double server_timeout,
 				   int ros_rate,
 				   double start_point_radius,
-				   const std::string &odom_topic)
+				   const std::string &odom_topic,
+				   double time_offset)
 			: nh_(nh)
 			, as_(nh_, name, boost::bind(&PathAction::executeCB, this, _1), false)
 			, action_name_(name)
@@ -68,7 +69,7 @@ class PathAction
 			service_connection_header["tcp_nodelay"] = "1";
 
 			// TODO - not sure which namespace base_trajectory should go in
-			spline_gen_cli_ = nh_.serviceClient<base_trajectory::GenerateSpline>("/path_follower/base_trajectory/spline_gen", false, service_connection_header);
+			spline_gen_cli_ = nh_.serviceClient<base_trajectory_msgs::GenerateSpline>("/path_follower/base_trajectory/spline_gen", false, service_connection_header);
 
 			odom_sub_ = nh_.subscribe(odom_topic_, 1, &PathAction::odomCallback, this);
 			// TODO : maybe grab this from the odom topic as well?
@@ -76,7 +77,7 @@ class PathAction
 
 			combine_cmd_vel_pub_ = nh_.advertise<std_msgs::Bool>("path_follower_pid/pid_enable", 1000);
 
-			path_follower_ = std::make_shared<PathFollower>(lookahead_distance_, start_point_radius_);
+			path_follower_ = std::make_shared<PathFollower>(lookahead_distance_, start_point_radius_, time_offset);
 		}
 
 		void odomCallback(const nav_msgs::Odometry &odom_msg)
@@ -142,14 +143,14 @@ class PathAction
 				ROS_WARN_STREAM_THROTTLE(1, name << " error: " << axis.error_ << " aligned: " << axis.aligned_);
 		}
 
-		void executeCB(const path_follower::PathGoalConstPtr &goal)
+		void executeCB(const path_follower_msgs::PathGoalConstPtr &goal)
 		{
 			bool preempted = false;
 			bool timed_out = false;
 			bool succeeded = false;
 
 			// Generate the waypoints of the spline
-			base_trajectory::GenerateSpline spline_gen_srv;
+			base_trajectory_msgs::GenerateSpline spline_gen_srv;
 			const size_t point_num = goal->points.size();
 			spline_gen_srv.request.points.resize(point_num);
 			for (size_t i = 0; i < point_num; i++)
@@ -297,7 +298,7 @@ class PathAction
 			z_axis.enable_pub_.publish(enable_msg);
 
 			//log result and set actionlib server state appropriately
-			path_follower::PathResult result;
+			path_follower_msgs::PathResult result;
 
 			if (preempted)
 			{
@@ -333,6 +334,7 @@ int main(int argc, char **argv)
 	double server_timeout = 5.0;
 	int ros_rate = 20;
 	double start_point_radius = 0.05;
+	double time_offset = 0;
 
 	std::string odom_topic = "/frcrobot_jetson/swerve_drive_controller/odom";
 	nh.getParam("/path_follower/path_follower/lookahead_distance", lookahead_distance);
@@ -341,6 +343,7 @@ int main(int argc, char **argv)
 	nh.getParam("/path_follower/path_follower/ros_rate", ros_rate);
 	nh.getParam("/path_follower/path_follower/start_point_radius", start_point_radius);
 	nh.getParam("/path_follower/path_follower/odom_topic", odom_topic);
+	nh.getParam("/path_follower/path_follower/time_offset", time_offset);
 
 	PathAction path_action_server("path_follower_server", nh,
 								  lookahead_distance,
@@ -348,7 +351,8 @@ int main(int argc, char **argv)
 								  server_timeout,
 								  ros_rate,
 								  start_point_radius,
-								  odom_topic);
+								  odom_topic,
+								  time_offset);
 
 	AlignActionAxisConfig x_axis("x", "x_position_pid/pid_enable", "x_position_pid/x_cmd_pub", "x_position_pid/x_state_pub", "x_position_pid/pid_debug", "x_timeout_param", "x_error_threshold_param");
 	AlignActionAxisConfig y_axis("y", "y_position_pid/pid_enable", "y_position_pid/y_cmd_pub", "y_position_pid/y_state_pub", "y_position_pid/pid_debug", "y_timeout_param", "y_error_threshold_param");

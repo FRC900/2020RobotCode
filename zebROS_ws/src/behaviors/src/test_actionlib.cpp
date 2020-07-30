@@ -2,13 +2,15 @@
 #include <signal.h>
 #include <actionlib/client/simple_action_client.h>
 #include <behavior_actions/IntakeAction.h>
+#include <behavior_actions/RotatePanelAction.h>
 #include <behavior_actions/PlaceAction.h>
 #include <behavior_actions/ElevatorAction.h>
 #include <behavior_actions/ClimbAction.h>
 #include <behavior_actions/AlignAction.h>
 #include <behavior_actions/ShooterAction.h>
 #include <behavior_actions/EjectAction.h>
-#include <path_follower/PathAction.h>
+#include <path_follower_msgs/PathAction.h>
+#include <behavior_actions/GoToColorAction.h>
 #include <behavior_actions/IndexerAction.h>
 #include <behavior_actions/AlignToShootAction.h>
 #include <behavior_actions/enumerated_elevator_indices.h>
@@ -18,6 +20,43 @@
 
 double server_wait_timeout = 20.0; //how long to wait for a server to exist before exiting, in sec.
 double server_exec_timeout = 20.0; //how long to wait for an actionlib server call to finish before timing out, in sec. Used for all actionlib calls
+
+bool callRotatePanel()
+{
+    //create client to call actionlib server
+    actionlib::SimpleActionClient<behavior_actions::RotatePanelAction> rotate_panel_ac("/rotate_panel/rotate_panel_server", true);
+
+    ROS_INFO("Waiting for rotate_panel server to start.");
+    if(!rotate_panel_ac.waitForServer(ros::Duration(server_wait_timeout)))
+    {
+        ROS_ERROR("Could not find server within %f seconds.", server_wait_timeout);
+    }
+
+    ROS_INFO("Sending goal to rotate panel server");
+
+	behavior_actions::RotatePanelGoal goal;
+    rotate_panel_ac.sendGoal(goal);
+
+    //wait for the action to return
+    bool finished_before_timeout = rotate_panel_ac.waitForResult(ros::Duration(server_exec_timeout));
+
+    if (finished_before_timeout)
+    {
+        actionlib::SimpleClientGoalState state = rotate_panel_ac.getState();
+        ROS_INFO("Action finished with state: %s",state.toString().c_str());
+        if(rotate_panel_ac.getResult()->timed_out)
+        {
+            ROS_INFO("Rotate_Panel Server timed out!");
+        }
+        return true;
+    }
+    else
+    {
+        ROS_INFO("Action did not finish before the time out.");
+        return false;
+    }
+
+}
 
 
 bool callElevator(int setpoint_idx)
@@ -352,7 +391,7 @@ bool callAlignHatch()
 bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setpoint, double path_x2_setpoint, double path_y2_setpoint, double path_z2_setpoint)
 {
         ROS_INFO_STREAM("path_x_setpoint = " << path_x_setpoint);
-	actionlib::SimpleActionClient<path_follower::PathAction> path_ac("/path_follower/path_follower_server", true);
+	actionlib::SimpleActionClient<path_follower_msgs::PathAction> path_ac("/path_follower/path_follower_server", true);
 
 	ROS_INFO("Waiting for pure pursuit server to start.");
 	if(!path_ac.waitForServer(ros::Duration(server_wait_timeout)))
@@ -362,7 +401,7 @@ bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setp
 	}
 
 	ROS_INFO("callPath: Sending goal to the server.");
-	path_follower::PathGoal path_goal;
+	path_follower_msgs::PathGoal path_goal;
 	path_goal.points.resize(3);
 	path_goal.points[0].x = 0;
 	path_goal.points[0].y = 0;
@@ -374,6 +413,15 @@ bool callPath(double path_x_setpoint, double path_y_setpoint, double path_z_setp
 	path_goal.points[2].y = path_y2_setpoint;
 	path_goal.points[2].z = path_z2_setpoint;
 	path_ac.sendGoal(path_goal);
+
+	/*
+	path_goal.constraints.resize(1);
+	path_goal.constraints[0].corner1.x = 0.75;
+	path_goal.constraints[0].corner1.y = 0.75;
+	path_goal.constraints[0].corner2.x = 1.25;
+	path_goal.constraints[0].corner2.y = 1.25;
+	path_goal.constraints[0].max_vel = 0.5;
+	*/
 
 	//wait for the action to return
 	bool finished_before_timeout = path_ac.waitForResult(ros::Duration(server_exec_timeout));
@@ -507,6 +555,42 @@ bool callEject(bool intake_backwards, bool indexer_backwards)
 	}
 }
 
+bool callGoToColor()
+{
+	//create client to call actionlib server
+	actionlib::SimpleActionClient<behavior_actions::GoToColorAction> gotocolor_ac("/go_to_color_server", true);
+
+	ROS_INFO("Waiting for go_to_color_control_panel_server to start.");
+	if(!gotocolor_ac.waitForServer(ros::Duration(server_wait_timeout)))
+	{
+		ROS_ERROR("Could not find server within %f seconds.", server_wait_timeout);
+	}
+
+	ROS_INFO("Sending goal to go_to_color_control_panelserver.");
+	// send a goal to the action
+	behavior_actions::GoToColorGoal color_goal;
+	gotocolor_ac.sendGoal(color_goal);
+
+	//wait for the action to return
+	bool finished_before_timeout = gotocolor_ac.waitForResult(ros::Duration(server_exec_timeout));
+
+	if (finished_before_timeout)
+	{
+		actionlib::SimpleClientGoalState state = gotocolor_ac.getState();
+		ROS_INFO("Action finished with state: %s",state.toString().c_str());
+		if(gotocolor_ac.getResult()->timed_out)
+		{
+			ROS_INFO("Go to color server timed out!");
+		}
+		return true;
+	}
+	else
+	{
+		ROS_INFO("Action did not finish before the time out.");
+		return false;
+	}
+}
+
 #ifdef __linux__
 
 //function that runs when ctrl+C is pressed. Overriding the default one so that we can preempt actionlib servers when ctrl+C is pressed.
@@ -557,7 +641,7 @@ int main (int argc, char **argv)
 	if(what_to_run.length() == 0)
 	{
 		ROS_ERROR("You need to specify the run functionality with: rosrun behaviors test_actionlib run:=____");
-		ROS_ERROR("Possible values for run: all, indexer, eject, intake_cargo, outtake_cargo, intake_hatch_panel, outtake_hatch_panel, elevator, climber0, climber1, climber2, climber3, shooter, path");
+		ROS_ERROR("Possible values for run: all, indexer, eject, rotate_panel intake_cargo, outtake_cargo, intake_hatch_panel, outtake_hatch_panel, elevator, climber0, climber1, climber2, climber3, shooter, path");
 		ROS_ERROR("Note: 'all' will not run the climber");
 		return 0;
 	}
@@ -680,6 +764,10 @@ int main (int argc, char **argv)
 	else if(what_to_run == "intake_hatch_panel") {
 		callIntakeHatchPanel();
 	}
+	else if (what_to_run == "rotate_panel")
+	{
+		callRotatePanel();
+	}
 	else if(what_to_run == "outtake_hatch_panel") {
 		callOuttakeHatchPanel(setpoint_idx);
 	}
@@ -757,6 +845,10 @@ int main (int argc, char **argv)
 		std::cout << "Mode? (0 = auto; 1+ = face straight ahead)\n";
 		std::cin >> mode;
 		callAlignToShoot(mode);
+	}
+	else if(what_to_run == "go_to_color")
+	{
+		callGoToColor();
 	}
 	else
 	{

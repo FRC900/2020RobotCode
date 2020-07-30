@@ -12,27 +12,27 @@
 - git:
     local-name: ros_controllers/forward_command_controller
     uri: https://github.com/ros-gbp/ros_controllers-release.git
-    version: release/melodic/forward_command_controller/0.15.0-0
+    version: release/melodic/forward_command_controller/0.15.1-1
 - git:
     local-name: ros_controllers/imu_sensor_controller
     uri: https://github.com/ros-gbp/ros_controllers-release.git
-    version: release/melodic/imu_sensor_controller/0.15.0-0
+    version: release/melodic/imu_sensor_controller/0.15.1-1
 - git:
     local-name: ros_controllers/joint_state_controller
     uri: https://github.com/ros-gbp/ros_controllers-release.git
-    version: release/melodic/joint_state_controller/0.15.0-0
+    version: release/melodic/joint_state_controller/0.15.1-1
 - git:
     local-name: ros_controllers/joint_trajectory_controller
     uri: https://github.com/ros-gbp/ros_controllers-release.git
-    version: release/melodic/joint_trajectory_controller/0.15.0-0
+    version: release/melodic/joint_trajectory_controller/0.15.1-1
 - git:
     local-name: ros_controllers/position_controllers
     uri: https://github.com/ros-gbp/ros_controllers-release.git
-    version: release/melodic/position_controllers/0.15.0-0
+    version: release/melodic/position_controllers/0.15.1-1
 - git:
     local-name: ros_controllers/velocity_controllers
     uri: https://github.com/ros-gbp/ros_controllers-release.git
-    version: release/melodic/velocity_controllers/0.15.0-0
+    version: release/melodic/velocity_controllers/0.15.1-1
 - git:
     local-name: teraranger
     uri: https://github.com/Terabee/teraranger-release.git
@@ -54,7 +54,8 @@
     uri: https://github.com/FRC900/realsense.git 
 - git:
     local-name: ddynamic_reconfigure
-    uri: https://github.com/pal-robotics/ddynamic_reconfigure
+    uri: https://github.com/FRC900/ddynamic_reconfigure
+    version: getcurrentvalue_callback
 - git:
     local-name: realtime_tools
     uri: https://github.com/FRC900/realtime_tools.git
@@ -70,3 +71,7 @@
 - git:
     local-name: cpu_monitor
     uri: https://github.com/FRC900/cpu_monitor
+- git:
+    local-name: stage_ros.git
+    uri: https://github.com/FRC900/stage_ros
+

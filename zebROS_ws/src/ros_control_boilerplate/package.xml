@@ -14,6 +14,7 @@
   <build_depend>message_generation</build_depend>
 
   <depend>roscpp</depend>
+  <depend>as726x_interface</depend>
   <depend>cmake_modules</depend>
   <depend>hardware_interface</depend>
   <depend>controller_manager</depend>
@@ -23,11 +24,13 @@
   <depend>urdf</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>realtime_tools</depend>
   <depend>rosparam_shortcuts</depend>
   <depend>talon_interface</depend>
   <depend>message_runtime</depend>
   <depend>frc_interfaces</depend>
   <depend>frc_msgs</depend>
+  <depend>remote_joint_interface</depend>
 
   <export>
   </export>

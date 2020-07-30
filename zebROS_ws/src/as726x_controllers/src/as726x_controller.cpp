@@ -1,36 +1,6 @@
-///////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 2012, hiDOF INC.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//   * Redistributions of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//   * Redistributions in binary form must reproduce the above copyright
-//     notice, this list of conditions and the following disclaimer in the
-//     documentation and/or other materials provided with the distribution.
-//   * Neither the name of hiDOF Inc nor the names of its
-//     contributors may be used to endorse or promote products derived from
-//     this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-//////////////////////////////////////////////////////////////////////////////
-
-/*
- * Original joint_state_controller Author: Wim Meeussen
- */
-
-#include <algorithm>
-#include <cstddef>
+// Controller for the AS726x color sensor. This code allows setting of the
+// sensor's configuration values, either with values read from ROS params
+// or using dynamic reconfigure
 
 #include "as726x_controllers/as726x_controller.h"
 
@@ -88,8 +58,8 @@ bool AS726xController::init(hardware_interface::as726x::AS726xCommandInterface *
 		ROS_ERROR_STREAM("as726x controller - could not read joint_name param");
 		return false;
 	}
-	as726x_command_ = hw->getHandle(joint_name);
 	ROS_INFO("Got joint %s in as726x controller", joint_name.c_str());
+	as726x_command_ = hw->getHandle(joint_name);
 
 	std::string param_str;
 	ind_led_current_limit_ = hardware_interface::as726x::IndLedCurrentLimits::IND_LIMIT_1MA;
@@ -103,6 +73,7 @@ bool AS726xController::init(hardware_interface::as726x::AS726xCommandInterface *
 	controller_nh.param("ind_led_enable", bool_val, false);
 	ind_led_enable_= bool_val;
 
+	drv_led_current_limit_ = hardware_interface::as726x::DrvLedCurrentLimits::DRV_LIMIT_12MA5;
 	if (controller_nh.getParam("drv_led_current_limit", param_str))
 	{
 		if (!convertDrvLedCurrentLimit(param_str, drv_led_current_limit_))
@@ -132,47 +103,47 @@ bool AS726xController::init(hardware_interface::as726x::AS726xCommandInterface *
 
     ddr_.registerEnumVariable<int>
 		("ind_led_current_limit",
-		 static_cast<int>(ind_led_current_limit_.load(std::memory_order_relaxed)),
+		 boost::bind(&AS726xController::getIndLedCurrentLimit, this),
 		 boost::bind(&as726x_controller::AS726xController::indLedCurrentLimitCB, this, _1),
 		 "Current limit for Ind LED",
 		 ind_led_current_limit_enum_map_);
 
     ddr_.registerVariable<bool>
 		("ind_led_enable",
-		 ind_led_enable_.load(std::memory_order_relaxed),
+		 boost::bind(&AS726xController::getIndLedEnable, this),
 		 boost::bind(&AS726xController::indLedEnableCB, this, _1),
 		 "Ind LED Enable");
 
     ddr_.registerEnumVariable<int>
 		("drv_led_current_limit",
-		 static_cast<int>(drv_led_current_limit_.load(std::memory_order_relaxed)),
+		 boost::bind(&AS726xController::getDrvLedCurrentLimit, this),
 		 boost::bind(&as726x_controller::AS726xController::drvLedCurrentLimitCB, this, _1),
 		 "Current limit for Drv LED",
 		 drv_led_current_limit_enum_map_);
 
     ddr_.registerVariable<bool>
 		("drv_led_enable",
-		 drv_led_enable_.load(std::memory_order_relaxed),
+		 boost::bind(&AS726xController::getDrvLedEnable, this),
 		 boost::bind(&AS726xController::drvLedEnableCB, this, _1),
 		 "Drv LED Enable");
 
     ddr_.registerEnumVariable<int>
 		("converstion_type",
-		 static_cast<int>(conversion_type_.load(std::memory_order_relaxed)),
+		 boost::bind(&AS726xController::getConversionType, this),
 		 boost::bind(&as726x_controller::AS726xController::conversionTypeCB, this, _1),
 		 "Sensor conversion type",
 		 conversion_types_enum_map_);
 
     ddr_.registerEnumVariable<int>
 		("channel_gain",
-		 static_cast<int>(channel_gain_.load(std::memory_order_relaxed)),
+		 boost::bind(&AS726xController::getChannelGain, this),
 		 boost::bind(&as726x_controller::AS726xController::channelGainCB, this, _1),
 		 "Sensor channel gain",
 		 channel_gain_enum_map_);
 
     ddr_.registerVariable<int>
 		("integration_time",
-		 static_cast<int>(integration_time_.load(std::memory_order_relaxed)),
+		 boost::bind(&AS726xController::getIntegrationTime, this),
 		 boost::bind(&AS726xController::integrationTimeCB, this, _1),
 		 "Intergation Time",
 		 std::numeric_limits<uint8_t>::min(),
@@ -210,6 +181,42 @@ void AS726xController::integrationTimeCB(uint8_t integration_time)
 {
 	integration_time_ = integration_time;
 }
+
+int  AS726xController::getIndLedCurrentLimit(void) const
+{
+	return ind_led_current_limit_;
+}
+
+bool AS726xController::getIndLedEnable(void) const
+{
+	return ind_led_enable_;
+}
+
+int  AS726xController::getDrvLedCurrentLimit(void) const
+{
+	return drv_led_current_limit_;
+}
+
+bool AS726xController::getDrvLedEnable(void) const
+{
+	return drv_led_enable_;
+}
+
+int  AS726xController::getConversionType(void) const
+{
+	return conversion_type_;
+}
+
+int  AS726xController::getChannelGain(void) const
+{
+	return channel_gain_;
+}
+
+int  AS726xController::getIntegrationTime(void) const
+{
+	return integration_time_;
+}
+
 
 void AS726xController::starting(const ros::Time &/*time*/)
 {

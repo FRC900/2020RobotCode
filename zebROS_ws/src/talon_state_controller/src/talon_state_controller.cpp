@@ -268,17 +268,33 @@ void TalonStateController::update(const ros::Time &time, const ros::Duration & /
 					std::string str;
 					if (faults)
 					{
-						if (faults & mask) str += "UnderVoltage "; mask <<= 1;
-						if (faults & mask) str += "ForwardLimitSwitch "; mask <<= 1;
-						if (faults & mask) str += "ReverseLimitSwitch "; mask <<= 1;
-						if (faults & mask) str += "ForwardSoftLimit "; mask <<= 1;
-						if (faults & mask) str += "ReverseSoftLimit "; mask <<= 1;
-						if (faults & mask) str += "HardwareFailure "; mask <<= 1;
-						if (faults & mask) str += "ResetDuringEn "; mask <<= 1;
-						if (faults & mask) str += "SensorOverflow "; mask <<= 1;
-						if (faults & mask) str += "SensorOutOfPhase "; mask <<= 1;
-						if (faults & mask) str += "HardwareESDReset "; mask <<= 1;
+						if (faults & mask) str += "UnderVoltage ";
+						mask <<= 1;
+						if (faults & mask) str += "ForwardLimitSwitch ";
+						mask <<= 1;
+						if (faults & mask) str += "ReverseLimitSwitch ";
+						mask <<= 1;
+						if (faults & mask) str += "ForwardSoftLimit ";
+						mask <<= 1;
+						if (faults & mask) str += "ReverseSoftLimit ";
+						mask <<= 1;
+						if (faults & mask) str += "HardwareFailure ";
+						mask <<= 1;
+						if (faults & mask) str += "ResetDuringEn ";
+						mask <<= 1;
+						if (faults & mask) str += "SensorOverflow ";
+						mask <<= 1;
+						if (faults & mask) str += "SensorOutOfPhase ";
+						mask <<= 1;
+						if (faults & mask) str += "HardwareESDReset ";
+						mask <<= 1;
 						if (faults & mask) str += "RemoteLossOfSignal ";
+						mask <<= 1;
+						if (faults & mask) str += "APIError ";
+						mask <<= 1;
+						if (faults & mask) str += "SupplyOverV ";
+						mask <<= 1;
+						if (faults & mask) str += "SupplyUnstable ";
 					}
 					m.faults[i] = str;
 				}
@@ -289,16 +305,31 @@ void TalonStateController::update(const ros::Time &time, const ros::Duration & /
 					std::string str;
 					if (faults)
 					{
-						if (faults & mask) str += "UnderVoltage "; mask <<= 1;
-						if (faults & mask) str += "ForwardLimitSwitch "; mask <<= 1;
-						if (faults & mask) str += "ReverseLimitSwitch "; mask <<= 1;
-						if (faults & mask) str += "ForwardSoftLimit "; mask <<= 1;
-						if (faults & mask) str += "ReverseSoftLimit "; mask <<= 1;
-						if (faults & mask) str += "ResetDuringEn "; mask <<= 1;
-						if (faults & mask) str += "SensorOverflow "; mask <<= 1;
-						if (faults & mask) str += "SensorOutOfPhase "; mask <<= 1;
-						if (faults & mask) str += "HardwareESDReset "; mask <<= 1;
+						if (faults & mask) str += "UnderVoltage ";
+						mask <<= 1;
+						if (faults & mask) str += "ForwardLimitSwitch ";
+						mask <<= 1;
+						if (faults & mask) str += "ReverseLimitSwitch ";
+						mask <<= 1;
+						if (faults & mask) str += "ForwardSoftLimit ";
+						mask <<= 1;
+						if (faults & mask) str += "ReverseSoftLimit ";
+						mask <<= 1;
+						if (faults & mask) str += "ResetDuringEn ";
+						mask <<= 1;
+						if (faults & mask) str += "SensorOverflow ";
+						mask <<= 1;
+						if (faults & mask) str += "SensorOutOfPhase ";
+						mask <<= 1;
+						if (faults & mask) str += "HardwareESDReset ";
+						mask <<= 1;
 						if (faults & mask) str += "RemoteLossOfSignal ";
+						mask <<= 1;
+						if (faults & mask) str += "APIError ";
+						mask <<= 1;
+						if (faults & mask) str += "SupplyOverV ";
+						mask <<= 1;
+						if (faults & mask) str += "SupplyUnstable ";
 					}
 					m.sticky_faults[i] = str;
 				}
@@ -320,6 +351,124 @@ void TalonStateController::update(const ros::Time &time, const ros::Duration & /
 void TalonStateController::stopping(const ros::Time & /*time*/)
 {}
 
+} // namespate talon_state_controller
+
+namespace state_listener_controller
+{
+TalonStateListenerController::TalonStateListenerController() {}
+TalonStateListenerController::~TalonStateListenerController()
+{
+	sub_command_.shutdown();
 }
 
+bool TalonStateListenerController::init(hardware_interface::RemoteTalonStateInterface *hw, ros::NodeHandle &n)
+{
+	// Read list of hw, make a list, grab handles for them, plus allocate storage space
+	joint_names_ = hw->getNames();
+	for (const auto &j : joint_names_)
+	{
+		ROS_INFO_STREAM("Joint State Listener Controller got joint " << j);
+		handles_.push_back(hw->getHandle(j));
+	}
+
+	// get topic to subscribe to
+	std::string topic;
+	if (!n.getParam("topic", topic))
+	{
+		ROS_ERROR("Parameter 'topic' not set");
+		return false;
+	}
+
+	sub_command_ = n.subscribe<talon_state_msgs::TalonState>(topic, 1, &TalonStateListenerController::commandCB, this);
+	return true;
+}
+
+void TalonStateListenerController::starting(const ros::Time & /*time*/)
+{
+}
+void TalonStateListenerController::stopping(const ros::Time & /*time*/)
+{
+	//handles_.release();
+}
+
+void TalonStateListenerController::update(const ros::Time & /*time*/, const ros::Duration & /*period*/)
+{
+	// Take the most recent set of values read from the joint_states
+	// topic and write them to the local joints
+	const auto vals = *command_buffer_.readFromRT();
+	for (size_t i = 0; i < vals.size(); i++)
+	{
+		if (vals[i])
+		{
+			const auto &ts = (*vals[i]);
+			handles_[i]->setPosition(ts.getPosition());
+			handles_[i]->setSpeed(ts.getSpeed());
+			handles_[i]->setOutputCurrent(ts.getOutputCurrent());
+			handles_[i]->setBusVoltage(ts.getBusVoltage());
+			handles_[i]->setMotorOutputPercent(ts.getMotorOutputPercent());
+			handles_[i]->setOutputVoltage(ts.getOutputVoltage());
+			handles_[i]->setTemperature(ts.getTemperature());
+			handles_[i]->setClosedLoopError(ts.getClosedLoopError());
+			handles_[i]->setIntegralAccumulator(ts.getIntegralAccumulator());
+			handles_[i]->setErrorDerivative(ts.getErrorDerivative());
+			handles_[i]->setClosedLoopTarget(ts.getClosedLoopTarget());
+			handles_[i]->setActiveTrajectoryPosition(ts.getActiveTrajectoryPosition());
+			handles_[i]->setActiveTrajectoryVelocity(ts.getActiveTrajectoryVelocity());
+			handles_[i]->setActiveTrajectoryHeading(ts.getActiveTrajectoryHeading());
+			handles_[i]->setMotionProfileTopLevelBufferCount(ts.getMotionProfileTopLevelBufferCount());
+			handles_[i]->setFaults(ts.getFaults());
+			handles_[i]->setForwardLimitSwitch(ts.getForwardLimitSwitch());
+			handles_[i]->setReverseLimitSwitch(ts.getReverseLimitSwitch());
+			handles_[i]->setForwardSoftlimitHit(ts.getForwardSoftlimitHit());
+			handles_[i]->setReverseSoftlimitHit(ts.getReverseSoftlimitHit());
+			handles_[i]->setStickyFaults(ts.getStickyFaults());
+		}
+	}
+}
+
+void TalonStateListenerController::commandCB(const talon_state_msgs::TalonStateConstPtr &msg)
+{
+	// Each entry in data corresponds to an index in joint_names_
+	// If the message has that name, copy the talon state into data
+	// If the message doesn't have that name, set the entry to std::nullopt
+	std::vector<std::optional<hardware_interface::TalonHWState>> data;
+	for (size_t i = 0; i < joint_names_.size(); i++)
+	{
+		const auto it = std::find(msg->name.cbegin(), msg->name.cend(), joint_names_[i]);
+		if (it != msg->name.cend())
+		{
+			const auto j = std::distance(msg->name.cbegin(), it);
+			data.push_back(hardware_interface::TalonHWState(0)); // dummy CAN ID since it isn't used
+			data[i]->setPosition(msg->position[j]);
+			data[i]->setSpeed(msg->speed[j]);
+			data[i]->setOutputCurrent(msg->output_voltage[j]);
+			data[i]->setBusVoltage(msg->bus_voltage[j]);
+			data[i]->setMotorOutputPercent(msg->motor_output_percent[j]);
+			data[i]->setOutputVoltage(msg->output_voltage[j]);
+			data[i]->setTemperature(msg->temperature[j]);
+			data[i]->setClosedLoopError(msg->closed_loop_error[j]);
+			data[i]->setIntegralAccumulator(msg->integral_accumulator[j]);
+			data[i]->setErrorDerivative(msg->error_derivative[j]);
+			data[i]->setClosedLoopTarget(msg->closed_loop_target[j]);
+			data[i]->setActiveTrajectoryPosition(msg->active_trajectory_position[j]);
+			data[i]->setActiveTrajectoryVelocity(msg->active_trajectory_velocity[j]);
+			data[i]->setActiveTrajectoryHeading(msg->active_trajectory_heading[j]);
+			data[i]->setMotionProfileTopLevelBufferCount(msg->motion_profile_top_level_buffer_count[j]);
+			//data[i]->setFaults(msg->getFaults[j]);
+			data[i]->setForwardLimitSwitch(msg->forward_limit_switch[j]);
+			data[i]->setReverseLimitSwitch(msg->reverse_limit_switch[j]);
+			data[i]->setForwardSoftlimitHit(msg->forward_softlimit[j]);
+			data[i]->setReverseSoftlimitHit(msg->reverse_softlimit[j]);
+			//data[i]->setStickyFaults(msg->getStickyFaults[j]);
+		}
+		else
+		{
+			data.push_back(std::nullopt);
+		}
+	}
+	command_buffer_.writeFromNonRT(data);
+}
+} // namespace state_listener_controller
+
 PLUGINLIB_EXPORT_CLASS(talon_state_controller::TalonStateController, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(state_listener_controller::TalonStateListenerController, controller_interface::ControllerBase)

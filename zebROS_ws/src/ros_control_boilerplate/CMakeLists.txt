@@ -1,39 +1,36 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ros_control_boilerplate)
+if(NOT CMAKE_BUILD_TYPE AND DEFINED CMAKE_TOOLCHAIN_FILE)  # Cross-build for Rio
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+endif()
 
 include ("../cmake_modules/CMakeOpt.cmake")
-set(CMAKE_CXX_STANDARD 17)
 
 find_package(catkin REQUIRED COMPONENTS
   as726x_interface
   cmake_modules
-  realtime_tools
-  hardware_interface
   controller_manager
-  roscpp
   control_msgs
-  trajectory_msgs
-  actionlib
-  urdf
-  std_msgs
-  sensor_msgs
-  rosparam_shortcuts
-  talon_interface
-  message_generation
   frc_msgs
   frc_interfaces
-)
-
-add_message_files (
-  FILES
-  AutoMode.msg
-  AutoModeStatus.msg
+  hardware_interface
+  message_generation
+  realtime_tools
+  remote_joint_interface
+  roscpp
+  rosparam_shortcuts
+  sensor_msgs
+  std_msgs
+  talon_interface
+  trajectory_msgs
+  urdf
 )
 
 add_service_files (
   FILES
   set_limit_switch.srv
   LineBreakSensors.srv
+  DSError.srv
 )
 
 generate_messages(
@@ -48,18 +45,17 @@ catkin_package(
   INCLUDE_DIRS
     include
   CATKIN_DEPENDS
-	hardware_interface
-	controller_manager
+	as726x_interface
 	control_msgs
-	trajectory_msgs
-	actionlib
-	urdf
-	std_msgs
 	frc_msgs
 	frc_interfaces
-	sensor_msgs
+	hardware_interface
+	roscpp
 	rosparam_shortcuts
+	sensor_msgs
+	std_msgs
 	talon_interface
+	trajectory_msgs
 	message_runtime
   LIBRARIES
 )
@@ -77,6 +73,9 @@ add_library(frc_robot_interface STATIC
 	src/frc_robot_interface.cpp
 	src/generic_hw_control_loop.cpp
 	src/AS726x.cpp)
+target_link_libraries(frc_robot_interface 
+	${catkin_LIBRARIES}
+)
 
 # Don't build sim code for the Rio or Jetson -
 # saves time and space for something which will
@@ -115,8 +114,13 @@ endif()
 
 # Main control executable
 set (FRCROBOT_HW_MAIN_SRCS 
+	src/as726x_convert.cpp
+	src/cancoder_convert.cpp
+	src/canifier_convert.cpp
+	src/error_queue.cpp
 	src/frcrobot_hw_main.cpp
 	src/frcrobot_hw_interface.cpp
+	src/talon_convert.cpp
 )
 
 set (WPI_SYSROOT $ENV{HOME}/wpilib/2020/roborio/arm-frc2020-linux-gnueabi)
@@ -157,8 +161,10 @@ if ("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	)
 elseif ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "arm-linux-gnueabihf") # Jetson TK1
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/raspbian/static)    # Who knows if this will work
-elseif ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") # Jetson TX1/TX2
+	find_library(LIB_GPIOD libgpiod.a)
+elseif ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") # Jetson TX1/TX2/Xavier AGX/Xavier NX
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/jetsontx/static)
+	find_library(LIB_GPIOD libgpiod.a)
 else() # x86-64, hopefully. First person to try and build native on a Mac gets kicked off the team
 	set (CTRE_LIB_DIR ${WPI_SYSROOT}/lib/ctre/linux/x86-64/static)
 endif()
@@ -190,14 +196,14 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 	set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS} 
 		src/dummy_wpilib_common.cpp
 		src/dummy_wpilib_hw.cpp
-		${ALLWPILIB}/hal/src/main/native/athena/Compressor.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/CANAPI.cpp
+		${ALLWPILIB}/hal/src/main/native/athena/Compressor.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/HALInitializer.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/PCMInternal.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/PDP.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/Solenoid.cpp
-		${ALLWPILIB}/hal/src/main/native/athena/ctre/PCM.cpp
 		${ALLWPILIB}/hal/src/main/native/athena/ctre/CtreCanNode.cpp
+		${ALLWPILIB}/hal/src/main/native/athena/ctre/PCM.cpp
 		${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/Joystick.cpp
 		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/raw_ostream.cpp
@@ -218,6 +224,48 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 		ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/tables/*.cpp
 	)
 
+	if ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") # Jetson TX1/TX2/Xaver AGX/Xavier NX
+		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
+			src/nano_nx_dio_hal.cpp
+			src/nano_nx_i2c_hal.cpp
+			src/nano_nx_spi_hal.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/I2C.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/SocketError.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPAcceptor.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/ListenerExecutor.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBase.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBuilderImpl.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableRegistry.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SmartDashboard.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
+			${ntcore_native_src}
+			)
+	else() # anything we don't want to support GPIO access on - x86, older Jetson, etc
+		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
+			src/dummy_wpilib_hw_x86.cpp
+			src/dummy_wpilib_i2c.cpp
+			)
+	endif()
+
     # Don't build sim code for Jetson TK or TX architectures
 	# Also won't be built for the Rio because of the outer if-block
 	# surrounds all of this code
@@ -228,7 +276,13 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			src/frcrobot_phoenixsim_main.cpp
 			src/frcrobot_hw_interface.cpp
 			src/dummy_wpilib_common.cpp
+			src/dummy_wpilib_i2c.cpp
 			src/dummy_wpilib_phoenixsim.cpp
+			src/as726x_convert.cpp
+			src/cancoder_convert.cpp
+			src/canifier_convert.cpp
+			src/error_queue.cpp
+			src/talon_convert.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
 			${ALLWPILIB}/hal/src/main/native/cpp/Main.cpp
@@ -237,8 +291,8 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${ALLWPILIB}/hal/src/main/native/sim/AnalogInternal.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/AnalogOutput.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/AnalogTrigger.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/CAN.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/CANAPI.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/CAN.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/Compressor.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/Constants.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/Counter.cpp
@@ -249,16 +303,6 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${ALLWPILIB}/hal/src/main/native/sim/HAL.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/HALInitializer.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/Interrupts.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/MockHooks.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/Notifier.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/PDP.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/Ports.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/Power.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/PWM.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/Relay.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/SimDevice.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/Solenoid.cpp
-			${ALLWPILIB}/hal/src/main/native/sim/Threads.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogInData.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogOutData.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogTriggerData.cpp
@@ -272,63 +316,73 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${ALLWPILIB}/hal/src/main/native/sim/mockdata/RelayData.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/mockdata/RoboRioData.cpp
 			${ALLWPILIB}/hal/src/main/native/sim/mockdata/SimDeviceData.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/MockHooks.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/Notifier.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/PDP.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/Ports.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/Power.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/PWM.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/Relay.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/SimDevice.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/Solenoid.cpp
+			${ALLWPILIB}/hal/src/main/native/sim/Threads.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/AnalogInput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DriverStation.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/InterruptableSensorBase.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/IterativeRobotBase.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/Joystick.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/livewindow/LiveWindow.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotState.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/Timer.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/Watchdog.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/Utility.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/livewindow/LiveWindow.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ComplexWidget.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/LayoutType.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/RecordingController.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SendableCameraWrapper.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardComponentBase.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardContainer.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/Shuffleboard.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardInstance.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardLayout.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardTab.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SimpleWidget.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/ListenerExecutor.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBase.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBuilderImpl.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableRegistry.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SmartDashboard.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ComplexWidget.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/LayoutType.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/RecordingController.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SendableCameraWrapper.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/Shuffleboard.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardComponentBase.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardContainer.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardInstance.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardLayout.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardTab.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SimpleWidget.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_ostream.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/Timer.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/Utility.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/Watchdog.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/SocketError.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPAcceptor.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/raw_ostream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Error.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ErrorHandling.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Hashing.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ManagedStatic.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/NativeFormatting.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Path.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/raw_ostream.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallPtrSet.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallVector.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Twine.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_ostream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/SocketError.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPAcceptor.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
 			${ntcore_native_src}
@@ -372,6 +426,7 @@ target_link_libraries(frcrobot_hw_main
 	${catkin_LIBRARIES}
 	${PLATFORM_SPECIFIC_LIBS}
 	${CTRE_USER_LIBS}
+	${LIB_GPIOD}
 	frc_robot_interface
 )
 

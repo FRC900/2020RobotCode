@@ -52,10 +52,11 @@
   <depend>behavior_actions</depend>
   <depend>controllers_2019_msgs</depend>
   <depend>controllers_2020_msgs</depend>
-  <depend>message_filters</depend>
   <depend>frc_msgs</depend>
   <depend>std_srvs</depend>
   <depend>talon_state_msgs</depend>
+  <depend>color_spin</depend>
+  <depend>geometry_msgs</depend>
   <build_depend>message_generation</build_depend>
   <build_depend>nav_msgs</build_depend>
   <build_depend>roscpp</build_depend>
@@ -78,7 +79,8 @@
   <exec_depend>message_generation</exec_depend> 
   <depend>teraranger_array</depend>
   <depend>tf2_ros</depend>
-  <depend>path_follower</depend>
+  <depend>path_follower_msgs</depend>
+  <depend>field_obj</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

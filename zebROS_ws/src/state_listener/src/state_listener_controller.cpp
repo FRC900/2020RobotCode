@@ -6,14 +6,8 @@
 PLUGINLIB_EXPORT_CLASS(state_listener_controller::JointStateListenerController,
 					   controller_interface::ControllerBase)
 
-PLUGINLIB_EXPORT_CLASS(state_listener_controller::PDPStateListenerController,
-					   controller_interface::ControllerBase)
-
-PLUGINLIB_EXPORT_CLASS(state_listener_controller::MatchStateListenerController,
+PLUGINLIB_EXPORT_CLASS(state_listener_controller::JointModeListenerController,
 					   controller_interface::ControllerBase)
 
 PLUGINLIB_EXPORT_CLASS(state_listener_controller::IMUStateListenerController,
-					   controller_interface::ControllerBase)
-
-PLUGINLIB_EXPORT_CLASS(state_listener_controller::TalonStateListenerController,
 					   controller_interface::ControllerBase)

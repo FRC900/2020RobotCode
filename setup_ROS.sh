@@ -25,9 +25,9 @@ sudo apt install -y git libssl-dev libusb-1.0-0-dev pkg-config libgtk-3-dev libg
 cd
 mkdir realsense_src
 cd realsense_src
-wget https://github.com/IntelRealSense/librealsense/archive/v2.32.1.zip
-unzip v2.32.1.zip
-cd librealsense-2.32.1
+wget https://github.com/IntelRealSense/librealsense/archive/v2.35.2.zip
+unzip v2.35.2.zip
+cd librealsense-2.35.2
 sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && udevadm trigger
 mkdir build
@@ -39,7 +39,7 @@ rm -rf realsense_src
 
 sudo ccache -C
 sudo ccache -c
-sudo rm -rf /home/ubuntu/.cache /home/ubuntu/.ccach
+sudo rm -rf /home/ubuntu/.cache /home/ubuntu/.ccache
 
 # Add Individual Packages here
 # You can install a specific ROS package (replace underscores with dashes of the package name):
@@ -76,10 +76,10 @@ sudo apt install -y \
 	ros-melodic-joint-state-publisher \
 	ros-melodic-joystick-drivers \
 	ros-melodic-map-server \
+	ros-melodic-marker-msgs \
 	ros-melodic*mux* \
 	ros-melodic-navigation \
 	ros-melodic-pcl-conversions \
-	ros-melodic-pid \
 	ros-melodic-robot-localization \
 	ros-melodic-robot-state-publisher \
 	ros-melodic-rosbridge-suite \

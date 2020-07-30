@@ -46,15 +46,19 @@
 // ROS Controls
 #include <controller_manager/controller_manager.h>
 #include <hardware_interface/joint_command_interface.h>
+#include <hardware_interface/joint_mode_interface.h>
 #include <hardware_interface/robot_hw.h>
-#include <talon_interface/talon_command_interface.h>
 #include "as726x_interface/as726x_interface.h"
-#include "frc_interfaces/robot_controller_interface.h"
 #include "frc_interfaces/pcm_state_interface.h"
-#include "frc_interfaces/remote_joint_interface.h"
-#include "frc_interfaces/robot_controller_interface.h"
-#include "frc_interfaces/match_data_interface.h"
 #include "frc_interfaces/pdp_state_interface.h"
+#include "frc_interfaces/match_data_interface.h"
+#include "frc_interfaces/robot_controller_interface.h"
+#include "remote_joint_interface/remote_joint_interface.h"
+#include "talon_interface/cancoder_command_interface.h"
+#include "talon_interface/canifier_command_interface.h"
+#include "talon_interface/talon_command_interface.h"
+#include "talon_interface/orchestra_state_interface.h"
+#include "talon_interface/orchestra_command_interface.h"
 
 namespace ros_control_boilerplate
 {
@@ -161,6 +165,10 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::JointStateInterface                joint_state_interface_;
 		hardware_interface::TalonStateInterface                talon_state_interface_;
 		hardware_interface::RemoteTalonStateInterface          talon_remote_state_interface_;
+		hardware_interface::canifier::CANifierStateInterface   canifier_state_interface_;
+		hardware_interface::canifier::RemoteCANifierStateInterface canifier_remote_state_interface_;
+		hardware_interface::cancoder::CANCoderStateInterface   cancoder_state_interface_;
+		hardware_interface::cancoder::RemoteCANCoderStateInterface cancoder_remote_state_interface_;
 		hardware_interface::PDPStateInterface	               pdp_state_interface_;
 		hardware_interface::RemotePDPStateInterface	           pdp_remote_state_interface_;
 		hardware_interface::PCMStateInterface	               pcm_state_interface_;
@@ -169,7 +177,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::RemoteMatchStateInterface          match_remote_state_interface_;
 		hardware_interface::as726x::AS726xStateInterface       as726x_state_interface_;
 		hardware_interface::as726x::RemoteAS726xStateInterface as726x_remote_state_interface_;
-
+                hardware_interface::OrchestraStateInterface            talon_orchestra_state_interface_;
 
 		hardware_interface::JointCommandInterface          joint_command_interface_;
 		hardware_interface::PositionJointInterface         joint_position_interface_;
@@ -177,11 +185,17 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::EffortJointInterface           joint_effort_interface_;
 		hardware_interface::RemoteJointInterface           joint_remote_interface_;
 		hardware_interface::TalonCommandInterface          talon_command_interface_;
+		hardware_interface::canifier::CANifierCommandInterface canifier_command_interface_;
+		hardware_interface::cancoder::CANCoderCommandInterface cancoder_command_interface_;
 		hardware_interface::as726x::AS726xCommandInterface as726x_command_interface_;
 		hardware_interface::ImuSensorInterface             imu_interface_;
 		hardware_interface::RemoteImuSensorInterface       imu_remote_interface_;
+                hardware_interface::OrchestraCommandInterface      talon_orchestra_command_interface_;
 
-		hardware_interface::RobotControllerStateInterface robot_controller_state_interface_;
+		hardware_interface::RobotControllerStateInterface  robot_controller_state_interface_;
+
+		hardware_interface::JointModeInterface            joint_mode_interface_;
+		hardware_interface::RemoteJointModeInterface      joint_mode_remote_interface_;
 
 		std::vector<CustomProfileState> custom_profile_state_;
 
@@ -202,6 +216,18 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<bool>        can_ctre_mc_is_talon_fx_;
 		std::vector<bool>        can_ctre_mc_is_talon_srx_;
 		std::size_t              num_can_ctre_mcs_;
+
+		std::vector<std::string> canifier_names_;
+		std::vector<int>         canifier_can_ids_;
+		std::vector<bool>        canifier_local_updates_;
+		std::vector<bool>        canifier_local_hardwares_;
+		std::size_t              num_canifiers_;
+
+		std::vector<std::string> cancoder_names_;
+		std::vector<int>         cancoder_can_ids_;
+		std::vector<bool>        cancoder_local_updates_;
+		std::vector<bool>        cancoder_local_hardwares_;
+		std::size_t              num_cancoders_;
 
 		std::vector<std::string> nidec_brushless_names_;
 		std::vector<int>         nidec_brushless_pwm_channels_;
@@ -298,6 +324,9 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<bool>        as726x_local_hardwares_;
 		std::size_t              num_as726xs_;
 
+                std::vector<std::string> talon_orchestra_names_;
+                std::size_t              num_talon_orchestras_;
+                std::vector<int>         talon_orchestra_ids_;
 
 		bool run_hal_robot_;
 		std::string can_interface_;
@@ -306,13 +335,16 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 
 		// Array holding master cached state of hardware
 		// resources
-		std::vector<hardware_interface::TalonHWState>  talon_state_;
+		std::vector<hardware_interface::TalonHWState> talon_state_;
+		std::vector<hardware_interface::canifier::CANifierHWState> canifier_state_;
+		std::vector<hardware_interface::cancoder::CANCoderHWState> cancoder_state_;
 		std::vector<double> brushless_vel_;
 
 		std::vector<double> digital_input_state_;
 		std::vector<double> digital_output_state_; //No actual data
 		std::vector<double> pwm_state_; //No actual data
 		std::vector<double> solenoid_state_;
+		std::vector<double> solenoid_pwm_state_;
 		std::vector<double> double_solenoid_state_;
 		std::vector<double> rumble_state_; //No actual data
 		std::vector<double> compressor_state_;
@@ -320,6 +352,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<hardware_interface::PCMState> pcm_state_;
 		hardware_interface::RobotControllerState robot_controller_state_;
 		hardware_interface::MatchHWState match_data_;
+                std::vector<hardware_interface::OrchestraState> orchestra_state_;
 
 		// Each entry in the vector is an array. That array holds
 		// the data returned from one particular imu
@@ -335,14 +368,19 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<hardware_interface::as726x::AS726xState> as726x_state_;
 		// Same as above, but for pending commands to be
 		// written to the hardware
-		std::vector<hardware_interface::TalonHWCommand>  talon_command_;
+		std::vector<hardware_interface::TalonHWCommand> talon_command_;
+		std::vector<hardware_interface::canifier::CANifierHWCommand> canifier_command_;
+		std::vector<hardware_interface::cancoder::CANCoderHWCommand> cancoder_command_;
 		std::vector<double> brushless_command_;
 		std::vector<double> digital_output_command_;
 		std::vector<double> pwm_command_;
 		std::vector<double> solenoid_command_;
+		std::vector<hardware_interface::JointCommandModes> solenoid_mode_;
+		std::vector<hardware_interface::JointCommandModes> prev_solenoid_mode_;
 		std::vector<double> double_solenoid_command_;
 		std::vector<double> rumble_command_;
 		std::vector<double> compressor_command_;
+                std::vector<hardware_interface::OrchestraCommand> orchestra_command_;
 
 		std::vector<double> dummy_joint_position_;
 		std::vector<double> dummy_joint_velocity_;

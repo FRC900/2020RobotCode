@@ -5,13 +5,15 @@ include ("../cmake_modules/CMakeOpt.cmake")
 
 # Load catkin and all dependencies required for this package
 find_package(catkin REQUIRED COMPONENTS
-  control_msgs
   controller_interface
+  dynamic_reconfigure
   message_generation
   realtime_tools
+  roscpp
   talon_interface
-  urdf
-  dynamic_reconfigure
+  talon_controller_msgs
+  pluginlib
+  hardware_interface
 )
 
 generate_dynamic_reconfigure_options(cfg/TalonConfig.cfg)
@@ -22,13 +24,11 @@ generate_messages(DEPENDENCIES talon_controllers)
 # Declare catkin package
 catkin_package(
   CATKIN_DEPENDS
-    control_msgs
     controller_interface
+	dynamic_reconfigure
 	message_runtime
     realtime_tools
 	talon_interface
-    urdf
-	dynamic_reconfigure
   INCLUDE_DIRS include
   #LIBRARIES ${PROJECT_NAME}
 )
@@ -50,6 +50,13 @@ add_dependencies(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
+add_library(orchestra_controller src/orchestra_controller.cpp)
+target_link_libraries(orchestra_controller ${catkin_LIBRARIES})
+add_dependencies(orchestra_controller
+    ${${PROJECT_NAME}_EXPORTED_TARGETS}
+    ${catkin_EXPORTED_TARGETS}
+)
+
 # Install
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
@@ -57,12 +64,14 @@ install(DIRECTORY include/${PROJECT_NAME}/
   PATTERN *.sw? EXCLUDE
   )
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} orchestra_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(FILES talon_controllers_plugins.xml
+install(FILES 
+    talon_controllers_plugins.xml
+    orchestra_controller_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

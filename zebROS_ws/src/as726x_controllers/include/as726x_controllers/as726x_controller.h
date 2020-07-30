@@ -59,12 +59,12 @@ class AS726xController: public controller_interface::Controller<hardware_interfa
 	public:
 		AS726xController(void) {}
 
-		virtual bool init(hardware_interface::as726x::AS726xCommandInterface *hw,
+		bool init(hardware_interface::as726x::AS726xCommandInterface *hw,
 						  ros::NodeHandle                                    &root_nh,
 						  ros::NodeHandle                                    &controller_nh) override;
-		virtual void starting(const ros::Time &time) override;
-		virtual void update(const ros::Time &time, const ros::Duration & /*period*/) override;
-		virtual void stopping(const ros::Time & /*time*/) override;
+		void starting(const ros::Time &time) override;
+		void update(const ros::Time &time, const ros::Duration & /*period*/) override;
+		void stopping(const ros::Time & /*time*/) override;
 
 	private:
 		hardware_interface::as726x::AS726xCommandHandle              as726x_command_;
@@ -143,5 +143,13 @@ class AS726xController: public controller_interface::Controller<hardware_interfa
 		void conversionTypeCB(int conversion_type);
 		void channelGainCB(int channel_gain);
 		void integrationTimeCB(uint8_t integration_time);
+
+		int  getIndLedCurrentLimit(void) const;
+		bool getIndLedEnable(void) const;
+		int  getDrvLedCurrentLimit(void) const;
+		bool getDrvLedEnable(void) const;
+		int  getConversionType(void) const;
+		int  getChannelGain(void) const;
+		int  getIntegrationTime(void) const;
 };
 } // namespace

@@ -5,7 +5,7 @@
 //
 #pragma once
 
-#include "base_trajectory/Constraint.h"
+#include "base_trajectory_msgs/Constraint.h"
 #include "ros/ros.h"
 
 class Kinematics
@@ -14,6 +14,18 @@ class Kinematics
 		Kinematics(void);
 		Kinematics(double maxAccel, double maxDecel, double maxVel, double maxCentAccel, double pathLimitDistance);
 		void limit(const Kinematics &other);
+		double getMaxAccel(void) const;
+		double getMaxDecel(void) const;
+		double getMaxVel(void) const;
+		double getMaxCentAccel(void) const;
+		double getPathLimitDistance(void) const;
+		void   setMaxAccel(double max_accel);
+		void   setMaxDecel(double max_decel);
+		void   setMaxVel(double max_vel);
+		void   setMaxCentAccel(double max_cent_accel);
+		void   setPathLimitDistance(double path_limit_distance);
+
+	private:
 		double maxAccel_;
 		double maxDecel_;
 		double maxVel_;
@@ -24,7 +36,7 @@ class Kinematics
 class Constraint
 {
 	public:
-		Constraint(const base_trajectory::Constraint &msg);
+		Constraint(const base_trajectory_msgs::Constraint &msg);
 
 		Kinematics getKinematics(double robotX, double robotY) const;
 
@@ -43,14 +55,15 @@ class KinematicConstraints
 		KinematicConstraints(void);
 		KinematicConstraints(const Kinematics &kinematics);
 
-		void addConstraint(const base_trajectory::Constraint &msg);
-		void addConstraints(const std::vector<base_trajectory::Constraint> &msg);
+		void addConstraint(const base_trajectory_msgs::Constraint &msg);
+		void addConstraints(const std::vector<base_trajectory_msgs::Constraint> &msg);
 		void resetConstraints(void);
 
 		Kinematics globalKinematics(void) const;
 		void       globalKinematics(const Kinematics globalKinematics);
 		Kinematics getKinematics(double robotX, double robotY) const;
 
+	private:
 		std::vector<Constraint> constraints_;
 		Kinematics              globalKinematics_;
 };
