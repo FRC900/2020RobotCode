@@ -280,7 +280,7 @@ class Dashboard(Plugin):
             caller = rospy.ServiceProxy("/reset_ball", resetBallSrv)
             caller(nballs)
             # change button to green color to indicate that the service call went through
-        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
+            self._widget.set_imu_angle_button.setStyleSheet("background-color:##5eff00;")
 
         except (rospy.ServiceException, rospy.ROSException) as e: # the second exception happens if the wait for service times out
             self.errorPopup("Reset ball count Error", e)
