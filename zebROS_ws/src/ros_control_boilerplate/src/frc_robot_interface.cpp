@@ -2051,97 +2051,101 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 
 		read_tracer_.start_unique("joysticks");
 		//check if sufficient time has passed since last read
-		if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1./joystick_read_hz_))
+		if (joystick_mutex_.try_lock())
 		{
-			t_prev_joystick_read_ += 1./joystick_read_hz_;
-
-			auto time_now_t = ros::Time::now();
-			for (size_t i = 0; i < num_joysticks_; i++)
+			if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1./joystick_read_hz_))
 			{
-				if (realtime_pub_joysticks_[i]->trylock())
+				t_prev_joystick_read_ += 1./joystick_read_hz_;
+
+				auto time_now_t = ros::Time::now();
+				for (size_t i = 0; i < num_joysticks_; i++)
 				{
-					auto &m = realtime_pub_joysticks_[i]->msg_;
-					m.header.stamp = time_now_t;
+					if (realtime_pub_joysticks_[i]->trylock())
+					{
+						auto &m = realtime_pub_joysticks_[i]->msg_;
+						m.header.stamp = time_now_t;
 
-					m.axes.clear();
-					m.buttons.clear();
+						m.axes.clear();
+						m.buttons.clear();
 
-					for(int j = 0; j < joysticks_[i]->GetAxisCount(); j++)
-					{
-						m.axes.push_back(joysticks_[i]->GetRawAxis(j));
-					}
+						for(int j = 0; j < joysticks_[i]->GetAxisCount(); j++)
+						{
+							m.axes.push_back(joysticks_[i]->GetRawAxis(j));
+						}
 
-					for(int j = 0; j < joysticks_[i]->GetButtonCount(); j++)
-					{
-						m.buttons.push_back(joysticks_[i]->GetRawButton(j+1));
-					}
+						for(int j = 0; j < joysticks_[i]->GetButtonCount(); j++)
+						{
+							m.buttons.push_back(joysticks_[i]->GetRawButton(j+1));
+						}
 
-					bool direction_up = false;
-					bool direction_down = false;
-					bool direction_left = false;
-					bool direction_right = false;
-					switch (joysticks_[i]->GetPOV(0))
-					{
-						case 0 :
-							direction_up = true;
-							break;
-						case 45:
-							direction_up = true;
-							direction_right = true;
-							break;
-						case 90:
-							direction_right = true;
-							break;
-						case 135:
-							direction_down = true;
-							direction_right = true;
-							break;
-						case 180:
-							direction_down = true;
-							break;
-						case 225:
-							direction_down = true;
-							direction_left = true;
-							break;
-						case 270:
-							direction_left = true;
-							break;
-						case 315:
-							direction_up = true;
-							direction_left = true;
-							break;
-					}
+						bool direction_up = false;
+						bool direction_down = false;
+						bool direction_left = false;
+						bool direction_right = false;
+						switch (joysticks_[i]->GetPOV(0))
+						{
+							case 0 :
+								direction_up = true;
+								break;
+							case 45:
+								direction_up = true;
+								direction_right = true;
+								break;
+							case 90:
+								direction_right = true;
+								break;
+							case 135:
+								direction_down = true;
+								direction_right = true;
+								break;
+							case 180:
+								direction_down = true;
+								break;
+							case 225:
+								direction_down = true;
+								direction_left = true;
+								break;
+							case 270:
+								direction_left = true;
+								break;
+							case 315:
+								direction_up = true;
+								direction_left = true;
+								break;
+						}
 
-					if(direction_left)
-					{
-						m.axes.push_back(1.0);
-					}
-					else if (direction_right)
-					{
-						m.axes.push_back(-1.0);
-					}
-					else
-					{
-						m.axes.push_back(0.0);
-					}
+						if(direction_left)
+						{
+							m.axes.push_back(1.0);
+						}
+						else if (direction_right)
+						{
+							m.axes.push_back(-1.0);
+						}
+						else
+						{
+							m.axes.push_back(0.0);
+						}
 
-					if(direction_up)
-					{
-						m.axes.push_back(1.0);
+						if(direction_up)
+						{
+							m.axes.push_back(1.0);
+						}
+						else if (direction_down)
+						{
+							m.axes.push_back(-1.0);
+						}
+						else
+						{
+							m.axes.push_back(0.0);
+						}
+						realtime_pub_joysticks_[i]->unlockAndPublish();
 					}
-					else if (direction_down)
-					{
-						m.axes.push_back(-1.0);
-					}
-					else
-					{
-						m.axes.push_back(0.0);
-					}
-					realtime_pub_joysticks_[i]->unlockAndPublish();
 				}
-			}
 
+			}
 		}
+		joystick_mutex_.unlock();
 
 		int32_t status = 0;
 		read_tracer_.start_unique("match data");

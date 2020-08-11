@@ -467,6 +467,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		hardware_interface::MatchHWState match_data_;
 	    std::vector<hardware_interface::OrchestraState> orchestra_state_;
 		std::mutex match_data_mutex_;
+		std::mutex joystick_mutex_;
 
 		// Each entry in the vector is an array. That array holds
 		// the data returned from one particular imu

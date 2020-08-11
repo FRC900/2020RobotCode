@@ -71,7 +71,9 @@ class FRCRobotSimInterface : public ros_control_boilerplate::FRCRobotInterface
 
 	private:
         ros::Subscriber match_data_sub_;
+		ros::Subscriber joystick_sub_;
         void match_data_callback(const frc_msgs::MatchSpecificData &match_data);
+		void joystickCallback(const sensor_msgs::Joy &msg);
 		bool evaluateDigitalInput(ros_control_boilerplate::LineBreakSensors::Request &req, ros_control_boilerplate::LineBreakSensors::Response &res);
 
 		ros::ServiceServer linebreak_sensor_srv_;
