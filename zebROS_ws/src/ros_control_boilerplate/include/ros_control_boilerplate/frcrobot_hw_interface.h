@@ -231,7 +231,6 @@ class FRCRobotHWInterface : public ros_control_boilerplate::FRCRobotInterface
 		std::vector<int32_t> pdps_;
 
 		std::vector<std::shared_ptr<frc::Joystick>> joysticks_;
-		std::vector<std::unique_ptr<realtime_tools::RealtimePublisher<sensor_msgs::Joy>>> realtime_pub_joysticks_;
 
 		std::vector<std::shared_ptr<as726x::roboRIO_AS726x>> as726xs_;
 		std::vector<std::shared_ptr<std::mutex>> as726x_read_thread_mutexes_;

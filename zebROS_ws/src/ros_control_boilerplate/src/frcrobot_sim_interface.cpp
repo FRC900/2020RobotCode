@@ -120,25 +120,25 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::Joy &msg) {
 
 	int32_t joystick_num = 1;
 
-	HAL_JoystickAxes* hal_axes;
-	hal_axes->count = msg.axes.size() - 2; // the last two entries are for POV
+	HAL_JoystickAxes hal_axes;
+	hal_axes.count = msg.axes.size() - 2; // the last two entries are for POV
 	for(int i = 0; i < msg.axes.size() - 2; i++)
 	{
-		hal_axes->axes[i] = msg.axes[i];
+		hal_axes.axes[i] = msg.axes[i];
 	}
 
-	HAL_JoystickButtons* hal_buttons;
-	hal_buttons->count = msg.buttons.size();
+	HAL_JoystickButtons hal_buttons;
+	hal_buttons.count = msg.buttons.size();
 	for(int i = 0; i < msg.buttons.size(); i++)
 	{
 		// TODO This is probably so wrong
 		// GenericHID.h : The buttons are returned in a single 16 bit
 		// value with one bit representing the state of each button
-		hal_buttons->buttons = ((msg.buttons[i] ? 1 : 0) << i) | hal_buttons->buttons;
+		hal_buttons.buttons = ((msg.buttons[i] ? 1 : 0) << i) | hal_buttons.buttons;
 	}
 
-	HAL_JoystickPOVs* hal_povs;
-	hal_povs->count = 1;
+	HAL_JoystickPOVs hal_povs;
+	hal_povs.count = 1;
 	//TODO Do we have a standard epsilon somewhere in here?
 	bool direction_left = msg.axes[msg.axes.size() - 2] > 1e-5;
 	bool direction_right = msg.axes[msg.axes.size() - 2] < 1e-5;
@@ -147,43 +147,43 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::Joy &msg) {
 
 	if(direction_up && !direction_left && !direction_right)
 	{
-		hal_povs->povs[0] = 0;
+		hal_povs.povs[0] = 0;
 	}
 	else if(direction_up && direction_right)
 	{
-		hal_povs->povs[0] = 45;
+		hal_povs.povs[0] = 45;
 	}
 	else if(!direction_up && !direction_down && direction_right)
 	{
-		hal_povs->povs[0] = 90;
+		hal_povs.povs[0] = 90;
 	}
 	else if(direction_down && direction_right)
 	{
-		hal_povs->povs[0] = 135;
+		hal_povs.povs[0] = 135;
 	}
 	else if(direction_down && !direction_left && !direction_right)
 	{
-		hal_povs->povs[0] = 180;
+		hal_povs.povs[0] = 180;
 	}
 	else if(direction_down && direction_left)
 	{
-		hal_povs->povs[0] = 225;
+		hal_povs.povs[0] = 225;
 	}
 	else if(!direction_up && !direction_down && direction_left)
 	{
-		hal_povs->povs[0] = 270;
+		hal_povs.povs[0] = 270;
 	}
 	else if(direction_up && direction_left)
 	{
-		hal_povs->povs[0] = 315;
+		hal_povs.povs[0] = 315;
 	}
 	//TODO check default pov?
 	//TODO do you need to set JoystickDescriptor?
 	
-	HALSIM_SetJoystickAxes(joystick_num, hal_axes);
-	HALSIM_SetJoystickPOVs(joystick_num, hal_povs);
+	HALSIM_SetJoystickAxes(joystick_num, &hal_axes);
+	HALSIM_SetJoystickPOVs(joystick_num, &hal_povs);
 	HALSIM_SetJoystickButtons(joystick_num,
-			hal_buttons);
+			&hal_buttons);
 }
 
 bool FRCRobotSimInterface::setlimit(ros_control_boilerplate::set_limit_switch::Request &req,ros_control_boilerplate::set_limit_switch::Response &/*res*/)
@@ -229,7 +229,7 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 	limit_switch_srv_ = root_nh.advertiseService("set_limit_switch",&FRCRobotSimInterface::setlimit,this);
     match_data_sub_ = root_nh.subscribe("/frcrobot_rio/match_data_in", 1, &FRCRobotSimInterface::match_data_callback, this);
     //TODO fix joystick topic
-    joystick_sub_ = root_nh.subscribe("/joy", 1, &FRCRobotSimInterface::joystickCallback, this);
+    joystick_sub_ = root_nh.subscribe("/joy1/joy", 1, &FRCRobotSimInterface::joystickCallback, this);
 
 	linebreak_sensor_srv_ = root_nh.advertiseService("linebreak_service_set",&FRCRobotSimInterface::evaluateDigitalInput, this);
 	ROS_INFO_NAMED("frcrobot_sim_interface", "FRCRobotSimInterface Ready.");

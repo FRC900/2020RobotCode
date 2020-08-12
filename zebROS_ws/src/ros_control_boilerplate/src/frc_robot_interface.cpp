@@ -1738,7 +1738,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 			pub_name << "joystick_states_raw";
 			if (num_joysticks_ > 1)
 				pub_name << joystick_ids_[i];
-			realtime_pub_joysticks_.push_back(std::make_unique<realtime_tools::RealtimePublisher<sensor_msgs::Joy>>(root_nh, pub_name.str(), 1));
+			realtime_pub_joysticks_.push_back(std::make_unique<realtime_tools::RealtimePublisher<frc_msgs::JoystickState>>(root_nh, pub_name.str(), 1));
 		}
 		else
 		{
@@ -2051,10 +2051,13 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 
 		read_tracer_.start_unique("joysticks");
 		//check if sufficient time has passed since last read
+		ROS_INFO_STREAM("Starting joystick pub");
 		if (joystick_mutex_.try_lock())
 		{
+			ROS_INFO_STREAM("Joystick mutex is locked");
 			if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1./joystick_read_hz_))
 			{
+				ROS_INFO_STREAM("The timing on the joystick stuff is fine");
 				t_prev_joystick_read_ += 1./joystick_read_hz_;
 
 				auto time_now_t = ros::Time::now();
@@ -2062,83 +2065,57 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 				{
 					if (realtime_pub_joysticks_[i]->trylock())
 					{
+						ROS_INFO_STREAM("The joystick publishers are unlocked");
 						auto &m = realtime_pub_joysticks_[i]->msg_;
 						m.header.stamp = time_now_t;
 
-						m.axes.clear();
-						m.buttons.clear();
+						int raw_axis_count = joysticks_[i]->GetAxisCount();
 
-						for(int j = 0; j < joysticks_[i]->GetAxisCount(); j++)
-						{
-							m.axes.push_back(joysticks_[i]->GetRawAxis(j));
-						}
+						m.leftStickX = raw_axis_count > 0 ? joysticks_[i]->GetRawAxis(0) : 0.0;
+						m.leftStickY = raw_axis_count > 1 ? joysticks_[i]->GetRawAxis(1) : 0.0;
+						m.leftTrigger = raw_axis_count > 2 ? joysticks_[i]->GetRawAxis(2) : 0.0;
+						m.rightTrigger = raw_axis_count > 3 ? joysticks_[i]->GetRawAxis(3) : 0.0;
+						m.rightStickX = raw_axis_count > 4 ? joysticks_[i]->GetRawAxis(4) : 0.0;
+						m.rightStickX = raw_axis_count > 5 ? joysticks_[i]->GetRawAxis(5) : 0.0;
 
-						for(int j = 0; j < joysticks_[i]->GetButtonCount(); j++)
-						{
-							m.buttons.push_back(joysticks_[i]->GetRawButton(j+1));
-						}
+						m.directionLeftButton = raw_axis_count > 6 ? (joysticks_[i]->GetRawAxis(6) > 0) : false;
+						m.directionRightButton = raw_axis_count > 6 ? (joysticks_[i]->GetRawAxis(6) < 0) : false;
+						m.directionUpButton = raw_axis_count > 7 ? (joysticks_[i]->GetRawAxis(6) > 0) : false;
+						m.directionDownButton = raw_axis_count > 7 ? (joysticks_[i]->GetRawAxis(6) < 0) : false;
 
-						bool direction_up = false;
-						bool direction_down = false;
-						bool direction_left = false;
-						bool direction_right = false;
-						switch (joysticks_[i]->GetPOV(0))
-						{
-							case 0 :
-								direction_up = true;
-								break;
-							case 45:
-								direction_up = true;
-								direction_right = true;
-								break;
-							case 90:
-								direction_right = true;
-								break;
-							case 135:
-								direction_down = true;
-								direction_right = true;
-								break;
-							case 180:
-								direction_down = true;
-								break;
-							case 225:
-								direction_down = true;
-								direction_left = true;
-								break;
-							case 270:
-								direction_left = true;
-								break;
-							case 315:
-								direction_up = true;
-								direction_left = true;
-								break;
-						}
+						int raw_button_count = joysticks_[i]->GetButtonCount();
 
-						if(direction_left)
-						{
-							m.axes.push_back(1.0);
-						}
-						else if (direction_right)
-						{
-							m.axes.push_back(-1.0);
-						}
-						else
-						{
-							m.axes.push_back(0.0);
-						}
+						m.buttonAButton		= raw_button_count > 0 ? joysticks_[i]->GetRawButton(0) : false;
+						m.buttonAPress		= raw_button_count > 0 ? joysticks_[i]->GetRawButtonPressed(0) : false;
+						m.buttonARelease	= raw_button_count > 0 ? joysticks_[i]->GetRawButtonReleased(0) : false;
+						m.buttonBButton		= raw_button_count > 1 ? joysticks_[i]->GetRawButton(1) : false;
+						m.buttonBPress		= raw_button_count > 1 ? joysticks_[i]->GetRawButtonPressed(1) : false;
+						m.buttonBRelease	= raw_button_count > 1 ? joysticks_[i]->GetRawButtonReleased(1) : false;
+						m.buttonXButton		= raw_button_count > 2 ? joysticks_[i]->GetRawButton(2) : false;
+						m.buttonXPress		= raw_button_count > 2 ? joysticks_[i]->GetRawButtonPressed(2) : false;
+						m.buttonXRelease	= raw_button_count > 2 ? joysticks_[i]->GetRawButtonReleased(2) : false;
+						m.buttonYButton		= raw_button_count > 3 ? joysticks_[i]->GetRawButton(3) : false;
+						m.buttonYPress		= raw_button_count > 3 ? joysticks_[i]->GetRawButtonPressed(3) : false;
+						m.buttonYRelease	= raw_button_count > 3 ? joysticks_[i]->GetRawButtonReleased(3) : false;
+						m.bumperLeftButton	= raw_button_count > 4 ? joysticks_[i]->GetRawButton(4) : false;
+						m.bumperLeftPress	= raw_button_count > 4 ? joysticks_[i]->GetRawButtonPressed(4) : false;
+						m.bumperLeftRelease	= raw_button_count > 4 ? joysticks_[i]->GetRawButtonReleased(4) : false;
+						m.bumperRightButton	= raw_button_count > 5 ? joysticks_[i]->GetRawButton(5) : false;
+						m.bumperRightPress	= raw_button_count > 5 ? joysticks_[i]->GetRawButtonPressed(5) : false;
+						m.bumperRightRelease= raw_button_count > 5 ? joysticks_[i]->GetRawButtonReleased(5) : false;
+						m.buttonBackButton	= raw_button_count > 6 ? joysticks_[i]->GetRawButton(6) : false;
+						m.buttonBackPress	= raw_button_count > 6 ? joysticks_[i]->GetRawButtonPressed(6) : false;
+						m.buttonBackRelease	= raw_button_count > 6 ? joysticks_[i]->GetRawButtonReleased(6) : false;
+						m.buttonStartButton = raw_button_count > 7 ? joysticks_[i]->GetRawButton(7) : false;
+						m.buttonStartPress	= raw_button_count > 7 ? joysticks_[i]->GetRawButtonPressed(7) : false;
+						m.buttonStartRelease= raw_button_count > 7 ? joysticks_[i]->GetRawButtonReleased(7) : false;
+						m.stickLeftButton	= raw_button_count > 8 ? joysticks_[i]->GetRawButton(8) : false;
+						m.stickLeftPress	= raw_button_count > 8 ? joysticks_[i]->GetRawButtonPressed(8) : false;
+						m.stickLeftRelease	= raw_button_count > 8 ? joysticks_[i]->GetRawButtonReleased(8) : false;
+						m.stickRightButton	= raw_button_count > 9 ? joysticks_[i]->GetRawButton(9) : false;
+						m.stickRightPress	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonPressed(9) : false;
+						m.stickRightRelease	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonReleased(9) : false;
 
-						if(direction_up)
-						{
-							m.axes.push_back(1.0);
-						}
-						else if (direction_down)
-						{
-							m.axes.push_back(-1.0);
-						}
-						else
-						{
-							m.axes.push_back(0.0);
-						}
 						realtime_pub_joysticks_[i]->unlockAndPublish();
 					}
 				}

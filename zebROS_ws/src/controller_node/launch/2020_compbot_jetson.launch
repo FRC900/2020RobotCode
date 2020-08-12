@@ -74,11 +74,13 @@
 		<rosparam file="$(find teleop_joystick_control)/config/teleop_joystick_comp.yaml" command="load"/>
 		<node name="teleop_joystick_comp_2020" pkg="teleop_joystick_control" type="teleop_joystick_comp_2020" output="screen"/>
 
+		<!--
 		<group ns="translator1">
 			<node name="translate_joystick_data_node" pkg="teleop_joystick_control" type="translate_joystick_data_node" output="screen">
 				<remap from="/frcrobot_rio/joystick_states_raw" to="/frcrobot_rio/joystick_states_raw1"/>
 			</node>
 		</group>
+		-->
 		
 		<group ns="button_box_translator" if="$(arg button_box)">
 			<node name="translate_button_box_data_node" pkg="teleop_joystick_control" type="translate_button_box_data_node" output="screen"/>
@@ -161,9 +163,11 @@
 	<!--group ns="align_server_common "!-->
 
 	<!-- vision align -->
+	<!--
 	<include file="$(find controller_node)/launch/tape_detection.launch">
 		<arg name="camera_model" value="zed2" />
 	</include>
+-->
         <!-- <include file="$(find controller_node)/launch/multiflex_example.launch" />-->
 
 		<!--

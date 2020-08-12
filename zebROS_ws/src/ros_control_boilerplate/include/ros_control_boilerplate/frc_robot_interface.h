@@ -555,7 +555,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<std::thread> pdp_thread_;
 		std::vector<int32_t> pdps_;
 		std::vector<std::shared_ptr<Joystick>> joysticks_;
-		std::vector<std::unique_ptr<realtime_tools::RealtimePublisher<sensor_msgs::Joy>>> realtime_pub_joysticks_;
+		std::vector<std::unique_ptr<realtime_tools::RealtimePublisher<frc_msgs::JoystickState>>> realtime_pub_joysticks_;
 
 		std::unique_ptr<ROSIterativeRobot> robot_;
 		Tracer read_tracer_;

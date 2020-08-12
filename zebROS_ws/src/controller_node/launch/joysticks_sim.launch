@@ -24,11 +24,13 @@
 			<param name="deadzone" type="double" value="0.0"/>
 		</node>
 
+		<!--
 		<node pkg="teleop_joystick_control" type="joystick_remap.py" name="joystick_remap" >
 			<remap from="joy_in" to="joy" />
 			<remap from="joy_out" to="/frcrobot_rio/joystick_states_raw1"/>
 			<rosparam command="load" file="$(find teleop_joystick_control)/config/joystick_remap.yaml"/>
 		</node>
+		-->
 
 	</group>	
 

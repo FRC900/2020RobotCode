@@ -1362,9 +1362,8 @@ int main(int argc, char **argv)
 	for(int j = 0; j < num_joysticks; j++)
 	{
 		std::stringstream s;
-		s << "/teleop/translator";
+		s << "/frcrobot_rio/joystick_states_raw";
 		s << (j+1);
-		s << "/joystick_states";
 		topic_array.push_back(s.str());
 		subscriber_array.push_back(n.subscribe(topic_array[j], 1, &evaluateCommands));
 	}
