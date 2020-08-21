@@ -253,7 +253,7 @@ class Dashboard(Plugin):
         #self.lock.acquire()
         # change button to red color if someone fiddled with the angle input, to indicate that input wasn't set yet
         self._widget.set_imu_angle_button
-        setStyleSheet("background-color:#ff0000;")
+        self._widget.set_imu_angle_button.setStyleSheet("background-color:#ff0000;")
         #self.lock.release()
 
 
