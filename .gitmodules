@@ -7,9 +7,3 @@
 [submodule "navXTimeSync"]
 	path = navXTimeSync
 	url = https://github.com/FRC900/navXTimeSync.git
-[submodule "zebROS_ws/src/zebROS_ws/src"]
-	path = zebROS_ws/src/zebROS_ws/src
-	url = https://github.com/zhuci/rqt_subscriber.git
-[submodule "rqt_subscriber"]
-	path = rqt_subscriber
-	url = https://github.com/zhuci/rqt_subscriber
