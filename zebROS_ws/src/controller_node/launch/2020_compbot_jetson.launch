@@ -169,6 +169,10 @@
 	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" > 
 		<arg name="port" value="5803"/>
 	</include>
+	
+	<!-- 
+			 <include file="$(find controller_node)/launch/multiflex_example.launch" /> 
+	-->
 
 		<!--
 	<include file="$(find controller_node)/launch/tape_detection_c920.launch" />
