@@ -24,13 +24,10 @@ catkin config --blacklist \
 	behaviors \
 	cmake_modules \
 	goal_detection \
-	imu_zero \
 	laser_targets \
 	navx_publisher \
 	path_to_goal \
-	path_follower \
 	pixy_get_lines \
-	pf_localization \
 	ros_control_boilerplate \
 	rosbag_scripts \
 	screen_to_world \
