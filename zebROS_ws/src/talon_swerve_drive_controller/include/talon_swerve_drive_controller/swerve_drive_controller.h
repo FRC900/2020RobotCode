@@ -116,6 +116,7 @@ class TalonSwerveDriveController
 		void stopping(const ros::Time & /*time*/);
 
 	private:
+		static constexpr size_t WHEELCOUNT = 4;
 		int num_profile_slots_;
 
 		Eigen::MatrixX2d new_wheel_pos_;
@@ -126,7 +127,7 @@ class TalonSwerveDriveController
 
 		std::string name_;
 
-		std::shared_ptr<swerve> swerveC_;
+		std::unique_ptr<swerve<WHEELCOUNT>> swerveC_;
 
 		/// Hardware handles:
 		//TODO: IMPORTANT, make generalized, and check
