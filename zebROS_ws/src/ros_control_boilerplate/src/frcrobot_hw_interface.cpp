@@ -70,21 +70,15 @@
 #include <cmath>
 #include <iostream>
 
-#include <tf2/LinearMath/Quaternion.h>
 #include "ros_control_boilerplate/frcrobot_hw_interface.h"
 #include "ros_control_boilerplate/error_queue.h"
 
 //HAL / wpilib includes
 #include <HALInitializer.h>
-//#include <networktables/NetworkTable.h>
-#include <hal/CAN.h>
 #include <hal/Compressor.h>
 #include <hal/DriverStation.h>
-//#include <hal/Errors.h>
 #include <hal/PDP.h>
-#include <hal/Power.h>
 #include <hal/Solenoid.h>
-#include <frc/Joystick.h>
 
 #include <ctre/phoenix/motorcontrol/SensorCollection.h>
 #include <ctre/phoenix/platform/Platform.h>

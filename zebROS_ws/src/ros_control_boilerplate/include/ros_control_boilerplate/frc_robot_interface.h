@@ -39,74 +39,55 @@
 
 #pragma once
 
-// ROS
-#include <ros/ros.h>
-#include <urdf/model.h>
+#include <thread>
+#include <unordered_map>
 
-// ROS Controls
+// ROS
 #include <controller_manager/controller_manager.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_mode_interface.h>
 #include <hardware_interface/robot_hw.h>
+#include <ros/ros.h>
+#include <realtime_tools/realtime_publisher.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <urdf/model.h>
+
+// ROS Controls
 #include "as726x_interface/as726x_interface.h"
+#include "frc_interfaces/match_data_interface.h"
 #include "frc_interfaces/pcm_state_interface.h"
 #include "frc_interfaces/pdp_state_interface.h"
-#include "frc_interfaces/match_data_interface.h"
 #include "frc_interfaces/robot_controller_interface.h"
+#include "frc_msgs/ButtonBoxState.h"
+#include "frc_msgs/MatchSpecificData.h"
+#include "frc_msgs/JoystickState.h"
 #include "remote_joint_interface/remote_joint_interface.h"
 #include "talon_interface/cancoder_command_interface.h"
 #include "talon_interface/canifier_command_interface.h"
-#include "talon_interface/talon_command_interface.h"
-#include "talon_interface/orchestra_state_interface.h"
 #include "talon_interface/orchestra_command_interface.h"
-#include "frc_interfaces/match_data_interface.h"
-#include "frc_interfaces/pdp_state_interface.h"
-#include <hal/Solenoid.h>
-#include <hal/Compressor.h>
-#include <hal/Constants.h>
-#include <hal/PDP.h>
-#include <hal/Threads.h>
-#include <hal/Value.h>
-#include <hal/DriverStation.h>
-#include <hal/DriverStationTypes.h>
-#include <frc_msgs/MatchSpecificData.h>
-#include <frc_msgs/JoystickState.h>
-#include <sensor_msgs/Joy.h>
-#include <HALInitializer.h>
-#include <networktables/NetworkTable.h>
-#include <hal/CAN.h>
-#include <hal/CAN.h>
-#include <hal/Power.h>
-#include <hal/Solenoid.h>
-#include <frc/Joystick.h>
-#include <tf2/LinearMath/Matrix3x3.h>
+#include "talon_interface/talon_command_interface.h"
 
-//Includes below are from frcrobot_hw_interface
-#include <thread>
+#include "ros_control_boilerplate/tracer.h"
 
-#include <ros_control_boilerplate/tracer.h>
-#include <realtime_tools/realtime_publisher.h>
-
-#include <frc_interfaces/robot_controller_interface.h>
-#include "frc_msgs/MatchSpecificData.h"
-#include <std_msgs/Float64.h>
-#include <sensor_msgs/Joy.h>
-
+// WPILIB stuff
 #include "WPILibVersion.h"
+#include <AHRS.h>
 #include <frc/AnalogInput.h>
 #include <frc/DriverStation.h>
-#include <frc/NidecBrushless.h>
 #include <frc/DigitalInput.h>
 #include <frc/DigitalOutput.h>
-#include <frc/PWMSpeedController.h>
-#include <frc/Solenoid.h>
 #include <frc/DoubleSolenoid.h>
-#include <frc/Compressor.h>
 #include <frc/Joystick.h>
-#include <hal/HALBase.h>
-#include <frc/DriverStation.h>
+#include <frc/NidecBrushless.h>
+#include <frc/PWMSpeedController.h>
+#include <hal/Compressor.h>
+#include <hal/DriverStation.h>
 #include <hal/FRCUsageReporting.h>
-#include <AHRS.h>
+#include <hal/CAN.h>
+#include <hal/HALBase.h>
+#include <hal/PDP.h>
+#include <hal/Power.h>
+#include <hal/Solenoid.h>
 
 namespace ros_control_boilerplate
 {
@@ -428,6 +409,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<std::string> joystick_names_;
 		std::vector<int>         joystick_ids_; // pretty sure this is montonic increasing by default?
 		std::vector<bool>        joystick_locals_;
+		std::vector<std::string> joystick_types_;
 		std::size_t              num_joysticks_;
 
 		std::vector<std::string> as726x_names_;
@@ -546,20 +528,31 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		std::vector<std::thread> pcm_thread_;
 		std::vector<HAL_CompressorHandle> compressors_;
 
-		std::thread motion_profile_thread_;
-		std::vector<std::shared_ptr<std::mutex>> motion_profile_mutexes_;
-
 		std::vector<std::shared_ptr<std::mutex>> pdp_read_thread_mutexes_;
 		std::vector<std::shared_ptr<hardware_interface::PDPHWState>> pdp_read_thread_state_;
 		void pdp_read_thread(int32_t pdp, std::shared_ptr<hardware_interface::PDPHWState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
 		std::vector<std::thread> pdp_thread_;
 		std::vector<int32_t> pdps_;
 		std::vector<std::shared_ptr<Joystick>> joysticks_;
+		std::vector<bool> joystick_up_last_;
+		std::vector<bool> joystick_down_last_;
+		std::vector<bool> joystick_left_last_;
+		std::vector<bool> joystick_right_last_;
+		std::vector<frc_msgs::ButtonBoxState> prev_button_box_state_;
+
+		void joystick_pub_function(int i);
+		void button_box_pub_function(int i);
+		const std::unordered_map<std::string, std::function<void(int)>> joystick_fn_map_
+		{
+			{"joystick", std::bind(&FRCRobotInterface::joystick_pub_function, this, std::placeholders::_1)},
+			{"button_box", std::bind(&FRCRobotInterface::button_box_pub_function, this, std::placeholders::_1)}
+		};
 		std::vector<std::unique_ptr<realtime_tools::RealtimePublisher<frc_msgs::JoystickState>>> realtime_pub_joysticks_;
+		std::vector<std::unique_ptr<realtime_tools::RealtimePublisher<frc_msgs::ButtonBoxState>>> realtime_pub_button_boxes_;
 
 		std::unique_ptr<ROSIterativeRobot> robot_;
 		Tracer read_tracer_;
-		
+
 };  // class
 
 }  // namespace
