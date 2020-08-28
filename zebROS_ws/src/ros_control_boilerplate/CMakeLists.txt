@@ -148,8 +148,6 @@ set (FRCROBOT_SIM_MAIN_SRCS ${FRCROBOT_SIM_MAIN_SRCS}
 	${ALLWPILIB}/hal/src/main/native/sim/mockdata/SimDeviceData.cpp
 	${ALLWPILIB}/hal/src/main/native/sim/mockdata/SPIData.cpp
 
-
-
 	${ALLWPILIB}/wpilibc/src/main/native/cpp/AnalogInput.cpp
 	${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
 	${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
@@ -475,7 +473,6 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
 		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Twine.cpp
 	)
-
 
 	if ("${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "aarch64-linux-gnu") # Jetson TX1/TX2/Xaver AGX/Xavier NX
 		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
