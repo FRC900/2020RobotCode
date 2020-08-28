@@ -229,7 +229,7 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 	for (size_t i = 0; i < HAL_kMaxJoysticks; i++)
 	{
 		std::stringstream s;
-		s << "/js" << i;
+		s << "js" << i << "_in";
 		joystick_subs_.push_back(root_nh.subscribe<sensor_msgs::Joy>(s.str(), 1, boost::bind(&FRCRobotSimInterface::joystickCallback, this, _1, i)));
 	}
 

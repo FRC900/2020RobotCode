@@ -11,7 +11,7 @@
 			<param name="autorepeat_rate" type="double" value="100"/>
 			<param name="coalesce_interval" type="double" value="0.01"/>
 			<param name="deadzone" type="double" value="0.0"/>
-			<remap from="joy" to="/frcrobot_rio/button_box_states_raw"/>
+			<remap from="joy" to="/frcrobot_rio/js1_in"/>
 		</node>
 
 	</group>
@@ -22,6 +22,7 @@
 			<param name="autorepeat_rate" type="double" value="100"/>
 			<param name="coalesce_interval" type="double" value="0.01"/>
 			<param name="deadzone" type="double" value="0.0"/>
+			<remap from="joy" to="/frcrobot_rio/js0_in"/>
 		</node>
 
 		<!--
