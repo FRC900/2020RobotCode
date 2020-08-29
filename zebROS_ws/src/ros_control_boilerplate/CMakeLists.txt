@@ -167,11 +167,11 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/GenericHID.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/InterruptableSensorBase.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/IterativeRobotBase.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/Joystick.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/livewindow/LiveWindow.cpp
-		${ALLWPILIB}/wpilibc/src/main/native/cpp/MotorSafety.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotState.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
@@ -225,7 +225,8 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
 	add_executable(frcrobot_sim_main 
 		src/frcrobot_sim_main.cpp
 		src/frcrobot_sim_interface.cpp
-		src/dummy_wpilib_frc_robot_interface.cpp
+		#src/dummy_wpilib_frc_robot_interface.cpp
+		src/dummy_wpilib_common.cpp
 	)
 
 	target_link_libraries(frcrobot_sim_main
