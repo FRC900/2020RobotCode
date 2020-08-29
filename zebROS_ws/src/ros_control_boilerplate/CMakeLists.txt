@@ -80,259 +80,6 @@ target_link_libraries(frc_robot_interface
 
 set (ALLWPILIB ../../../allwpilib)
 
-file(GLOB
-	ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/*.cpp
-	ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/tables/*.cpp
-)
-
-set (FRCROBOT_SIM_MAIN_SRCS ${FRCROBOT_SIM_MAIN_SRCS} 		
-	${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
-	${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/cpp/Main.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogAccumulator.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Accelerometer.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogInput.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogOutput.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogGyro.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogTrigger.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AddressableLED.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogGyro.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/CAN.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/CANAPI.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Compressor.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Constants.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Counter.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DigitalInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DIO.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DutyCycle.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DriverStation.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Extensions.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Encoder.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/HAL.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/HALInitializer.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Interrupts.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/I2C.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/MockHooks.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Notifier.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/PDP.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Ports.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Power.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/PWM.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Relay.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/SimDevice.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/SerialPort.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/SPI.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Solenoid.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Threads.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogInData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AccelerometerData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogOutData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AddressableLEDData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogGyroData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogTriggerData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/CanDataInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DigitalPWMData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DIOData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DriverStationData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DutyCycleData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/EncoderData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/I2CData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/SPIAccelerometerData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/I2CData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/PCMData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/PDPData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/PWMData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/RelayData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/RoboRioData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/SimDeviceData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/SPIData.cpp
-
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/AnalogInput.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/InterruptableSensorBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/IterativeRobotBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Joystick.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/DriverStation.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/MotorSafety.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotState.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Timer.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Watchdog.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Utility.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/livewindow/LiveWindow.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/ListenerExecutor.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBuilderImpl.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableRegistry.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SmartDashboard.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ComplexWidget.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/LayoutType.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/RecordingController.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SendableCameraWrapper.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/Shuffleboard.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardComponentBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardContainer.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardInstance.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardLayout.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardTab.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SimpleWidget.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_ostream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/SocketError.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPAcceptor.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/raw_ostream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Error.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ErrorHandling.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Hashing.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ManagedStatic.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/NativeFormatting.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Path.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallPtrSet.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallVector.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Twine.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTable.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableInstance.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableEntry.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/RpcCall.cpp
-	${ntcore_native_src}
-	src/dummy_wpilib_frc_robot_interface.cpp
-	)
-set (FRCROBOT_PHOENIXSIM_MAIN_SRCS ${FRCROBOT_PHOENIXSIM_MAIN_SRCS} 		
-	src/as726x_convert.cpp
-	src/cancoder_convert.cpp
-	src/canifier_convert.cpp
-	src/error_queue.cpp
-	src/dummy_wpilib_common.cpp
-	src/dummy_wpilib_i2c.cpp
-	src/dummy_wpilib_phoenixsim.cpp
-	src/talon_convert.cpp
-	${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
-	${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/cpp/Main.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogAccumulator.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogInput.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogOutput.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/AnalogTrigger.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/CAN.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/CANAPI.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Compressor.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Constants.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Counter.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DigitalInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DIO.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/DriverStation.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Extensions.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/HAL.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/HALInitializer.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Interrupts.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/MockHooks.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Notifier.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/PDP.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Ports.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Power.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/PWM.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Relay.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/SimDevice.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Solenoid.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/Threads.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogInData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogOutData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogTriggerData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/CanDataInternal.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DigitalPWMData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DIOData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/DriverStationData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/PCMData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/PDPData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/PWMData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/RelayData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/RoboRioData.cpp
-	${ALLWPILIB}/hal/src/main/native/sim/mockdata/SimDeviceData.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/AnalogInput.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/InterruptableSensorBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/IterativeRobotBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Joystick.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/DriverStation.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotState.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Timer.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Watchdog.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/Utility.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/livewindow/LiveWindow.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/ListenerExecutor.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBuilderImpl.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableRegistry.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SmartDashboard.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ComplexWidget.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/LayoutType.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/RecordingController.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SendableCameraWrapper.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/Shuffleboard.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardComponentBase.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardContainer.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardInstance.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardLayout.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardTab.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SimpleWidget.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_ostream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/SocketError.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPAcceptor.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
-	${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/raw_ostream.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Error.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ErrorHandling.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Hashing.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ManagedStatic.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/NativeFormatting.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Path.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallPtrSet.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallVector.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Twine.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
-	${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTable.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableInstance.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableEntry.cpp
-	${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/RpcCall.cpp
-	${ntcore_native_src}
-	src/dummy_wpilib_common.cpp
-	)
 # Don't build sim code for the Rio or Jetson -
 # saves time and space for something which will
 # never be run
@@ -344,15 +91,147 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
     # info for testing code which doens't actually hit
     # RoboRIO or CAN hardware. Eventually expand into
     # controlling some sort of sim?
+	file(GLOB
+		ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/*.cpp
+		ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/tables/*.cpp
+	)
+
+	add_library(frc_sim_wpilib STATIC
+		${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
+		${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
+		${ALLWPILIB}/hal/src/main/native/cpp/Main.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Accelerometer.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AddressableLED.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AnalogAccumulator.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AnalogGyro.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AnalogInput.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AnalogInternal.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AnalogOutput.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AnalogTrigger.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/CANAPI.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/CAN.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Compressor.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Constants.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Counter.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/DigitalInternal.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/DIO.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/DriverStation.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/DutyCycle.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Encoder.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Extensions.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/HAL.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/HALInitializer.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/I2C.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Interrupts.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/AccelerometerData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/AddressableLEDData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogGyroData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogInData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogOutData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/AnalogTriggerData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/CanDataInternal.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/DigitalPWMData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/DIOData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/DriverStationData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/DutyCycleData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/EncoderData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/I2CData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/PCMData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/PDPData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/PWMData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/RelayData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/RoboRioData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/SimDeviceData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/SPIAccelerometerData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/mockdata/SPIData.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/MockHooks.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Notifier.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/PDP.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Ports.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Power.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/PWM.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Relay.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/SerialPort.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/SimDevice.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Solenoid.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/SPI.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/Threads.cpp
+		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTable.cpp
+		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableEntry.cpp
+		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableInstance.cpp
+		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/RpcCall.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/AnalogInput.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/DriverStation.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/Error.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/InterruptableSensorBase.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/IterativeRobotBase.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/Joystick.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/livewindow/LiveWindow.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/MotorSafety.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotController.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/RobotState.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/SensorUtil.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ComplexWidget.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/LayoutType.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/RecordingController.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SendableCameraWrapper.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardComponentBase.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardContainer.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/Shuffleboard.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardInstance.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardLayout.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/ShuffleboardTab.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/shuffleboard/SimpleWidget.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/ListenerExecutor.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBase.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBuilderImpl.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableRegistry.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SmartDashboard.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/Timer.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/Utility.cpp
+		${ALLWPILIB}/wpilibc/src/main/native/cpp/Watchdog.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/Base64.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Error.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ErrorHandling.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Hashing.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/ManagedStatic.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/NativeFormatting.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Path.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/raw_ostream.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallPtrSet.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/SmallVector.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/Twine.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_ostream.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/SafeThread.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/SocketError.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPAcceptor.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
+		${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
+		${ntcore_native_src}
+	)
 	add_executable(frcrobot_sim_main 
 		src/frcrobot_sim_main.cpp
 		src/frcrobot_sim_interface.cpp
-		${FRCROBOT_SIM_MAIN_SRCS}
+		src/dummy_wpilib_frc_robot_interface.cpp
 	)
 
 	target_link_libraries(frcrobot_sim_main
 		${catkin_LIBRARIES}
 		frc_robot_interface
+		frc_sim_wpilib
 	)
 
     # Forces messages to be generated before
@@ -369,15 +248,17 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
 	)
 endif()
 
-# Main control executable
-set (FRCROBOT_HW_MAIN_SRCS 
+add_library(convert STATIC
 	src/as726x_convert.cpp
 	src/cancoder_convert.cpp
 	src/canifier_convert.cpp
+	src/talon_convert.cpp
+)
+# Main control executable
+set (FRCROBOT_HW_MAIN_SRCS 
 	src/error_queue.cpp
 	src/frcrobot_hw_main.cpp
 	src/frcrobot_hw_interface.cpp
-	src/talon_convert.cpp
 )
 
 set (WPI_SYSROOT $ENV{HOME}/wpilib/2020/roborio/arm-frc2020-linux-gnueabi)
@@ -493,13 +374,12 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPConnector_parallel.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/TCPStream.cpp
+			${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/leb128.cpp
+			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_istream.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/raw_socket_istream.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/cpp/timestamp.cpp
-			${ALLWPILIB}/wpilibc/src/main/native/cpp/frc2/Timer.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringMap.cpp
-			${ALLWPILIB}/wpiutil/src/main/native/cpp/llvm/StringRef.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/ListenerExecutor.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBase.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/smartdashboard/SendableBuilderImpl.cpp
@@ -526,7 +406,10 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			src/frcrobot_phoenixsim_main.cpp
 			src/frcrobot_hw_interface.cpp
 			src/dummy_wpilib_phoenixsim.cpp
-			${FRCROBOT_PHOENIXSIM_MAIN_SRCS}
+			src/error_queue.cpp
+			src/dummy_wpilib_common.cpp
+			src/dummy_wpilib_i2c.cpp
+			src/dummy_wpilib_phoenixsim.cpp
 		)
 
 	    # Everything but Platform_socketcan.a
@@ -539,6 +422,8 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${CTRE_LIB_DIR}/libCTRE_PhoenixDiagnostics.a
 			${CTRE_LIB_DIR}/../shared/libCTRE_PhoenixPlatform_sim.so
 			frc_robot_interface
+			frc_sim_wpilib
+			convert
 		)
 		## Add cmake target dependencies of the executable
 		## same as for the library above. This is needed to force
@@ -565,10 +450,11 @@ add_executable(frcrobot_hw_main ${FRCROBOT_HW_MAIN_SRCS})
 # wpilib for HAL, driver station, and so on
 target_link_libraries(frcrobot_hw_main
 	${catkin_LIBRARIES}
-	${PLATFORM_SPECIFIC_LIBS}
 	${CTRE_USER_LIBS}
 	${LIB_GPIOD}
 	frc_robot_interface
+	convert
+	${PLATFORM_SPECIFIC_LIBS}
 )
 
 ## Add cmake target dependencies of the executable
@@ -583,7 +469,6 @@ add_dependencies(frcrobot_hw_main
 add_executable(q_to_rpy src/q_to_rpy.cpp)
 target_link_libraries(q_to_rpy
 	${catkin_LIBRARIES}
-	${PLATFORM_SPECIFIC_LIBS}
 )
 
 add_dependencies(q_to_rpy
