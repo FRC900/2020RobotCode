@@ -950,7 +950,7 @@ int main(int argc, char **argv)
 	{
 		std::stringstream s;
 		s << "/frcrobot_rio/joystick_states";
-		s << (j + 1);
+		s << (j+1);
 		topic_array.push_back(s.str());
 		subscriber_array.push_back(n.subscribe(topic_array[j], 1, &evaluateCommands));
 	}

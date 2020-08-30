@@ -1368,7 +1368,7 @@ int main(int argc, char **argv)
 		subscriber_array.push_back(n.subscribe(topic_array[j], 1, &evaluateCommands));
 	}
 
-	ros::Subscriber button_box_sub = n.subscribe("button_box_translator/button_box_states", 1, &buttonBoxCallback);
+	ros::Subscriber button_box_sub = n.subscribe("/frcrobot_rio/button_box_states", 1, &buttonBoxCallback);
 
 	ROS_WARN("joy_init");
 

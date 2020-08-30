@@ -2051,7 +2051,6 @@ void FRCRobotInterface::joystick_pub_function(int i)
 	}
 	if (realtime_pub_joysticks_[i]->trylock())
 	{
-		ROS_INFO_STREAM("The joystick publisher " << i << " is unlocked");
 		auto &m = realtime_pub_joysticks_[i]->msg_;
 		m.header.stamp = ros::Time::now();
 
@@ -2066,36 +2065,36 @@ void FRCRobotInterface::joystick_pub_function(int i)
 
 		int raw_button_count = joysticks_[i]->GetButtonCount();
 
-		m.buttonAButton		= raw_button_count > 0 ? joysticks_[i]->GetRawButton(0) : false;
-		m.buttonAPress		= raw_button_count > 0 ? joysticks_[i]->GetRawButtonPressed(0) : false;
-		m.buttonARelease	= raw_button_count > 0 ? joysticks_[i]->GetRawButtonReleased(0) : false;
-		m.buttonBButton		= raw_button_count > 1 ? joysticks_[i]->GetRawButton(1) : false;
-		m.buttonBPress		= raw_button_count > 1 ? joysticks_[i]->GetRawButtonPressed(1) : false;
-		m.buttonBRelease	= raw_button_count > 1 ? joysticks_[i]->GetRawButtonReleased(1) : false;
-		m.buttonXButton		= raw_button_count > 2 ? joysticks_[i]->GetRawButton(2) : false;
-		m.buttonXPress		= raw_button_count > 2 ? joysticks_[i]->GetRawButtonPressed(2) : false;
-		m.buttonXRelease	= raw_button_count > 2 ? joysticks_[i]->GetRawButtonReleased(2) : false;
-		m.buttonYButton		= raw_button_count > 3 ? joysticks_[i]->GetRawButton(3) : false;
-		m.buttonYPress		= raw_button_count > 3 ? joysticks_[i]->GetRawButtonPressed(3) : false;
-		m.buttonYRelease	= raw_button_count > 3 ? joysticks_[i]->GetRawButtonReleased(3) : false;
-		m.bumperLeftButton	= raw_button_count > 4 ? joysticks_[i]->GetRawButton(4) : false;
-		m.bumperLeftPress	= raw_button_count > 4 ? joysticks_[i]->GetRawButtonPressed(4) : false;
-		m.bumperLeftRelease	= raw_button_count > 4 ? joysticks_[i]->GetRawButtonReleased(4) : false;
-		m.bumperRightButton	= raw_button_count > 5 ? joysticks_[i]->GetRawButton(5) : false;
-		m.bumperRightPress	= raw_button_count > 5 ? joysticks_[i]->GetRawButtonPressed(5) : false;
-		m.bumperRightRelease= raw_button_count > 5 ? joysticks_[i]->GetRawButtonReleased(5) : false;
-		m.buttonBackButton	= raw_button_count > 6 ? joysticks_[i]->GetRawButton(6) : false;
-		m.buttonBackPress	= raw_button_count > 6 ? joysticks_[i]->GetRawButtonPressed(6) : false;
-		m.buttonBackRelease	= raw_button_count > 6 ? joysticks_[i]->GetRawButtonReleased(6) : false;
-		m.buttonStartButton = raw_button_count > 7 ? joysticks_[i]->GetRawButton(7) : false;
-		m.buttonStartPress	= raw_button_count > 7 ? joysticks_[i]->GetRawButtonPressed(7) : false;
-		m.buttonStartRelease= raw_button_count > 7 ? joysticks_[i]->GetRawButtonReleased(7) : false;
-		m.stickLeftButton	= raw_button_count > 8 ? joysticks_[i]->GetRawButton(8) : false;
-		m.stickLeftPress	= raw_button_count > 8 ? joysticks_[i]->GetRawButtonPressed(8) : false;
-		m.stickLeftRelease	= raw_button_count > 8 ? joysticks_[i]->GetRawButtonReleased(8) : false;
-		m.stickRightButton	= raw_button_count > 9 ? joysticks_[i]->GetRawButton(9) : false;
-		m.stickRightPress	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonPressed(9) : false;
-		m.stickRightRelease	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonReleased(9) : false;
+		m.buttonAButton		= raw_button_count > 0 ? joysticks_[i]->GetRawButton(1) : false;
+		m.buttonAPress		= raw_button_count > 0 ? joysticks_[i]->GetRawButtonPressed(1) : false;
+		m.buttonARelease	= raw_button_count > 0 ? joysticks_[i]->GetRawButtonReleased(1) : false;
+		m.buttonBButton		= raw_button_count > 1 ? joysticks_[i]->GetRawButton(2) : false;
+		m.buttonBPress		= raw_button_count > 1 ? joysticks_[i]->GetRawButtonPressed(2) : false;
+		m.buttonBRelease	= raw_button_count > 1 ? joysticks_[i]->GetRawButtonReleased(2) : false;
+		m.buttonXButton		= raw_button_count > 2 ? joysticks_[i]->GetRawButton(3) : false;
+		m.buttonXPress		= raw_button_count > 2 ? joysticks_[i]->GetRawButtonPressed(3) : false;
+		m.buttonXRelease	= raw_button_count > 2 ? joysticks_[i]->GetRawButtonReleased(3) : false;
+		m.buttonYButton		= raw_button_count > 3 ? joysticks_[i]->GetRawButton(4) : false;
+		m.buttonYPress		= raw_button_count > 3 ? joysticks_[i]->GetRawButtonPressed(4) : false;
+		m.buttonYRelease	= raw_button_count > 3 ? joysticks_[i]->GetRawButtonReleased(4) : false;
+		m.bumperLeftButton	= raw_button_count > 4 ? joysticks_[i]->GetRawButton(5) : false;
+		m.bumperLeftPress	= raw_button_count > 4 ? joysticks_[i]->GetRawButtonPressed(5) : false;
+		m.bumperLeftRelease	= raw_button_count > 4 ? joysticks_[i]->GetRawButtonReleased(5) : false;
+		m.bumperRightButton	= raw_button_count > 5 ? joysticks_[i]->GetRawButton(6) : false;
+		m.bumperRightPress	= raw_button_count > 5 ? joysticks_[i]->GetRawButtonPressed(6) : false;
+		m.bumperRightRelease= raw_button_count > 5 ? joysticks_[i]->GetRawButtonReleased(6) : false;
+		m.buttonBackButton	= raw_button_count > 6 ? joysticks_[i]->GetRawButton(7) : false;
+		m.buttonBackPress	= raw_button_count > 6 ? joysticks_[i]->GetRawButtonPressed(7) : false;
+		m.buttonBackRelease	= raw_button_count > 6 ? joysticks_[i]->GetRawButtonReleased(7) : false;
+		m.buttonStartButton = raw_button_count > 7 ? joysticks_[i]->GetRawButton(8) : false;
+		m.buttonStartPress	= raw_button_count > 7 ? joysticks_[i]->GetRawButtonPressed(8) : false;
+		m.buttonStartRelease= raw_button_count > 7 ? joysticks_[i]->GetRawButtonReleased(8) : false;
+		m.stickLeftButton	= raw_button_count > 8 ? joysticks_[i]->GetRawButton(9) : false;
+		m.stickLeftPress	= raw_button_count > 8 ? joysticks_[i]->GetRawButtonPressed(9) : false;
+		m.stickLeftRelease	= raw_button_count > 8 ? joysticks_[i]->GetRawButtonReleased(9) : false;
+		m.stickRightButton	= raw_button_count > 9 ? joysticks_[i]->GetRawButton(10) : false;
+		m.stickRightPress	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonPressed(10) : false;
+		m.stickRightRelease	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonReleased(10) : false;
 
 		bool joystick_up = false;
 		bool joystick_down = false;
@@ -2167,28 +2166,28 @@ void FRCRobotInterface::button_box_pub_function(int i)
 	}
 	if (realtime_pub_button_boxes_[i]->trylock())
 	{
-		ROS_INFO_STREAM("The joystick publisher " << i << " is unlocked");
+		//ROS_INFO_STREAM("The joystick publisher " << i << " is unlocked");
 		auto &m = realtime_pub_button_boxes_[i]->msg_;
 		m.header.stamp = ros::Time::now();
 
 		int raw_button_count = joysticks_[i]->GetButtonCount();
-		m.lockingSwitchButton		= raw_button_count > 0	? joysticks_[i]->GetRawButton(0)	: false;
-		m.topRedButton				= raw_button_count > 1	? joysticks_[i]->GetRawButton(1)	: false;
-		m.leftRedButton				= raw_button_count > 2	? joysticks_[i]->GetRawButton(2)	: false;
-		m.rightRedButton			= raw_button_count > 3	? joysticks_[i]->GetRawButton(3)	: false;
-		m.leftSwitchUpButton		= raw_button_count > 4	? joysticks_[i]->GetRawButton(4)	: false;
-		m.leftSwitchDownButton		= raw_button_count > 5	? joysticks_[i]->GetRawButton(5)	: false;
-		m.rightSwitchUpButton		= raw_button_count > 6	? joysticks_[i]->GetRawButton(6)	: false;
-		m.rightSwitchDownButton		= raw_button_count > 7	? joysticks_[i]->GetRawButton(7)	: false;
-		m.leftBlueButton			= raw_button_count > 8	? joysticks_[i]->GetRawButton(8)	: false;
-		m.rightBlueButton			= raw_button_count > 9	? joysticks_[i]->GetRawButton(9)	: false;
-		m.yellowButton				= raw_button_count > 10	? joysticks_[i]->GetRawButton(10)	: false;
-		m.leftGreenButton			= raw_button_count > 11	? joysticks_[i]->GetRawButton(11)	: false;
-		m.rightGreenButton			= raw_button_count > 12	? joysticks_[i]->GetRawButton(12)	: false;
-		m.topGreenButton			= raw_button_count > 13	? joysticks_[i]->GetRawButton(13)	: false;
-		m.bottomGreenButton			= raw_button_count > 14	? joysticks_[i]->GetRawButton(14)	: false;
-		m.bottomSwitchUpButton		= raw_button_count > 15	? joysticks_[i]->GetRawButton(15)	: false;
-		m.bottomSwitchDownButton	= raw_button_count > 16	? joysticks_[i]->GetRawButton(16)	: false;
+		m.lockingSwitchButton		= raw_button_count > 0	? joysticks_[i]->GetRawButton(1)	: false;
+		m.topRedButton				= raw_button_count > 1	? joysticks_[i]->GetRawButton(2)	: false;
+		m.leftRedButton				= raw_button_count > 2	? joysticks_[i]->GetRawButton(3)	: false;
+		m.rightRedButton			= raw_button_count > 3	? joysticks_[i]->GetRawButton(4)	: false;
+		m.leftSwitchUpButton		= raw_button_count > 4	? joysticks_[i]->GetRawButton(5)	: false;
+		m.leftSwitchDownButton		= raw_button_count > 5	? joysticks_[i]->GetRawButton(6)	: false;
+		m.rightSwitchUpButton		= raw_button_count > 6	? joysticks_[i]->GetRawButton(7)	: false;
+		m.rightSwitchDownButton		= raw_button_count > 7	? joysticks_[i]->GetRawButton(8)	: false;
+		m.leftBlueButton			= raw_button_count > 8	? joysticks_[i]->GetRawButton(9)	: false;
+		m.rightBlueButton			= raw_button_count > 9	? joysticks_[i]->GetRawButton(10)	: false;
+		m.yellowButton				= raw_button_count > 10	? joysticks_[i]->GetRawButton(11)	: false;
+		m.leftGreenButton			= raw_button_count > 11	? joysticks_[i]->GetRawButton(12)	: false;
+		m.rightGreenButton			= raw_button_count > 12	? joysticks_[i]->GetRawButton(13)	: false;
+		m.topGreenButton			= raw_button_count > 13	? joysticks_[i]->GetRawButton(14)	: false;
+		m.bottomGreenButton			= raw_button_count > 14	? joysticks_[i]->GetRawButton(15)	: false;
+		m.bottomSwitchUpButton		= raw_button_count > 15	? joysticks_[i]->GetRawButton(16)	: false;
+		m.bottomSwitchDownButton	= raw_button_count > 16	? joysticks_[i]->GetRawButton(17)	: false;
 
 		// Creating press booleans by comparing the last publish to the current one
 		m.lockingSwitchPress		= !prev_button_box_state_[i].lockingSwitchButton	&& m.lockingSwitchButton;
@@ -2266,13 +2265,13 @@ void FRCRobotInterface::read(const ros::Time &time, const ros::Duration &period)
 
 		read_tracer_.start_unique("joysticks");
 		//check if sufficient time has passed since last read
-		ROS_INFO_STREAM("Starting joystick pub");
+		//ROS_INFO_STREAM("Starting joystick pub");
 		if (joystick_mutex_.try_lock())
 		{
-			ROS_INFO_STREAM("Joystick mutex is locked");
+			//ROS_INFO_STREAM("Joystick mutex is locked");
 			if(ros::Time::now().toSec() - t_prev_joystick_read_ > (1./joystick_read_hz_))
 			{
-				ROS_INFO_STREAM("The timing on the joystick stuff is fine");
+				//ROS_INFO_STREAM("The timing on the joystick stuff is fine");
 				t_prev_joystick_read_ += 1./joystick_read_hz_;
 
 				for (size_t i = 0; i < num_joysticks_; i++)

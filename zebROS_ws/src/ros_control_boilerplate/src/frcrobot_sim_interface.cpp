@@ -117,14 +117,15 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::JoyConstPtr &msg,
 	std::lock_guard<std::mutex> l(joystick_mutex_);
 
 	HAL_JoystickAxes hal_axes;
-	hal_axes.count = msg->axes.size() - 2; // the last two entries are for POV
-	for(size_t i = 0; i < msg->axes.size() - 2; i++)
+	hal_axes.count = std::min(msg->axes.size(), 6UL); // the last two entries (6.7) are for POV
+	for(int i = 0; i < hal_axes.count; i++)
 	{
 		hal_axes.axes[i] = msg->axes[i];
 	}
 
 	HAL_JoystickButtons hal_buttons;
 	hal_buttons.count = msg->buttons.size();
+	hal_buttons.buttons = 0;
 	for(size_t i = 0; i < msg->buttons.size(); i++)
 	{
 		// TODO This is probably so wrong
@@ -133,52 +134,55 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::JoyConstPtr &msg,
 		hal_buttons.buttons = ((msg->buttons[i] ? 1 : 0) << i) | hal_buttons.buttons;
 	}
 
-	HAL_JoystickPOVs hal_povs;
-	hal_povs.count = 1;
-	//TODO Do we have a standard epsilon somewhere in here?
-	//TODO - also check see if it needs to be < -1e-5
-	bool direction_left = msg->axes[msg->axes.size() - 2] > 1e-5;
-	bool direction_right = msg->axes[msg->axes.size() - 2] < 1e-5;
-	bool direction_up = msg->axes[msg->axes.size() - 1] > 1e-5;
-	bool direction_down = msg->axes[msg->axes.size() - 1] < 1e-5;
+	if (msg->axes.size() >= 8)
+	{
+		HAL_JoystickPOVs hal_povs;
+		hal_povs.count = 1;
+		//TODO Do we have a standard epsilon somewhere in here?
+		//TODO - also check see if it needs to be < -1e-5
+		const bool direction_left = msg->axes[6] > 1e-5;
+		const bool direction_right = msg->axes[6] < 1e-5;
+		const bool direction_up = msg->axes[7] > 1e-5;
+		const bool direction_down = msg->axes[7] < 1e-5;
 
-	if(direction_up && !direction_left && !direction_right)
-	{
-		hal_povs.povs[0] = 0;
-	}
-	else if(direction_up && direction_right)
-	{
-		hal_povs.povs[0] = 45;
-	}
-	else if(!direction_up && !direction_down && direction_right)
-	{
-		hal_povs.povs[0] = 90;
-	}
-	else if(direction_down && direction_right)
-	{
-		hal_povs.povs[0] = 135;
-	}
-	else if(direction_down && !direction_left && !direction_right)
-	{
-		hal_povs.povs[0] = 180;
-	}
-	else if(direction_down && direction_left)
-	{
-		hal_povs.povs[0] = 225;
-	}
-	else if(!direction_up && !direction_down && direction_left)
-	{
-		hal_povs.povs[0] = 270;
-	}
-	else if(direction_up && direction_left)
-	{
-		hal_povs.povs[0] = 315;
+		if(direction_up && !direction_left && !direction_right)
+		{
+			hal_povs.povs[0] = 0;
+		}
+		else if(direction_up && direction_right)
+		{
+			hal_povs.povs[0] = 45;
+		}
+		else if(!direction_up && !direction_down && direction_right)
+		{
+			hal_povs.povs[0] = 90;
+		}
+		else if(direction_down && direction_right)
+		{
+			hal_povs.povs[0] = 135;
+		}
+		else if(direction_down && !direction_left && !direction_right)
+		{
+			hal_povs.povs[0] = 180;
+		}
+		else if(direction_down && direction_left)
+		{
+			hal_povs.povs[0] = 225;
+		}
+		else if(!direction_up && !direction_down && direction_left)
+		{
+			hal_povs.povs[0] = 270;
+		}
+		else if(direction_up && direction_left)
+		{
+			hal_povs.povs[0] = 315;
+		}
+		HALSIM_SetJoystickPOVs(joystick_num, &hal_povs);
 	}
 	//TODO check default pov?
 	//TODO do you need to set JoystickDescriptor?
 
 	HALSIM_SetJoystickAxes(joystick_num, &hal_axes);
-	HALSIM_SetJoystickPOVs(joystick_num, &hal_povs);
 	HALSIM_SetJoystickButtons(joystick_num,
 			&hal_buttons);
 }
@@ -294,17 +298,13 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 	return true;
 }
 
-void FRCRobotSimInterface::read(const ros::Time& /*time*/, const ros::Duration& /*period*/)
+void FRCRobotSimInterface::read(const ros::Time& time, const ros::Duration& period)
 {
-	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
+	FRCRobotInterface::read(time, period);
+	for (size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
 	{
 		// Do nothing
     }
-	for (size_t i = 0; i < num_digital_inputs_; i++)
-	{
-		// Set using evaluateDigitalInput callback
-		// TODO - make make threadsafe using a command buffer, if needed
-	}
 }
 
 bool FRCRobotSimInterface::evaluateDigitalInput(ros_control_boilerplate::LineBreakSensors::Request &req,
@@ -334,8 +334,9 @@ bool FRCRobotSimInterface::evaluateDigitalInput(ros_control_boilerplate::LineBre
 	return true;
 }
 
-void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration& period)
+void FRCRobotSimInterface::write(const ros::Time& time, const ros::Duration& period)
 {
+	FRCRobotInterface::write(time, period);
 	// Was the robot enabled last time write was run?
 	static bool last_robot_enabled = false;
 
@@ -349,7 +350,7 @@ void FRCRobotSimInterface::write(const ros::Time& /*time*/, const ros::Duration&
 			robot_enabled = last_robot_enabled;
 	}
 
-	for (std::size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
+	for (size_t joint_id = 0; joint_id < num_can_ctre_mcs_; ++joint_id)
 	{
 		if (!can_ctre_mc_local_hardwares_[joint_id])
 			continue;
