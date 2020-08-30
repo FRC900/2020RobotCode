@@ -2096,64 +2096,67 @@ void FRCRobotInterface::joystick_pub_function(int i)
 		m.stickRightPress	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonPressed(10) : false;
 		m.stickRightRelease	= raw_button_count > 9 ? joysticks_[i]->GetRawButtonReleased(10) : false;
 
-		bool joystick_up = false;
-		bool joystick_down = false;
-		bool joystick_left = false;
-		bool joystick_right = false;
-		switch (joysticks_[i]->GetPOV(0))
+		if (joysticks_[i]->GetPOVCount() > 0)
 		{
-			case 0 :
-				joystick_up = true;
-				break;
-			case 45:
-				joystick_up = true;
-				joystick_right = true;
-				break;
-			case 90:
-				joystick_right = true;
-				break;
-			case 135:
-				joystick_down = true;
-				joystick_right = true;
-				break;
-			case 180:
-				joystick_down = true;
-				break;
-			case 225:
-				joystick_down = true;
-				joystick_left = true;
-				break;
-			case 270:
-				joystick_left = true;
-				break;
-			case 315:
-				joystick_up = true;
-				joystick_left = true;
-				break;
+			bool joystick_up = false;
+			bool joystick_down = false;
+			bool joystick_left = false;
+			bool joystick_right = false;
+			switch (joysticks_[i]->GetPOV(0))
+			{
+				case 0 :
+					joystick_up = true;
+					break;
+				case 45:
+					joystick_up = true;
+					joystick_right = true;
+					break;
+				case 90:
+					joystick_right = true;
+					break;
+				case 135:
+					joystick_down = true;
+					joystick_right = true;
+					break;
+				case 180:
+					joystick_down = true;
+					break;
+				case 225:
+					joystick_down = true;
+					joystick_left = true;
+					break;
+				case 270:
+					joystick_left = true;
+					break;
+				case 315:
+					joystick_up = true;
+					joystick_left = true;
+					break;
+			}
+
+			m.directionUpButton = joystick_up;
+			m.directionUpPress = joystick_up && !joystick_up_last_[i];
+			m.directionUpRelease = !joystick_up && joystick_up_last_[i];
+
+			m.directionDownButton = joystick_down;
+			m.directionDownPress = joystick_down && !joystick_down_last_[i];
+			m.directionDownRelease = !joystick_down && joystick_down_last_[i];
+
+			m.directionLeftButton = joystick_left;
+			m.directionLeftPress = joystick_left && !joystick_left_last_[i];
+			m.directionLeftRelease = !joystick_left && joystick_left_last_[i];
+
+			m.directionRightButton = joystick_right;
+			m.directionRightPress = joystick_right && !joystick_right_last_[i];
+			m.directionRightRelease = !joystick_right && joystick_right_last_[i];
+
+			joystick_up_last_[i] = joystick_up;
+			joystick_down_last_[i] = joystick_down;
+			joystick_left_last_[i] = joystick_left;
+			joystick_right_last_[i] = joystick_right;
+
+			realtime_pub_joysticks_[i]->unlockAndPublish();
 		}
-
-		m.directionUpButton = joystick_up;
-		m.directionUpPress = joystick_up && !joystick_up_last_[i];
-		m.directionUpRelease = !joystick_up && joystick_up_last_[i];
-
-		m.directionDownButton = joystick_down;
-		m.directionDownPress = joystick_down && !joystick_down_last_[i];
-		m.directionDownRelease = !joystick_down && joystick_down_last_[i];
-
-		m.directionLeftButton = joystick_left;
-		m.directionLeftPress = joystick_left && !joystick_left_last_[i];
-		m.directionLeftRelease = !joystick_left && joystick_left_last_[i];
-
-		m.directionRightButton = joystick_right;
-		m.directionRightPress = joystick_right && !joystick_right_last_[i];
-		m.directionRightRelease = !joystick_right && joystick_right_last_[i];
-
-		joystick_up_last_[i] = joystick_up;
-		joystick_down_last_[i] = joystick_down;
-		joystick_left_last_[i] = joystick_left;
-		joystick_right_last_[i] = joystick_right;
-
-		realtime_pub_joysticks_[i]->unlockAndPublish();
 	}
 }
 

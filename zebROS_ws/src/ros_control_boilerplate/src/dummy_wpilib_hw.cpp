@@ -248,6 +248,12 @@ int frc::GenericHID::GetAxisCount() const
 	return -1;
 }
 
+int frc::GenericHID::GetPOVCount() const
+{
+	ROS_ERROR("Called frc::Joystick::GetPOVCount() const on unsupported platform");
+	return -1;
+}
+
 
 #include <frc/IterativeRobotBase.h>
 frc::IterativeRobotBase::IterativeRobotBase(double period)

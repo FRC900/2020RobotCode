@@ -118,13 +118,14 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::JoyConstPtr &msg,
 
 	HAL_JoystickAxes hal_axes;
 	hal_axes.count = std::min(msg->axes.size(), 6UL); // the last two entries (6.7) are for POV
+	std::memset(hal_axes.axes, 0, sizeof(hal_axes.axes));
 	for(int i = 0; i < hal_axes.count; i++)
 	{
 		hal_axes.axes[i] = msg->axes[i];
 	}
 
 	HAL_JoystickButtons hal_buttons;
-	hal_buttons.count = msg->buttons.size();
+	hal_buttons.count = std::min(msg->buttons.size(), 32UL); // DriverStationGui.cpp used 32, comment below says 16?
 	hal_buttons.buttons = 0;
 	for(size_t i = 0; i < msg->buttons.size(); i++)
 	{
@@ -138,12 +139,13 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::JoyConstPtr &msg,
 	{
 		HAL_JoystickPOVs hal_povs;
 		hal_povs.count = 1;
+		std::memset(hal_povs.povs, 0, sizeof(hal_povs.povs));
 		//TODO Do we have a standard epsilon somewhere in here?
 		//TODO - also check see if it needs to be < -1e-5
 		const bool direction_left = msg->axes[6] > 1e-5;
-		const bool direction_right = msg->axes[6] < 1e-5;
+		const bool direction_right = msg->axes[6] < -1e-5;
 		const bool direction_up = msg->axes[7] > 1e-5;
-		const bool direction_down = msg->axes[7] < 1e-5;
+		const bool direction_down = msg->axes[7] < -1e-5;
 
 		if(direction_up && !direction_left && !direction_right)
 		{
@@ -211,7 +213,7 @@ bool FRCRobotSimInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot
 	ROS_WARN("Passes");
 	if (!FRCRobotInterface::init(root_nh, robot_hw_nh))
 	{
-		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " : FRCRobotInterface::init() failed");
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " failed");
 		return false;
 	}
 	ROS_WARN("Passes");
