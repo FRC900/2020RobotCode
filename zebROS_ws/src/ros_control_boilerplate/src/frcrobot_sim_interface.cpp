@@ -117,7 +117,7 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::JoyConstPtr &msg,
 	std::lock_guard<std::mutex> l(joystick_mutex_);
 
 	HAL_JoystickAxes hal_axes;
-	hal_axes.count = std::min(msg->axes.size(), 6UL); // the last two entries (6.7) are for POV
+	hal_axes.count = std::min(msg->axes.size(), 6UL); // the last two entries (6,7) are for POV
 	std::memset(hal_axes.axes, 0, sizeof(hal_axes.axes));
 	for(int i = 0; i < hal_axes.count; i++)
 	{

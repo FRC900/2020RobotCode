@@ -2044,6 +2044,7 @@ void FRCRobotInterface::custom_profile_write(int joint_id)
 // and publishing that as an frc_msgs::JoystickState message
 void FRCRobotInterface::joystick_pub_function(int i)
 {
+	//ROS_INFO_STREAM(__PRETTY_FUNCTION__ << "(" << i << ")");
 	if (!realtime_pub_joysticks_[i])
 	{
 		ROS_ERROR_STREAM("Internal error in joystick_pub_function(" << i << ") : realtime_pub_joysticks_[i] == nullptr");
@@ -2051,6 +2052,7 @@ void FRCRobotInterface::joystick_pub_function(int i)
 	}
 	if (realtime_pub_joysticks_[i]->trylock())
 	{
+		//ROS_INFO_STREAM("The joystick publisher " << i << " is unlocked");
 		auto &m = realtime_pub_joysticks_[i]->msg_;
 		m.header.stamp = ros::Time::now();
 
@@ -2155,13 +2157,14 @@ void FRCRobotInterface::joystick_pub_function(int i)
 			joystick_left_last_[i] = joystick_left;
 			joystick_right_last_[i] = joystick_right;
 
-			realtime_pub_joysticks_[i]->unlockAndPublish();
 		}
+		realtime_pub_joysticks_[i]->unlockAndPublish();
 	}
 }
 
 void FRCRobotInterface::button_box_pub_function(int i)
 {
+	//ROS_INFO_STREAM(__PRETTY_FUNCTION__ << "(" << i << ")");
 	if (!realtime_pub_button_boxes_[i])
 	{
 		ROS_ERROR_STREAM("Internal error in joystick_pub_function(" << i << ") : realtime_pub_button_boxes_[i] == nullptr");
