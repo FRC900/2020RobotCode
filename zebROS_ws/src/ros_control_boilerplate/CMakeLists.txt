@@ -324,6 +324,7 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			src/nano_nx_dio_hal.cpp
 			src/nano_nx_i2c_hal.cpp
 			src/nano_nx_spi_hal.cpp
+			src/dummy_wpilib_sendable.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
 			${ALLWPILIB}/wpilibc/src/main/native/cpp/ErrorBase.cpp
