@@ -80,6 +80,12 @@ target_link_libraries(frc_robot_interface
 
 set (ALLWPILIB ../../../allwpilib)
 
+file(GLOB
+	ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/*.cpp
+	ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/tables/*.cpp
+	ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/*.cpp
+)
+
 # Don't build sim code for the Rio or Jetson -
 # saves time and space for something which will
 # never be run
@@ -91,10 +97,6 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
     # info for testing code which doens't actually hit
     # RoboRIO or CAN hardware. Eventually expand into
     # controlling some sort of sim?
-	file(GLOB
-		ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/*.cpp
-		ntcore_native_src ${ALLWPILIB}/ntcore/src/main/native/cpp/tables/*.cpp
-	)
 
 	add_library(frc_sim_wpilib STATIC
 		${ALLWPILIB}/hal/src/main/native/cpp/cpp/fpga_clock.cpp
@@ -156,10 +158,6 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
 		${ALLWPILIB}/hal/src/main/native/sim/Solenoid.cpp
 		${ALLWPILIB}/hal/src/main/native/sim/SPI.cpp
 		${ALLWPILIB}/hal/src/main/native/sim/Threads.cpp
-		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTable.cpp
-		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableEntry.cpp
-		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/NetworkTableInstance.cpp
-		${ALLWPILIB}/ntcore/src/main/native/cpp/networktables/RpcCall.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/AnalogInput.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalInput.cpp
 		${ALLWPILIB}/wpilibc/src/main/native/cpp/DigitalOutput.cpp
@@ -389,12 +387,12 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 			${ALLWPILIB}/wpiutil/src/main/native/unix/Demangle.cpp
 			${ALLWPILIB}/wpiutil/src/main/native/unix/StackTrace.cpp
 			${ntcore_native_src}
-			)
+		)
 	else() # anything we don't want to support GPIO access on - x86, older Jetson, etc
 		set (FRCROBOT_HW_MAIN_SRCS ${FRCROBOT_HW_MAIN_SRCS}
 			src/dummy_wpilib_hw_x86.cpp
 			src/dummy_wpilib_i2c.cpp
-			)
+		)
 	endif()
 
     # Don't build sim code for Jetson TK or TX architectures
@@ -442,7 +440,6 @@ if (NOT "${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi")
 		  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 		)
 	endif()
-
 endif()
 
 add_executable(frcrobot_hw_main ${FRCROBOT_HW_MAIN_SRCS})
