@@ -139,7 +139,7 @@ void FRCRobotSimInterface::joystickCallback(const sensor_msgs::JoyConstPtr &msg,
 	{
 		HAL_JoystickPOVs hal_povs;
 		hal_povs.count = 1;
-		std::memset(hal_povs.povs, 0, sizeof(hal_povs.povs));
+		std::memset(hal_povs.povs, -1, sizeof(hal_povs.povs));
 		//TODO Do we have a standard epsilon somewhere in here?
 		//TODO - also check see if it needs to be < -1e-5
 		const bool direction_left = msg->axes[6] > 1e-5;

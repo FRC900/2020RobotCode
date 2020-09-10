@@ -97,7 +97,7 @@ if (NOT (("${ARM_PREFIX}" STREQUAL "arm-frc2020-linux-gnueabi") OR
 		${ALLWPILIB}/hal/src/main/native/cpp/handles/HandlesInternal.cpp
 		${ALLWPILIB}/hal/src/main/native/cpp/Main.cpp
 		${ALLWPILIB}/hal/src/main/native/sim/Accelerometer.cpp
-		#${ALLWPILIB}/hal/src/main/native/sim/AddressableLED.cpp
+		${ALLWPILIB}/hal/src/main/native/sim/AddressableLED.cpp
 		${ALLWPILIB}/hal/src/main/native/sim/AnalogAccumulator.cpp
 		${ALLWPILIB}/hal/src/main/native/sim/AnalogGyro.cpp
 		${ALLWPILIB}/hal/src/main/native/sim/AnalogInput.cpp
