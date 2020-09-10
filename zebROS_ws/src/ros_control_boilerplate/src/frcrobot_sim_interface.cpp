@@ -38,6 +38,7 @@ For a more detailed simulation example, see sim_hw_interface.cpp
 */
 #include <ros/ros.h>
 
+#include <simulation/DIOSim.h>
 #include <simulation/DriverStationSim.h>
 
 #include <ros_control_boilerplate/frcrobot_sim_interface.h>
@@ -318,7 +319,7 @@ bool FRCRobotSimInterface::evaluateDigitalInput(ros_control_boilerplate::LineBre
 		{
 			if (digital_input_names_[i] == req.name)
 			{
-				digital_input_state_[i] = req.value ? 1 : 0;
+				HALSIM_SetDIOValue(digital_input_dio_channels_[i], req.value ^ digital_input_inverts_[i]);
 				ROS_INFO_STREAM(digital_input_names_[i] << " set to " << (int)req.value);
 				break;
 			}
@@ -326,7 +327,7 @@ bool FRCRobotSimInterface::evaluateDigitalInput(ros_control_boilerplate::LineBre
 	}
 	else if (req.j < digital_input_names_.size())
 	{
-		digital_input_state_[req.j] = req.value ? 1 : 0;
+		HALSIM_SetDIOValue(digital_input_dio_channels_[req.j], req.value ^ digital_input_inverts_[req.j]);
 		ROS_INFO_STREAM(digital_input_names_[req.j] << " set to " << (int)req.value);
 	}
 	else
