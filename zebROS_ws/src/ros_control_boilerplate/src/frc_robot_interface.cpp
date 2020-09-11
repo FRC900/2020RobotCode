@@ -35,12 +35,38 @@
 /* Original Author: Dave Coleman
    Desc:   Helper ros_control hardware interface that loads configurations
 */
+#include <ros/ros.h>
+#include <ros_control_boilerplate/frc_robot_interface.h>
+#include <errno.h>                                    // for errno
+#include <ext/alloc_traits.h>                         // for __alloc_traits<...
+#include <pthread.h>                                  // for pthread_self
+#include <sched.h>                                    // for sched_get_prior...
+#include <string.h>                                   // for size_t, strerror
+#include <algorithm>                                  // for max, all_of
+#include <cmath>                                      // for M_PI
+#include <cstdint>                                    // for uint8_t, int32_t
+#include <iostream>                                   // for operator<<, bas...
+#include "AHRS.h"                                     // for AHRS
+#include "frc/AnalogInput.h"                          // for AnalogInput
+#include "frc/DigitalInput.h"                         // for DigitalInput
+#include "frc/DigitalOutput.h"                        // for DigitalOutput
+#include "frc/DoubleSolenoid.h"                       // for DoubleSolenoid
+#include "frc/DriverStation.h"                        // for DriverStation
+#include "frc/Joystick.h"                             // for Joystick
+#include "frc/NidecBrushless.h"                       // for NidecBrushless
+#include "frc/PWM.h"                                  // for PWM
+#include "hal/CAN.h"                                  // for HAL_CAN_GetCANS...
+#include "hal/Compressor.h"                           // for HAL_GetCompressor
+#include "hal/DriverStation.h"                        // for HAL_GetAlliance...
+#include "hal/DriverStationTypes.h"                   // for HAL_ControlWord
+#include "hal/HALBase.h"                              // for HAL_GetErrorMes...
+#include "hal/PDP.h"                                  // for HAL_ClearPDPSti...
+#include "hal/Power.h"                                // for HAL_GetVinVoltage
+#include "hal/Solenoid.h"                             // for HAL_FreeSolenoi...
+#include "hardware_interface/joint_mode_interface.h"  // for JointCommandModes
+#include "tf2/LinearMath/Quaternion.h"                // for Quaternion
 
 //PURPOSE: Stuff used by to run both hw and sim interfaces
-
-#include <ros_control_boilerplate/frc_robot_interface.h>
-#include <limits>
-#include <AHRS.h>
 namespace ros_control_boilerplate
 {
 
@@ -186,33 +212,8 @@ void FRCRobotInterface::readJointLocalParams(XmlRpc::XmlRpcValue joint_params,
 	}
 }
 
-FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_model) :
-	  name_("generic_hw_interface")
-	, num_can_ctre_mcs_(0)
-	, num_nidec_brushlesses_(0)
-	, num_digital_inputs_(0)
-	, num_digital_outputs_(0)
-	, num_pwms_(0)
-	, num_solenoids_(0)
-	, num_double_solenoids_(0)
-	, num_compressors_(0)
-	, num_rumbles_(0)
-	, num_navX_(0)
-	, num_analog_inputs_(0)
-	, num_dummy_joints_(0)
-    , num_ready_signals_(0)
-	, robot_code_ready_(false)
-	, read_tracer_("FRCRobotInterface " + nh.getNamespace())
+void FRCRobotInterface::readConfig(ros::NodeHandle rpnh)
 {
-	// Check if the URDF model needs to be loaded
-	if (urdf_model == NULL)
-		loadURDF(nh, "robot_description");
-	else
-		urdf_model_ = urdf_model;
-
-	// Load rosparams
-	ros::NodeHandle rpnh(nh, "hardware_interface"); // TODO(davetcoleman): change the namespace to "frc_robot_interface" aka name_
-
 	// Read a list of joint information from ROS parameters.  Each entry in the list
 	// specifies a name for the joint and a hardware ID corresponding
 	// to that value.  Joint types and locations are specified (by name)
@@ -904,6 +905,36 @@ FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_mode
 	can_interface_ = rpnh.param<std::string>("can_interface", "can0");
 }
 
+FRCRobotInterface::FRCRobotInterface(ros::NodeHandle &nh, urdf::Model *urdf_model) :
+	  name_("generic_hw_interface")
+	, num_can_ctre_mcs_(0)
+	, num_nidec_brushlesses_(0)
+	, num_digital_inputs_(0)
+	, num_digital_outputs_(0)
+	, num_pwms_(0)
+	, num_solenoids_(0)
+	, num_double_solenoids_(0)
+	, num_compressors_(0)
+	, num_rumbles_(0)
+	, num_navX_(0)
+	, num_analog_inputs_(0)
+	, num_dummy_joints_(0)
+    , num_ready_signals_(0)
+	, robot_code_ready_(false)
+	, read_tracer_("FRCRobotInterface " + nh.getNamespace())
+{
+	// Check if the URDF model needs to be loaded
+	if (urdf_model == NULL)
+		loadURDF(nh, "robot_description");
+	else
+		urdf_model_ = urdf_model;
+
+	// Load rosparams
+	ros::NodeHandle rpnh(nh, "hardware_interface"); // TODO(davetcoleman): change the namespace to "frc_robot_interface" aka name_
+
+	readConfig(rpnh);
+}
+
 FRCRobotInterface::~FRCRobotInterface()
 {
 	for (size_t i = 0; i < num_solenoids_; i++)
@@ -920,7 +951,7 @@ FRCRobotInterface::~FRCRobotInterface()
 		pdp_thread_[i].join();
 }
 
-bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh)
+void FRCRobotInterface::createInterfaces(void)
 {
 	num_can_ctre_mcs_ = can_ctre_mc_names_.size();
 	// Create vectors of the correct size for
@@ -1402,7 +1433,7 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 		talon_orchestra_state_interface_.registerHandle(osh);
 
 		// Do the same for a command interface for
-		// the same orchestra 
+		// the same orchestra
 		hardware_interface::OrchestraCommandHandle och(osh, &orchestra_command_[i]);
 		talon_orchestra_command_interface_.registerHandle(och);
 	}
@@ -1445,8 +1476,16 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 
 	registerInterface(&joint_mode_interface_);
 	registerInterface(&joint_mode_remote_interface_);
-
-	ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface Ready.");
+}
+bool FRCRobotInterface::initDevices(ros::NodeHandle root_nh)
+{
+	if (run_hal_robot_)
+	{
+		// Make sure to initialize WPIlib code before creating
+		// a CAN Talon object to avoid NIFPGA: Resource not initialized
+		// errors? See https://www.chiefdelphi.com/forums/showpost.php?p=1640943&postcount=3
+		robot_.reset(new ROSIterativeRobot());
+	}
 
 	//Stuff below is from frcrobot_hw_interface
 	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
@@ -1766,6 +1805,16 @@ bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw
 		joystick_right_last_.push_back(false);
 		joystick_left_last_.push_back(false);
 	}
+	return true;
+}
+
+bool FRCRobotInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh)
+{
+	createInterfaces();
+	ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface Interfaces Ready.");
+	if (!initDevices(root_nh))
+		return false;
+	ROS_INFO_STREAM_NAMED(name_, "FRCRobotInterface Devices Ready.");
 
 	const double t_now = ros::Time::now().toSec();
 
@@ -2779,6 +2828,12 @@ void FRCRobotInterface::write(const ros::Time& time, const ros::Duration& period
 void FRCRobotInterface::reset()
 {
 }
+
+bool FRCRobotInterface::prepareSwitch(const std::list<hardware_interface::ControllerInfo> &/*start_list*/,
+									  const std::list<hardware_interface::ControllerInfo> &/*stop_list*/)
+{
+	return true;
+		}
 
 void FRCRobotInterface::printState()
 {

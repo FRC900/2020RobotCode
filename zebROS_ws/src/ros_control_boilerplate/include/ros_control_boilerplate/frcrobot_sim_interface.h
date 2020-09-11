@@ -40,6 +40,7 @@
 #pragma once
 
 #include <sensor_msgs/Joy.h>
+#include "frc_msgs/MatchSpecificData.h"
 
 #include "ros_control_boilerplate/frc_robot_interface.h"
 #include "ros_control_boilerplate/LineBreakSensors.h"

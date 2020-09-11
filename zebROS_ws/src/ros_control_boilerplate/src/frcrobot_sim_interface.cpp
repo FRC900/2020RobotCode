@@ -38,12 +38,14 @@ For a more detailed simulation example, see sim_hw_interface.cpp
 */
 #include <ros/ros.h>
 
-#include <simulation/DIOSim.h>
-#include <simulation/DriverStationSim.h>
+#include "frc/DriverStation.h"
+#include "mockdata/DIOData.h"
+#include "mockdata/DriverStationData.h"
 
 #include <ros_control_boilerplate/frcrobot_sim_interface.h>
 #include <ros_control_boilerplate/nextVelocity.h>
 #include <ros_control_boilerplate/set_limit_switch.h>
+
 
 namespace frcrobot_control
 {
@@ -61,7 +63,7 @@ void FRCRobotSimInterface::match_data_callback(const frc_msgs::MatchSpecificData
 	std::lock_guard<std::mutex> l(match_data_mutex_);
 	HALSIM_SetDriverStationMatchTime(match_data.matchTimeRemaining);
 	HAL_AllianceStationID alliance_station_id = HAL_AllianceStationID_kRed1;
-	if (match_data.allianceColor == DriverStation::kRed)
+	if (match_data.allianceColor == frc::DriverStation::kRed)
 	{
 		if (match_data.driverStationLocation == 1)
 		{
@@ -76,7 +78,7 @@ void FRCRobotSimInterface::match_data_callback(const frc_msgs::MatchSpecificData
 			alliance_station_id = HAL_AllianceStationID_kRed3;
 		}
 	}
-	else if (match_data.allianceColor == DriverStation::kBlue)
+	else if (match_data.allianceColor == frc::DriverStation::kBlue)
 	{
 		if (match_data.driverStationLocation == 1)
 		{

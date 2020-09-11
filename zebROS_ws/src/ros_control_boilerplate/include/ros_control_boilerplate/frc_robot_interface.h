@@ -49,7 +49,6 @@
 #include <hardware_interface/robot_hw.h>
 #include <ros/ros.h>
 #include <realtime_tools/realtime_publisher.h>
-#include <tf2/LinearMath/Quaternion.h>
 #include <urdf/model.h>
 
 // ROS Controls
@@ -59,9 +58,9 @@
 #include "frc_interfaces/pdp_state_interface.h"
 #include "frc_interfaces/robot_controller_interface.h"
 #include "frc_msgs/ButtonBoxState.h"
-#include "frc_msgs/MatchSpecificData.h"
 #include "frc_msgs/JoystickState.h"
 #include "remote_joint_interface/remote_joint_interface.h"
+#include "ros_control_boilerplate/ros_iterative_robot.h"
 #include "talon_interface/cancoder_command_interface.h"
 #include "talon_interface/canifier_command_interface.h"
 #include "talon_interface/orchestra_command_interface.h"
@@ -70,24 +69,19 @@
 #include "ros_control_boilerplate/tracer.h"
 
 // WPILIB stuff
-#include "WPILibVersion.h"
-#include <AHRS.h>
-#include <frc/AnalogInput.h>
-#include <frc/DriverStation.h>
-#include <frc/DigitalInput.h>
-#include <frc/DigitalOutput.h>
-#include <frc/DoubleSolenoid.h>
-#include <frc/Joystick.h>
-#include <frc/NidecBrushless.h>
-#include <frc/PWMSpeedController.h>
-#include <hal/Compressor.h>
-#include <hal/DriverStation.h>
 #include <hal/FRCUsageReporting.h>
-#include <hal/CAN.h>
 #include <hal/HALBase.h>
-#include <hal/PDP.h>
-#include <hal/Power.h>
-#include <hal/Solenoid.h>
+#include <hal/Types.h>
+
+// Use forward declarations to avoid including a whole bunch of
+// WPIlib headers we don't care about - this speeds up the build process
+class AHRS;
+namespace frc { class AnalogInput; }
+namespace frc { class DigitalInput; }
+namespace frc { class DigitalOutput; }
+namespace frc { class Joystick; }
+namespace frc { class NidecBrushless; }
+namespace frc { class PWM; }
 
 namespace ros_control_boilerplate
 {
@@ -125,58 +119,6 @@ class CustomProfileState
 	hardware_interface::CustomProfileStatus status_;
 	std::vector<std::vector<hardware_interface::CustomProfilePoint>> saved_points_;
 	std::vector<std::vector<double>> saved_times_;
-};
-
-//Stuff from frcrobot_hw_interface
-class ROSIterativeRobot
-{
-	public:
-		ROSIterativeRobot(void) : m_ds(DriverStation::GetInstance())
-		{
-			if (!HAL_Initialize(500, 0))
-			{
-				ROS_ERROR("FATAL ERROR: HAL could not be initialized");
-				std::terminate();
-			}
-			std::FILE* file = nullptr;
-			file = std::fopen("/tmp/frc_versions/FRC_Lib_Version.ini", "w");
-
-			if (file != nullptr) {
-				std::fputs("C++ ", file);
-				std::fputs(GetWPILibVersion(), file);
-				std::fclose(file);
-			}
-
-			HAL_Report(HALUsageReporting::kResourceType_Framework, HALUsageReporting::kFramework_ROS);
-			HAL_Report(HALUsageReporting::kResourceType_RobotDrive, 900, 0, "field centric swerve");
-			//HAL_Report(HALUsageReporting::kResourceType_kKinematics, HALUsageReporting::kKinematics_SwerveDrive);
-#if 0
-			for (int i = 0; i < 900; i++)
-				HAL_Report(HALUsageReporting::kResourceType_NidecBrushless, 900);
-#endif
-			HAL_Report(HALUsageReporting::kResourceType_Language, 900, 0, "C++/CMake/Javascript/Python/Shell/PERL");
-		}
-
-		void StartCompetition(void) const
-		{
-			HAL_ObserveUserProgramStarting();
-		}
-
-		void OneIteration(void) const
-		{
-			// Call the appropriate function depending upon the current robot mode
-			if (m_ds.IsDisabled()) {
-				HAL_ObserveUserProgramDisabled();
-			} else if (m_ds.IsAutonomous()) {
-				HAL_ObserveUserProgramAutonomous();
-			} else if (m_ds.IsOperatorControl()) {
-				HAL_ObserveUserProgramTeleop();
-			} else {
-				HAL_ObserveUserProgramTest();
-			}
-		}
-	private:
-		DriverStation& m_ds;
 };
 
 //Stuff from frcrobot_hw_interface
@@ -225,10 +167,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		 * This is just a check, the actual switch is done in doSwitch()
 		 */
 		virtual bool prepareSwitch(const std::list<hardware_interface::ControllerInfo> &/*start_list*/,
-							       const std::list<hardware_interface::ControllerInfo> &/*stop_list*/) override
-		{
-			return true;
-		}
+							       const std::list<hardware_interface::ControllerInfo> &/*stop_list*/) override;
 
 		/**
 		 * \brief Perform (in non-realtime) all necessary hardware interface switches in order to start
@@ -301,6 +240,9 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 								  const bool saw_local_keyword,
 								  bool &local_update,
 								  bool &local_hardware);
+		void readConfig(ros::NodeHandle rpnh);
+		void createInterfaces(void);
+		bool initDevices(ros::NodeHandle root_nh);
 
 		// Configuration
 		std::vector<std::string> can_ctre_mc_names_;
@@ -533,7 +475,7 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 		void pdp_read_thread(int32_t pdp, std::shared_ptr<hardware_interface::PDPHWState> state, std::shared_ptr<std::mutex> mutex, std::unique_ptr<Tracer> tracer);
 		std::vector<std::thread> pdp_thread_;
 		std::vector<int32_t> pdps_;
-		std::vector<std::shared_ptr<Joystick>> joysticks_;
+		std::vector<std::shared_ptr<frc::Joystick>> joysticks_;
 		std::vector<bool> joystick_up_last_;
 		std::vector<bool> joystick_down_last_;
 		std::vector<bool> joystick_left_last_;

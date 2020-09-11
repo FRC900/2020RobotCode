@@ -167,26 +167,13 @@ FRCRobotHWInterface::~FRCRobotHWInterface()
 
 bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_hw_nh)
 {
-	// Do base class init. This loads common interface info
-	// used by both the real and sim interfaces
-	if (!FRCRobotInterface::init(root_nh, robot_hw_nh))
-	{
-		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << ": FRCRobotInterface::init() returnd false");
-		return false;
-	}
-
 	if (run_hal_robot_)
 	{
-		// Make sure to initialize WPIlib code before creating
-		// a CAN Talon object to avoid NIFPGA: Resource not initialized
-		// errors? See https://www.chiefdelphi.com/forums/showpost.php?p=1640943&postcount=3
-		robot_.reset(new ROSIterativeRobot());
 		ds_error_server_ = robot_hw_nh.advertiseService("/frcrobot_rio/ds_error_service", &FRCRobotHWInterface::DSErrorCallback, this);
 	}
 	else
 	{
-		// This is for non Rio-based robots.  Call init for the wpilib HAL code
-		// we've "borrowed" before using them
+		// This is for non Rio-based robots.  Call init for the wpilib HAL code we've "borrowed" before using them
 		hal::init::InitializeCANAPI();
 		hal::init::InitializeCompressor();
 		hal::init::InitializePCMInternal();
@@ -200,6 +187,14 @@ bool FRCRobotHWInterface::init(ros::NodeHandle& root_nh, ros::NodeHandle &robot_
 		{
 			HAL_SendError(true, -1, false, "SetCANInterface failed - likely CAN adapter failure", "", "", true);
 		}
+	}
+
+	// Do base class init. This loads common interface info
+	// used by both the real and sim interfaces
+	if (!FRCRobotInterface::init(root_nh, robot_hw_nh))
+	{
+		ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << ": FRCRobotInterface::init() returnd false");
+		return false;
 	}
 
 	can_error_count_ = 0;
@@ -2702,7 +2697,6 @@ void FRCRobotHWInterface::write(const ros::Time& time, const ros::Duration& peri
 			}
 		}
 	}
-
 	for (size_t joint_id = 0; joint_id < num_cancoders_; ++joint_id)
 	{
 		if (!cancoder_local_hardwares_[joint_id])
@@ -2909,184 +2903,6 @@ void FRCRobotHWInterface::write(const ros::Time& time, const ros::Duration& peri
 			{
 				cc.setClearStickyFaults();
 			}
-		}
-	}
-
-	for (size_t i = 0; i < num_nidec_brushlesses_; i++)
-	{
-		if (nidec_brushless_local_hardwares_[i])
-			nidec_brushlesses_[i]->Set(brushless_command_[i]);
-	}
-
-	for (size_t i = 0; i < num_digital_outputs_; i++)
-	{
-		// Only invert the desired output once, on the controller
-		// where the update originated
-		const bool converted_command = (digital_output_command_[i] > 0) ^ (digital_output_inverts_[i] && digital_output_local_updates_[i]);
-		if (converted_command != digital_output_state_[i])
-		{
-			if (digital_output_local_hardwares_[i])
-				digital_outputs_[i]->Set(converted_command);
-			digital_output_state_[i] = converted_command;
-			ROS_INFO_STREAM("Wrote digital output " << i << "=" << converted_command);
-		}
-	}
-
-	for (size_t i = 0; i < num_pwms_; i++)
-	{
-		const int setpoint = pwm_command_[i] * ((pwm_inverts_[i] & pwm_local_updates_[i]) ? -1 : 1);
-		if (pwm_state_[i] != setpoint)
-		{
-			if (pwm_local_hardwares_[i])
-				PWMs_[i]->SetSpeed(setpoint);
-			pwm_state_[i] = setpoint;
-			ROS_INFO_STREAM("PWM " << pwm_names_[i] <<
-					" at channel" <<  pwm_pwm_channels_[i] <<
-					" set to " << pwm_state_[i]);
-		}
-	}
-
-	for (size_t i = 0; i < num_solenoids_; i++)
-	{
-		// MODE_POSITION is standard on/off setting
-		if (solenoid_mode_[i] == hardware_interface::JointCommandModes::MODE_POSITION)
-		{
-			const bool setpoint = solenoid_command_[i] > 0;
-			if ((solenoid_mode_[i] != prev_solenoid_mode_[i]) || (solenoid_state_[i] != setpoint))
-			{
-				int32_t status = 0;
-				if (solenoid_local_hardwares_[i])
-				{
-					HAL_SetSolenoid(solenoids_[i], setpoint, &status);
-					if (status != 0)
-						ROS_ERROR_STREAM("Error setting solenoid " << solenoid_names_[i] <<
-								" to " << setpoint << " status = " << status);
-				}
-				if (status == 0)
-				{
-					//solenoid_state_[i] = setpoint;
-					ROS_INFO_STREAM("Solenoid " << solenoid_names_[i] <<
-							" at id " << solenoid_ids_[i] <<
-							" / pcm " << solenoid_pcms_[i] <<
-							" = " << static_cast<int>(setpoint));
-				}
-			}
-		}
-		else if (solenoid_mode_[i] == hardware_interface::JointCommandModes::MODE_EFFORT)
-		{
-			if (solenoid_command_[i] > 0)
-			{
-				int32_t status = 0;
-				if (solenoid_local_hardwares_[i])
-				{
-					HAL_SetOneShotDuration(solenoids_[i], solenoid_command_[i], &status);
-					if (status != 0)
-					{
-						ROS_ERROR_STREAM("Error setting solenoid " << solenoid_names_[i] <<
-								" one shot duration to " << solenoid_command_[i] << " status = " << status);
-					}
-					else
-					{
-						HAL_FireOneShot(solenoids_[i], &status);
-						if (status != 0)
-						{
-							ROS_ERROR_STREAM("Error setting solenoid " << solenoid_names_[i] <<
-									" fire one shot, status = " << status);
-						}
-					}
-				}
-				if (status == 0)
-				{
-					ROS_INFO_STREAM("Solenoid one shot " << solenoid_names_[i] <<
-							" at id " << solenoid_ids_[i] <<
-							" / pcm " << solenoid_pcms_[i] <<
-							" = " << solenoid_command_[i]);
-					solenoid_pwm_state_[i] = solenoid_command_[i];
-					solenoid_command_[i] = 0;
-				}
-			}
-		}
-		else
-			ROS_ERROR_STREAM("Invalid solenoid_mode_[i] = " << static_cast<int>(solenoid_mode_[i]));
-		prev_solenoid_mode_[i] = solenoid_mode_[i];
-	}
-
-	for (size_t i = 0; i < num_double_solenoids_; i++)
-	{
-		frc::DoubleSolenoid::Value setpoint = frc::DoubleSolenoid::Value::kOff;
-		if (double_solenoid_command_[i] >= 1.0)
-			setpoint = frc::DoubleSolenoid::Value::kForward;
-		else if (double_solenoid_command_[i] <= -1.0)
-			setpoint = frc::DoubleSolenoid::Value::kReverse;
-
-		// Not sure if it makes sense to store command values
-		// in state or wpilib enum values
-		if (double_solenoid_state_[i] != double_solenoid_command_[i])
-		{
-			if (double_solenoid_local_hardwares_[i])
-			{
-				bool forward = false;
-				bool reverse = false;
-				if (setpoint == frc::DoubleSolenoid::Value::kForward)
-					forward = true;
-				else if (setpoint == frc::DoubleSolenoid::Value::kReverse)
-					reverse = true;
-
-				int32_t status = 0;
-				HAL_SetSolenoid(double_solenoids_[i].forward_, forward, &status);
-				if (status != 0)
-					ROS_ERROR_STREAM("Error setting double solenoid " << double_solenoid_names_[i] <<
-							" forward to " << forward << " status = " << status);
-				else
-					ROS_INFO_STREAM("Setting double solenoid " << double_solenoid_names_[i] <<
-							" forward to " << forward);
-				status = 0;
-				HAL_SetSolenoid(double_solenoids_[i].reverse_, reverse, &status);
-				if (status != 0)
-					ROS_ERROR_STREAM("Error setting double solenoid " << double_solenoid_names_[i] <<
-							" reverse to " << reverse << " status = " << status);
-				else
-					ROS_INFO_STREAM("Setting double solenoid " << double_solenoid_names_[i] <<
-							" reverse to " << reverse);
-			}
-			double_solenoid_state_[i] = double_solenoid_command_[i];
-			ROS_INFO_STREAM("Double solenoid " << double_solenoid_names_[i] <<
-					" at forward id " << double_solenoid_forward_ids_[i] <<
-					" / reverse id " << double_solenoid_reverse_ids_[i] <<
-					" / pcm " << double_solenoid_pcms_[i] <<
-					" = " << setpoint);
-		}
-	}
-
-	for (size_t i = 0; i < num_rumbles_; i++)
-	{
-		if (rumble_state_[i] != rumble_command_[i])
-		{
-			const unsigned int rumbles = *((unsigned int*)(&rumble_command_[i]));
-			const unsigned int left_rumble  = (rumbles >> 16) & 0xFFFF;
-			const unsigned int right_rumble = (rumbles      ) & 0xFFFF;
-			if (rumble_local_hardwares_[i])
-				HAL_SetJoystickOutputs(rumble_ports_[i], 0, left_rumble, right_rumble);
-			rumble_state_[i] = rumble_command_[i];
-			ROS_INFO_STREAM("Wrote rumble " << i << "=" << rumble_command_[i]);
-		}
-	}
-
-	for (size_t i = 0; i < num_compressors_; i++)
-	{
-		if (compressor_command_[i] != compressor_state_[i])
-		{
-			const bool setpoint = compressor_command_[i] > 0;
-			if (compressor_local_hardwares_[i])
-			{
-				int32_t status = 0;
-				HAL_SetCompressorClosedLoopControl(compressors_[i], setpoint, &status);
-				if (status)
-					ROS_ERROR_STREAM("SetCompressorClosedLoopControl status:" << status
-							<< " " << HAL_GetErrorMessage(status));
-			}
-			compressor_state_[i] = compressor_command_[i];
-			ROS_INFO_STREAM("Wrote compressor " << i << "=" << setpoint);
 		}
 	}
 
