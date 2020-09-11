@@ -71,11 +71,8 @@ include_directories(
 
 add_library(frc_robot_interface STATIC
 	src/AS726x.cpp
-	src/create_interfaces.cpp
 	src/frc_robot_interface.cpp
 	src/generic_hw_control_loop.cpp
-	src/init_devices.cpp
-	src/read_config.cpp
 	src/ros_iterative_robot.cpp
 )
 target_link_libraries(frc_robot_interface 
