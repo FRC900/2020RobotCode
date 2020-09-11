@@ -430,7 +430,6 @@ class FRCRobotInterface : public hardware_interface::RobotHW
 
 		std::vector<double> robot_ready_signals_;
 		bool                robot_code_ready_;
-		void process_motion_profile_buffer_thread(double hz);
 
 		/* Get conversion factor for position, velocity, and closed-loop stuff */
 
